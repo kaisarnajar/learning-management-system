@@ -49,65 +49,36 @@ function HeaderContent({ pathname }: { pathname: string }) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-white shadow-sm">
-      <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 sm:px-6">
-        {/* Logo — plain shrink-0, no z-index masking */}
-        <div className="shrink-0 pr-1">
+      <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6">
+        <div className="relative z-10 shrink-0 bg-white pr-1">
           <SiteLogo priority />
         </div>
 
-        {/* Desktop nav: flex-wrap at 2xl so links never overflow behind logo */}
         <nav
-          className="hidden min-w-0 flex-1 items-center justify-end 2xl:flex"
+          className="hidden min-w-0 flex-1 items-center justify-end gap-2 overflow-hidden xl:flex"
           aria-label="Main navigation"
         >
-          <div className="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-x-0.5">
+          <div className="flex min-w-0 max-w-full flex-1 items-center justify-end overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {navLinks.map((link) => {
-              const active = isActive(link.href);
-              return (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className={`shrink-0 whitespace-nowrap px-1.5 py-2 text-[0.6875rem] font-semibold uppercase tracking-wide transition-colors ${
-                    active ? "text-gold" : "text-foreground hover:text-gold"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
+            const active = isActive(link.href);
+            return (
+              <Link
+                key={link.label}
+                href={link.href}
+                className={`shrink-0 whitespace-nowrap px-1.5 py-2 text-[0.6875rem] font-semibold uppercase tracking-normal transition-colors 2xl:px-2.5 2xl:text-sm ${
+                  active ? "text-gold" : "text-foreground hover:text-gold"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
             })}
           </div>
-          <div className="ml-2 shrink-0 border-l border-border pl-2">
+          <div className="shrink-0 border-l border-border pl-2">
             <AuthNav />
           </div>
         </nav>
 
-        {/* Mid desktop nav (xl only): scrollable rightward — safe because logo has no z-mask */}
-        <nav
-          className="hidden min-w-0 flex-1 items-center justify-end xl:flex 2xl:hidden"
-          aria-label="Main navigation"
-        >
-          <div className="flex min-w-0 flex-1 items-center justify-end overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            {navLinks.map((link) => {
-              const active = isActive(link.href);
-              return (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className={`shrink-0 whitespace-nowrap px-1 py-2 text-[0.625rem] font-semibold uppercase tracking-wide transition-colors ${
-                    active ? "text-gold" : "text-foreground hover:text-gold"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </div>
-          <div className="ml-2 shrink-0 border-l border-border pl-2">
-            <AuthNav />
-          </div>
-        </nav>
-
-        {/* Hamburger — shown below xl */}
         <button
           type="button"
           className="ml-auto inline-flex h-11 w-11 shrink-0 items-center justify-center text-foreground hover:text-gold xl:hidden"

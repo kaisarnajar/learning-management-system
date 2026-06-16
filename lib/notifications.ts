@@ -38,6 +38,10 @@ export function notificationTypeLabel(type: StudentNotificationType): string {
       return "Message from teacher";
     case "SITE_ANNOUNCEMENT":
       return "Academy announcement";
+    case "BOOK_ORDER_APPROVED":
+      return "Book order approved";
+    case "BOOK_ORDER_DECLINED":
+      return "Book order declined";
     default:
       return "Notification";
   }
@@ -47,8 +51,10 @@ export function notificationTypeClass(type: StudentNotificationType): string {
   switch (type) {
     case "PAYMENT_APPROVED":
     case "ENROLLMENT_APPROVED":
+    case "BOOK_ORDER_APPROVED":
       return "bg-emerald-100 text-emerald-800";
     case "ENROLLMENT_REJECTED":
+    case "BOOK_ORDER_DECLINED":
       return "bg-red-100 text-red-800";
     case "PERSONAL_MESSAGE":
       return "bg-violet-100 text-violet-800";
@@ -341,3 +347,38 @@ export function revalidateNotificationPaths(userId?: string) {
     revalidatePath(`/admin/students/${userId}`, "page");
   }
 }
+
+export async function notifyBookOrderApproved(params: {
+  userId: string;
+  orderId: string;
+  totalAmountInrPaise: number;
+}) {
+  const amountStr = `₹${(params.totalAmountInrPaise / 100).toFixed(2)}`;
+  await createStudentNotification({
+    userId: params.userId,
+    type: "BOOK_ORDER_APPROVED",
+    title: "Book order approved",
+    body: `Your book order (${amountStr}) has been approved. Your books will be dispatched soon.`,
+    href: "/profile/cart",
+    sourceType: "BookOrder",
+    sourceId: params.orderId,
+  });
+  revalidateNotificationPaths(params.userId);
+}
+
+export async function notifyBookOrderDeclined(params: {
+  userId: string;
+  orderId: string;
+}) {
+  await createStudentNotification({
+    userId: params.userId,
+    type: "BOOK_ORDER_DECLINED",
+    title: "Book order declined",
+    body: "Your book order was not approved. Please contact the academy for more information.",
+    href: "/profile/cart",
+    sourceType: "BookOrder",
+    sourceId: params.orderId,
+  });
+  revalidateNotificationPaths(params.userId);
+}
+

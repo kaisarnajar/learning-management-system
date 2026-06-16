@@ -72,6 +72,20 @@ enum StudentNotificationType {
   COURSE_ANNOUNCEMENT
   PERSONAL_MESSAGE
   SITE_ANNOUNCEMENT
+  BOOK_ORDER_APPROVED
+  BOOK_ORDER_DECLINED
+}
+
+enum BookStatus {
+  AVAILABLE
+  OUT_OF_STOCK
+  COMING_SOON
+}
+
+enum BookOrderStatus {
+  PENDING_VERIFICATION
+  APPROVED
+  DECLINED
 }
 
 model User {
@@ -100,6 +114,7 @@ model User {
   dailyInspirations  DailyInspiration[] @relation("DailyInspirationAuthor")
   studentReviews       StudentReview[]
   studentNotifications StudentNotification[]
+  bookOrders           BookOrder[]
   createdAt            DateTime        @default(now())
   updatedAt            DateTime        @updatedAt
 }
@@ -472,4 +487,57 @@ model StudentNotification {
   @@unique([userId, type, sourceId])
   @@index([userId, readAt])
   @@index([userId, createdAt])
+}
+
+/** Physical books available for purchase in the bookstore. */
+model Book {
+  id          String     @id @default(cuid())
+  title       String
+  author      String
+  description String
+  priceInrPaise Int
+  status      BookStatus @default(AVAILABLE)
+  imagePath   String?
+  published   Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  orderItems  BookOrderItem[]
+
+  @@index([status])
+  @@index([published, status])
+}
+
+/** A user's book purchase order submitted for admin approval. */
+model BookOrder {
+  id                    String          @id @default(cuid())
+  userId                String
+  totalAmountInrPaise   Int
+  status                BookOrderStatus @default(PENDING_VERIFICATION)
+  paymentMethod         String?
+  upiTransactionId      String?
+  paymentScreenshotPath String?
+  notes                 String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items                 BookOrderItem[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+/** Line items in a book order. */
+model BookOrderItem {
+  id                   String    @id @default(cuid())
+  orderId              String
+  bookId               String
+  quantity             Int       @default(1)
+  priceAtPurchaseInrPaise Int
+  createdAt            DateTime  @default(now())
+  order                BookOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  book                 Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([bookId])
 }

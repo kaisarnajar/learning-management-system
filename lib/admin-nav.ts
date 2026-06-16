@@ -26,6 +26,8 @@ export const ADMIN_NAV_LINKS: AdminNavLink[] = [
   { href: "/admin/students", label: "Students" },
   { href: "/admin/teachers", label: "Teachers" },
   { href: "/admin/library", label: "Digital Library" },
+  { href: "/admin/bookstore", label: "Bookstore" },
+  { href: "/admin/bookstore/orders", label: "Book Orders" },
   { href: "/admin/fatwa", label: "Fatwa" },
   { href: "/admin/contact-inquiries", label: "Contact inquiries" },
   { href: "/admin/blog-approvals", label: "Blog approvals" },

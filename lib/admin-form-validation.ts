@@ -2,6 +2,7 @@ import { formatInputDateValue } from "@/lib/form-date";
 import { zodResultToFormValidation, type FormValidationResult } from "@/lib/form-validation";
 import {
   blogPostSchema,
+  bookSchema,
   courseAnnouncementSchema,
   courseSchema,
   dailyInspirationSchema,
@@ -231,4 +232,26 @@ export type SocialLinksFormValues = {
 
 export function validateSocialLinksForm(values: SocialLinksFormValues): FormValidationResult {
   return zodResultToFormValidation(socialLinksSettingsSchema.safeParse(values));
+}
+
+export type BookFormValues = {
+  title: string;
+  author: string;
+  description: string;
+  priceInr: string;
+  status: "AVAILABLE" | "OUT_OF_STOCK" | "COMING_SOON";
+  published: boolean;
+};
+
+export function validateBookForm(values: BookFormValues): FormValidationResult {
+  return zodResultToFormValidation(
+    bookSchema.safeParse({
+      title: values.title,
+      author: values.author,
+      description: values.description,
+      priceInr: values.priceInr,
+      status: values.status,
+      published: values.published,
+    }),
+  );
 }

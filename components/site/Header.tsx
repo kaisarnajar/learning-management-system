@@ -15,6 +15,7 @@ const navLinks = [
   { href: "/teachers", label: "Teachers" },
   { href: "/fatwa", label: "Fatwa" },
   { href: "/library", label: "Resources" },
+  { href: "/bookstore", label: "Bookstore" },
   { href: "/contact", label: "Contact Us" },
 ];
 

@@ -335,3 +335,25 @@ export const contactInquiryReplySchema = z.object({
     .min(10, "Reply must be at least 10 characters.")
     .max(10000, "Reply must be at most 10000 characters."),
 });
+
+export const bookStatusEnum = z.enum(["AVAILABLE", "OUT_OF_STOCK", "COMING_SOON"]);
+
+export const bookSchema = z.object({
+  title: z.string().trim().min(2, "Title is required.").max(200, "Title is too long."),
+  author: z.string().trim().min(2, "Author is required.").max(200, "Author is too long."),
+  description: z
+    .string()
+    .trim()
+    .min(10, "Description must be at least 10 characters.")
+    .max(5000, "Description is too long."),
+  priceInr: z
+    .string()
+    .trim()
+    .min(1, "Price is required.")
+    .refine((v) => {
+      const n = parseFloat(v);
+      return !isNaN(n) && n >= 0;
+    }, "Price must be a non-negative number."),
+  status: bookStatusEnum,
+  published: z.boolean(),
+});

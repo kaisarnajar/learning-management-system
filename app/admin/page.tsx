@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ADMIN_DASHBOARD_LINK_HREFS, ADMIN_NAV_LINKS } from "@/lib/admin-nav";
 import { getPendingBlogApprovalCount } from "@/lib/blog-approval";
+import { getBookCount, getPendingBookOrderCount } from "@/lib/bookstore";
 import { getPendingContactInquiryCount } from "@/lib/contact-inquiries";
 import {
   getAwaitingEnrollmentFeeCount,
@@ -60,6 +61,8 @@ export default async function AdminDashboardPage() {
     studentCount,
     teacherCount,
     libraryCount,
+    bookCount,
+    pendingBookOrderCount,
     pendingFatwaCount,
     pendingContactCount,
     pendingBlogCount,
@@ -75,6 +78,8 @@ export default async function AdminDashboardPage() {
     getStudentCount(),
     prisma.teacher.count(),
     prisma.libraryItem.count(),
+    getBookCount(),
+    getPendingBookOrderCount(),
     prisma.fatwaQuestion.count({ where: { answer: null } }),
     getPendingContactInquiryCount(),
     getPendingBlogApprovalCount(),
@@ -97,6 +102,11 @@ export default async function AdminDashboardPage() {
     ["/admin/students", { count: studentCount }],
     ["/admin/teachers", { count: teacherCount }],
     ["/admin/library", { count: libraryCount }],
+    ["/admin/bookstore", { count: bookCount }],
+    [
+      "/admin/bookstore/orders",
+      { count: pendingBookOrderCount, highlight: pendingBookOrderCount > 0 },
+    ],
     ["/admin/fatwa", { count: pendingFatwaCount, highlight: pendingFatwaCount > 0 }],
     [
       "/admin/contact-inquiries",

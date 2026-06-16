@@ -2,12 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { CartCount } from "@/components/bookstore/CartCount";
 
 const links = [
   { href: "/profile", label: "Profile", exact: true },
   { href: "/profile/notifications", label: "Notifications" },
   { href: "/profile/courses", label: "My Courses" },
   { href: "/profile/payments", label: "Payments" },
+  { href: "/profile/cart", label: "Cart" },
   { href: "/profile/reviews", label: "My reviews" },
 ];
 
@@ -40,6 +42,9 @@ export function ProfileNav({ unreadCount = 0 }: { unreadCount?: number }) {
               >
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
+            )}
+            {link.href === "/profile/cart" && (
+              <CartCount />
             )}
           </Link>
         );

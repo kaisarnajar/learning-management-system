@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ApprovedBookOrdersTable } from "@/components/admin/ApprovedBookOrdersTable";
+import { CompletedBookOrdersTable } from "@/components/admin/CompletedBookOrdersTable";
 import { PendingBookOrdersTable } from "@/components/admin/PendingBookOrdersTable";
 import { Pagination } from "@/components/shared/Pagination";
-import { getPendingBookOrdersPaginated, getApprovedBookOrdersPaginated } from "@/lib/bookstore";
+import {
+  getPendingBookOrdersPaginated,
+  getApprovedBookOrdersPaginated,
+  getCompletedBookOrdersPaginated,
+} from "@/lib/bookstore";
 import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
 
@@ -22,6 +27,7 @@ export default async function AdminBookOrdersPage({
     refunded?: string;
     page?: string;
     approvedPage?: string;
+    completedPage?: string;
     q?: string;
   }>;
 }) {
@@ -37,16 +43,24 @@ export default async function AdminBookOrdersPage({
     pageParam: "approvedPage",
   });
 
-  const [pendingResult, approvedResult] = await Promise.all([
+  const { page: completedPage, pageSize: completedPageSize } = parsePaginationParams(params, {
+    pageSize: APPROVAL_PAGE_SIZE,
+    pageParam: "completedPage",
+  });
+
+  const [pendingResult, approvedResult, completedResult] = await Promise.all([
     getPendingBookOrdersPaginated(pendingPage, pendingPageSize, q),
     getApprovedBookOrdersPaginated(approvedPage, approvedPageSize, q),
+    getCompletedBookOrdersPaginated(completedPage, completedPageSize, q),
   ]);
 
   const { items: pendingOrders, totalCount: pendingCount } = pendingResult;
   const { items: approvedOrders, totalCount: approvedCount } = approvedResult;
+  const { items: completedOrders, totalCount: completedCount } = completedResult;
 
   const safePendingPage = clampPage(pendingPage, pendingCount, pendingPageSize);
   const safeApprovedPage = clampPage(approvedPage, approvedCount, approvedPageSize);
+  const safeCompletedPage = clampPage(completedPage, completedCount, completedPageSize);
 
   return (
     <div>
@@ -153,6 +167,40 @@ export default async function AdminBookOrdersPage({
           totalCount={approvedCount}
           pageSize={approvedPageSize}
           pageParam="approvedPage"
+        />
+      </section>
+
+      <section id="completed-orders" className="mt-10 scroll-mt-6">
+        <h2 className="font-serif text-lg font-semibold text-foreground">
+          Completed Orders
+          {completedCount > 0 && (
+            <span className="ml-2 inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-800">
+              {completedCount}
+            </span>
+          )}
+        </h2>
+        <p className="mt-1 text-sm text-muted">
+          Historical record of all shipped, refunded, and declined book orders.
+        </p>
+
+        <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
+          <CompletedBookOrdersTable
+            orders={completedOrders}
+            emptyMessage={
+              q
+                ? "No completed orders match your search."
+                : "No completed orders found."
+            }
+          />
+        </div>
+
+        <Pagination
+          basePath="/admin/bookstore/orders"
+          params={params}
+          page={safeCompletedPage}
+          totalCount={completedCount}
+          pageSize={completedPageSize}
+          pageParam="completedPage"
         />
       </section>
     </div>

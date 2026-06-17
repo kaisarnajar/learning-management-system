@@ -1,4 +1,4 @@
-import type { BookStatus } from "@prisma/client";
+import type { BookStatus, BookOrderStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 
 export { BookStatus };
@@ -178,6 +178,43 @@ export async function getApprovedBookOrdersPaginated(
         },
       },
       orderBy: { createdAt: "asc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.bookOrder.count({ where }),
+  ]);
+
+  return { items, totalCount };
+}
+
+export async function getCompletedBookOrdersPaginated(
+  page = 1,
+  pageSize = 20,
+  search?: string,
+): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
+  const where: Prisma.BookOrderWhereInput = {
+    status: { in: ["SHIPPED", "REFUNDED", "DECLINED"] },
+    ...(search
+      ? {
+          OR: [
+            { user: { name: { contains: search } } },
+            { user: { email: { contains: search } } },
+            { upiTransactionId: { contains: search } },
+          ],
+        }
+      : {}),
+  };
+
+  const [items, totalCount] = await Promise.all([
+    prisma.bookOrder.findMany({
+      where,
+      include: {
+        user: { select: { name: true, email: true } },
+        items: {
+          include: { book: { select: { id: true, title: true, author: true } } },
+        },
+      },
+      orderBy: { createdAt: "desc" },
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),

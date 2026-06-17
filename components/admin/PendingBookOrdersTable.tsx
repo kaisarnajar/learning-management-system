@@ -48,6 +48,7 @@ function OrderRow({ order }: { order: BookOrderWithItems }) {
   const [error, setError] = useState("");
 
   async function handleApprove() {
+    if (!window.confirm("Approve this book order and notify the student?")) return;
     setLoading("approve");
     setError("");
     const result = await approveBookOrder(order.id);

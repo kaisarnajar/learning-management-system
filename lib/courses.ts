@@ -2,7 +2,7 @@ import type { Course as PrismaCourse, CourseStatus, Teacher } from "@prisma/clie
 import { isCoursePubliclyVisible } from "@/lib/course-status";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
-import { andWhere, buildSearchOr } from "@/lib/text-search";
+import { buildSearchOr } from "@/lib/text-search";
 
 function allCoursesWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;

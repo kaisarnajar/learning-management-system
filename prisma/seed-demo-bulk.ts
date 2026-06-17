@@ -99,7 +99,7 @@ export async function seedDemoBulkExpenses(prisma: PrismaClient) {
     }
   }
 
-  for (const [monthIndex, month] of BULK_MONTHS.entries()) {
+  for (const month of BULK_MONTHS) {
     for (const [miscIndex, misc] of BULK_EXPENSE_MISC.entries()) {
       const id = `seed-demo-expense-misc-${month}-${miscIndex + 1}`;
       await prisma.expense.upsert({

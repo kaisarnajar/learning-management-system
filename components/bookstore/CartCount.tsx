@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCart } from "@/components/bookstore/CartProvider";
 
 export function CartCount() {

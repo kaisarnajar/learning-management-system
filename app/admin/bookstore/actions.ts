@@ -41,23 +41,28 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
 
   const priceInrPaise = Math.round(parseFloat(parsed.data.priceInr) * 100);
 
-  const book = await prisma.book.create({
-    data: {
-      title: parsed.data.title,
-      author: parsed.data.author,
-      description: parsed.data.description,
-      priceInrPaise,
-      status: parsed.data.status,
-      published: parsed.data.published,
-    },
-  });
-
-  if (imageFile && imageFile.size > 0) {
-    const imagePath = await saveBookImage(book.id, imageFile);
-    await prisma.book.update({
-      where: { id: book.id },
-      data: { imagePath },
+  try {
+    const book = await prisma.book.create({
+      data: {
+        title: parsed.data.title,
+        author: parsed.data.author,
+        description: parsed.data.description,
+        priceInrPaise,
+        status: parsed.data.status,
+        published: parsed.data.published,
+      },
     });
+
+    if (imageFile && imageFile.size > 0) {
+      const imagePath = await saveBookImage(book.id, imageFile);
+      await prisma.book.update({
+        where: { id: book.id },
+        data: { imagePath },
+      });
+    }
+  } catch (error) {
+    console.error("Database error creating book:", error);
+    return { error: "An unexpected error occurred while creating the book." };
   }
 
   revalidateBookstorePaths();
@@ -80,23 +85,28 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
 
   const priceInrPaise = Math.round(parseFloat(parsed.data.priceInr) * 100);
 
-  let imagePath: string | undefined;
-  if (imageFile && imageFile.size > 0) {
-    imagePath = await saveBookImage(bookId, imageFile);
-  }
+  try {
+    let imagePath: string | undefined;
+    if (imageFile && imageFile.size > 0) {
+      imagePath = await saveBookImage(bookId, imageFile);
+    }
 
-  await prisma.book.update({
-    where: { id: bookId },
-    data: {
-      title: parsed.data.title,
-      author: parsed.data.author,
-      description: parsed.data.description,
-      priceInrPaise,
-      status: parsed.data.status,
-      published: parsed.data.published,
-      ...(imagePath ? { imagePath } : {}),
-    },
-  });
+    await prisma.book.update({
+      where: { id: bookId },
+      data: {
+        title: parsed.data.title,
+        author: parsed.data.author,
+        description: parsed.data.description,
+        priceInrPaise,
+        status: parsed.data.status,
+        published: parsed.data.published,
+        ...(imagePath ? { imagePath } : {}),
+      },
+    });
+  } catch (error) {
+    console.error("Database error updating book:", error);
+    return { error: "An unexpected error occurred while updating the book." };
+  }
 
   revalidateBookstorePaths();
   redirect("/admin/bookstore?updated=1");
@@ -105,29 +115,34 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
 export async function deleteBook(bookId: string): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const book = await prisma.book.findUnique({ where: { id: bookId } });
-  if (!book) return { error: "Book not found." };
+  try {
+    const book = await prisma.book.findUnique({ where: { id: bookId } });
+    if (!book) return { error: "Book not found." };
 
-  // Check for any non-declined orders containing this book
-  const activeOrderItem = await prisma.bookOrderItem.findFirst({
-    where: {
-      bookId,
-      order: { status: { in: ["PENDING_VERIFICATION", "APPROVED"] } },
-    },
-  });
+    // Check for any non-declined orders containing this book
+    const activeOrderItem = await prisma.bookOrderItem.findFirst({
+      where: {
+        bookId,
+        order: { status: { in: ["PENDING_VERIFICATION", "APPROVED"] } },
+      },
+    });
 
-  if (activeOrderItem) {
-    return {
-      error:
-        "Cannot delete a book with existing active or pending orders. Set it to Out of Stock instead.",
-    };
+    if (activeOrderItem) {
+      return {
+        error:
+          "Cannot delete a book with existing active or pending orders. Set it to Out of Stock instead.",
+      };
+    }
+
+    if (book.imagePath) {
+      await deleteBookImage(book.imagePath);
+    }
+
+    await prisma.book.delete({ where: { id: bookId } });
+  } catch (error) {
+    console.error("Database error deleting book:", error);
+    return { error: "An unexpected error occurred while deleting the book." };
   }
-
-  if (book.imagePath) {
-    await deleteBookImage(book.imagePath);
-  }
-
-  await prisma.book.delete({ where: { id: bookId } });
 
   revalidateBookstorePaths();
   return {};

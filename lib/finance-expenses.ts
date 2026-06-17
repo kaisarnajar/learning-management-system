@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { isTeacherExpenseFilterRelevant } from "@/lib/expense-categories";
 import type { FinanceFilters } from "@/lib/finance-filters";
 import { financePaidAtWhere } from "@/lib/finance-filters";
@@ -32,19 +33,12 @@ function buildExpenseWhere(filters: FinanceFilters) {
   return andWhere(Object.keys(base).length > 0 ? base : undefined, expenseSearchWhere(filters.q));
 }
 
-async function fetchExpenses(filters: FinanceFilters) {
-  return prisma.expense.findMany({
-    where: buildExpenseWhere(filters),
-    include: expenseInclude,
-    orderBy: { paidAt: "desc" },
-  });
-}
 
 export async function getExpensesPaginated(
   filters: FinanceFilters,
   page: number,
   pageSize: number,
-): Promise<PaginatedResult<Awaited<ReturnType<typeof fetchExpenses>>[number]>> {
+): Promise<PaginatedResult<Prisma.ExpenseGetPayload<{ include: typeof expenseInclude }>>> {
   const where = buildExpenseWhere(filters);
   const totalCount = await prisma.expense.count({ where });
   const safePage = clampPage(page, totalCount, pageSize);

@@ -70,24 +70,29 @@ export async function createSiteAnnouncement(formData: FormData) {
     redirect(`${adminListPath("/new")}?error=${encodeURIComponent(featured.error)}`);
   }
 
-  const announcement = await prisma.siteAnnouncement.create({
-    data: {
-      title: parsed.data.title,
-      body: parsed.data.body,
-      eventDate: parsed.data.eventDate || null,
-      location: parsed.data.location || null,
-      showOnHomepage: featured.showOnHomepage,
-      published: parsed.data.published,
-      createdById: session.user.id,
-    },
-  });
-
-  if (parsed.data.published) {
-    await notifyAllStudentsOfSiteAnnouncement({
-      announcementId: announcement.id,
-      title: announcement.title,
-      body: announcement.body,
+  try {
+    const announcement = await prisma.siteAnnouncement.create({
+      data: {
+        title: parsed.data.title,
+        body: parsed.data.body,
+        eventDate: parsed.data.eventDate || null,
+        location: parsed.data.location || null,
+        showOnHomepage: featured.showOnHomepage,
+        published: parsed.data.published,
+        createdById: session.user.id,
+      },
     });
+
+    if (parsed.data.published) {
+      await notifyAllStudentsOfSiteAnnouncement({
+        announcementId: announcement.id,
+        title: announcement.title,
+        body: announcement.body,
+      });
+    }
+  } catch (error) {
+    console.error("Database error creating site announcement:", error);
+    redirect(`${adminListPath("/new")}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
   }
 
   revalidateSiteAnnouncementPaths();
@@ -102,7 +107,13 @@ export async function updateSiteAnnouncement(id: string, formData: FormData) {
     redirect(`${adminListPath(`/${id}/edit`)}?error=${encodeURIComponent(parsed.message)}`);
   }
 
-  const existing = await prisma.siteAnnouncement.findUnique({ where: { id } });
+  let existing;
+  try {
+    existing = await prisma.siteAnnouncement.findUnique({ where: { id } });
+  } catch (error) {
+    console.error("Database error fetching site announcement:", error);
+    redirect(`${adminListPath(`/${id}/edit`)}?error=${encodeURIComponent("Database error.")}`);
+  }
   if (!existing) {
     redirect(`${adminListPath()}?error=notfound`);
   }
@@ -117,24 +128,29 @@ export async function updateSiteAnnouncement(id: string, formData: FormData) {
     redirect(`${adminListPath(`/${id}/edit`)}?error=${encodeURIComponent(featured.error)}`);
   }
 
-  await prisma.siteAnnouncement.update({
-    where: { id },
-    data: {
-      title: parsed.data.title,
-      body: parsed.data.body,
-      eventDate: parsed.data.eventDate || null,
-      location: parsed.data.location || null,
-      showOnHomepage: featured.showOnHomepage,
-      published: parsed.data.published,
-    },
-  });
-
-  if (parsed.data.published && !existing.published) {
-    await notifyAllStudentsOfSiteAnnouncement({
-      announcementId: id,
-      title: parsed.data.title,
-      body: parsed.data.body,
+  try {
+    await prisma.siteAnnouncement.update({
+      where: { id },
+      data: {
+        title: parsed.data.title,
+        body: parsed.data.body,
+        eventDate: parsed.data.eventDate || null,
+        location: parsed.data.location || null,
+        showOnHomepage: featured.showOnHomepage,
+        published: parsed.data.published,
+      },
     });
+
+    if (parsed.data.published && !existing.published) {
+      await notifyAllStudentsOfSiteAnnouncement({
+        announcementId: id,
+        title: parsed.data.title,
+        body: parsed.data.body,
+      });
+    }
+  } catch (error) {
+    console.error("Database error updating site announcement:", error);
+    redirect(`${adminListPath(`/${id}/edit`)}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
   }
 
   revalidateSiteAnnouncementPaths();
@@ -157,13 +173,18 @@ export async function toggleSiteAnnouncementHomepage(id: string) {
 
   const showOnHomepage = !existing.showOnHomepage;
 
-  await prisma.siteAnnouncement.update({
-    where: { id },
-    data: { showOnHomepage },
-  });
+  try {
+    await prisma.siteAnnouncement.update({
+      where: { id },
+      data: { showOnHomepage },
+    });
 
-  if (showOnHomepage) {
-    await enforceHomepageAnnouncementLimit();
+    if (showOnHomepage) {
+      await enforceHomepageAnnouncementLimit();
+    }
+  } catch (error) {
+    console.error("Database error toggling site announcement homepage:", error);
+    redirect(`${adminListPath()}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
   }
 
   revalidateSiteAnnouncementPaths();
@@ -178,7 +199,12 @@ export async function deleteSiteAnnouncement(id: string) {
     redirect(`${adminListPath()}?error=notfound`);
   }
 
-  await prisma.siteAnnouncement.delete({ where: { id } });
+  try {
+    await prisma.siteAnnouncement.delete({ where: { id } });
+  } catch (error) {
+    console.error("Database error deleting site announcement:", error);
+    redirect(`${adminListPath()}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
+  }
 
   revalidateSiteAnnouncementPaths();
   redirect(`${adminListPath()}?deleted=1`);

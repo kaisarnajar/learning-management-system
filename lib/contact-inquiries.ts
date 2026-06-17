@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
+import { clampPage, paginationArgs } from "@/lib/pagination";
 import { andWhere, buildSearchOr } from "@/lib/text-search";
 
 export type ContactInquiryFilter = "pending" | "replied" | undefined;

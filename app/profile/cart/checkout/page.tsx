@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BookCheckoutClient } from "@/components/bookstore/BookCheckoutClient";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
-import { requireUser } from "@/lib/auth-actions";
 import { prisma } from "@/lib/prisma";
-import { getPaymentSettings } from "@/lib/payment-settings";
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
@@ -20,7 +18,6 @@ export default async function CartCheckoutPage({
 }: {
   searchParams: Promise<{ books?: string }>;
 }) {
-  const session = await requireUser();
   const params = await searchParams;
 
   let selectedItems: { bookId: string; quantity: number }[] = [];
@@ -48,7 +45,6 @@ export default async function CartCheckoutPage({
     where: { id: { in: bookIds }, published: true, status: "AVAILABLE" },
   });
 
-  const paymentSettings = await getPaymentSettings();
 
   const resolvedItems = selectedItems
     .map((selected) => {

@@ -73,14 +73,19 @@ export async function createCourse(formData: FormData) {
     redirect(`/admin/courses/new?saveError=${encodeURIComponent(featured.error)}`);
   }
 
-  const id = await uniqueSlug(title, async (slug) => {
-    const existing = await prisma.course.findUnique({ where: { id: slug } });
-    return Boolean(existing);
-  });
+  try {
+    const id = await uniqueSlug(title, async (slug) => {
+      const existing = await prisma.course.findUnique({ where: { id: slug } });
+      return Boolean(existing);
+    });
 
-  await prisma.course.create({
-    data: { id, title, ...courseData, ...featured },
-  });
+    await prisma.course.create({
+      data: { id, title, ...courseData, ...featured },
+    });
+  } catch (error) {
+    console.error("Database error creating course:", error);
+    redirect("/admin/courses/new?saveError=" + encodeURIComponent("An unexpected database error occurred."));
+  }
 
   revalidatePath("/");
   revalidatePath("/courses");
@@ -96,7 +101,13 @@ export async function updateCourse(id: string, formData: FormData) {
     throw new Error("Invalid course data");
   }
 
-  const existing = await prisma.course.findUnique({ where: { id } });
+  let existing;
+  try {
+    existing = await prisma.course.findUnique({ where: { id } });
+  } catch (error) {
+    console.error("Database error fetching course:", error);
+    redirect(`/admin/courses/${id}/edit?saveError=${encodeURIComponent("Database error.")}`);
+  }
   if (!existing) {
     throw new Error("Course not found");
   }
@@ -114,12 +125,17 @@ export async function updateCourse(id: string, formData: FormData) {
     redirect(`/admin/courses/${id}/edit?saveError=${encodeURIComponent(featured.error)}`);
   }
 
-  await prisma.course.update({
-    where: { id },
-    data: { title, ...courseData, ...featured },
-  });
+  try {
+    await prisma.course.update({
+      where: { id },
+      data: { title, ...courseData, ...featured },
+    });
 
-  await syncEnrollmentsWithCourseStatus(id, courseData.status);
+    await syncEnrollmentsWithCourseStatus(id, courseData.status);
+  } catch (error) {
+    console.error("Database error updating course:", error);
+    redirect(`/admin/courses/${id}/edit?saveError=${encodeURIComponent("An unexpected database error occurred.")}`);
+  }
 
   revalidatePath("/");
   revalidatePath("/courses");
@@ -143,19 +159,28 @@ export async function deleteCourse(id: string) {
     redirect("/admin/courses?deleteError=Course%20not%20found.");
   }
 
-  const enrollmentCount = await prisma.enrollment.count({
-    where: { courseId: id },
-  });
+  try {
+    const enrollmentCount = await prisma.enrollment.count({
+      where: { courseId: id },
+    });
 
-  if (enrollmentCount > 0) {
-    redirect(
-      `/admin/courses?deleteError=${encodeURIComponent(
-        `This course can't be deleted because ${enrollmentCount} student${enrollmentCount === 1 ? "" : "s"} ${enrollmentCount === 1 ? "is" : "are"} enrolled.`,
-      )}`,
-    );
+    if (enrollmentCount > 0) {
+      redirect(
+        `/admin/courses?deleteError=${encodeURIComponent(
+          `This course can't be deleted because ${enrollmentCount} student${enrollmentCount === 1 ? "" : "s"} ${enrollmentCount === 1 ? "is" : "are"} enrolled.`,
+        )}`,
+      );
+    }
+
+    await prisma.course.delete({ where: { id } });
+  } catch (error) {
+    // If the error is a NEXT_REDIRECT, rethrow it so Next.js handles the redirect.
+    if (error && typeof error === "object" && "digest" in error && String(error.digest).startsWith("NEXT_REDIRECT")) {
+      throw error;
+    }
+    console.error("Database error deleting course:", error);
+    redirect("/admin/courses?deleteError=" + encodeURIComponent("An unexpected database error occurred."));
   }
-
-  await prisma.course.delete({ where: { id } });
 
   revalidatePath("/");
   revalidatePath("/courses");

@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import type { FinanceFilters } from "@/lib/finance-filters";
 import { financePaidAtWhere } from "@/lib/finance-filters";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
@@ -34,19 +35,12 @@ const incomeInclude = {
   course: { select: { id: true, title: true } },
 } as const;
 
-async function fetchIncomeRecords(filters: FinanceFilters) {
-  return prisma.paymentRecord.findMany({
-    where: buildIncomeWhere(filters),
-    include: incomeInclude,
-    orderBy: { paidAt: "desc" },
-  });
-}
 
 export async function getIncomeRecordsPaginated(
   filters: FinanceFilters,
   page: number,
   pageSize: number,
-): Promise<PaginatedResult<Awaited<ReturnType<typeof fetchIncomeRecords>>[number]>> {
+): Promise<PaginatedResult<Prisma.PaymentRecordGetPayload<{ include: typeof incomeInclude }>>> {
   const where = buildIncomeWhere(filters);
   const totalCount = await prisma.paymentRecord.count({ where });
   const safePage = clampPage(page, totalCount, pageSize);

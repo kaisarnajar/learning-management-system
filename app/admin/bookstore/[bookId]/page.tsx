@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
 import { StatusBadge } from "@/components/admin/StatusBadge";
+import { DeleteForm } from "@/components/admin/DeleteForm";
 import { getBookById } from "@/lib/bookstore";
+import { deleteBookFromProfile } from "@/app/admin/bookstore/actions";
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
@@ -11,13 +13,18 @@ function formatPrice(paise: number): string {
 
 export default async function AdminBookDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ bookId: string }>;
+  searchParams: Promise<{ error?: string }>;
 }) {
   const { bookId } = await params;
+  const query = await searchParams;
   const book = await getBookById(bookId);
 
   if (!book) notFound();
+
+  const deleteAction = deleteBookFromProfile.bind(null, bookId);
 
   return (
     <div>
@@ -39,6 +46,12 @@ export default async function AdminBookDetailPage({
           Edit book
         </Link>
       </div>
+
+      {query.error && (
+        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+          {decodeURIComponent(query.error)}
+        </p>
+      )}
 
       <div className="mt-6 flex flex-col gap-6 sm:flex-row sm:items-start">
         {/* Cover image */}
@@ -95,6 +108,8 @@ export default async function AdminBookDetailPage({
           </div>
         </dl>
       </div>
+
+      <DeleteForm action={deleteAction} label="Delete book" />
     </div>
   );
 }

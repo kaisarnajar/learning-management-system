@@ -150,3 +150,11 @@ export async function deleteBook(bookId: string): Promise<{ error?: string }> {
   revalidateBookstorePaths();
   return {};
 }
+
+export async function deleteBookFromProfile(bookId: string) {
+  const result = await deleteBook(bookId);
+  if (result.error) {
+    redirect(`/admin/bookstore/${bookId}?error=${encodeURIComponent(result.error)}`);
+  }
+  redirect("/admin/bookstore?deleted=1");
+}

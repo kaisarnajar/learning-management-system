@@ -16,6 +16,10 @@ const links: AdminSidebarLink[] = [
 export function AdminSidebar() {
   const pathname = usePathname();
 
+  const activePath = links
+    .filter((l) => pathname === l.href || pathname.startsWith(`${l.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
   return (
     <aside className="border-b border-border bg-surface md:w-56 md:border-b-0 md:border-r">
       <div className="p-4">
@@ -24,7 +28,7 @@ export function AdminSidebar() {
       </div>
       <nav className="flex flex-col gap-0.5 px-2 pb-4 md:px-3" aria-label="Admin navigation">
         {links.map((link) => {
-          const active = link.exact ? pathname === link.href : pathname.startsWith(link.href);
+          const active = link.exact ? pathname === link.href : link.href === activePath;
           return (
             <Link
               key={link.href}

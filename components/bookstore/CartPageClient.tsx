@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
 import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";
 
@@ -94,6 +94,16 @@ export function CartPageClient({
 }) {
   const { items, totalAmount, totalCount, updateQuantity, removeItem } = useCart();
   const [selected, setSelected] = useState<Set<string>>(new Set(items.map((i) => i.bookId)));
+  const [showSuccess, setShowSuccess] = useState(submitted);
+
+  useEffect(() => {
+    if (submitted) {
+      // Remove ?submitted=1 from the URL without triggering a page reload
+      const url = new URL(window.location.href);
+      url.searchParams.delete("submitted");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, [submitted]);
 
   const selectedItems = items.filter((i) => selected.has(i.bookId));
   const selectedTotal = selectedItems.reduce(
@@ -127,10 +137,20 @@ export function CartPageClient({
         </p>
       </div>
 
-      {submitted && (
-        <div className="rounded-lg border border-emerald-200 border-l-4 border-l-emerald-500 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
+      {showSuccess && (
+        <div className="relative rounded-lg border border-emerald-200 border-l-4 border-l-emerald-500 bg-emerald-50 px-4 py-4 pr-10 text-sm text-emerald-900">
           <p className="font-semibold">Order submitted successfully!</p>
           <p className="mt-1">The academy will verify your payment and dispatch your books shortly.</p>
+          <button 
+            type="button" 
+            onClick={() => setShowSuccess(false)}
+            className="absolute top-4 right-4 text-emerald-600 hover:text-emerald-800 transition-colors"
+            aria-label="Dismiss message"
+          >
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
       )}
 

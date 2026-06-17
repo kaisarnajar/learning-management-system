@@ -76,7 +76,7 @@ export default async function AdminBookstorePage({
                   <th className="px-4 py-3 font-medium">Price</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Published</th>
-                  <th className="px-4 py-3 font-medium">Actions</th>
+                  <th className="px-4 py-3 font-medium" />
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -117,7 +117,7 @@ export default async function AdminBookstorePage({
                       </span>
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-wrap items-center justify-end gap-3">
                         <Link
                           href={`/admin/bookstore/${book.id}/edit`}
                           className="text-sm font-medium text-primary hover:underline"

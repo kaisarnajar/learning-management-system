@@ -107,14 +107,14 @@ function OrderRow({ order }: { order: BookOrderWithItems }) {
           </div>
         )}
       </td>
-      <td className="px-4 py-4 align-top">
+      <td className="whitespace-nowrap px-4 py-4 align-top">
         {error && <p className="mb-2 text-xs text-red-600">{error}</p>}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex items-center justify-end gap-2">
           <button
             type="button"
             onClick={handleApprove}
             disabled={loading !== null}
-            className="rounded-full bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700 disabled:opacity-60"
+            className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60"
           >
             {loading === "approve" ? "Approving…" : "Approve"}
           </button>
@@ -122,7 +122,7 @@ function OrderRow({ order }: { order: BookOrderWithItems }) {
             type="button"
             onClick={handleDecline}
             disabled={loading !== null}
-            className="rounded-full border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-60"
+            className="rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-100 disabled:opacity-60"
           >
             {loading === "decline" ? "Declining…" : "Decline"}
           </button>
@@ -153,7 +153,7 @@ export function PendingBookOrdersTable({
           <th className="px-4 py-3 font-medium">Books</th>
           <th className="px-4 py-3 font-medium">Total</th>
           <th className="px-4 py-3 font-medium">Payment</th>
-          <th className="px-4 py-3 font-medium">Actions</th>
+          <th className="px-4 py-3 font-medium" />
         </tr>
       </thead>
       <tbody>

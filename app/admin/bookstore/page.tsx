@@ -100,6 +100,12 @@ export default async function AdminBookstorePage({
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <Link
+                        href={`/admin/bookstore/${book.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        View
+                      </Link>
+                      <Link
                         href={`/admin/bookstore/${book.id}/edit`}
                         className="font-medium text-primary hover:underline"
                       >

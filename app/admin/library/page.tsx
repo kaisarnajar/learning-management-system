@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { DeleteLibraryButton } from "@/components/admin/DeleteLibraryButton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
@@ -63,8 +64,7 @@ export default async function AdminLibraryPage({
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-border bg-background/50 text-muted">
               <tr>
-                <th className="px-4 py-3 font-medium">Title</th>
-                <th className="px-4 py-3 font-medium">Author · Topic</th>
+                <th className="px-4 py-3 font-medium">Item</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Homepage</th>
                 <th className="px-4 py-3 font-medium" />
@@ -73,9 +73,30 @@ export default async function AdminLibraryPage({
             <tbody className="divide-y divide-border">
               {items.map((item) => (
                 <tr key={item.id}>
-                  <td className="px-4 py-3 font-medium text-foreground">{item.title}</td>
-                  <td className="px-4 py-3 text-muted">
-                    {item.author} · {item.topic}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-9 shrink-0 overflow-hidden rounded border border-border">
+                        {item.imagePath ? (
+                          <Image
+                            src={item.imagePath}
+                            alt={item.title}
+                            width={36}
+                            height={48}
+                            className="h-full w-full object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center bg-accent-muted/30">
+                            <svg className="h-4 w-4 text-muted/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5} aria-hidden>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-medium text-foreground">{item.title}</p>
+                        <p className="text-xs text-muted">{item.author} · {item.topic}</p>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge published={item.published} />

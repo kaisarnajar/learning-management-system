@@ -31,7 +31,6 @@ export function BookCheckoutClient({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
   const [transactionId, setTransactionId] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
-  const [notes, setNotes] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { clearCart } = useCart();
@@ -53,7 +52,6 @@ export function BookCheckoutClient({
       formData.append("items", JSON.stringify(items.map((i) => ({ bookId: i.bookId, quantity: i.quantity }))));
       formData.append("paymentMethod", paymentMethod);
       formData.append("upiTransactionId", transactionId.trim());
-      formData.append("notes", notes.trim());
       if (screenshot && screenshot.size > 0) {
         formData.append("screenshot", screenshot);
       }
@@ -89,8 +87,8 @@ export function BookCheckoutClient({
         {/* Left — Order Summary */}
         <div className="space-y-6">
           <section>
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Order Summary</h3>
-            <div className="mt-3 rounded-xl border border-border bg-surface divide-y divide-border">
+            <h3 className="text-sm font-bold uppercase tracking-wide text-primary">Order Summary</h3>
+            <div className="mt-6 rounded-xl border border-border bg-background divide-y divide-border">
               {items.map((item) => (
                 <div key={item.bookId} className="flex items-center gap-4 p-4">
                   <div className="h-14 w-10 shrink-0 overflow-hidden rounded border border-border">
@@ -121,17 +119,17 @@ export function BookCheckoutClient({
         </div>
 
         {/* Right — Payment Confirmation Form */}
-        <section className="rounded-xl border border-border bg-surface p-5 h-fit">
-          <h3 className="font-serif text-base font-semibold text-foreground">Submit payment</h3>
-          <p className="mt-1 text-xs text-muted">
+        <div>
+          <h3 className="text-sm font-bold uppercase tracking-wide text-primary">Submit payment</h3>
+          <p className="mt-2 text-sm text-muted">
             After paying by UPI or bank transfer, fill in the details below to submit your order for approval.
           </p>
 
-          <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+          <form onSubmit={handleSubmit} className="mt-6 space-y-5">
             {/* Payment Method */}
             <fieldset>
-              <legend className="text-sm font-medium text-foreground">Payment method</legend>
-              <div className="mt-2 flex flex-wrap gap-4">
+              <legend className="text-sm font-medium text-foreground">How did you pay?</legend>
+              <div className="mt-3 flex flex-wrap gap-4">
                 <label className="flex cursor-pointer items-center gap-2 text-sm">
                   <input
                     type="radio"
@@ -152,7 +150,7 @@ export function BookCheckoutClient({
                     onChange={() => setPaymentMethod("bank")}
                     className="text-primary"
                   />
-                  Bank Transfer
+                  Bank transfer
                 </label>
               </div>
             </fieldset>
@@ -160,7 +158,7 @@ export function BookCheckoutClient({
             {/* Transaction ID */}
             <div>
               <label htmlFor="checkout-utr" className="block text-sm font-medium text-foreground">
-                Transaction / UTR reference <span className="text-red-600">*</span>
+                Transaction / UTR reference
               </label>
               <input
                 id="checkout-utr"
@@ -169,8 +167,7 @@ export function BookCheckoutClient({
                 autoComplete="off"
                 value={transactionId}
                 onChange={(e) => setTransactionId(e.target.value)}
-                placeholder="Enter UPI/bank transaction reference"
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
 
@@ -184,22 +181,7 @@ export function BookCheckoutClient({
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 onChange={(e) => setScreenshot(e.target.files?.[0] ?? null)}
-                className="mt-1 w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-white hover:file:bg-primary-light"
-              />
-            </div>
-
-            {/* Notes */}
-            <div>
-              <label htmlFor="checkout-notes" className="block text-sm font-medium text-foreground">
-                Notes <span className="font-normal text-muted">(optional)</span>
-              </label>
-              <textarea
-                id="checkout-notes"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                rows={2}
-                placeholder="Any special instructions for delivery, etc."
-                className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                className="mt-2 w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white"
               />
             </div>
 
@@ -217,7 +199,7 @@ export function BookCheckoutClient({
               {loading ? "Submitting…" : "Submit Order for Approval"}
             </button>
           </form>
-        </section>
+        </div>
       </div>
     </div>
   );

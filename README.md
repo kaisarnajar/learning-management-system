@@ -1,4 +1,4 @@
-# Darse Quran Academy
+# Darse Quran Academy.
 
 Online Islamic learning platform built with **Next.js 16**, **React 19**, **Prisma 6**, **Tailwind CSS 4**, **Auth.js (next-auth v5)**, and **TypeScript 5**.
 

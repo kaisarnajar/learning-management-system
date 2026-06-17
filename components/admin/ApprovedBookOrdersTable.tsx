@@ -115,7 +115,7 @@ function ApprovedOrderRow({ order }: { order: BookOrderWithItems }) {
             type="button"
             onClick={handleShipped}
             disabled={loading !== null}
-            className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-60 transition-colors"
+            className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60 transition-colors"
           >
             {loading === "shipped" ? "Updating…" : "Mark as Shipped"}
           </button>

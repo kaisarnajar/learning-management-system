@@ -37,7 +37,7 @@ export function ProfileNav({ unreadCount = 0 }: { unreadCount?: number }) {
             {link.href === "/profile/notifications" && unreadCount > 0 && (
               <span
                 className={`ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-xs font-semibold ${
-                  active ? "bg-white/20 text-white" : "bg-primary text-white"
+                  active ? "bg-surface/20 text-white" : "bg-primary text-white"
                 }`}
               >
                 {unreadCount > 99 ? "99+" : unreadCount}

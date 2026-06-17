@@ -29,10 +29,10 @@ export default async function EditTeacherPage({
       <h1 className="mt-4 font-serif text-2xl font-bold text-primary">Edit teacher</h1>
 
       {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Changes saved.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
       )}
       {query.created === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Teacher created.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Teacher created.</p>
       )}
 
       <div className="mt-8">

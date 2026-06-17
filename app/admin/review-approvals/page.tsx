@@ -160,25 +160,25 @@ export default async function AdminReviewApprovalsPage({
       </p>
 
       {params.approved === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Review updated.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Review updated.</p>
       )}
       {params.rejected === "1" && (
-        <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
           Review rejected. The student can edit and resubmit.
         </p>
       )}
       {params.unfeatured === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Review removed from the homepage.
         </p>
       )}
       {params.featured === "1" && (
-        <p className="mt-4 rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <p className="mt-4 rounded-md bg-success-bg px-4 py-3 text-sm text-success-text">
           Review added to the homepage.
         </p>
       )}
       {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Changes saved.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
       )}
 
       <div className="mt-6">
@@ -195,7 +195,7 @@ export default async function AdminReviewApprovalsPage({
         <h2 className="font-serif text-lg font-semibold text-foreground">
           Pending approval
           {pendingTotalCount > 0 && (
-            <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
+            <span className="ml-2 inline-flex rounded-full bg-warning-bg px-2.5 py-0.5 text-xs font-semibold text-warning-text">
               {pendingTotalCount}
             </span>
           )}

@@ -30,7 +30,7 @@ export default async function PayMonthlyFeePage({
   if (!(await isUpiConfigured())) {
     return (
       <div>
-        <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
           Online payments are not configured yet. Please contact the academy.
         </p>
       </div>

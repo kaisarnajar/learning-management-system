@@ -26,6 +26,7 @@ export type BookOrderWithItems = {
   paymentMethod: string | null;
   upiTransactionId: string | null;
   paymentScreenshotPath: string | null;
+  deliveryAddress: string | null;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -54,13 +55,13 @@ export function bookStatusLabel(status: BookStatus): string {
 export function bookStatusClass(status: BookStatus): string {
   switch (status) {
     case "AVAILABLE":
-      return "bg-emerald-100 text-emerald-800";
+      return "bg-success-bg text-success-text";
     case "OUT_OF_STOCK":
-      return "bg-red-100 text-red-800";
+      return "bg-red-100 text-destructive-text";
     case "COMING_SOON":
-      return "bg-amber-100 text-amber-900";
+      return "bg-warning-bg text-warning-text";
     default:
-      return "bg-gray-100 text-gray-700";
+      return "bg-surface-muted-hover text-muted";
   }
 }
 
@@ -84,17 +85,17 @@ export function bookOrderStatusLabel(status: string): string {
 export function bookOrderStatusClass(status: string): string {
   switch (status) {
     case "PENDING_VERIFICATION":
-      return "bg-amber-100 text-amber-900";
+      return "bg-warning-bg text-warning-text";
     case "APPROVED":
-      return "bg-emerald-100 text-emerald-800";
+      return "bg-success-bg text-success-text";
     case "DECLINED":
-      return "bg-red-100 text-red-800";
+      return "bg-red-100 text-destructive-text";
     case "SHIPPED":
-      return "bg-blue-100 text-blue-800";
+      return "bg-blue-100 text-info-text";
     case "REFUNDED":
-      return "bg-gray-200 text-gray-800";
+      return "bg-surface-muted-hover text-muted";
     default:
-      return "bg-gray-100 text-gray-700";
+      return "bg-surface-muted-hover text-muted";
   }
 }
 

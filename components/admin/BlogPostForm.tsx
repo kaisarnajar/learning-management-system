@@ -70,13 +70,13 @@ export function BlogPostForm({
   return (
     <form action={action} encType="multipart/form-data" className="mx-auto max-w-2xl space-y-5">
       {error && (
-        <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p className="rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {error}
         </p>
       )}
 
       {contentReadOnly && (
-        <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
           This post was submitted by a teacher for approval. Title, summary, content, and images cannot
           be changed here. You can update publishing and homepage settings below, or use Approve / Reject on
           Blog approvals.
@@ -216,7 +216,7 @@ export function BlogPostForm({
       )}
 
       {isTeacher ? (
-        <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
           Your post will be sent to the admin for review. Once approved, it will appear on the public
           blog page.
         </p>

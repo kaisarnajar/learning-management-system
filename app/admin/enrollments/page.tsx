@@ -141,7 +141,7 @@ export default async function AdminEnrollmentsPage({
         <h2 className="font-serif text-lg font-semibold text-foreground">
           Free enrollment requests
           {freeTotalCount > 0 && (
-            <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
+            <span className="ml-2 inline-flex rounded-full bg-warning-bg px-2.5 py-0.5 text-xs font-semibold text-warning-text">
               {freeTotalCount}
             </span>
           )}
@@ -178,7 +178,7 @@ export default async function AdminEnrollmentsPage({
             <h2 className="font-serif text-lg font-semibold text-foreground">
               Paid courses — awaiting enrollment fee
               {paidTotalCount > 0 && (
-                <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
+                <span className="ml-2 inline-flex rounded-full bg-warning-bg px-2.5 py-0.5 text-xs font-semibold text-warning-text">
                   {paidTotalCount}
                 </span>
               )}

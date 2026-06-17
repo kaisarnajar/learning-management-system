@@ -42,16 +42,16 @@ export default async function AdminDailyInspirationPage({
       </div>
 
       {params.posted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Entry created.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Entry created.</p>
       )}
       {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Entry updated.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Entry updated.</p>
       )}
       {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Entry deleted.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Entry deleted.</p>
       )}
       {params.error === "notfound" && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">Entry not found.</p>
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Entry not found.</p>
       )}
 
       <div className="mt-6">
@@ -97,15 +97,15 @@ export default async function AdminDailyInspirationPage({
                     </td>
                     <td className="px-4 py-3">
                       {!item.published ? (
-                        <span className="rounded-full bg-stone-200 px-2.5 py-0.5 text-xs font-medium text-stone-800">
+                        <span className="rounded-full bg-surface-muted-hover px-2.5 py-0.5 text-xs font-medium text-muted">
                           Draft
                         </span>
                       ) : onHomepage ? (
-                        <span className="rounded-full bg-violet-100 px-2.5 py-0.5 text-xs font-medium text-violet-900">
+                        <span className="rounded-full bg-info-bg px-2.5 py-0.5 text-xs font-medium text-info-text">
                           On homepage
                         </span>
                       ) : (
-                        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-900">
+                        <span className="rounded-full bg-success-bg px-2.5 py-0.5 text-xs font-medium text-success-text">
                           Published
                         </span>
                       )}

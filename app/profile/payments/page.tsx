@@ -39,12 +39,12 @@ export default async function ProfilePaymentsPage({
       </p>
 
       {params.submitted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Payment submitted. The academy will verify it shortly.
         </p>
       )}
       {params.declined === "1" && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-900">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-red-900">
           Your previous payment was declined. You can submit again from My Courses.
         </p>
       )}

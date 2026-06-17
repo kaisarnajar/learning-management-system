@@ -51,18 +51,18 @@ export default async function AdminCourseAnnouncementsPage({
       </div>
 
       {query.posted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Announcement posted successfully.
         </p>
       )}
       {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Announcement updated.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Announcement updated.</p>
       )}
       {query.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Announcement deleted.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Announcement deleted.</p>
       )}
       {query.error === "notfound" && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
           That announcement could not be found.
         </p>
       )}

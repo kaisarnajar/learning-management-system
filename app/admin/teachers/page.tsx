@@ -36,15 +36,15 @@ export default async function AdminTeachersPage({
       </div>
 
       {params.created === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Teacher created.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Teacher created.</p>
       )}
 
       {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Teacher deleted.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Teacher deleted.</p>
       )}
 
       {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Changes saved.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
       )}
 
       <div className="mt-6">

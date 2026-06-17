@@ -61,7 +61,7 @@ export async function PaymentDetailsPanel({
               UPI
             </h2>
             <div className="mx-auto mt-4 flex flex-1 flex-col lg:mx-0">
-              <div className="flex justify-center rounded-xl border border-border bg-white p-4 lg:justify-start">
+              <div className="flex justify-center rounded-xl border border-border bg-surface p-4 lg:justify-start">
                 <Image
                   src={qrDataUrl}
                   alt="UPI QR code — scan with Google Pay, PhonePe, or Paytm"

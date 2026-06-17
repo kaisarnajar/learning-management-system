@@ -44,7 +44,7 @@ export function RejectBlogPostButton({ postId }: { postId: string }) {
       type="button"
       onClick={handleReject}
       disabled={pending}
-      className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-50 disabled:opacity-60"
+      className="rounded-md border border-red-300 px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60"
     >
       {pending ? "…" : "Reject"}
     </button>

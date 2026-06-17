@@ -32,13 +32,13 @@ export default async function EditLibraryPage({
       <h1 className="mt-4 font-serif text-2xl font-bold text-primary">Edit library item</h1>
 
       {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Changes saved.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
       )}
       {query.created === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Item created.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Item created.</p>
       )}
       {query.saveError && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">{query.saveError}</p>
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{query.saveError}</p>
       )}
 
       <div className="mt-8">

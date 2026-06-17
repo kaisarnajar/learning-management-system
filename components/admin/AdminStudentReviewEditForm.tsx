@@ -101,7 +101,7 @@ export function AdminStudentReviewEditForm({
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <p className="rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <p className="rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
         Review content was submitted by the student and cannot be changed here. You can manage homepage
         visibility below.
       </p>
@@ -186,7 +186,7 @@ export function AdminStudentReviewEditForm({
             type="button"
             onClick={handleReject}
             disabled={pending}
-            className="min-h-11 rounded-md border border-red-300 px-6 py-2.5 text-sm font-semibold text-red-800 hover:bg-red-50 disabled:opacity-60"
+            className="min-h-11 rounded-md border border-red-300 px-6 py-2.5 text-sm font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60"
           >
             Reject
           </button>

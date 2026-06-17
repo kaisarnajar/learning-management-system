@@ -63,26 +63,26 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
       </p>
 
       {registered && (
-        <p className="mt-4 rounded-xl bg-violet-50 px-4 py-3 text-center text-sm text-violet-800">
+        <p className="mt-4 rounded-xl bg-info-bg px-4 py-3 text-center text-sm text-info-text">
           Account created. Please sign in.
         </p>
       )}
 
       {passwordReset && (
-        <p className="mt-4 rounded-xl bg-emerald-50 px-4 py-3 text-center text-sm text-emerald-900">
+        <p className="mt-4 rounded-xl bg-success-bg px-4 py-3 text-center text-sm text-success-text">
           Your password was reset. Please sign in with your new password.
         </p>
       )}
 
       {teacherProfileError && (
-        <p className="mt-4 rounded-xl bg-amber-50 px-4 py-3 text-center text-sm text-amber-900">
+        <p className="mt-4 rounded-xl bg-warning-bg px-4 py-3 text-center text-sm text-warning-text">
           Your account is not linked as a teacher yet. Register first if needed, then ask the academy admin to
           add your registered email to the teacher list.
         </p>
       )}
 
       {error && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-center text-sm text-red-800" role="alert">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-center text-sm text-destructive-text" role="alert">
           {error}
         </p>
       )}

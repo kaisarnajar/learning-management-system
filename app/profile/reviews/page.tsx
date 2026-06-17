@@ -63,34 +63,34 @@ export default async function ProfileReviewsPage({
       </p>
 
       {params.submitted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Thank you! Your review was submitted for admin approval.
         </p>
       )}
       {params.resubmitted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Your review was resubmitted for approval.
         </p>
       )}
       {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Review deleted.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Review deleted.</p>
       )}
       {params.error === "locked" && (
-        <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
           This review can no longer be edited.
         </p>
       )}
       {params.error === "notfound" && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">Review not found.</p>
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Review not found.</p>
       )}
       {params.error && !["locked", "notfound"].includes(params.error) && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
           {decodeURIComponent(params.error)}
         </p>
       )}
 
       {params.edit && !editingReview && params.error !== "locked" && params.error !== "notfound" && (
-        <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
           This review cannot be edited. Only pending or rejected reviews can be changed.
         </p>
       )}

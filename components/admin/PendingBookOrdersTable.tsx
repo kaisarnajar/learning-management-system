@@ -28,7 +28,7 @@ function ScreenshotPreview({ path }: { path: string }) {
           aria-modal
           aria-label="Payment screenshot"
         >
-          <div className="relative max-h-[90vh] max-w-lg overflow-auto rounded-xl bg-white p-2 shadow-2xl">
+          <div className="relative max-h-[90vh] max-w-lg overflow-auto rounded-xl bg-surface p-2 shadow-2xl">
             <Image
               src={path}
               alt="Payment screenshot"
@@ -130,7 +130,7 @@ function OrderRow({ order }: { order: BookOrderWithItems }) {
             type="button"
             onClick={handleDecline}
             disabled={loading !== null}
-            className="rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-800 hover:bg-red-100 disabled:opacity-60"
+            className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-red-100 disabled:opacity-60"
           >
             {loading === "decline" ? "Declining…" : "Decline"}
           </button>

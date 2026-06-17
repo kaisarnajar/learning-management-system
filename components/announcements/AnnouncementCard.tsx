@@ -34,7 +34,7 @@ export function AnnouncementCard({
       <div className="flex flex-wrap items-center gap-2">
         <AnnouncementCategoryBadge category={category} />
         {audienceLabel && (
-          <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-medium text-amber-900">
+          <span className="rounded-full bg-warning-bg px-2.5 py-0.5 text-xs font-medium text-warning-text">
             {audienceLabel}
           </span>
         )}

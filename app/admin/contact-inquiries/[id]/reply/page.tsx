@@ -34,7 +34,7 @@ export default async function AdminContactInquiryReplyPage({
       </p>
 
       {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Reply saved.
           {query.email === "failed"
             ? " The notification email could not be sent — check SMTP settings in your environment."
@@ -45,7 +45,7 @@ export default async function AdminContactInquiryReplyPage({
       )}
 
       {query.error && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {decodeURIComponent(query.error)}
         </p>
       )}

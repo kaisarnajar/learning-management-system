@@ -39,8 +39,8 @@ export function ProfileSummaryCard({
           <span
             className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
               profileComplete
-                ? "bg-emerald-100 text-emerald-900"
-                : "bg-amber-100 text-amber-900"
+                ? "bg-success-bg text-success-text"
+                : "bg-warning-bg text-warning-text"
             }`}
           >
             {profileComplete ? "Complete" : "Incomplete"}

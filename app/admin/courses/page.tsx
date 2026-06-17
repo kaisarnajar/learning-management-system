@@ -39,14 +39,14 @@ export default async function AdminCoursesPage({
       </div>
 
       {params.created === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Course created.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Course created.</p>
       )}
 
       {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Course deleted.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Course deleted.</p>
       )}
       {params.deleteError && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
           {decodeURIComponent(params.deleteError)}
         </p>
       )}

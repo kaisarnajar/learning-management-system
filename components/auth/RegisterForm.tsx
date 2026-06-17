@@ -69,7 +69,7 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
       </p>
 
       {error && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-center text-sm text-red-800" role="alert">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-center text-sm text-destructive-text" role="alert">
           {error}
         </p>
       )}

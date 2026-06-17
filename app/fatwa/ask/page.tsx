@@ -33,7 +33,7 @@ export default async function FatwaAskPage({
       </p>
 
       {submitted && (
-        <p className="mx-auto mt-6 max-w-xl rounded-lg bg-violet-50 px-4 py-3 text-center text-sm text-violet-900">
+        <p className="mx-auto mt-6 max-w-xl rounded-lg bg-info-bg px-4 py-3 text-center text-sm text-info-text">
           Thank you. Your question has been received. We will email you when a scholar publishes an answer.
         </p>
       )}

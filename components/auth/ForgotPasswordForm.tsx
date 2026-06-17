@@ -56,13 +56,13 @@ export function ForgotPasswordForm() {
       </p>
 
       {message && (
-        <p className="mt-4 rounded-md bg-emerald-50 px-4 py-3 text-center text-sm text-emerald-900">
+        <p className="mt-4 rounded-md bg-success-bg px-4 py-3 text-center text-sm text-success-text">
           {message}
         </p>
       )}
 
       {error && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-center text-sm text-red-800" role="alert">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-center text-sm text-destructive-text" role="alert">
           {error}
         </p>
       )}

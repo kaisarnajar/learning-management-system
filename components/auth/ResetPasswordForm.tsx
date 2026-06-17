@@ -67,7 +67,7 @@ export function ResetPasswordForm() {
       <p className="mt-2 text-center text-sm text-muted">Enter a new password for your account.</p>
 
       {error && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-center text-sm text-red-800" role="alert">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-center text-sm text-destructive-text" role="alert">
           {error}
         </p>
       )}

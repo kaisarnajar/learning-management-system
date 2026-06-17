@@ -50,23 +50,23 @@ export default async function TeacherBlogsPage({
       </div>
 
       {params.submitted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Your blog post was submitted for admin approval.
         </p>
       )}
       {params.resubmitted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Your changes were resubmitted for admin approval.
         </p>
       )}
       {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Blog post deleted.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Blog post deleted.</p>
       )}
       {params.error === "notfound" && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">Blog post not found.</p>
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Blog post not found.</p>
       )}
       {params.error === "locked" && (
-        <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
           This post can no longer be edited because it has been approved or is awaiting review.
         </p>
       )}

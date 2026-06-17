@@ -88,22 +88,22 @@ export default async function AdminBookOrdersPage({
       </div>
 
       {params.confirmed === "1" && (
-        <p className="mt-4 rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        <p className="mt-4 rounded-md bg-success-bg px-4 py-3 text-sm text-success-text">
           Order approved. The student has been notified.
         </p>
       )}
       {params.declined === "1" && (
-        <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
           Order declined. The student has been notified.
         </p>
       )}
       {params.shipped === "1" && (
-        <p className="mt-4 rounded-md bg-blue-50 px-4 py-3 text-sm text-blue-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Order marked as shipped. The student has been notified.
         </p>
       )}
       {params.refunded === "1" && (
-        <p className="mt-4 rounded-md bg-gray-100 px-4 py-3 text-sm text-gray-800">
+        <p className="mt-4 rounded-md bg-surface-muted-hover px-4 py-3 text-sm text-muted">
           Order refunded. The student has been notified.
         </p>
       )}
@@ -133,7 +133,7 @@ export default async function AdminBookOrdersPage({
               {item.count > 0 && (
                 <span
                   className={`ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    active ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                    active ? "bg-surface/20 text-white" : "bg-primary/10 text-primary"
                   }`}
                 >
                   {item.count}

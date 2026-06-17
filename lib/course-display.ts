@@ -14,8 +14,8 @@ const courseCategoryGradients: Record<string, string> = {
 };
 
 const courseLevelColors: Record<string, string> = {
-  Beginner: "bg-amber-100 text-amber-900",
-  Intermediate: "bg-stone-200 text-stone-800",
+  Beginner: "bg-warning-bg text-warning-text",
+  Intermediate: "bg-surface-muted-hover text-muted",
   Advanced: "bg-teal-100 text-teal-900",
 };
 

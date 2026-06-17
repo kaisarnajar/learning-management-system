@@ -20,7 +20,7 @@ export function HomeAbout() {
         </p>
         <Link
           href="/about"
-          className="btn-gold-outline mt-8 inline-flex border-white px-8 py-3 text-sm text-white hover:bg-white hover:text-teal"
+          className="btn-gold-outline mt-8 inline-flex border-white px-8 py-3 text-sm text-white hover:bg-surface hover:text-teal"
         >
           Read More
         </Link>

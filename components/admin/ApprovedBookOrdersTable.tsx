@@ -28,7 +28,7 @@ function ScreenshotPreview({ path }: { path: string }) {
           aria-modal
           aria-label="Payment screenshot"
         >
-          <div className="relative max-h-[90vh] max-w-lg overflow-auto rounded-xl bg-white p-2 shadow-2xl">
+          <div className="relative max-h-[90vh] max-w-lg overflow-auto rounded-xl bg-surface p-2 shadow-2xl">
             <Image
               src={path}
               alt="Payment screenshot"
@@ -130,7 +130,7 @@ function ApprovedOrderRow({ order }: { order: BookOrderWithItems }) {
             type="button"
             onClick={handleRefunded}
             disabled={loading !== null}
-            className="rounded-md border border-gray-300 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-800 hover:bg-gray-100 disabled:opacity-60 transition-colors"
+            className="rounded-md border border-border bg-surface-muted px-3 py-1.5 text-xs font-semibold text-muted hover:bg-surface-muted-hover disabled:opacity-60 transition-colors"
           >
             {loading === "refunded" ? "Updating…" : "Refund"}
           </button>

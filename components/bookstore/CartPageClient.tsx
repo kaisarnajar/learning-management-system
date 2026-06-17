@@ -138,13 +138,13 @@ export function CartPageClient({
       </div>
 
       {showSuccess && (
-        <div className="relative rounded-lg border border-emerald-200 border-l-4 border-l-emerald-500 bg-emerald-50 px-4 py-4 pr-10 text-sm text-emerald-900">
+        <div className="relative rounded-lg border border-emerald-200 border-l-4 border-l-emerald-500 bg-success-bg px-4 py-4 pr-10 text-sm text-success-text">
           <p className="font-semibold">Order submitted successfully!</p>
           <p className="mt-1">The academy will verify your payment and dispatch your books shortly.</p>
           <button 
             type="button" 
             onClick={() => setShowSuccess(false)}
-            className="absolute top-4 right-4 text-emerald-600 hover:text-emerald-800 transition-colors"
+            className="absolute top-4 right-4 text-emerald-600 hover:text-success-text transition-colors"
             aria-label="Dismiss message"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -22,10 +22,10 @@ export default async function NewCoursePage({
       </Link>
       <h1 className="mt-4 font-serif text-2xl font-bold text-primary">Add course</h1>
       {params.saveError && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">{params.saveError}</p>
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{params.saveError}</p>
       )}
       {teachers.length === 0 ? (
-        <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
           Add at least one teacher before creating a course.{" "}
           <Link href="/admin/teachers/new" className="font-medium text-primary hover:underline">
             Add teacher

@@ -43,7 +43,7 @@ export function ContactForm({ defaultName = "", defaultEmail = "", isLoggedIn = 
   return (
     <form action={formAction} className="card-elevated space-y-5 p-6 sm:p-8">
       {state.error && (
-        <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p className="rounded-lg bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {state.error}
         </p>
       )}

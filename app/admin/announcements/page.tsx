@@ -11,9 +11,9 @@ import {
 import { parseSearchQuery } from "@/lib/text-search";
 
 function statusBadge(published: boolean, showOnHomepage: boolean) {
-  if (!published) return { label: "Draft", className: "bg-stone-200 text-stone-800" };
-  if (showOnHomepage) return { label: "Home + Public", className: "bg-violet-100 text-violet-900" };
-  return { label: "Published", className: "bg-emerald-100 text-emerald-900" };
+  if (!published) return { label: "Draft", className: "bg-surface-muted-hover text-muted" };
+  if (showOnHomepage) return { label: "Home + Public", className: "bg-info-bg text-info-text" };
+  return { label: "Published", className: "bg-success-bg text-success-text" };
 }
 
 export default async function AdminAnnouncementsPage({
@@ -51,19 +51,19 @@ export default async function AdminAnnouncementsPage({
       </div>
 
       {params.posted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Announcement created.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Announcement created.</p>
       )}
       {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Announcement updated.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Announcement updated.</p>
       )}
       {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Announcement deleted.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Announcement deleted.</p>
       )}
       {params.error === "notfound" && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">Announcement not found.</p>
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Announcement not found.</p>
       )}
       {params.error && params.error !== "notfound" && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
           {decodeURIComponent(params.error)}
         </p>
       )}

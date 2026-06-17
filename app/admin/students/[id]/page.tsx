@@ -51,7 +51,7 @@ export default async function AdminStudentDetailPage({
       <p className="mt-1 text-sm text-muted">{student.email}</p>
 
       {query.error && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {decodeURIComponent(query.error)}
         </p>
       )}

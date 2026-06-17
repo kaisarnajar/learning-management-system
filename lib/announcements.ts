@@ -43,9 +43,9 @@ export const announcementCategoryStyles: Record<AnnouncementCategory, string> = 
   EXAMS_TESTS: "bg-red-100 text-red-900",
   ASSIGNMENTS_HOMEWORK: "bg-orange-100 text-orange-900",
   STUDY_MATERIALS: "bg-blue-100 text-blue-900",
-  CLASS_SCHEDULE: "bg-violet-100 text-violet-900",
+  CLASS_SCHEDULE: "bg-info-bg text-info-text",
   COURSE_ANNOUNCEMENT: "bg-teal/15 text-teal-dark",
-  GENERAL_NOTICE: "bg-stone-200 text-stone-800",
+  GENERAL_NOTICE: "bg-surface-muted-hover text-muted",
 };
 
 const announcementInclude = {

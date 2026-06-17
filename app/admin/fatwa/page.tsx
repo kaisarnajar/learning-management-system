@@ -19,7 +19,7 @@ function statusLabel(answer: string | null) {
 }
 
 function statusClass(answer: string | null) {
-  return answer ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900";
+  return answer ? "bg-success-bg text-success-text" : "bg-warning-bg text-warning-text";
 }
 
 export default async function AdminFatwaPage({
@@ -73,13 +73,13 @@ export default async function AdminFatwaPage({
       </div>
 
       {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Answer saved and notification sent (or logged if SMTP is not configured).
         </p>
       )}
 
       {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Question deleted.
         </p>
       )}

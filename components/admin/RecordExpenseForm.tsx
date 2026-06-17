@@ -25,7 +25,7 @@ export function RecordExpenseForm({ teachers }: RecordExpenseFormProps) {
   return (
     <form action={formAction} className="card-elevated space-y-4 p-5 sm:p-6">
       {state.error && (
-        <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p className="rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {state.error}
         </p>
       )}

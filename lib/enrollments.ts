@@ -76,11 +76,11 @@ export function enrollmentStatusLabel(status: string) {
 }
 
 export function enrollmentStatusClass(status: string) {
-  if (status === "completed") return "bg-emerald-100 text-emerald-900";
-  if (status === "active") return "bg-violet-100 text-violet-800";
-  if (status === PENDING_ENROLLMENT_APPROVAL) return "bg-amber-100 text-amber-900";
-  if (status === AWAITING_ENROLLMENT_FEE) return "bg-amber-100 text-amber-900";
-  return "bg-stone-200 text-stone-700";
+  if (status === "completed") return "bg-success-bg text-success-text";
+  if (status === "active") return "bg-info-bg text-info-text";
+  if (status === PENDING_ENROLLMENT_APPROVAL) return "bg-warning-bg text-warning-text";
+  if (status === AWAITING_ENROLLMENT_FEE) return "bg-warning-bg text-warning-text";
+  return "bg-surface-muted-hover text-stone-700";
 }
 
 export async function getEnrollmentsForCoursePaginated(

@@ -9,7 +9,7 @@ function statusLabel(reply: string | null) {
 }
 
 function statusClass(reply: string | null) {
-  return reply ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900";
+  return reply ? "bg-success-bg text-success-text" : "bg-warning-bg text-warning-text";
 }
 
 export default async function AdminContactInquiryDetailPage({
@@ -46,7 +46,7 @@ export default async function AdminContactInquiryDetailPage({
       </div>
 
       {query.error && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {decodeURIComponent(query.error)}
         </p>
       )}

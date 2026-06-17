@@ -29,8 +29,8 @@ export function monthlyPaymentStatusLabel(status: string): string {
 }
 
 export function monthlyPaymentStatusClass(status: string): string {
-  if (status === MONTHLY_PAYMENT_APPROVED) return "bg-emerald-100 text-emerald-900";
-  if (status === MONTHLY_PAYMENT_PENDING) return "bg-amber-100 text-amber-900";
+  if (status === MONTHLY_PAYMENT_APPROVED) return "bg-success-bg text-success-text";
+  if (status === MONTHLY_PAYMENT_PENDING) return "bg-warning-bg text-warning-text";
   if (status === MONTHLY_PAYMENT_DECLINED) return "bg-red-100 text-red-900";
-  return "bg-stone-200 text-stone-700";
+  return "bg-surface-muted-hover text-stone-700";
 }

@@ -28,7 +28,7 @@ function ScreenshotPreview({ path }: { path: string }) {
           aria-modal
           aria-label="Payment screenshot"
         >
-          <div className="relative max-h-[90vh] max-w-lg overflow-auto rounded-xl bg-white p-2 shadow-2xl">
+          <div className="relative max-h-[90vh] max-w-lg overflow-auto rounded-xl bg-surface p-2 shadow-2xl">
             <Image
               src={path}
               alt="Payment screenshot"

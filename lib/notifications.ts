@@ -52,16 +52,16 @@ export function notificationTypeClass(type: StudentNotificationType): string {
     case "PAYMENT_APPROVED":
     case "ENROLLMENT_APPROVED":
     case "BOOK_ORDER_APPROVED":
-      return "bg-emerald-100 text-emerald-800";
+      return "bg-success-bg text-success-text";
     case "ENROLLMENT_REJECTED":
     case "BOOK_ORDER_DECLINED":
-      return "bg-red-100 text-red-800";
+      return "bg-red-100 text-destructive-text";
     case "PERSONAL_MESSAGE":
-      return "bg-violet-100 text-violet-800";
+      return "bg-info-bg text-info-text";
     case "COURSE_ANNOUNCEMENT":
       return "bg-sky-100 text-sky-800";
     case "SITE_ANNOUNCEMENT":
-      return "bg-amber-100 text-amber-900";
+      return "bg-warning-bg text-warning-text";
     default:
       return "bg-accent-muted text-foreground";
   }

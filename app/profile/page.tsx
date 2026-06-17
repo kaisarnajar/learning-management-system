@@ -32,11 +32,11 @@ export default async function ProfilePage({
     <div className="space-y-6">
       {!profileComplete && (
         <div
-          className="rounded-lg border border-amber-200 border-l-4 border-l-amber-500 bg-amber-50 px-4 py-4 text-sm text-amber-950 sm:px-5"
+          className="rounded-lg border border-amber-200 border-l-4 border-l-amber-500 bg-warning-bg px-4 py-4 text-sm text-amber-950 sm:px-5"
           role="status"
         >
           <p className="font-semibold">Complete your profile to enroll in courses</p>
-          <p className="mt-1 text-amber-900/90">
+          <p className="mt-1 text-warning-text/90">
             The academy needs your full details for course registration. Fill in all fields below,
             then return to the course page to request enrollment.
           </p>
@@ -44,7 +44,7 @@ export default async function ProfilePage({
       )}
       {complete === "1" && profileComplete && (
         <div
-          className="rounded-lg border border-violet-200 border-l-4 border-l-violet-500 bg-violet-50 px-4 py-4 text-sm text-violet-900 sm:px-5"
+          className="rounded-lg border border-violet-200 border-l-4 border-l-violet-500 bg-info-bg px-4 py-4 text-sm text-info-text sm:px-5"
           role="status"
         >
           <p className="font-semibold">Your profile is complete</p>

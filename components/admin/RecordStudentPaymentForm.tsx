@@ -28,12 +28,12 @@ export function RecordStudentPaymentForm({ userId, courses }: RecordStudentPayme
       </div>
 
       {state.error && (
-        <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p className="rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {state.error}
         </p>
       )}
       {state.success && (
-        <p className="rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">{state.success}</p>
+        <p className="rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">{state.success}</p>
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

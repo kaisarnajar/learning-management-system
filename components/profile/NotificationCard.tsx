@@ -38,15 +38,15 @@ function notificationIconClass(type: StudentNotificationType): string {
   switch (type) {
     case "PAYMENT_APPROVED":
     case "ENROLLMENT_APPROVED":
-      return "bg-emerald-100 text-emerald-700 ring-emerald-200/80";
+      return "bg-success-bg text-emerald-700 ring-emerald-200/80";
     case "ENROLLMENT_REJECTED":
       return "bg-red-100 text-red-700 ring-red-200/80";
     case "PERSONAL_MESSAGE":
-      return "bg-violet-100 text-violet-700 ring-violet-200/80";
+      return "bg-info-bg text-violet-700 ring-violet-200/80";
     case "COURSE_ANNOUNCEMENT":
       return "bg-sky-100 text-sky-700 ring-sky-200/80";
     case "SITE_ANNOUNCEMENT":
-      return "bg-amber-100 text-amber-800 ring-amber-200/80";
+      return "bg-warning-bg text-warning-text ring-amber-200/80";
     default:
       return "bg-accent-muted text-foreground ring-border";
   }

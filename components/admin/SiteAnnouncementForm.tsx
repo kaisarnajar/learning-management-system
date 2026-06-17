@@ -65,7 +65,7 @@ export function SiteAnnouncementForm({
   return (
     <form action={action} className="mx-auto max-w-2xl space-y-5">
       {error && (
-        <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p className="rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {error}
         </p>
       )}

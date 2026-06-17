@@ -28,7 +28,7 @@ export default async function AdminStudentsPage({
       </div>
 
       {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Student account deleted.
         </p>
       )}

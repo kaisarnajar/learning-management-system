@@ -21,12 +21,12 @@ export default async function AdminPaymentSettingsPage({
       </p>
 
       {params.saved === "1" ? (
-        <p className="mt-4 rounded-md bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+        <p className="mt-4 rounded-md bg-success-bg px-4 py-3 text-sm text-success-text">
           Payment details saved.
         </p>
       ) : null}
       {params.error ? (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-900">{params.error}</p>
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-red-900">{params.error}</p>
       ) : null}
 
       <div className="mt-8">

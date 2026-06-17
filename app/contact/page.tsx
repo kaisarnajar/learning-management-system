@@ -35,7 +35,7 @@ export default async function ContactPage({
         />
 
         {params.submitted === "1" && (
-          <p className="mx-auto mt-6 max-w-xl rounded-lg bg-violet-50 px-4 py-3 text-center text-sm text-violet-900">
+          <p className="mx-auto mt-6 max-w-xl rounded-lg bg-info-bg px-4 py-3 text-center text-sm text-info-text">
             Thank you. Your message has been received. We aim to respond within 2–3 business days.
           </p>
         )}

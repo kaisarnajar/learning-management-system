@@ -62,12 +62,12 @@ export function AdminEnrollUserForm({ courses }: AdminEnrollUserFormProps) {
       </div>
 
       {state.error && (
-        <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p className="rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {state.error}
         </p>
       )}
       {state.success && (
-        <p className="rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">{state.success}</p>
+        <p className="rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">{state.success}</p>
       )}
 
       <div>
@@ -86,7 +86,7 @@ export function AdminEnrollUserForm({ courses }: AdminEnrollUserFormProps) {
           className={`${inputClassName} mt-1`}
         />
         {lookupError && (
-          <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" role="alert">
+          <p className="mt-2 rounded-md bg-warning-bg px-3 py-2 text-sm text-warning-text" role="alert">
             {lookupError}
           </p>
         )}

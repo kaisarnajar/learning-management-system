@@ -136,7 +136,7 @@ export function StudentReviewForm({
         </div>
       </div>
 
-      <p className="rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+      <p className="rounded-md bg-warning-bg px-3 py-2 text-sm text-warning-text">
         Your review will be sent to the admin for verification. If approved, it may appear on the
         homepage (up to six student reviews are shown at a time).
       </p>

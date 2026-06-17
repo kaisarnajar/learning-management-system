@@ -83,7 +83,7 @@ export function TeacherForm({ teacher, action, submitLabel, error }: TeacherForm
   return (
     <form action={action} className="mx-auto max-w-2xl space-y-5">
       {error && (
-        <p className="rounded-md bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">
+        <p className="rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {error}
         </p>
       )}
@@ -127,7 +127,7 @@ export function TeacherForm({ teacher, action, submitLabel, error }: TeacherForm
           </p>
         )}
         {lookupError && (
-          <p className="mt-2 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900" role="alert">
+          <p className="mt-2 rounded-md bg-warning-bg px-3 py-2 text-sm text-warning-text" role="alert">
             {lookupError}
           </p>
         )}

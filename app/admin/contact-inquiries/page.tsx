@@ -19,7 +19,7 @@ function statusLabel(reply: string | null) {
 }
 
 function statusClass(reply: string | null) {
-  return reply ? "bg-emerald-100 text-emerald-900" : "bg-amber-100 text-amber-900";
+  return reply ? "bg-success-bg text-success-text" : "bg-warning-bg text-warning-text";
 }
 
 export default async function AdminContactInquiriesPage({
@@ -73,7 +73,7 @@ export default async function AdminContactInquiriesPage({
       </div>
 
       {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Reply saved.
           {params.email === "failed"
             ? " The notification email could not be sent — check SMTP settings in your environment."
@@ -84,11 +84,11 @@ export default async function AdminContactInquiriesPage({
       )}
 
       {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Inquiry deleted.</p>
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Inquiry deleted.</p>
       )}
 
       {params.error === "notfound" && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">Inquiry not found.</p>
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Inquiry not found.</p>
       )}
 
       <div className="mt-6">

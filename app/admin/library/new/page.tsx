@@ -20,7 +20,7 @@ export default async function NewLibraryPage({
       </Link>
       <h1 className="mt-4 font-serif text-2xl font-bold text-primary">Add library item</h1>
       {params.saveError && (
-        <p className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">{params.saveError}</p>
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{params.saveError}</p>
       )}
       <div className="mt-8">
         <LibraryForm featuredCount={featuredCount} action={createLibraryItem} submitLabel="Create item" />

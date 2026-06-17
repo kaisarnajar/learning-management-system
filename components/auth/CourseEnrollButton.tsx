@@ -68,7 +68,7 @@ export function CourseEnrollButton({
       <div className="mt-4">
         <Link
           href="/profile/courses"
-          className="flex min-h-11 w-full items-center justify-center rounded-full border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900"
+          className="flex min-h-11 w-full items-center justify-center rounded-full border border-amber-300 bg-warning-bg px-4 py-3 text-sm font-medium text-warning-text"
         >
           Awaiting enrollment approval
         </Link>
@@ -81,7 +81,7 @@ export function CourseEnrollButton({
       <div className="mt-4">
         <Link
           href={hasPendingEnrollmentPayment ? "/profile/payments" : enrollmentPayHref}
-          className="flex min-h-11 w-full items-center justify-center rounded-full border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900"
+          className="flex min-h-11 w-full items-center justify-center rounded-full border border-amber-300 bg-warning-bg px-4 py-3 text-sm font-medium text-warning-text"
         >
           {hasPendingEnrollmentPayment ? "Awaiting payment verification" : "Pay enrollment fee"}
         </Link>
@@ -106,7 +106,7 @@ export function CourseEnrollButton({
     return (
       <div className="mt-4">
         <p
-          className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2.5 text-center text-sm text-amber-900"
+          className="rounded-lg border border-amber-200 bg-warning-bg px-3 py-2.5 text-center text-sm text-warning-text"
           role="status"
         >
           {enrollmentClosedMessage}
@@ -182,7 +182,7 @@ export function CourseEnrollButton({
     return (
       <Link
         href={PROFILE_COMPLETE_REDIRECT}
-        className="mt-4 flex min-h-11 w-full items-center justify-center rounded-full border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-950 transition-colors hover:bg-amber-100"
+        className="mt-4 flex min-h-11 w-full items-center justify-center rounded-full border border-amber-300 bg-warning-bg px-4 py-3 text-sm font-medium text-amber-950 transition-colors hover:bg-warning-bg"
       >
         Complete profile to enroll
       </Link>

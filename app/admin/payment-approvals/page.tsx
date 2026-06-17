@@ -47,12 +47,12 @@ export default async function AdminPaymentApprovalsPage({
         are managed under Enrollments.
       </p>
       {params.confirmed === "1" && (
-        <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Payment approved and recorded.
         </p>
       )}
       {params.declined === "1" && (
-        <p className="mt-4 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
           Payment declined. The student has been notified and can resubmit.
         </p>
       )}
@@ -71,7 +71,7 @@ export default async function AdminPaymentApprovalsPage({
         <h2 className="font-serif text-lg font-semibold text-foreground">
           Enrollment fee approvals
           {enrollmentTotalCount > 0 && (
-            <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
+            <span className="ml-2 inline-flex rounded-full bg-warning-bg px-2.5 py-0.5 text-xs font-semibold text-warning-text">
               {enrollmentTotalCount}
             </span>
           )}
@@ -105,7 +105,7 @@ export default async function AdminPaymentApprovalsPage({
         <h2 className="font-serif text-lg font-semibold text-foreground">
           Monthly fee approvals
           {monthlyTotalCount > 0 && (
-            <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
+            <span className="ml-2 inline-flex rounded-full bg-warning-bg px-2.5 py-0.5 text-xs font-semibold text-warning-text">
               {monthlyTotalCount}
             </span>
           )}

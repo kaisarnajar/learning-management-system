@@ -31,7 +31,7 @@ export function BookstoreFinanceSummaryCards({ summary }: { summary: BookstoreFi
         <p className="text-sm text-muted">Total Sales Revenue</p>
         <p className="mt-1 text-2xl font-bold text-emerald-700">{formatPrice(summary.totalSalesRevenuePaise)}</p>
       </div>
-      <div className="rounded-lg border border-border bg-surface p-5 shadow-sm sm:col-span-2 lg:col-span-2">
+      <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
         <p className="text-sm text-muted">Total Profit / Loss</p>
         <p
           className={`mt-1 text-2xl font-bold ${profitPositive ? "text-emerald-700" : "text-red-700"}`}

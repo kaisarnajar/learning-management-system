@@ -282,7 +282,8 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
           <input
             type="checkbox"
             name="featuredOnHomepage"
-            defaultChecked={isCurrentlyFeatured}
+            checked={values.featuredOnHomepage}
+            onChange={(e) => updateField("featuredOnHomepage", e.target.checked)}
             disabled={!canFeatureThisItem}
             className="mt-1 rounded border-border disabled:cursor-not-allowed"
           />

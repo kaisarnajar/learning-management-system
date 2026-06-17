@@ -18,6 +18,8 @@ export type BookWithDetails = {
   status: BookStatus;
   imagePath: string | null;
   published: boolean;
+  featuredOnHomepage: boolean;
+  featuredAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 };

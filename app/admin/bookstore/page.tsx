@@ -78,6 +78,7 @@ export default async function AdminBookstorePage({
                 <th className="px-4 py-3 font-medium">Price</th>
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Visibility</th>
+                <th className="px-4 py-3 font-medium">Homepage</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
@@ -115,6 +116,9 @@ export default async function AdminBookstorePage({
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge published={book.published} />
+                  </td>
+                  <td className="px-4 py-3 text-muted">
+                    {book.featuredOnHomepage && book.published ? "Featured" : "Not featured"}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center justify-end gap-2">

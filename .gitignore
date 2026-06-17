@@ -54,6 +54,14 @@ yarn-error.log*
 /public/uploads/certificates/*
 !/public/uploads/certificates/.gitkeep
 
+# bookstore uploads
+/public/uploads/books/*
+!/public/uploads/books/.gitkeep
+
+# blog uploads
+/public/uploads/blogs/*
+!/public/uploads/blogs/.gitkeep
+
 # vercel
 .vercel
 

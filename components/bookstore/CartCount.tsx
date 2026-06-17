@@ -15,35 +15,3 @@ export function CartCount() {
   );
 }
 
-export function CartNavLink({
-  active,
-  mobile,
-  onClick,
-}: {
-  active: boolean;
-  mobile?: boolean;
-  onClick?: () => void;
-}) {
-  const { totalCount } = useCart();
-
-  if (mobile) {
-    return (
-      <Link
-        href="/profile/cart"
-        className={`flex min-h-11 items-center px-3 text-sm font-semibold uppercase tracking-wide ${
-          active ? "text-gold" : "text-foreground"
-        }`}
-        onClick={onClick}
-      >
-        Cart
-        {totalCount > 0 && (
-          <span className="ml-2 inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-xs font-semibold text-white">
-            {totalCount > 99 ? "99+" : totalCount}
-          </span>
-        )}
-      </Link>
-    );
-  }
-
-  return null;
-}

@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 
-export type CartItem = {
+type CartItem = {
   bookId: string;
   title: string;
   author: string;

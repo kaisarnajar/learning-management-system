@@ -1,4 +1,4 @@
-export type SocialNetworkLinkLabel = "Facebook" | "Instagram" | "YouTube";
+type SocialNetworkLinkLabel = "Facebook" | "Instagram" | "YouTube";
 
 type IconProps = { className?: string };
 

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ApprovedBookOrdersTable } from "@/components/admin/ApprovedBookOrdersTable";
 import { CompletedBookOrdersTable } from "@/components/admin/CompletedBookOrdersTable";
 import { PendingBookOrdersTable } from "@/components/admin/PendingBookOrdersTable";
+import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import {
   getPendingBookOrdersPaginated,
@@ -17,10 +18,9 @@ export const metadata: Metadata = {
   description: "Review and approve or decline book purchase orders submitted by students.",
 };
 
-function tabHref(status: "pending" | "approved" | "completed", q?: string) {
+function tabHref(status: "pending" | "approved" | "completed") {
   const params = new URLSearchParams();
   if (status !== "pending") params.set("status", status);
-  if (q) params.set("q", q);
   const qs = params.toString();
   return qs ? `/admin/bookstore/orders?${qs}` : "/admin/bookstore/orders";
 }
@@ -117,7 +117,7 @@ export default async function AdminBookOrdersPage({
           ] as const
         ).map((item) => {
           const active = status === item.value;
-          const href = tabHref(item.value, q);
+          const href = tabHref(item.value);
           return (
             <Link
               key={item.value}
@@ -143,6 +143,16 @@ export default async function AdminBookOrdersPage({
           );
         })}
       </nav>
+
+      <div className="mt-6 mb-2">
+        <ListSearchForm
+          action="/admin/bookstore/orders"
+          query={q}
+          preserveParams={{ status: status !== "pending" ? status : undefined }}
+          totalCount={activeResult.totalCount}
+          placeholder="Search by name, email, or transaction ID..."
+        />
+      </div>
 
       {status === "pending" && (
         <section id="pending-orders" className="mt-6">

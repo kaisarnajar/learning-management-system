@@ -289,7 +289,7 @@ export const paymentRecordSchema = z.object({
   description: z.string().trim().max(500).optional(),
 });
 
-export const expenseCategoryEnum = z.enum(EXPENSE_CATEGORIES);
+const expenseCategoryEnum = z.enum(EXPENSE_CATEGORIES);
 
 export const expenseSchema = z
   .object({
@@ -336,7 +336,7 @@ export const contactInquiryReplySchema = z.object({
     .max(10000, "Reply must be at most 10000 characters."),
 });
 
-export const bookStatusEnum = z.enum(["AVAILABLE", "OUT_OF_STOCK", "COMING_SOON"]);
+const bookStatusEnum = z.enum(["AVAILABLE", "OUT_OF_STOCK", "COMING_SOON"]);
 
 export const bookSchema = z.object({
   title: z.string().trim().min(2, "Title is required.").max(200, "Title is too long."),

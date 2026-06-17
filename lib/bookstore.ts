@@ -149,13 +149,15 @@ export async function getBookById(id: string): Promise<BookWithDetails | null> {
   return prisma.book.findUnique({ where: { id } });
 }
 
-export async function getPendingBookOrdersPaginated(
-  page = 1,
-  pageSize = 20,
+async function fetchBookOrdersPaginated(
+  statusCondition: Prisma.BookOrderWhereInput["status"],
+  page: number,
+  pageSize: number,
   search?: string,
+  orderBy: Prisma.BookOrderOrderByWithRelationInput = { createdAt: "asc" }
 ): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
-  const where = {
-    status: "PENDING_VERIFICATION" as const,
+  const where: Prisma.BookOrderWhereInput = {
+    status: statusCondition,
     ...(search
       ? {
           OR: [
@@ -176,7 +178,7 @@ export async function getPendingBookOrdersPaginated(
           include: { book: { select: { id: true, title: true, author: true } } },
         },
       },
-      orderBy: { createdAt: "asc" },
+      orderBy,
       skip: (page - 1) * pageSize,
       take: pageSize,
     }),
@@ -184,6 +186,14 @@ export async function getPendingBookOrdersPaginated(
   ]);
 
   return { items, totalCount };
+}
+
+export async function getPendingBookOrdersPaginated(
+  page = 1,
+  pageSize = 20,
+  search?: string,
+): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
+  return fetchBookOrdersPaginated("PENDING_VERIFICATION", page, pageSize, search, { createdAt: "asc" });
 }
 
 export async function getApprovedBookOrdersPaginated(
@@ -191,36 +201,7 @@ export async function getApprovedBookOrdersPaginated(
   pageSize = 20,
   search?: string,
 ): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
-  const where = {
-    status: "APPROVED" as const,
-    ...(search
-      ? {
-          OR: [
-            { user: { name: { contains: search } } },
-            { user: { email: { contains: search } } },
-            { upiTransactionId: { contains: search } },
-          ],
-        }
-      : {}),
-  };
-
-  const [items, totalCount] = await Promise.all([
-    prisma.bookOrder.findMany({
-      where,
-      include: {
-        user: { select: { name: true, email: true } },
-        items: {
-          include: { book: { select: { id: true, title: true, author: true } } },
-        },
-      },
-      orderBy: { createdAt: "asc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.bookOrder.count({ where }),
-  ]);
-
-  return { items, totalCount };
+  return fetchBookOrdersPaginated("APPROVED", page, pageSize, search, { createdAt: "asc" });
 }
 
 export async function getCompletedBookOrdersPaginated(
@@ -228,36 +209,7 @@ export async function getCompletedBookOrdersPaginated(
   pageSize = 20,
   search?: string,
 ): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
-  const where: Prisma.BookOrderWhereInput = {
-    status: { in: ["SHIPPED", "REFUNDED", "DECLINED"] },
-    ...(search
-      ? {
-          OR: [
-            { user: { name: { contains: search } } },
-            { user: { email: { contains: search } } },
-            { upiTransactionId: { contains: search } },
-          ],
-        }
-      : {}),
-  };
-
-  const [items, totalCount] = await Promise.all([
-    prisma.bookOrder.findMany({
-      where,
-      include: {
-        user: { select: { name: true, email: true } },
-        items: {
-          include: { book: { select: { id: true, title: true, author: true } } },
-        },
-      },
-      orderBy: { createdAt: "desc" },
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.bookOrder.count({ where }),
-  ]);
-
-  return { items, totalCount };
+  return fetchBookOrdersPaginated({ in: ["SHIPPED", "REFUNDED", "DECLINED"] }, page, pageSize, search, { createdAt: "desc" });
 }
 
 export async function getPendingBookOrderCount(): Promise<number> {

@@ -17,54 +17,60 @@ export const metadata: Metadata = {
   description: "Review and approve or decline book purchase orders submitted by students.",
 };
 
+function tabHref(status: "pending" | "approved" | "completed", q?: string) {
+  const params = new URLSearchParams();
+  if (status !== "pending") params.set("status", status);
+  if (q) params.set("q", q);
+  const qs = params.toString();
+  return qs ? `/admin/bookstore/orders?${qs}` : "/admin/bookstore/orders";
+}
+
 export default async function AdminBookOrdersPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    status?: string;
     confirmed?: string;
     declined?: string;
     shipped?: string;
     refunded?: string;
     page?: string;
-    approvedPage?: string;
-    completedPage?: string;
     q?: string;
   }>;
 }) {
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
+  const status =
+    params.status === "approved" || params.status === "completed"
+      ? params.status
+      : "pending";
 
-  const { page: pendingPage, pageSize: pendingPageSize } = parsePaginationParams(params, {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params, {
     pageSize: APPROVAL_PAGE_SIZE,
   });
 
-  const { page: approvedPage, pageSize: approvedPageSize } = parsePaginationParams(params, {
-    pageSize: APPROVAL_PAGE_SIZE,
-    pageParam: "approvedPage",
-  });
-
-  const { page: completedPage, pageSize: completedPageSize } = parsePaginationParams(params, {
-    pageSize: APPROVAL_PAGE_SIZE,
-    pageParam: "completedPage",
-  });
-
+  // We only fetch the active tab's items to optimize performance,
+  // but we should fetch counts for all three if we want to show badges on tabs.
   const [pendingResult, approvedResult, completedResult] = await Promise.all([
-    getPendingBookOrdersPaginated(pendingPage, pendingPageSize, q),
-    getApprovedBookOrdersPaginated(approvedPage, approvedPageSize, q),
-    getCompletedBookOrdersPaginated(completedPage, completedPageSize, q),
+    getPendingBookOrdersPaginated(status === "pending" ? requestedPage : 1, pageSize, q),
+    getApprovedBookOrdersPaginated(status === "approved" ? requestedPage : 1, pageSize, q),
+    getCompletedBookOrdersPaginated(status === "completed" ? requestedPage : 1, pageSize, q),
   ]);
 
-  const { items: pendingOrders, totalCount: pendingCount } = pendingResult;
-  const { items: approvedOrders, totalCount: approvedCount } = approvedResult;
-  const { items: completedOrders, totalCount: completedCount } = completedResult;
+  const pendingCount = pendingResult.totalCount;
+  const approvedCount = approvedResult.totalCount;
+  const completedCount = completedResult.totalCount;
 
-  const safePendingPage = clampPage(pendingPage, pendingCount, pendingPageSize);
-  const safeApprovedPage = clampPage(approvedPage, approvedCount, approvedPageSize);
-  const safeCompletedPage = clampPage(completedPage, completedCount, completedPageSize);
+  const activeResult = 
+    status === "pending" ? pendingResult 
+    : status === "approved" ? approvedResult 
+    : completedResult;
+  
+  const safePage = clampPage(requestedPage, activeResult.totalCount, pageSize);
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-bold text-primary">
             Book Orders
@@ -91,7 +97,6 @@ export default async function AdminBookOrdersPage({
           Order declined. The student has been notified.
         </p>
       )}
-
       {params.shipped === "1" && (
         <p className="mt-4 rounded-md bg-blue-50 px-4 py-3 text-sm text-blue-800">
           Order marked as shipped. The student has been notified.
@@ -103,106 +108,107 @@ export default async function AdminBookOrdersPage({
         </p>
       )}
 
-      <section id="pending-orders" className="mt-8 scroll-mt-6">
-        <h2 className="font-serif text-lg font-semibold text-foreground">
-          Pending approvals
-          {pendingCount > 0 && (
-            <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
-              {pendingCount}
-            </span>
-          )}
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Review payment details and approve or decline pending orders.
-        </p>
+      <nav className="mt-8 flex flex-wrap gap-2" aria-label="Order status">
+        {(
+          [
+            { label: "Pending Approvals", value: "pending" as const, count: pendingCount },
+            { label: "Approved Orders", value: "approved" as const, count: approvedCount },
+            { label: "Completed Orders", value: "completed" as const, count: completedCount },
+          ] as const
+        ).map((item) => {
+          const active = status === item.value;
+          const href = tabHref(item.value, q);
+          return (
+            <Link
+              key={item.value}
+              href={href}
+              className={`inline-flex min-h-10 items-center justify-center rounded-full px-4 text-sm font-medium transition-colors ${
+                active
+                  ? "bg-primary text-white"
+                  : "bg-surface text-foreground hover:bg-accent-muted/50"
+              }`}
+              aria-current={active ? "page" : undefined}
+            >
+              {item.label}
+              {item.count > 0 && (
+                <span
+                  className={`ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    active ? "bg-white/20 text-white" : "bg-primary/10 text-primary"
+                  }`}
+                >
+                  {item.count}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
 
-        <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-          <PendingBookOrdersTable
-            orders={pendingOrders}
-            emptyMessage={
-              q
-                ? "No pending orders match your search."
-                : "No book orders awaiting verification."
-            }
+      {status === "pending" && (
+        <section id="pending-orders" className="mt-6">
+          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+            <PendingBookOrdersTable
+              orders={pendingResult.items}
+              emptyMessage={
+                q
+                  ? "No pending orders match your search."
+                  : "No book orders awaiting verification."
+              }
+            />
+          </div>
+          <Pagination
+            basePath="/admin/bookstore/orders"
+            params={params}
+            page={safePage}
+            totalCount={pendingCount}
+            pageSize={pageSize}
           />
-        </div>
+        </section>
+      )}
 
-        <Pagination
-          basePath="/admin/bookstore/orders"
-          params={params}
-          page={safePendingPage}
-          totalCount={pendingCount}
-          pageSize={pendingPageSize}
-        />
-      </section>
-
-      <section id="approved-orders" className="mt-10 scroll-mt-6">
-        <h2 className="font-serif text-lg font-semibold text-foreground">
-          Approved Orders
-          {approvedCount > 0 && (
-            <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
-              {approvedCount}
-            </span>
-          )}
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Mark approved orders as shipped once dispatched, or refund if necessary.
-        </p>
-
-        <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-          <ApprovedBookOrdersTable
-            orders={approvedOrders}
-            emptyMessage={
-              q
-                ? "No approved orders match your search."
-                : "No approved orders awaiting fulfillment."
-            }
+      {status === "approved" && (
+        <section id="approved-orders" className="mt-6">
+          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+            <ApprovedBookOrdersTable
+              orders={approvedResult.items}
+              emptyMessage={
+                q
+                  ? "No approved orders match your search."
+                  : "No approved orders awaiting fulfillment."
+              }
+            />
+          </div>
+          <Pagination
+            basePath="/admin/bookstore/orders"
+            params={params}
+            page={safePage}
+            totalCount={approvedCount}
+            pageSize={pageSize}
           />
-        </div>
+        </section>
+      )}
 
-        <Pagination
-          basePath="/admin/bookstore/orders"
-          params={params}
-          page={safeApprovedPage}
-          totalCount={approvedCount}
-          pageSize={approvedPageSize}
-          pageParam="approvedPage"
-        />
-      </section>
-
-      <section id="completed-orders" className="mt-10 scroll-mt-6">
-        <h2 className="font-serif text-lg font-semibold text-foreground">
-          Completed Orders
-          {completedCount > 0 && (
-            <span className="ml-2 inline-flex rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-800">
-              {completedCount}
-            </span>
-          )}
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Historical record of all shipped, refunded, and declined book orders.
-        </p>
-
-        <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-          <CompletedBookOrdersTable
-            orders={completedOrders}
-            emptyMessage={
-              q
-                ? "No completed orders match your search."
-                : "No completed orders found."
-            }
+      {status === "completed" && (
+        <section id="completed-orders" className="mt-6">
+          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+            <CompletedBookOrdersTable
+              orders={completedResult.items}
+              emptyMessage={
+                q
+                  ? "No completed orders match your search."
+                  : "No completed orders found."
+              }
+            />
+          </div>
+          <Pagination
+            basePath="/admin/bookstore/orders"
+            params={params}
+            page={safePage}
+            totalCount={completedCount}
+            pageSize={pageSize}
           />
-        </div>
-
-        <Pagination
-          basePath="/admin/bookstore/orders"
-          params={params}
-          page={safeCompletedPage}
-          totalCount={completedCount}
-          pageSize={completedPageSize}
-          pageParam="completedPage"
-        />
-      </section>
+        </section>
+      )}
     </div>
   );
 }

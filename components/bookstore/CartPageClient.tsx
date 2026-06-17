@@ -151,11 +151,11 @@ export function CartPageClient({
       ) : (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex gap-3">
-              <button type="button" onClick={selectAll} className="text-xs font-medium text-primary hover:underline">
+            <div className="flex gap-2">
+              <button type="button" onClick={selectAll} className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground hover:bg-accent-muted/50 transition-colors">
                 Select all
               </button>
-              <button type="button" onClick={deselectAll} className="text-xs font-medium text-muted hover:underline">
+              <button type="button" onClick={deselectAll} className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-foreground hover:bg-accent-muted/50 transition-colors">
                 Deselect all
               </button>
             </div>

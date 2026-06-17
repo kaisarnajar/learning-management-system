@@ -11,6 +11,7 @@ import {
   demoDailyInspirations,
   demoFatwaQuestions,
   demoSiteAnnouncements,
+  demoBooks,
 } from "../content/demo-content";
 
 const demoContentBaseTime = new Date("2026-02-01T10:00:00.000Z");
@@ -19,8 +20,38 @@ function staggeredDate(index: number, minutes = 30) {
   return new Date(demoContentBaseTime.getTime() + index * minutes * 60_000);
 }
 
+export async function seedDemoBooks(prisma: PrismaClient) {
+  for (const [index, book] of demoBooks.entries()) {
+    const createdAt = staggeredDate(index, 60);
+    await prisma.book.upsert({
+      where: { id: book.id },
+      create: {
+        id: book.id,
+        title: book.title,
+        author: book.author,
+        description: book.description,
+        priceInrPaise: book.priceInrPaise,
+        status: book.status,
+        published: book.published,
+        createdAt,
+        updatedAt: createdAt,
+      },
+      update: {
+        title: book.title,
+        author: book.author,
+        description: book.description,
+        priceInrPaise: book.priceInrPaise,
+        status: book.status,
+        published: book.published,
+      },
+    });
+  }
+}
+
 /** Site announcements, blogs, verse/hadith, fatwa, contact inquiries, and course announcements. */
 export async function seedDemoContent(prisma: PrismaClient) {
+  await seedDemoBooks(prisma);
+
   const answererId = demoTeacherUserId("1");
 
   for (const [index, item] of demoSiteAnnouncements.entries()) {

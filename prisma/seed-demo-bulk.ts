@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
 import { courses } from "../content/courses";
-import { demoBlogPosts } from "../content/demo-content";
+import { demoBlogPosts, demoBooks } from "../content/demo-content";
 import { teachers } from "../content/teachers";
 import {
   EXPENSE_CATEGORY_MARKETING,
@@ -419,6 +419,105 @@ export async function seedDemoPasswordResetTokens(prisma: PrismaClient) {
   });
 }
 
+export async function seedDemoBulkBookOrders(prisma: PrismaClient) {
+  const statuses: ("PENDING_VERIFICATION" | "APPROVED" | "SHIPPED" | "DECLINED")[] = [
+    "APPROVED",
+    "SHIPPED",
+    "PENDING_VERIFICATION",
+    "DECLINED",
+  ];
+  const orderItems = demoBooks.slice(0, 3);
+
+  for (let index = 1; index <= 10; index += 1) {
+    const studentId = demoStudentUserId(String(index).padStart(2, "0"));
+    const orderId = `seed-demo-book-order-${index}`;
+    const status = statuses[index % statuses.length];
+    const createdAt = new Date(`2026-03-${String(index).padStart(2, "0")}T10:00:00.000Z`);
+
+    let totalAmount = 0;
+    const itemsData = orderItems.map((b, i) => {
+      const quantity = (i % 2) + 1;
+      const priceAtPurchaseInrPaise = b.priceInrPaise;
+      totalAmount += quantity * priceAtPurchaseInrPaise;
+      return {
+        id: `${orderId}-item-${i}`,
+        bookId: b.id,
+        quantity,
+        priceAtPurchaseInrPaise,
+        createdAt,
+      };
+    });
+
+    await prisma.bookOrder.upsert({
+      where: { id: orderId },
+      create: {
+        id: orderId,
+        userId: studentId,
+        totalAmountInrPaise: totalAmount,
+        status,
+        paymentMethod: "upi",
+        upiTransactionId: `DEMOUPI${index}000${index}`,
+        notes: index % 3 === 0 ? "Please ship soon." : null,
+        createdAt,
+        updatedAt: createdAt,
+        items: {
+          create: itemsData.map(({ id, bookId, quantity, priceAtPurchaseInrPaise, createdAt: itemCreatedAt }) => ({
+            id,
+            bookId,
+            quantity,
+            priceAtPurchaseInrPaise,
+            createdAt: itemCreatedAt,
+          })),
+        },
+      },
+      update: {
+        totalAmountInrPaise: totalAmount,
+        status,
+        paymentMethod: "upi",
+        upiTransactionId: `DEMOUPI${index}000${index}`,
+        notes: index % 3 === 0 ? "Please ship soon." : null,
+      },
+    });
+
+    if (status !== "PENDING_VERIFICATION") {
+      let notifType: "BOOK_ORDER_APPROVED" | "BOOK_ORDER_SHIPPED" | "BOOK_ORDER_DECLINED" | undefined;
+      let notifTitle = "";
+      if (status === "APPROVED") {
+        notifType = "BOOK_ORDER_APPROVED";
+        notifTitle = "Book Order Approved";
+      } else if (status === "SHIPPED") {
+        notifType = "BOOK_ORDER_SHIPPED";
+        notifTitle = "Book Order Shipped";
+      } else if (status === "DECLINED") {
+        notifType = "BOOK_ORDER_DECLINED";
+        notifTitle = "Book Order Declined";
+      }
+
+      if (notifType) {
+        await prisma.studentNotification.upsert({
+          where: { id: `${orderId}-notif` },
+          create: {
+            id: `${orderId}-notif`,
+            userId: studentId,
+            type: notifType,
+            title: notifTitle,
+            body: `Your book order ${orderId} has been ${status.toLowerCase()}.`,
+            href: "/profile/cart",
+            sourceType: "BookOrder",
+            sourceId: orderId,
+            createdAt: new Date(createdAt.getTime() + 86400000),
+          },
+          update: {
+            type: notifType,
+            title: notifTitle,
+            body: `Your book order ${orderId} has been ${status.toLowerCase()}.`,
+          },
+        });
+      }
+    }
+  }
+}
+
 /** Run all bulk seeders that fill tables with large demo datasets. */
 export async function seedDemoBulk(prisma: PrismaClient) {
   await seedDemoBlogImages(prisma);
@@ -429,6 +528,7 @@ export async function seedDemoBulk(prisma: PrismaClient) {
   await seedDemoBulkSiteAnnouncements(prisma);
   await seedDemoBulkDailyInspirations(prisma);
   await seedDemoBulkCourseAnnouncements(prisma);
+  await seedDemoBulkBookOrders(prisma);
   await seedDemoPasswordResetTokens(prisma);
 }
 
@@ -454,6 +554,9 @@ export async function logDemoTableCounts(prisma: PrismaClient) {
     prisma.paymentSettings.count().then((n) => ["PaymentSettings", n] as const),
     prisma.socialLinksSettings.count().then((n) => ["SocialLinksSettings", n] as const),
     prisma.passwordResetToken.count().then((n) => ["PasswordResetToken", n] as const),
+    prisma.book.count().then((n) => ["Book", n] as const),
+    prisma.bookOrder.count().then((n) => ["BookOrder", n] as const),
+    prisma.bookOrderItem.count().then((n) => ["BookOrderItem", n] as const),
   ]);
 
   console.log("Demo table row counts:");

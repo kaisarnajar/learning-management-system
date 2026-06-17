@@ -58,6 +58,7 @@ async function assertDatabaseMigrated() {
       prisma.studentNotification.findFirst({
         select: { type: true, sourceId: true, readAt: true },
       }),
+    () => prisma.book.findFirst({ select: { id: true } }),
   ];
 
   try {

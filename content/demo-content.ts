@@ -1,4 +1,4 @@
-import type { AnnouncementCategory, BlogApprovalStatus, DailyInspirationKind } from "@prisma/client";
+import type { AnnouncementCategory, BlogApprovalStatus, DailyInspirationKind, BookStatus } from "@prisma/client";
 import type { FatwaCategory } from "@/lib/fatwa";
 
 export type DemoSiteAnnouncement = {
@@ -452,5 +452,72 @@ export const demoContactInquiries: DemoContactInquiry[] = [
     phone: "91991000026",
     studentId: "26",
     message: "I completed Maktab Foundation — which paid course should I take next?",
+  },
+];
+
+export type DemoBook = {
+  id: string;
+  title: string;
+  author: string;
+  description: string;
+  priceInrPaise: number;
+  status: BookStatus;
+  published: boolean;
+};
+
+export const demoBooks: DemoBook[] = [
+  {
+    id: "seed-demo-book-1",
+    title: "Tafseer Ibn Kathir (English - 10 Volumes)",
+    author: "Hafiz Ibn Kathir",
+    description: "The most widely recognized and accepted explanation of the Quran in the world. Features full Arabic text, English translation, and comprehensive commentary.",
+    priceInrPaise: 4500_00,
+    status: "AVAILABLE",
+    published: true,
+  },
+  {
+    id: "seed-demo-book-2",
+    title: "Riyad us Saliheen (Gardens of the Righteous)",
+    author: "Imam An-Nawawi",
+    description: "A highly acclaimed collection of authentic Ahadith compiled by Imam An-Nawawi. Essential reading for every Muslim household.",
+    priceInrPaise: 850_00,
+    status: "AVAILABLE",
+    published: true,
+  },
+  {
+    id: "seed-demo-book-3",
+    title: "Al-Adab Al-Mufrad (A Code for Everyday Living)",
+    author: "Imam Al-Bukhari",
+    description: "A topical collection of Ahadith addressing moral behavior, good manners, and family relations.",
+    priceInrPaise: 650_00,
+    status: "AVAILABLE",
+    published: true,
+  },
+  {
+    id: "seed-demo-book-4",
+    title: "The Sealed Nectar (Ar-Raheeq Al-Makhtum)",
+    author: "Safi-ur-Rahman Al-Mubarakpuri",
+    description: "An authoritative biography of the Prophet Muhammad (Peace Be Upon Him). Award-winning historical analysis of the Seerah.",
+    priceInrPaise: 550_00,
+    status: "OUT_OF_STOCK",
+    published: true,
+  },
+  {
+    id: "seed-demo-book-5",
+    title: "Fortress of the Muslim (Hisnul Muslim)",
+    author: "Sa'id bin Ali bin Wahf Al-Qahtani",
+    description: "A pocket-sized booklet consisting of authentic supplications (Duas) for everyday use.",
+    priceInrPaise: 150_00,
+    status: "AVAILABLE",
+    published: true,
+  },
+  {
+    id: "seed-demo-book-6",
+    title: "Qasas ul Anbiya (Stories of the Prophets)",
+    author: "Hafiz Ibn Kathir",
+    description: "Detailed historical accounts of the Prophets mentioned in the Quran and Sunnah.",
+    priceInrPaise: 950_00,
+    status: "COMING_SOON",
+    published: true,
   },
 ];

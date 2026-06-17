@@ -500,6 +500,8 @@ model Book {
   author      String
   description String
   priceInrPaise Int
+  purchasePriceInrPaise Int @default(0)
+  inventoryPurchased Int @default(0)
   status      BookStatus @default(AVAILABLE)
   imagePath   String?
   published   Boolean    @default(true)

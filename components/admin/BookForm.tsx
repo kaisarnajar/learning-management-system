@@ -32,10 +32,12 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
       author: book?.author ?? "",
       description: book?.description ?? "",
       priceInr: book ? String(book.priceInrPaise / 100) : "",
+      purchasePriceInr: book ? String(book.purchasePriceInrPaise / 100) : "",
+      inventoryPurchased: book ? String(book.inventoryPurchased) : "",
       status: (book?.status as BookFormValues["status"]) ?? "AVAILABLE",
       published: book?.published ?? true,
     },
-    fields: ["title", "author", "description", "priceInr", "status", "published"],
+    fields: ["title", "author", "description", "priceInr", "purchasePriceInr", "inventoryPurchased", "status", "published"],
     validate,
   });
 
@@ -166,7 +168,7 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="book-price" className={labelClassName}>
-            Price (₹) <span className="text-red-600">*</span>
+            Selling Price (₹) <span className="text-red-600">*</span>
           </label>
           <input
             id="book-price"
@@ -183,6 +185,48 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
             className={formFieldInputClass(showError("priceInr"))}
           />
           {showError("priceInr") && <p className={formErrorTextClassName} role="alert">{errors.priceInr}</p>}
+        </div>
+
+        <div>
+          <label htmlFor="book-purchase-price" className={labelClassName}>
+            Purchase Price (₹) <span className="text-red-600">*</span>
+          </label>
+          <input
+            id="book-purchase-price"
+            name="purchasePriceInr"
+            type="number"
+            min="0"
+            step="0.01"
+            required
+            value={values.purchasePriceInr}
+            onChange={(e) => updateField("purchasePriceInr", e.target.value)}
+            onBlur={() => markTouched("purchasePriceInr")}
+            aria-invalid={showError("purchasePriceInr") || undefined}
+            placeholder="e.g. 150"
+            className={formFieldInputClass(showError("purchasePriceInr"))}
+          />
+          {showError("purchasePriceInr") && <p className={formErrorTextClassName} role="alert">{errors.purchasePriceInr}</p>}
+        </div>
+        
+        <div>
+          <label htmlFor="book-inventory" className={labelClassName}>
+            Total Inventory Procured <span className="text-red-600">*</span>
+          </label>
+          <input
+            id="book-inventory"
+            name="inventoryPurchased"
+            type="number"
+            min="0"
+            step="1"
+            required
+            value={values.inventoryPurchased}
+            onChange={(e) => updateField("inventoryPurchased", e.target.value)}
+            onBlur={() => markTouched("inventoryPurchased")}
+            aria-invalid={showError("inventoryPurchased") || undefined}
+            placeholder="e.g. 100"
+            className={formFieldInputClass(showError("inventoryPurchased"))}
+          />
+          {showError("inventoryPurchased") && <p className={formErrorTextClassName} role="alert">{errors.inventoryPurchased}</p>}
         </div>
 
         <div>

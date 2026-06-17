@@ -239,6 +239,8 @@ export type BookFormValues = {
   author: string;
   description: string;
   priceInr: string;
+  purchasePriceInr: string;
+  inventoryPurchased: string;
   status: "AVAILABLE" | "OUT_OF_STOCK" | "COMING_SOON";
   published: boolean;
 };
@@ -250,6 +252,8 @@ export function validateBookForm(values: BookFormValues): FormValidationResult {
       author: values.author,
       description: values.description,
       priceInr: values.priceInr,
+      purchasePriceInr: values.purchasePriceInr,
+      inventoryPurchased: values.inventoryPurchased,
       status: values.status,
       published: values.published,
     }),

@@ -13,6 +13,8 @@ function parseBookForm(formData: FormData) {
     author: formData.get("author"),
     description: formData.get("description"),
     priceInr: formData.get("priceInr"),
+    purchasePriceInr: formData.get("purchasePriceInr"),
+    inventoryPurchased: formData.get("inventoryPurchased"),
     status: formData.get("status"),
     published: formData.get("published") === "true" || formData.get("published") === "on",
   });
@@ -40,6 +42,8 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
   }
 
   const priceInrPaise = Math.round(parseFloat(parsed.data.priceInr) * 100);
+  const purchasePriceInrPaise = Math.round(parseFloat(parsed.data.purchasePriceInr) * 100);
+  const inventoryPurchased = parseInt(parsed.data.inventoryPurchased, 10);
 
   try {
     const book = await prisma.book.create({
@@ -48,6 +52,8 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
         author: parsed.data.author,
         description: parsed.data.description,
         priceInrPaise,
+        purchasePriceInrPaise,
+        inventoryPurchased,
         status: parsed.data.status,
         published: parsed.data.published,
       },
@@ -84,6 +90,8 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
   }
 
   const priceInrPaise = Math.round(parseFloat(parsed.data.priceInr) * 100);
+  const purchasePriceInrPaise = Math.round(parseFloat(parsed.data.purchasePriceInr) * 100);
+  const inventoryPurchased = parseInt(parsed.data.inventoryPurchased, 10);
 
   try {
     let imagePath: string | undefined;
@@ -98,6 +106,8 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
         author: parsed.data.author,
         description: parsed.data.description,
         priceInrPaise,
+        purchasePriceInrPaise,
+        inventoryPurchased,
         status: parsed.data.status,
         published: parsed.data.published,
         ...(imagePath ? { imagePath } : {}),

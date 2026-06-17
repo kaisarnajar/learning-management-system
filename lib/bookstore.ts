@@ -11,6 +11,8 @@ export type BookWithDetails = {
   author: string;
   description: string;
   priceInrPaise: number;
+  purchasePriceInrPaise: number;
+  inventoryPurchased: number;
   status: BookStatus;
   imagePath: string | null;
   published: boolean;

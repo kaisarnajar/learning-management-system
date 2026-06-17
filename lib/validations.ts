@@ -354,6 +354,22 @@ export const bookSchema = z.object({
       const n = parseFloat(v);
       return !isNaN(n) && n >= 0;
     }, "Price must be a non-negative number."),
+  purchasePriceInr: z
+    .string()
+    .trim()
+    .min(1, "Purchase price is required.")
+    .refine((v) => {
+      const n = parseFloat(v);
+      return !isNaN(n) && n >= 0;
+    }, "Purchase price must be a non-negative number."),
+  inventoryPurchased: z
+    .string()
+    .trim()
+    .min(1, "Inventory purchased is required.")
+    .refine((v) => {
+      const n = parseInt(v, 10);
+      return !isNaN(n) && n >= 0;
+    }, "Inventory must be a non-negative integer."),
   status: bookStatusEnum,
   published: z.boolean(),
 });

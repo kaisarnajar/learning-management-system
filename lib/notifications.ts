@@ -382,3 +382,35 @@ export async function notifyBookOrderDeclined(params: {
   revalidateNotificationPaths(params.userId);
 }
 
+export async function notifyBookOrderShipped(params: {
+  userId: string;
+  orderId: string;
+}) {
+  await createStudentNotification({
+    userId: params.userId,
+    type: "BOOK_ORDER_SHIPPED",
+    title: "Book order shipped",
+    body: "Your book order has been shipped and is on its way!",
+    href: "/profile/cart",
+    sourceType: "BookOrder",
+    sourceId: params.orderId,
+  });
+  revalidateNotificationPaths(params.userId);
+}
+
+export async function notifyBookOrderRefunded(params: {
+  userId: string;
+  orderId: string;
+}) {
+  await createStudentNotification({
+    userId: params.userId,
+    type: "BOOK_ORDER_REFUNDED",
+    title: "Book order refunded",
+    body: "Your book order has been canceled and the payment has been refunded.",
+    href: "/profile/cart",
+    sourceType: "BookOrder",
+    sourceId: params.orderId,
+  });
+  revalidateNotificationPaths(params.userId);
+}
+

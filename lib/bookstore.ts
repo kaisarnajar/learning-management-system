@@ -70,6 +70,10 @@ export function bookOrderStatusLabel(status: string): string {
       return "Approved";
     case "DECLINED":
       return "Declined";
+    case "SHIPPED":
+      return "Shipped";
+    case "REFUNDED":
+      return "Refunded";
     default:
       return status;
   }
@@ -83,6 +87,10 @@ export function bookOrderStatusClass(status: string): string {
       return "bg-emerald-100 text-emerald-800";
     case "DECLINED":
       return "bg-red-100 text-red-800";
+    case "SHIPPED":
+      return "bg-blue-100 text-blue-800";
+    case "REFUNDED":
+      return "bg-gray-200 text-gray-800";
     default:
       return "bg-gray-100 text-gray-700";
   }
@@ -112,6 +120,43 @@ export async function getPendingBookOrdersPaginated(
 ): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
   const where = {
     status: "PENDING_VERIFICATION" as const,
+    ...(search
+      ? {
+          OR: [
+            { user: { name: { contains: search } } },
+            { user: { email: { contains: search } } },
+            { upiTransactionId: { contains: search } },
+          ],
+        }
+      : {}),
+  };
+
+  const [items, totalCount] = await Promise.all([
+    prisma.bookOrder.findMany({
+      where,
+      include: {
+        user: { select: { name: true, email: true } },
+        items: {
+          include: { book: { select: { id: true, title: true, author: true } } },
+        },
+      },
+      orderBy: { createdAt: "asc" },
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    }),
+    prisma.bookOrder.count({ where }),
+  ]);
+
+  return { items, totalCount };
+}
+
+export async function getApprovedBookOrdersPaginated(
+  page = 1,
+  pageSize = 20,
+  search?: string,
+): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
+  const where = {
+    status: "APPROVED" as const,
     ...(search
       ? {
           OR: [

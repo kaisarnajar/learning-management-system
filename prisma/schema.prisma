@@ -74,6 +74,8 @@ enum StudentNotificationType {
   SITE_ANNOUNCEMENT
   BOOK_ORDER_APPROVED
   BOOK_ORDER_DECLINED
+  BOOK_ORDER_SHIPPED
+  BOOK_ORDER_REFUNDED
 }
 
 enum BookStatus {
@@ -86,6 +88,8 @@ enum BookOrderStatus {
   PENDING_VERIFICATION
   APPROVED
   DECLINED
+  SHIPPED
+  REFUNDED
 }
 
 model User {

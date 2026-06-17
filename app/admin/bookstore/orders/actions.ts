@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-actions";
-import { notifyBookOrderApproved, notifyBookOrderDeclined } from "@/lib/notifications";
+import {
+  notifyBookOrderApproved,
+  notifyBookOrderDeclined,
+  notifyBookOrderShipped,
+  notifyBookOrderRefunded,
+} from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 
 function revalidateOrderPaths(userId: string) {
@@ -96,4 +101,62 @@ export async function declineBookOrder(
 
   revalidateOrderPaths(order.userId);
   redirect("/admin/bookstore/orders?declined=1");
+}
+
+export async function markBookOrderShipped(
+  orderId: string,
+): Promise<{ error?: string }> {
+  await requireAdmin();
+
+  const order = await prisma.bookOrder.findUnique({
+    where: { id: orderId },
+  });
+
+  if (!order) return { error: "Order not found." };
+
+  if (order.status !== "APPROVED") {
+    return { error: "Only approved orders can be marked as shipped." };
+  }
+
+  await prisma.bookOrder.update({
+    where: { id: orderId },
+    data: { status: "SHIPPED" },
+  });
+
+  await notifyBookOrderShipped({
+    userId: order.userId,
+    orderId: order.id,
+  });
+
+  revalidateOrderPaths(order.userId);
+  redirect("/admin/bookstore/orders?shipped=1");
+}
+
+export async function markBookOrderRefunded(
+  orderId: string,
+): Promise<{ error?: string }> {
+  await requireAdmin();
+
+  const order = await prisma.bookOrder.findUnique({
+    where: { id: orderId },
+  });
+
+  if (!order) return { error: "Order not found." };
+
+  if (order.status !== "APPROVED") {
+    return { error: "Only approved orders can be refunded." };
+  }
+
+  await prisma.bookOrder.update({
+    where: { id: orderId },
+    data: { status: "REFUNDED" },
+  });
+
+  await notifyBookOrderRefunded({
+    userId: order.userId,
+    orderId: order.id,
+  });
+
+  revalidateOrderPaths(order.userId);
+  redirect("/admin/bookstore/orders?refunded=1");
 }

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePaymentScreenshot, savePaymentScreenshot } from "@/lib/payment-upload";
 import { bookstoreCheckoutSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -24,9 +25,11 @@ export async function POST(req: NextRequest) {
   let parsedItems;
   try {
     parsedItems = JSON.parse(rawItems as string);
-  } catch {
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    console.error("Caught error:", error);
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
-  }
+    }
 
   const validation = bookstoreCheckoutSchema.safeParse({
     items: parsedItems,
@@ -55,9 +58,9 @@ export async function POST(req: NextRequest) {
 
   // Fetch books and verify all exist and are AVAILABLE
   const bookIds = body.items.map((i) => i.bookId);
-  const books = await prisma.book.findMany({
-    where: { id: { in: bookIds }, published: true },
-  });
+  const books = await withDbErrorHandling(() => prisma.book.findMany({
+      where: { id: { in: bookIds }, published: true },
+    }), "Database operation failed");
 
   if (books.length !== bookIds.length) {
     return NextResponse.json(
@@ -95,25 +98,25 @@ export async function POST(req: NextRequest) {
   }
 
   // Create order
-  const order = await prisma.bookOrder.create({
-    data: {
-      userId,
-      totalAmountInrPaise,
-      paymentMethod: body.paymentMethod,
-      upiTransactionId: body.upiTransactionId.trim() || null,
-      paymentScreenshotPath,
-      deliveryAddress: body.deliveryAddress,
-      notes: body.notes?.trim() || null,
-      status: "PENDING_VERIFICATION",
-      items: {
-        create: body.items.map((item) => ({
-          bookId: item.bookId,
-          quantity: item.quantity,
-          priceAtPurchaseInrPaise: bookPriceMap.get(item.bookId)!,
-        })),
+  const order = await withDbErrorHandling(() => prisma.bookOrder.create({
+      data: {
+        userId,
+        totalAmountInrPaise,
+        paymentMethod: body.paymentMethod,
+        upiTransactionId: body.upiTransactionId.trim() || null,
+        paymentScreenshotPath,
+        deliveryAddress: body.deliveryAddress,
+        notes: body.notes?.trim() || null,
+        status: "PENDING_VERIFICATION",
+        items: {
+          create: body.items.map((item) => ({
+            bookId: item.bookId,
+            quantity: item.quantity,
+            priceAtPurchaseInrPaise: bookPriceMap.get(item.bookId)!,
+          })),
+        },
       },
-    },
-  });
+    }), "Database operation failed");
 
   return NextResponse.json({ orderId: order.id, redirectUrl: "/profile/cart?submitted=1" });
 }

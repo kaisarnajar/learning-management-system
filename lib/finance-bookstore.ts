@@ -4,6 +4,7 @@ import { financePaidAtWhere } from "@/lib/finance-filters";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { buildSearchOr } from "@/lib/text-search";
 import type { Prisma } from "@prisma/client";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export type BookstoreFinanceSummary = {
   totalBooksPurchased: number;
@@ -46,24 +47,24 @@ export async function getBookstoreFinanceSummary(filters: Pick<FinanceFilters, "
   const dateWhere = filters.from || filters.to ? { createdAt: financePaidAtWhere(filters) } : {};
 
   const [books, orders] = await Promise.all([
-    prisma.book.findMany({
-      select: {
-        inventoryPurchased: true,
-        purchasePriceInrPaise: true,
-      },
-    }),
-    prisma.bookOrder.findMany({
-      where: dateWhere,
-      include: {
-        items: {
-          include: {
-            book: {
-              select: { purchasePriceInrPaise: true },
+    withDbErrorHandling(() => prisma.book.findMany({
+            select: {
+              inventoryPurchased: true,
+              purchasePriceInrPaise: true,
             },
-          },
-        },
-      },
-    }),
+          }), "Database operation failed"),
+    withDbErrorHandling(() => prisma.bookOrder.findMany({
+            where: dateWhere,
+            include: {
+              items: {
+                include: {
+                  book: {
+                    select: { purchasePriceInrPaise: true },
+                  },
+                },
+              },
+            },
+          }), "Database operation failed"),
   ]);
 
   let totalBooksPurchased = 0;
@@ -128,21 +129,21 @@ export async function getBookSalesPaginated(
 ): Promise<PaginatedResult<BookSalesRecord>> {
   const where: Prisma.BookWhereInput = q ? buildSearchOr(["title", "author"], [], q) : {};
 
-  const totalCount = await prisma.book.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.book.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
 
-  const books = await prisma.book.findMany({
-    where,
-    include: {
-      orderItems: {
-        where: {
-          order: { status: { in: ["APPROVED", "SHIPPED"] } },
+  const books = await withDbErrorHandling(() => prisma.book.findMany({
+      where,
+      include: {
+        orderItems: {
+          where: {
+            order: { status: { in: ["APPROVED", "SHIPPED"] } },
+          },
         },
       },
-    },
-    orderBy: { title: "asc" },
-    ...paginationArgs(safePage, pageSize),
-  });
+      orderBy: { title: "asc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
 
   const items = books.map((book) => {
     let quantitySold = 0;
@@ -196,22 +197,22 @@ export async function getBookOrderFinancePaginated(
     AND: [dateWhere, searchWhere],
   };
 
-  const totalCount = await prisma.bookOrder.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.bookOrder.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
 
-  const orders = await prisma.bookOrder.findMany({
-    where,
-    include: {
-      user: { select: { name: true, email: true } },
-      items: {
-        include: {
-          book: { select: { purchasePriceInrPaise: true } },
+  const orders = await withDbErrorHandling(() => prisma.bookOrder.findMany({
+      where,
+      include: {
+        user: { select: { name: true, email: true } },
+        items: {
+          include: {
+            book: { select: { purchasePriceInrPaise: true } },
+          },
         },
       },
-    },
-    orderBy: { createdAt: "desc" },
-    ...paginationArgs(safePage, pageSize),
-  });
+      orderBy: { createdAt: "desc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
 
   const items = orders.map((order) => {
     let profitContributionPaise = 0;

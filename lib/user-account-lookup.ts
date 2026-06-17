@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export function normalizeAccountEmail(email: string): string {
   return email.toLowerCase().trim();
@@ -19,7 +20,7 @@ export async function lookupRegisteredUser(
     return { ok: false, error: "Enter an email address." };
   }
 
-  const user = await prisma.user.findUnique({ where: { email: normalized } });
+  const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { email: normalized } }), "Database operation failed");
   if (!user) {
     return {
       ok: false,

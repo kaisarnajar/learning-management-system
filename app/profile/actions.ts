@@ -6,6 +6,7 @@ import { requireUser } from "@/lib/auth-actions";
 import { buildStoredProfileWhatsApp } from "@/lib/countries";
 import { prisma } from "@/lib/prisma";
 import { profileUpdateSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export type ProfileUpdateState = {
   error?: string;
@@ -31,17 +32,17 @@ export async function updateProfile(
     return { error: parsed.error.issues[0]?.message ?? "Invalid profile data." };
   }
 
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: {
-      name: parsed.data.name,
-      fatherName: parsed.data.fatherName,
-      dateOfBirth: new Date(parsed.data.dateOfBirth),
-      occupation: parsed.data.occupation,
-      address: parsed.data.address,
-      whatsapp: buildStoredProfileWhatsApp(parsed.data.country, parsed.data.whatsapp),
-    },
-  });
+  await withDbErrorHandling(() => prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        name: parsed.data.name,
+        fatherName: parsed.data.fatherName,
+        dateOfBirth: new Date(parsed.data.dateOfBirth),
+        occupation: parsed.data.occupation,
+        address: parsed.data.address,
+        whatsapp: buildStoredProfileWhatsApp(parsed.data.country, parsed.data.whatsapp),
+      },
+    }), "Database operation failed");
 
   revalidatePath("/profile");
   revalidatePath("/profile/courses");

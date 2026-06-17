@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { normalizeAccountEmail } from "@/lib/user-account-lookup";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 const RESET_TOKEN_BYTES = 32;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -24,7 +25,7 @@ export function buildPasswordResetUrl(token: string): string {
 
 export async function createPasswordResetToken(email: string): Promise<string | null> {
   const normalized = normalizeAccountEmail(email);
-  const user = await prisma.user.findUnique({ where: { email: normalized } });
+  const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { email: normalized } }), "Database operation failed");
 
   if (!user?.password) {
     return null;
@@ -34,10 +35,10 @@ export async function createPasswordResetToken(email: string): Promise<string | 
   const tokenHash = hashResetToken(token);
   const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
 
-  await prisma.passwordResetToken.deleteMany({ where: { email: normalized } });
-  await prisma.passwordResetToken.create({
-    data: { email: normalized, tokenHash, expiresAt },
-  });
+  await withDbErrorHandling(() => prisma.passwordResetToken.deleteMany({ where: { email: normalized } }), "Database operation failed");
+  await withDbErrorHandling(() => prisma.passwordResetToken.create({
+      data: { email: normalized, tokenHash, expiresAt },
+    }), "Database operation failed");
 
   return token;
 }
@@ -51,16 +52,16 @@ export async function consumePasswordResetToken(
   }
 
   const tokenHash = hashResetToken(trimmed);
-  const record = await prisma.passwordResetToken.findUnique({ where: { tokenHash } });
+  const record = await withDbErrorHandling(() => prisma.passwordResetToken.findUnique({ where: { tokenHash } }), "Database operation failed");
 
   if (!record || record.expiresAt < new Date()) {
     if (record) {
-      await prisma.passwordResetToken.delete({ where: { id: record.id } });
+      await withDbErrorHandling(() => prisma.passwordResetToken.delete({ where: { id: record.id } }), "Database operation failed");
     }
     return { ok: false, error: "Reset link is invalid or has expired." };
   }
 
-  await prisma.passwordResetToken.deleteMany({ where: { email: record.email } });
+  await withDbErrorHandling(() => prisma.passwordResetToken.deleteMany({ where: { email: record.email } }), "Database operation failed");
 
   return { ok: true, email: record.email };
 }

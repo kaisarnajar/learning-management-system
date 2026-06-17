@@ -3,6 +3,7 @@ import Link from "next/link";
 import { BookCheckoutClient } from "@/components/bookstore/BookCheckoutClient";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
@@ -41,9 +42,9 @@ export default async function CartCheckoutPage({
   }
 
   const bookIds = selectedItems.map((i) => i.bookId);
-  const books = await prisma.book.findMany({
-    where: { id: { in: bookIds }, published: true, status: "AVAILABLE" },
-  });
+  const books = await withDbErrorHandling(() => prisma.book.findMany({
+      where: { id: { in: bookIds }, published: true, status: "AVAILABLE" },
+    }), "Database operation failed");
 
 
   const resolvedItems = selectedItems

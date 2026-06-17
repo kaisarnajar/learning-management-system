@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth-actions";
 import { PAYMENT_SETTINGS_ID } from "@/lib/payment-settings";
 import { prisma } from "@/lib/prisma";
 import { paymentSettingsSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function revalidatePaymentSettingsPaths() {
   const paths = [
@@ -43,11 +44,11 @@ export async function updatePaymentSettings(formData: FormData) {
     bankBranch: parsed.data.bankBranch?.trim() ?? "",
   };
 
-  await prisma.paymentSettings.upsert({
-    where: { id: PAYMENT_SETTINGS_ID },
-    create: { id: PAYMENT_SETTINGS_ID, ...data },
-    update: data,
-  });
+  await withDbErrorHandling(() => prisma.paymentSettings.upsert({
+      where: { id: PAYMENT_SETTINGS_ID },
+      create: { id: PAYMENT_SETTINGS_ID, ...data },
+      update: data,
+    }), "Database operation failed");
 
   revalidatePaymentSettingsPaths();
   redirect("/admin/payment-settings?saved=1");

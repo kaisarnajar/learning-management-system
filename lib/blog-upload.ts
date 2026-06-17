@@ -54,7 +54,8 @@ export async function deleteBlogImageFile(imagePath: string | null | undefined) 
   const filePath = path.join(process.cwd(), "public", imagePath);
   try {
     await unlink(filePath);
-  } catch {
-    // File may already be missing.
-  }
+  } catch (error) {
+    console.error("Caught error:", error);
+
+    }
 }

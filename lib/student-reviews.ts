@@ -2,6 +2,7 @@ import type { StudentReview, StudentReviewStatus, User } from "@prisma/client";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { andWhere, buildSearchOr } from "@/lib/text-search";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function studentReviewSearchWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -83,26 +84,26 @@ export function canStudentDeleteReview(
 }
 
 export async function getFeaturedHomepageReviews(): Promise<HomepageReview[]> {
-  const reviews = await prisma.studentReview.findMany({
-    where: { status: "APPROVED", featuredOnHomepage: true },
-    orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
-    take: HOMEPAGE_FEATURED_REVIEWS_MAX,
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-    },
-  });
+  const reviews = await withDbErrorHandling(() => prisma.studentReview.findMany({
+      where: { status: "APPROVED", featuredOnHomepage: true },
+      orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
+      take: HOMEPAGE_FEATURED_REVIEWS_MAX,
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+    }), "Database operation failed");
 
   return reviews.map(toHomepageReview);
 }
 
 export async function getFeaturedHomepageReviewCount(): Promise<number> {
-  return prisma.studentReview.count({
-    where: { status: "APPROVED", featuredOnHomepage: true },
-  });
+  return withDbErrorHandling(() => prisma.studentReview.count({
+      where: { status: "APPROVED", featuredOnHomepage: true },
+    }), "Database operation failed");
 }
 
 export async function getPendingStudentReviewCount(): Promise<number> {
-  return prisma.studentReview.count({ where: { status: "PENDING" } });
+  return withDbErrorHandling(() => prisma.studentReview.count({ where: { status: "PENDING" } }), "Database operation failed");
 }
 
 export async function getPendingStudentReviewsForAdminPaginated(
@@ -111,16 +112,16 @@ export async function getPendingStudentReviewsForAdminPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<StudentReviewWithUser>> {
   const where = andWhere({ status: "PENDING" as const }, studentReviewSearchWhere(searchQuery));
-  const totalCount = await prisma.studentReview.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.studentReview.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.studentReview.findMany({
-    where,
-    orderBy: { createdAt: "asc" },
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-    },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.studentReview.findMany({
+      where,
+      orderBy: { createdAt: "asc" },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
@@ -130,24 +131,24 @@ export async function getApprovedStudentReviewsForAdminPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<StudentReviewWithUser>> {
   const where = andWhere({ status: "APPROVED" as const }, studentReviewSearchWhere(searchQuery));
-  const totalCount = await prisma.studentReview.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.studentReview.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.studentReview.findMany({
-    where,
-    orderBy: [{ featuredOnHomepage: "desc" }, { featuredAt: "desc" }, { updatedAt: "desc" }],
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-    },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.studentReview.findMany({
+      where,
+      orderBy: [{ featuredOnHomepage: "desc" }, { featuredAt: "desc" }, { updatedAt: "desc" }],
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
 export async function getStudentReviewsForUser(userId: string) {
-  return prisma.studentReview.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-  });
+  return withDbErrorHandling(() => prisma.studentReview.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    }), "Database operation failed");
 }
 
 export async function getStudentReviewsForUserPaginated(
@@ -156,28 +157,28 @@ export async function getStudentReviewsForUserPaginated(
   pageSize: number,
 ): Promise<PaginatedResult<Awaited<ReturnType<typeof getStudentReviewsForUser>>[number]>> {
   const where = { userId };
-  const totalCount = await prisma.studentReview.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.studentReview.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.studentReview.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.studentReview.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
 export async function getStudentReviewForUser(id: string, userId: string) {
-  return prisma.studentReview.findFirst({
-    where: { id, userId },
-  });
+  return withDbErrorHandling(() => prisma.studentReview.findFirst({
+      where: { id, userId },
+    }), "Database operation failed");
 }
 
 export async function getStudentReviewForAdmin(id: string) {
-  return prisma.studentReview.findUnique({
-    where: { id },
-    include: {
-      user: { select: { id: true, name: true, email: true } },
-    },
-  });
+  return withDbErrorHandling(() => prisma.studentReview.findUnique({
+      where: { id },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+    }), "Database operation failed");
 }
 

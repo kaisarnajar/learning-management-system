@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-actions";
 import { prisma } from "@/lib/prisma";
 import { HOMEPAGE_FEATURED_REVIEWS_MAX, getFeaturedHomepageReviewCount } from "@/lib/student-reviews";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function revalidateReviewPaths(reviewId?: string) {
   revalidatePath("/");
@@ -44,7 +45,7 @@ export async function approveStudentReview(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const review = await prisma.studentReview.findUnique({ where: { id: reviewId } });
+  const review = await withDbErrorHandling(() => prisma.studentReview.findUnique({ where: { id: reviewId } }), "Database operation failed");
   if (!review) return { error: "Review not found." };
   if (review.status !== "PENDING") {
     return { error: "This review is no longer pending approval." };
@@ -64,14 +65,14 @@ export async function approveStudentReview(
     featuredAt = new Date();
   }
 
-  await prisma.studentReview.update({
-    where: { id: reviewId },
-    data: {
-      status: "APPROVED",
-      featuredOnHomepage,
-      featuredAt,
-    },
-  });
+  await withDbErrorHandling(() => prisma.studentReview.update({
+      where: { id: reviewId },
+      data: {
+        status: "APPROVED",
+        featuredOnHomepage,
+        featuredAt,
+      },
+    }), "Database operation failed");
 
   revalidateReviewPaths(reviewId);
   redirect(returnUrl(returnTo, "approved"));
@@ -83,20 +84,20 @@ export async function rejectStudentReview(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const review = await prisma.studentReview.findUnique({ where: { id: reviewId } });
+  const review = await withDbErrorHandling(() => prisma.studentReview.findUnique({ where: { id: reviewId } }), "Database operation failed");
   if (!review) return { error: "Review not found." };
   if (review.status !== "PENDING") {
     return { error: "This review is no longer pending approval." };
   }
 
-  await prisma.studentReview.update({
-    where: { id: reviewId },
-    data: {
-      status: "REJECTED",
-      featuredOnHomepage: false,
-      featuredAt: null,
-    },
-  });
+  await withDbErrorHandling(() => prisma.studentReview.update({
+      where: { id: reviewId },
+      data: {
+        status: "REJECTED",
+        featuredOnHomepage: false,
+        featuredAt: null,
+      },
+    }), "Database operation failed");
 
   revalidateReviewPaths(reviewId);
   redirect(returnUrl(returnTo, "rejected"));
@@ -108,7 +109,7 @@ export async function saveApprovedReviewHomepageSetting(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const review = await prisma.studentReview.findUnique({ where: { id: reviewId } });
+  const review = await withDbErrorHandling(() => prisma.studentReview.findUnique({ where: { id: reviewId } }), "Database operation failed");
   if (!review) return { error: "Review not found." };
   if (review.status !== "APPROVED") {
     return { error: "Only approved reviews can update homepage settings." };
@@ -124,20 +125,20 @@ export async function saveApprovedReviewHomepageSetting(
       };
     }
 
-    await prisma.studentReview.update({
-      where: { id: reviewId },
-      data: { featuredOnHomepage: true, featuredAt: new Date() },
-    });
+    await withDbErrorHandling(() => prisma.studentReview.update({
+          where: { id: reviewId },
+          data: { featuredOnHomepage: true, featuredAt: new Date() },
+        }), "Database operation failed");
 
     revalidateReviewPaths(reviewId);
     redirect("/admin/review-approvals?featured=1");
   }
 
   if (!featureOnHomepage && review.featuredOnHomepage) {
-    await prisma.studentReview.update({
-      where: { id: reviewId },
-      data: { featuredOnHomepage: false, featuredAt: null },
-    });
+    await withDbErrorHandling(() => prisma.studentReview.update({
+          where: { id: reviewId },
+          data: { featuredOnHomepage: false, featuredAt: null },
+        }), "Database operation failed");
 
     revalidateReviewPaths(reviewId);
     redirect("/admin/review-approvals?unfeatured=1");

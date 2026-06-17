@@ -10,6 +10,7 @@ import {
   getStudentReviewForUser,
 } from "@/lib/student-reviews";
 import { studentReviewSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function reviewsPath(suffix = "") {
   return `/profile/reviews${suffix}`;
@@ -40,16 +41,16 @@ export async function createStudentReview(formData: FormData) {
     );
   }
 
-  await prisma.studentReview.create({
-    data: {
-      userId: session.user.id,
-      quote: parsed.data.quote,
-      course: parsed.data.course || null,
-      location: parsed.data.location || null,
-      rating: parsed.data.rating,
-      status: "PENDING",
-    },
-  });
+  await withDbErrorHandling(() => prisma.studentReview.create({
+      data: {
+        userId: session.user.id,
+        quote: parsed.data.quote,
+        course: parsed.data.course || null,
+        location: parsed.data.location || null,
+        rating: parsed.data.rating,
+        status: "PENDING",
+      },
+    }), "Database operation failed");
 
   revalidateReviewPaths();
   redirect(reviewsPath("?submitted=1"));
@@ -74,18 +75,18 @@ export async function updateStudentReview(id: string, formData: FormData) {
     redirect(reviewsPath("?error=locked"));
   }
 
-  await prisma.studentReview.update({
-    where: { id },
-    data: {
-      quote: parsed.data.quote,
-      course: parsed.data.course || null,
-      location: parsed.data.location || null,
-      rating: parsed.data.rating,
-      status: "PENDING",
-      featuredOnHomepage: false,
-      featuredAt: null,
-    },
-  });
+  await withDbErrorHandling(() => prisma.studentReview.update({
+      where: { id },
+      data: {
+        quote: parsed.data.quote,
+        course: parsed.data.course || null,
+        location: parsed.data.location || null,
+        rating: parsed.data.rating,
+        status: "PENDING",
+        featuredOnHomepage: false,
+        featuredAt: null,
+      },
+    }), "Database operation failed");
 
   revalidateReviewPaths();
   redirect(reviewsPath("?resubmitted=1"));
@@ -103,7 +104,7 @@ export async function deleteStudentReview(id: string) {
     redirect(reviewsPath("?error=notfound"));
   }
 
-  await prisma.studentReview.delete({ where: { id } });
+  await withDbErrorHandling(() => prisma.studentReview.delete({ where: { id } }), "Database operation failed");
 
   revalidateReviewPaths();
   redirect(reviewsPath("?deleted=1"));

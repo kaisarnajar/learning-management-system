@@ -71,7 +71,8 @@ export async function deleteAnnouncementAttachment(attachmentPath: string | null
   const filePath = path.join(process.cwd(), "public", attachmentPath);
   try {
     await unlink(filePath);
-  } catch {
-    // File may already be missing.
-  }
+  } catch (error) {
+    console.error("Caught error:", error);
+
+    }
 }

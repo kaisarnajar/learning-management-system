@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth-actions";
 import { sendContactInquiryReplyEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { contactInquiryReplySchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export async function replyToContactInquiry(id: string, formData: FormData) {
   const session = await requireAdmin();
@@ -20,21 +21,21 @@ export async function replyToContactInquiry(id: string, formData: FormData) {
     );
   }
 
-  const inquiry = await prisma.contactInquiry.findUnique({ where: { id } });
+  const inquiry = await withDbErrorHandling(() => prisma.contactInquiry.findUnique({ where: { id } }), "Database operation failed");
   if (!inquiry) {
     redirect("/admin/contact-inquiries?error=notfound");
   }
 
   const now = new Date();
 
-  await prisma.contactInquiry.update({
-    where: { id },
-    data: {
-      reply: parsed.data.reply,
-      repliedAt: inquiry.repliedAt ?? now,
-      repliedById: session.user.id,
-    },
-  });
+  await withDbErrorHandling(() => prisma.contactInquiry.update({
+      where: { id },
+      data: {
+        reply: parsed.data.reply,
+        repliedAt: inquiry.repliedAt ?? now,
+        repliedById: session.user.id,
+      },
+    }), "Database operation failed");
 
   const emailResult = await sendContactInquiryReplyEmail({
     to: inquiry.email,
@@ -59,12 +60,12 @@ export async function replyToContactInquiry(id: string, formData: FormData) {
 export async function deleteContactInquiryById(id: string): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const inquiry = await prisma.contactInquiry.findUnique({ where: { id } });
+  const inquiry = await withDbErrorHandling(() => prisma.contactInquiry.findUnique({ where: { id } }), "Database operation failed");
   if (!inquiry) {
     return { error: "Inquiry not found." };
   }
 
-  await prisma.contactInquiry.delete({ where: { id } });
+  await withDbErrorHandling(() => prisma.contactInquiry.delete({ where: { id } }), "Database operation failed");
 
   revalidatePath("/admin/contact-inquiries");
   revalidatePath(`/admin/contact-inquiries/${id}`);

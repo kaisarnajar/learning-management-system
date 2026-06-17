@@ -1,6 +1,7 @@
 import type { User } from "@prisma/client";
 import { OCCUPATION_OPTIONS, occupationLabel } from "@/lib/occupations";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export { OCCUPATION_OPTIONS, occupationLabel };
 
@@ -43,10 +44,10 @@ export function isProfileComplete(user: Partial<UserProfileData>): boolean {
 }
 
 export async function getUserProfile(userId: string): Promise<UserProfileData | null> {
-  return prisma.user.findUnique({
-    where: { id: userId },
-    select: userProfileSelect,
-  });
+  return withDbErrorHandling(() => prisma.user.findUnique({
+      where: { id: userId },
+      select: userProfileSelect,
+    }), "Database operation failed");
 }
 
 export async function isUserProfileComplete(userId: string): Promise<boolean> {

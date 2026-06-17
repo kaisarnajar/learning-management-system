@@ -10,6 +10,7 @@ import {
   notifyBookOrderRefunded,
 } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function revalidateOrderPaths(userId: string) {
   const paths = [
@@ -32,10 +33,10 @@ export async function approveBookOrder(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const order = await prisma.bookOrder.findUnique({
-    where: { id: orderId },
-    include: { user: { select: { id: true, email: true, name: true } } },
-  });
+  const order = await withDbErrorHandling(() => prisma.bookOrder.findUnique({
+      where: { id: orderId },
+      include: { user: { select: { id: true, email: true, name: true } } },
+    }), "Database operation failed");
 
   if (!order) return { error: "Order not found." };
 
@@ -47,21 +48,21 @@ export async function approveBookOrder(
     return { error: "Only pending orders can be approved." };
   }
 
-  await prisma.bookOrder.update({
-    where: { id: orderId },
-    data: { status: "APPROVED" },
-  });
+  await withDbErrorHandling(() => prisma.bookOrder.update({
+      where: { id: orderId },
+      data: { status: "APPROVED" },
+    }), "Database operation failed");
 
   // Create a payment record for finance tracking
-  await prisma.paymentRecord.create({
-    data: {
-      userId: order.userId,
-      amountInrPaise: order.totalAmountInrPaise,
-      paidAt: new Date(),
-      paymentType: "book_purchase",
-      description: `Book order #${orderId.slice(-6).toUpperCase()}`,
-    },
-  });
+  await withDbErrorHandling(() => prisma.paymentRecord.create({
+      data: {
+        userId: order.userId,
+        amountInrPaise: order.totalAmountInrPaise,
+        paidAt: new Date(),
+        paymentType: "book_purchase",
+        description: `Book order #${orderId.slice(-6).toUpperCase()}`,
+      },
+    }), "Database operation failed");
 
   await notifyBookOrderApproved({
     userId: order.userId,
@@ -78,10 +79,10 @@ export async function declineBookOrder(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const order = await prisma.bookOrder.findUnique({
-    where: { id: orderId },
-    include: { user: { select: { id: true, email: true, name: true } } },
-  });
+  const order = await withDbErrorHandling(() => prisma.bookOrder.findUnique({
+      where: { id: orderId },
+      include: { user: { select: { id: true, email: true, name: true } } },
+    }), "Database operation failed");
 
   if (!order) return { error: "Order not found." };
 
@@ -89,10 +90,10 @@ export async function declineBookOrder(
     return { error: "Only pending orders can be declined." };
   }
 
-  await prisma.bookOrder.update({
-    where: { id: orderId },
-    data: { status: "DECLINED" },
-  });
+  await withDbErrorHandling(() => prisma.bookOrder.update({
+      where: { id: orderId },
+      data: { status: "DECLINED" },
+    }), "Database operation failed");
 
   await notifyBookOrderDeclined({
     userId: order.userId,
@@ -108,9 +109,9 @@ export async function markBookOrderShipped(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const order = await prisma.bookOrder.findUnique({
-    where: { id: orderId },
-  });
+  const order = await withDbErrorHandling(() => prisma.bookOrder.findUnique({
+      where: { id: orderId },
+    }), "Database operation failed");
 
   if (!order) return { error: "Order not found." };
 
@@ -118,10 +119,10 @@ export async function markBookOrderShipped(
     return { error: "Only approved orders can be marked as shipped." };
   }
 
-  await prisma.bookOrder.update({
-    where: { id: orderId },
-    data: { status: "SHIPPED" },
-  });
+  await withDbErrorHandling(() => prisma.bookOrder.update({
+      where: { id: orderId },
+      data: { status: "SHIPPED" },
+    }), "Database operation failed");
 
   await notifyBookOrderShipped({
     userId: order.userId,
@@ -137,9 +138,9 @@ export async function markBookOrderRefunded(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const order = await prisma.bookOrder.findUnique({
-    where: { id: orderId },
-  });
+  const order = await withDbErrorHandling(() => prisma.bookOrder.findUnique({
+      where: { id: orderId },
+    }), "Database operation failed");
 
   if (!order) return { error: "Order not found." };
 
@@ -147,10 +148,10 @@ export async function markBookOrderRefunded(
     return { error: "Only approved orders can be refunded." };
   }
 
-  await prisma.bookOrder.update({
-    where: { id: orderId },
-    data: { status: "REFUNDED" },
-  });
+  await withDbErrorHandling(() => prisma.bookOrder.update({
+      where: { id: orderId },
+      data: { status: "REFUNDED" },
+    }), "Database operation failed");
 
   await notifyBookOrderRefunded({
     userId: order.userId,

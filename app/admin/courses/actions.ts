@@ -10,6 +10,7 @@ import { getDefaultFeesForLevel } from "@/lib/course-pricing";
 import { uniqueSlug } from "@/lib/slug";
 import { getCourseStartDateFromForm } from "@/lib/course-start-date";
 import { courseSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function parseCourseForm(formData: FormData) {
   const level = String(formData.get("level") ?? "Beginner");
@@ -83,6 +84,7 @@ export async function createCourse(formData: FormData) {
       data: { id, title, ...courseData, ...featured },
     });
   } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
     console.error("Database error creating course:", error);
     redirect("/admin/courses/new?saveError=" + encodeURIComponent("An unexpected database error occurred."));
   }
@@ -105,6 +107,7 @@ export async function updateCourse(id: string, formData: FormData) {
   try {
     existing = await prisma.course.findUnique({ where: { id } });
   } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
     console.error("Database error fetching course:", error);
     redirect(`/admin/courses/${id}/edit?saveError=${encodeURIComponent("Database error.")}`);
   }
@@ -133,6 +136,7 @@ export async function updateCourse(id: string, formData: FormData) {
 
     await syncEnrollmentsWithCourseStatus(id, courseData.status);
   } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
     console.error("Database error updating course:", error);
     redirect(`/admin/courses/${id}/edit?saveError=${encodeURIComponent("An unexpected database error occurred.")}`);
   }
@@ -150,10 +154,10 @@ export async function updateCourse(id: string, formData: FormData) {
 export async function deleteCourse(id: string) {
   await requireAdmin();
 
-  const course = await prisma.course.findUnique({
-    where: { id },
-    select: { title: true },
-  });
+  const course = await withDbErrorHandling(() => prisma.course.findUnique({
+      where: { id },
+      select: { title: true },
+    }), "Database operation failed");
 
   if (!course) {
     redirect("/admin/courses?deleteError=Course%20not%20found.");

@@ -1,6 +1,7 @@
 import type { CourseStatus } from "@prisma/client";
 import { getRosterEnrollmentStatusForCourse } from "@/lib/enrollments";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 /** Keep roster enrollments aligned with course status from Edit Course. */
 export async function syncEnrollmentsWithCourseStatus(
@@ -10,15 +11,15 @@ export async function syncEnrollmentsWithCourseStatus(
   const rosterStatus = getRosterEnrollmentStatusForCourse(courseStatus);
 
   if (rosterStatus === "completed") {
-    await prisma.enrollment.updateMany({
-      where: { courseId, status: "active" },
-      data: { status: "completed", completedAt: new Date() },
-    });
+    await withDbErrorHandling(() => prisma.enrollment.updateMany({
+          where: { courseId, status: "active" },
+          data: { status: "completed", completedAt: new Date() },
+        }), "Database operation failed");
     return;
   }
 
-  await prisma.enrollment.updateMany({
-    where: { courseId, status: "completed" },
-    data: { status: "active", completedAt: null },
-  });
+  await withDbErrorHandling(() => prisma.enrollment.updateMany({
+      where: { courseId, status: "completed" },
+      data: { status: "active", completedAt: null },
+    }), "Database operation failed");
 }

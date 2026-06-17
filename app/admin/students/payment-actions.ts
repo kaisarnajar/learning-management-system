@@ -8,6 +8,7 @@ import { PAYMENT_TYPE_MANUAL } from "@/lib/monthly-payment-status";
 import { notifyPaymentApproved } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { paymentRecordSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export type RecordPaymentState = {
   error?: string;
@@ -32,7 +33,7 @@ export async function recordStudentPayment(
     return { error: parsed.error.issues[0]?.message ?? "Invalid payment data." };
   }
 
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { id: userId } }), "Database operation failed");
   if (!user) {
     return { error: "Student not found." };
   }
@@ -52,16 +53,16 @@ export async function recordStudentPayment(
     return { error: "Invalid payment date." };
   }
 
-  const record = await prisma.paymentRecord.create({
-    data: {
-      userId,
-      courseId,
-      amountInrPaise: rupeesToPaise(parsed.data.amountInr),
-      paidAt,
-      paymentType: PAYMENT_TYPE_MANUAL,
-      description: parsed.data.description?.trim() || null,
-    },
-  });
+  const record = await withDbErrorHandling(() => prisma.paymentRecord.create({
+      data: {
+        userId,
+        courseId,
+        amountInrPaise: rupeesToPaise(parsed.data.amountInr),
+        paidAt,
+        paymentType: PAYMENT_TYPE_MANUAL,
+        description: parsed.data.description?.trim() || null,
+      },
+    }), "Database operation failed");
 
   await notifyPaymentApproved({
     userId,

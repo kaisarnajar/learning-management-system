@@ -9,6 +9,7 @@ import { AWAITING_ENROLLMENT_FEE } from "@/lib/enrollment-status";
 import { hasPendingEnrollmentFeeSubmission } from "@/lib/monthly-payments";
 import { prisma } from "@/lib/prisma";
 import { isUpiConfigured } from "@/lib/upi";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export default async function PayEnrollmentFeePage({
   params,
@@ -26,9 +27,9 @@ export default async function PayEnrollmentFeePage({
     redirect("/profile/courses");
   }
 
-  const enrollment = await prisma.enrollment.findUnique({
-    where: { userId_courseId: { userId: session.user.id, courseId } },
-  });
+  const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId: session.user.id, courseId } },
+    }), "Database operation failed");
 
   if (!enrollment || enrollment.status !== AWAITING_ENROLLMENT_FEE) {
     redirect("/profile/courses");

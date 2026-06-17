@@ -8,6 +8,7 @@ import {
   type FinanceSearchParams,
 } from "@/lib/finance-filters";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function revalidateFinancePaths() {
   revalidatePath("/admin/finance");
@@ -20,12 +21,12 @@ export async function deleteExpenseById(
 ): Promise<{ error?: string; redirectTo?: string }> {
   await requireAdmin();
 
-  const expense = await prisma.expense.findUnique({ where: { id } });
+  const expense = await withDbErrorHandling(() => prisma.expense.findUnique({ where: { id } }), "Database operation failed");
   if (!expense) {
     return { error: "Expense not found." };
   }
 
-  await prisma.expense.delete({ where: { id } });
+  await withDbErrorHandling(() => prisma.expense.delete({ where: { id } }), "Database operation failed");
 
   revalidateFinancePaths();
 

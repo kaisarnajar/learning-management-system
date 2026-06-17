@@ -5,6 +5,7 @@ import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/lib/auth.config";
 import { prisma } from "@/lib/prisma";
 import { getTeacherByEmail, resolveUserRole } from "@/lib/teacher-auth";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -21,7 +22,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.password) return null;
 
         const email = String(credentials.email).toLowerCase().trim();
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { email } }), "Database operation failed");
 
         if (!user?.password) return null;
 

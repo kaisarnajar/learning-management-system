@@ -15,6 +15,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { getCourseById } from "@/lib/courses";
 import { notifyPaymentApproved, revalidateNotificationPaths } from "@/lib/notifications";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function revalidatePaymentPaths(userId: string, courseId?: string | null) {
   const paths = [
@@ -54,10 +55,10 @@ export async function confirmMonthlyPayment(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const submission = await prisma.coursePaymentSubmission.findUnique({
-    where: { id: submissionId },
-    include: { user: { select: { email: true, name: true } } },
-  });
+  const submission = await withDbErrorHandling(() => prisma.coursePaymentSubmission.findUnique({
+      where: { id: submissionId },
+      include: { user: { select: { email: true, name: true } } },
+    }), "Database operation failed");
 
   if (!submission) {
     return { error: "Payment submission not found." };
@@ -72,35 +73,35 @@ export async function confirmMonthlyPayment(
   }
 
   if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT) {
-    const enrollment = await prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: { userId: submission.userId, courseId: submission.courseId },
-      },
-    });
+    const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
+          where: {
+            userId_courseId: { userId: submission.userId, courseId: submission.courseId },
+          },
+        }), "Database operation failed");
 
     if (!enrollment || enrollment.status !== AWAITING_ENROLLMENT_FEE) {
       return { error: "Enrollment is not awaiting an enrollment fee payment." };
     }
   }
 
-  const record = await prisma.paymentRecord.create({
-    data: {
-      userId: submission.userId,
-      courseId: submission.courseId,
-      amountInrPaise: submission.amountInrPaise,
-      paidAt: new Date(),
-      paymentType: submission.paymentType,
-      description: submission.label,
-    },
-  });
+  const record = await withDbErrorHandling(() => prisma.paymentRecord.create({
+      data: {
+        userId: submission.userId,
+        courseId: submission.courseId,
+        amountInrPaise: submission.amountInrPaise,
+        paidAt: new Date(),
+        paymentType: submission.paymentType,
+        description: submission.label,
+      },
+    }), "Database operation failed");
 
-  await prisma.coursePaymentSubmission.update({
-    where: { id: submissionId },
-    data: {
-      status: MONTHLY_PAYMENT_APPROVED,
-      paymentRecordId: record.id,
-    },
-  });
+  await withDbErrorHandling(() => prisma.coursePaymentSubmission.update({
+      where: { id: submissionId },
+      data: {
+        status: MONTHLY_PAYMENT_APPROVED,
+        paymentRecordId: record.id,
+      },
+    }), "Database operation failed");
 
   if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT) {
     const course = await getCourseById(submission.courseId);
@@ -108,14 +109,14 @@ export async function confirmMonthlyPayment(
       return { error: "Course not found." };
     }
 
-    await prisma.enrollment.updateMany({
-      where: {
-        userId: submission.userId,
-        courseId: submission.courseId,
-        status: AWAITING_ENROLLMENT_FEE,
-      },
-      data: { status: getRosterEnrollmentStatusForCourse(course.status) },
-    });
+    await withDbErrorHandling(() => prisma.enrollment.updateMany({
+          where: {
+            userId: submission.userId,
+            courseId: submission.courseId,
+            status: AWAITING_ENROLLMENT_FEE,
+          },
+          data: { status: getRosterEnrollmentStatusForCourse(course.status) },
+        }), "Database operation failed");
   }
 
   const course = await getCourseById(submission.courseId);
@@ -140,10 +141,10 @@ export async function declineMonthlyPayment(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const submission = await prisma.coursePaymentSubmission.findUnique({
-    where: { id: submissionId },
-    include: { user: { select: { email: true, name: true } } },
-  });
+  const submission = await withDbErrorHandling(() => prisma.coursePaymentSubmission.findUnique({
+      where: { id: submissionId },
+      include: { user: { select: { email: true, name: true } } },
+    }), "Database operation failed");
 
   if (!submission) {
     return { error: "Payment submission not found." };
@@ -158,15 +159,15 @@ export async function declineMonthlyPayment(
     return { error: "Course not found." };
   }
 
-  await prisma.coursePaymentSubmission.update({
-    where: { id: submissionId },
-    data: {
-      status: MONTHLY_PAYMENT_DECLINED,
-      upiTransactionId: null,
-      paymentScreenshotPath: null,
-      paymentMethod: null,
-    },
-  });
+  await withDbErrorHandling(() => prisma.coursePaymentSubmission.update({
+      where: { id: submissionId },
+      data: {
+        status: MONTHLY_PAYMENT_DECLINED,
+        upiTransactionId: null,
+        paymentScreenshotPath: null,
+        paymentMethod: null,
+      },
+    }), "Database operation failed");
 
   const base = process.env.AUTH_URL || "http://localhost:3000";
   const paymentUrl =

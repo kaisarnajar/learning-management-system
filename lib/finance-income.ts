@@ -4,6 +4,7 @@ import { financePaidAtWhere } from "@/lib/finance-filters";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { andWhere, buildSearchOr } from "@/lib/text-search";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function incomeSearchWhere(q?: string) {
   if (!q) return undefined;
@@ -42,22 +43,22 @@ export async function getIncomeRecordsPaginated(
   pageSize: number,
 ): Promise<PaginatedResult<Prisma.PaymentRecordGetPayload<{ include: typeof incomeInclude }>>> {
   const where = buildIncomeWhere(filters);
-  const totalCount = await prisma.paymentRecord.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.paymentRecord.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.paymentRecord.findMany({
-    where,
-    include: incomeInclude,
-    orderBy: { paidAt: "desc" },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
+      where,
+      include: incomeInclude,
+      orderBy: { paidAt: "desc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
 export async function getIncomeTotal(filters: FinanceFilters): Promise<number> {
-  const result = await prisma.paymentRecord.aggregate({
-    where: buildIncomeWhere(filters),
-    _sum: { amountInrPaise: true },
-  });
+  const result = await withDbErrorHandling(() => prisma.paymentRecord.aggregate({
+      where: buildIncomeWhere(filters),
+      _sum: { amountInrPaise: true },
+    }), "Database operation failed");
 
   return result._sum.amountInrPaise ?? 0;
 }

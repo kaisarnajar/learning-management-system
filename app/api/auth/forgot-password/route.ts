@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       try {
         await sendPasswordResetEmail({ to: email, resetUrl });
       } catch (emailError) {
+        if (emailError && typeof emailError === "object" && "digest" in emailError && typeof emailError.digest === "string" && emailError.digest.startsWith("NEXT_REDIRECT")) { throw emailError; }
         console.error("[forgot-password] SMTP send failed:", emailError);
         console.info("[forgot-password] Reset link (use if email did not arrive):", resetUrl);
       }
@@ -33,6 +34,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: GENERIC_SUCCESS });
   } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
     console.error("[forgot-password] Request failed:", error);
     return NextResponse.json(
       { error: "Could not process your request. Please try again later." },

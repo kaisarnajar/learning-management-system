@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export type BankDetails = {
   accountName: string;
@@ -54,9 +55,9 @@ function rowToSettings(row: {
 }
 
 export async function getPaymentSettings(): Promise<PaymentSettingsData> {
-  const row = await prisma.paymentSettings.findUnique({
-    where: { id: PAYMENT_SETTINGS_ID },
-  });
+  const row = await withDbErrorHandling(() => prisma.paymentSettings.findUnique({
+      where: { id: PAYMENT_SETTINGS_ID },
+    }), "Database operation failed");
 
   if (!row) {
     return defaultSettings();

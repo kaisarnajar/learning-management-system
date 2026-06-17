@@ -7,6 +7,7 @@ import { resolveLibraryFeaturedUpdate } from "@/lib/library";
 import { prisma } from "@/lib/prisma";
 import { uniqueSlug } from "@/lib/slug";
 import { libraryItemSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function parseLibraryForm(formData: FormData) {
   const pdfUrl = formData.get("pdfUrl");
@@ -46,10 +47,10 @@ export async function createLibraryItem(formData: FormData) {
   };
 
   const id = await uniqueSlug(parsed.data.title, async (slug) => {
-    return Boolean(await prisma.libraryItem.findUnique({ where: { id: slug } }));
+    return Boolean(await withDbErrorHandling(() => prisma.libraryItem.findUnique({ where: { id: slug } }), "Database operation failed"));
   });
 
-  await prisma.libraryItem.create({ data: { id, ...data } });
+  await withDbErrorHandling(() => prisma.libraryItem.create({ data: { id, ...data } }), "Database operation failed");
 
   revalidatePath("/");
   revalidatePath("/library");
@@ -62,7 +63,7 @@ export async function updateLibraryItem(id: string, formData: FormData) {
   const parsed = parseLibraryForm(formData);
   if (!parsed.success) throw new Error("Invalid library item data");
 
-  const existing = await prisma.libraryItem.findUnique({ where: { id } });
+  const existing = await withDbErrorHandling(() => prisma.libraryItem.findUnique({ where: { id } }), "Database operation failed");
   if (!existing) throw new Error("Library item not found");
 
   const featuredOnHomepage = formData.get("featuredOnHomepage") === "on";
@@ -79,13 +80,13 @@ export async function updateLibraryItem(id: string, formData: FormData) {
     redirect(`/admin/library/${id}/edit?saveError=${encodeURIComponent(featured.error)}`);
   }
 
-  await prisma.libraryItem.update({
-    where: { id },
-    data: {
-      ...parsed.data,
-      ...featured,
-    },
-  });
+  await withDbErrorHandling(() => prisma.libraryItem.update({
+      where: { id },
+      data: {
+        ...parsed.data,
+        ...featured,
+      },
+    }), "Database operation failed");
 
   revalidatePath("/");
   revalidatePath("/library");
@@ -97,12 +98,12 @@ export async function updateLibraryItem(id: string, formData: FormData) {
 export async function deleteLibraryItemById(id: string): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const existing = await prisma.libraryItem.findUnique({ where: { id } });
+  const existing = await withDbErrorHandling(() => prisma.libraryItem.findUnique({ where: { id } }), "Database operation failed");
   if (!existing) {
     return { error: "Library item not found." };
   }
 
-  await prisma.libraryItem.delete({ where: { id } });
+  await withDbErrorHandling(() => prisma.libraryItem.delete({ where: { id } }), "Database operation failed");
 
   revalidatePath("/");
   revalidatePath("/library");

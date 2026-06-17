@@ -34,9 +34,10 @@ export async function deleteUploadedCertificate(publicPath: string | null) {
   const absolute = path.join(process.cwd(), "public", publicPath.replace(/^\//, ""));
   try {
     await unlink(absolute);
-  } catch {
-    // File may already be missing.
-  }
+  } catch (error) {
+    console.error("Caught error:", error);
+
+    }
 }
 
 export async function saveUploadedCertificate(enrollmentId: string, file: File): Promise<string> {

@@ -2,6 +2,7 @@ import type { BookStatus, Prisma } from "@prisma/client";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { buildSearchOr } from "@/lib/text-search";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export { BookStatus };
 
@@ -112,14 +113,14 @@ export async function getAllBooksPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<BookWithDetails>> {
   const where = allBooksWhere(searchQuery);
-  const totalCount = await prisma.book.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.book.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   
-  const items = await prisma.book.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.book.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
 
   return { items, totalCount };
 }
@@ -136,20 +137,20 @@ export async function getPublishedBooksPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<BookWithDetails>> {
   const where = publishedBooksWhere(searchQuery);
-  const totalCount = await prisma.book.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.book.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
 
-  const items = await prisma.book.findMany({
-    where,
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.book.findMany({
+      where,
+      orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
 
   return { items, totalCount };
 }
 
 export async function getBookById(id: string): Promise<BookWithDetails | null> {
-  return prisma.book.findUnique({ where: { id } });
+  return withDbErrorHandling(() => prisma.book.findUnique({ where: { id } }), "Database operation failed");
 }
 
 async function fetchBookOrdersPaginated(
@@ -173,19 +174,19 @@ async function fetchBookOrdersPaginated(
   };
 
   const [items, totalCount] = await Promise.all([
-    prisma.bookOrder.findMany({
-      where,
-      include: {
-        user: { select: { name: true, email: true } },
-        items: {
-          include: { book: { select: { id: true, title: true, author: true } } },
-        },
-      },
-      orderBy,
-      skip: (page - 1) * pageSize,
-      take: pageSize,
-    }),
-    prisma.bookOrder.count({ where }),
+    withDbErrorHandling(() => prisma.bookOrder.findMany({
+            where,
+            include: {
+              user: { select: { name: true, email: true } },
+              items: {
+                include: { book: { select: { id: true, title: true, author: true } } },
+              },
+            },
+            orderBy,
+            skip: (page - 1) * pageSize,
+            take: pageSize,
+          }), "Database operation failed"),
+    withDbErrorHandling(() => prisma.bookOrder.count({ where }), "Database operation failed"),
   ]);
 
   return { items, totalCount };
@@ -216,21 +217,21 @@ export async function getCompletedBookOrdersPaginated(
 }
 
 export async function getPendingBookOrderCount(): Promise<number> {
-  return prisma.bookOrder.count({ where: { status: "PENDING_VERIFICATION" } });
+  return withDbErrorHandling(() => prisma.bookOrder.count({ where: { status: "PENDING_VERIFICATION" } }), "Database operation failed");
 }
 
 export async function getBookOrdersForUser(userId: string) {
-  return prisma.bookOrder.findMany({
-    where: { userId },
-    include: {
-      items: {
-        include: { book: { select: { id: true, title: true, author: true, imagePath: true } } },
+  return withDbErrorHandling(() => prisma.bookOrder.findMany({
+      where: { userId },
+      include: {
+        items: {
+          include: { book: { select: { id: true, title: true, author: true, imagePath: true } } },
+        },
       },
-    },
-    orderBy: { createdAt: "desc" },
-  });
+      orderBy: { createdAt: "desc" },
+    }), "Database operation failed");
 }
 
 export async function getBookCount(): Promise<number> {
-  return prisma.book.count();
+  return withDbErrorHandling(() => prisma.book.count(), "Database operation failed");
 }

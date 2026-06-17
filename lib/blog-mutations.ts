@@ -7,6 +7,7 @@ import {
 } from "@/lib/blog-upload";
 import { prisma } from "@/lib/prisma";
 import { blogPostSchema, teacherBlogPostSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export function parseBlogForm(formData: FormData) {
   return blogPostSchema.safeParse({
@@ -50,28 +51,28 @@ export async function addImagesToPost(blogPostId: string, formData: FormData, ex
     }
 
     const imagePath = await saveBlogImage(blogPostId, file);
-    await prisma.blogImage.create({
-      data: {
-        blogPostId,
-        imagePath,
-        sortOrder: sortOrder++,
-      },
-    });
+    await withDbErrorHandling(() => prisma.blogImage.create({
+          data: {
+            blogPostId,
+            imagePath,
+            sortOrder: sortOrder++,
+          },
+        }), "Database operation failed");
   }
 
   return { error: undefined };
 }
 
 export async function removeBlogImages(imageIds: string[], postId: string) {
-  const existing = await prisma.blogPost.findUnique({
-    where: { id: postId },
-    include: { images: true },
-  });
+  const existing = await withDbErrorHandling(() => prisma.blogPost.findUnique({
+      where: { id: postId },
+      include: { images: true },
+    }), "Database operation failed");
   if (!existing) return;
 
   const toRemove = existing.images.filter((img) => imageIds.includes(img.id));
   for (const img of toRemove) {
     await deleteBlogImageFile(img.imagePath);
-    await prisma.blogImage.delete({ where: { id: img.id } });
+    await withDbErrorHandling(() => prisma.blogImage.delete({ where: { id: img.id } }), "Database operation failed");
   }
 }

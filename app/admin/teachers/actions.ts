@@ -11,6 +11,7 @@ import {
 import { prisma } from "@/lib/prisma";
 import { uniqueSlug } from "@/lib/slug";
 import { teacherAdminSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function parseTeacherForm(formData: FormData) {
   const imageUrl = formData.get("imageUrl");
@@ -49,21 +50,21 @@ export async function createTeacher(formData: FormData) {
       : deriveTeacherInitials(account.name);
 
   const id = await uniqueSlug(account.name, async (slug) => {
-    return Boolean(await prisma.teacher.findUnique({ where: { id: slug } }));
+    return Boolean(await withDbErrorHandling(() => prisma.teacher.findUnique({ where: { id: slug } }), "Database operation failed"));
   });
 
-  await prisma.teacher.create({
-    data: {
-      id,
-      name: account.name,
-      email: account.email,
-      specialization: parsed.data.specialization,
-      bio: parsed.data.bio,
-      initials,
-      imageUrl: parsed.data.imageUrl || null,
-      published: parsed.data.published,
-    },
-  });
+  await withDbErrorHandling(() => prisma.teacher.create({
+      data: {
+        id,
+        name: account.name,
+        email: account.email,
+        specialization: parsed.data.specialization,
+        bio: parsed.data.bio,
+        initials,
+        imageUrl: parsed.data.imageUrl || null,
+        published: parsed.data.published,
+      },
+    }), "Database operation failed");
 
   revalidatePath("/teachers");
   revalidatePath("/");
@@ -81,7 +82,7 @@ export async function updateTeacher(id: string, formData: FormData) {
     );
   }
 
-  const existing = await prisma.teacher.findUnique({ where: { id } });
+  const existing = await withDbErrorHandling(() => prisma.teacher.findUnique({ where: { id } }), "Database operation failed");
   if (!existing) {
     redirect(teacherFormPath("", "?error=notfound"));
   }
@@ -96,18 +97,18 @@ export async function updateTeacher(id: string, formData: FormData) {
       ? parsed.data.initials.toUpperCase()
       : deriveTeacherInitials(account.name);
 
-  await prisma.teacher.update({
-    where: { id },
-    data: {
-      name: account.name,
-      email: account.email,
-      specialization: parsed.data.specialization,
-      bio: parsed.data.bio,
-      initials,
-      imageUrl: parsed.data.imageUrl || null,
-      published: parsed.data.published,
-    },
-  });
+  await withDbErrorHandling(() => prisma.teacher.update({
+      where: { id },
+      data: {
+        name: account.name,
+        email: account.email,
+        specialization: parsed.data.specialization,
+        bio: parsed.data.bio,
+        initials,
+        imageUrl: parsed.data.imageUrl || null,
+        published: parsed.data.published,
+      },
+    }), "Database operation failed");
 
   revalidatePath("/teachers");
   revalidatePath("/");
@@ -119,12 +120,12 @@ export async function updateTeacher(id: string, formData: FormData) {
 export async function deleteTeacherById(id: string): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const existing = await prisma.teacher.findUnique({ where: { id } });
+  const existing = await withDbErrorHandling(() => prisma.teacher.findUnique({ where: { id } }), "Database operation failed");
   if (!existing) {
     return { error: "Teacher not found." };
   }
 
-  await prisma.teacher.delete({ where: { id } });
+  await withDbErrorHandling(() => prisma.teacher.delete({ where: { id } }), "Database operation failed");
 
   revalidatePath("/teachers");
   revalidatePath("/");

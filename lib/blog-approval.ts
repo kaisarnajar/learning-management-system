@@ -2,6 +2,7 @@ import type { BlogApprovalStatus, BlogPost } from "@prisma/client";
 import { clampPage, paginationArgs } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { andWhere, buildSearchOr } from "@/lib/text-search";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function pendingBlogSearchWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -57,7 +58,7 @@ export function isBlogPendingTeacherApproval(post: Pick<BlogPost, "approvalStatu
 }
 
 export async function getPendingBlogApprovalCount() {
-  return prisma.blogPost.count({ where: { approvalStatus: "PENDING" } });
+  return withDbErrorHandling(() => prisma.blogPost.count({ where: { approvalStatus: "PENDING" } }), "Database operation failed");
 }
 
 const pendingBlogInclude = {
@@ -71,13 +72,13 @@ export async function getPendingBlogPostsForAdminPaginated(
   searchQuery?: string,
 ) {
   const where = andWhere({ approvalStatus: "PENDING" as const }, pendingBlogSearchWhere(searchQuery));
-  const totalCount = await prisma.blogPost.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.blogPost.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.blogPost.findMany({
-    where,
-    orderBy: { createdAt: "asc" },
-    include: pendingBlogInclude,
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.blogPost.findMany({
+      where,
+      orderBy: { createdAt: "asc" },
+      include: pendingBlogInclude,
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }

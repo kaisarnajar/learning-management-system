@@ -4,6 +4,7 @@ import { resolveHomepageFeaturedUpdate } from "@/lib/homepage-featured";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { buildSearchOr } from "@/lib/text-search";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function allLibraryItemsWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -27,29 +28,29 @@ export async function getPublishedLibraryItemsPaginated(
   topic?: string,
 ): Promise<PaginatedResult<LibraryItem>> {
   const where = publishedLibraryWhere(topic);
-  const totalCount = await prisma.libraryItem.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.libraryItem.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.libraryItem.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.libraryItem.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
 export async function getFeaturedHomepageLibraryItems(): Promise<LibraryItem[]> {
-  const items = await prisma.libraryItem.findMany({
-    where: { featuredOnHomepage: true, published: true },
-    orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
-    take: HOMEPAGE_FEATURED_RESOURCES_MAX,
-  });
+  const items = await withDbErrorHandling(() => prisma.libraryItem.findMany({
+      where: { featuredOnHomepage: true, published: true },
+      orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
+      take: HOMEPAGE_FEATURED_RESOURCES_MAX,
+    }), "Database operation failed");
   return items;
 }
 
 export async function getFeaturedHomepageLibraryCount(): Promise<number> {
-  return prisma.libraryItem.count({
-    where: { featuredOnHomepage: true, published: true },
-  });
+  return withDbErrorHandling(() => prisma.libraryItem.count({
+      where: { featuredOnHomepage: true, published: true },
+    }), "Database operation failed");
 }
 
 export async function resolveLibraryFeaturedUpdate(options: {
@@ -74,16 +75,16 @@ export async function getAllLibraryItemsPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<LibraryItem>> {
   const where = allLibraryItemsWhere(searchQuery);
-  const totalCount = await prisma.libraryItem.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.libraryItem.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.libraryItem.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.libraryItem.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
 export async function getLibraryItemById(id: string): Promise<LibraryItem | null> {
-  return prisma.libraryItem.findUnique({ where: { id } });
+  return withDbErrorHandling(() => prisma.libraryItem.findUnique({ where: { id } }), "Database operation failed");
 }

@@ -7,6 +7,7 @@ import { getFatwaPublicUrl, resolveFatwaFeaturedUpdate } from "@/lib/fatwa";
 import { sendFatwaAnswerEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { fatwaAnswerSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export async function answerFatwaQuestion(id: string, formData: FormData) {
   const session = await requireAdmin();
@@ -19,7 +20,7 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
     redirect(`/admin/fatwa/${id}?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid answer")}`);
   }
 
-  const existing = await prisma.fatwaQuestion.findUnique({ where: { id } });
+  const existing = await withDbErrorHandling(() => prisma.fatwaQuestion.findUnique({ where: { id } }), "Database operation failed");
   if (!existing) {
     redirect("/admin/fatwa?error=notfound");
   }
@@ -39,15 +40,15 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
     redirect(`/admin/fatwa/${id}?error=${encodeURIComponent(featured.error)}`);
   }
 
-  await prisma.fatwaQuestion.update({
-    where: { id },
-    data: {
-      answer: parsed.data.answer,
-      answeredAt: existing.answeredAt ?? now,
-      answeredById: session.user.id,
-      ...featured,
-    },
-  });
+  await withDbErrorHandling(() => prisma.fatwaQuestion.update({
+      where: { id },
+      data: {
+        answer: parsed.data.answer,
+        answeredAt: existing.answeredAt ?? now,
+        answeredById: session.user.id,
+        ...featured,
+      },
+    }), "Database operation failed");
 
   revalidatePath("/");
   revalidatePath("/fatwa");
@@ -74,12 +75,12 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
 export async function deleteFatwaQuestion(id: string): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const existing = await prisma.fatwaQuestion.findUnique({ where: { id } });
+  const existing = await withDbErrorHandling(() => prisma.fatwaQuestion.findUnique({ where: { id } }), "Database operation failed");
   if (!existing) {
     return { error: "Question not found." };
   }
 
-  await prisma.fatwaQuestion.delete({ where: { id } });
+  await withDbErrorHandling(() => prisma.fatwaQuestion.delete({ where: { id } }), "Database operation failed");
 
   revalidatePath("/");
   revalidatePath("/fatwa");

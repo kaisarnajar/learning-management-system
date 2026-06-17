@@ -1,13 +1,14 @@
 import type { Session } from "next-auth";
 import { isAdminEmail } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export type UserRole = "USER" | "ADMIN" | "TEACHER";
 
 export async function getTeacherByEmail(email: string | null | undefined) {
   if (!email) return null;
   const normalized = email.toLowerCase().trim();
-  return prisma.teacher.findUnique({ where: { email: normalized } });
+  return withDbErrorHandling(() => prisma.teacher.findUnique({ where: { email: normalized } }), "Database operation failed");
 }
 
 export async function isTeacherEmail(email: string | null | undefined): Promise<boolean> {

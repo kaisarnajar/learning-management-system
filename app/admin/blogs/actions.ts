@@ -8,6 +8,7 @@ import { addImagesToPost, getRemoveImageIds, parseBlogForm, removeBlogImages } f
 import { isBlogPendingTeacherApproval } from "@/lib/blog-approval";
 import { resolveBlogFeaturedUpdate } from "@/lib/blogs";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function adminListPath(suffix = "") {
   return `/admin/blogs${suffix}`;
@@ -53,21 +54,21 @@ export async function createBlogPost(formData: FormData) {
     redirect(adminListPath(`/new?error=${encodeURIComponent(featured.error)}`));
   }
 
-  const post = await prisma.blogPost.create({
-    data: {
-      title: parsed.data.title,
-      excerpt: parsed.data.excerpt || null,
-      body: parsed.data.body,
-      published,
-      approvalStatus,
-      ...featured,
-      createdById: session.user.id,
-    },
-  });
+  const post = await withDbErrorHandling(() => prisma.blogPost.create({
+      data: {
+        title: parsed.data.title,
+        excerpt: parsed.data.excerpt || null,
+        body: parsed.data.body,
+        published,
+        approvalStatus,
+        ...featured,
+        createdById: session.user.id,
+      },
+    }), "Database operation failed");
 
   const imageResult = await addImagesToPost(post.id, formData, 0);
   if (imageResult.error) {
-    await prisma.blogPost.delete({ where: { id: post.id } });
+    await withDbErrorHandling(() => prisma.blogPost.delete({ where: { id: post.id } }), "Database operation failed");
     redirect(adminListPath(`/new?error=${encodeURIComponent(imageResult.error)}`));
   }
 
@@ -85,10 +86,10 @@ export async function updateBlogPost(id: string, formData: FormData) {
     );
   }
 
-  const existing = await prisma.blogPost.findUnique({
-    where: { id },
-    include: { images: true },
-  });
+  const existing = await withDbErrorHandling(() => prisma.blogPost.findUnique({
+      where: { id },
+      include: { images: true },
+    }), "Database operation failed");
 
   if (!existing) {
     redirect(adminListPath("?error=notfound"));
@@ -131,17 +132,17 @@ export async function updateBlogPost(id: string, formData: FormData) {
     redirect(adminListPath(`/${id}/edit?error=${encodeURIComponent(featured.error)}`));
   }
 
-  await prisma.blogPost.update({
-    where: { id },
-    data: {
-      title: contentLocked ? existing.title : parsed.data.title,
-      excerpt: contentLocked ? existing.excerpt : parsed.data.excerpt || null,
-      body: contentLocked ? existing.body : parsed.data.body,
-      published,
-      approvalStatus,
-      ...featured,
-    },
-  });
+  await withDbErrorHandling(() => prisma.blogPost.update({
+      where: { id },
+      data: {
+        title: contentLocked ? existing.title : parsed.data.title,
+        excerpt: contentLocked ? existing.excerpt : parsed.data.excerpt || null,
+        body: contentLocked ? existing.body : parsed.data.body,
+        published,
+        approvalStatus,
+        ...featured,
+      },
+    }), "Database operation failed");
 
   revalidateBlogPaths(id);
   if (contentLocked) {
@@ -153,10 +154,10 @@ export async function updateBlogPost(id: string, formData: FormData) {
 export async function deleteBlogPost(id: string) {
   await requireAdmin();
 
-  const existing = await prisma.blogPost.findUnique({
-    where: { id },
-    include: { images: true },
-  });
+  const existing = await withDbErrorHandling(() => prisma.blogPost.findUnique({
+      where: { id },
+      include: { images: true },
+    }), "Database operation failed");
 
   if (!existing) {
     redirect(adminListPath("?error=notfound"));
@@ -166,7 +167,7 @@ export async function deleteBlogPost(id: string) {
     await deleteBlogImageFile(img.imagePath);
   }
 
-  await prisma.blogPost.delete({ where: { id } });
+  await withDbErrorHandling(() => prisma.blogPost.delete({ where: { id } }), "Database operation failed");
 
   revalidateBlogPaths();
   redirect(adminListPath("?deleted=1"));

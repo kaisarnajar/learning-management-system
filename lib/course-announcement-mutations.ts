@@ -8,6 +8,7 @@ import {
 } from "@/lib/announcement-upload";
 import { prisma } from "@/lib/prisma";
 import { courseAnnouncementSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export type ParsedCourseAnnouncement = z.infer<typeof courseAnnouncementSchema>;
 
@@ -105,25 +106,25 @@ export async function createCourseAnnouncementRecord(params: {
   data: ParsedCourseAnnouncement;
   upload: File | null;
 }) {
-  const announcement = await prisma.courseAnnouncement.create({
-    data: {
-      courseId: params.courseId,
-      enrollmentId: params.enrollmentId,
-      teacherId: params.teacherId,
-      authorName: params.authorName,
-      postedByAdmin: params.postedByAdmin,
-      category: params.data.category,
-      title: params.data.title,
-      body: params.data.body,
-    },
-  });
+  const announcement = await withDbErrorHandling(() => prisma.courseAnnouncement.create({
+      data: {
+        courseId: params.courseId,
+        enrollmentId: params.enrollmentId,
+        teacherId: params.teacherId,
+        authorName: params.authorName,
+        postedByAdmin: params.postedByAdmin,
+        category: params.data.category,
+        title: params.data.title,
+        body: params.data.body,
+      },
+    }), "Database operation failed");
 
   if (params.upload) {
     const saved = await saveAnnouncementAttachment(announcement.id, params.upload);
-    await prisma.courseAnnouncement.update({
-      where: { id: announcement.id },
-      data: saved,
-    });
+    await withDbErrorHandling(() => prisma.courseAnnouncement.update({
+          where: { id: announcement.id },
+          data: saved,
+        }), "Database operation failed");
   }
 
   return announcement;
@@ -140,15 +141,15 @@ export async function updateCourseAnnouncementRecord(
     return { error: attachmentUpdate.error };
   }
 
-  await prisma.courseAnnouncement.update({
-    where: { id: announcementId },
-    data: {
-      category: data.category,
-      title: data.title,
-      body: data.body,
-      ...(attachmentUpdate && !("error" in attachmentUpdate) ? attachmentUpdate : {}),
-    },
-  });
+  await withDbErrorHandling(() => prisma.courseAnnouncement.update({
+      where: { id: announcementId },
+      data: {
+        category: data.category,
+        title: data.title,
+        body: data.body,
+        ...(attachmentUpdate && !("error" in attachmentUpdate) ? attachmentUpdate : {}),
+      },
+    }), "Database operation failed");
 
   return {};
 }
@@ -157,5 +158,5 @@ export async function deleteCourseAnnouncementRecord(
   existing: Pick<CourseAnnouncement, "id" | "attachmentPath">,
 ) {
   await deleteAnnouncementAttachment(existing.attachmentPath);
-  await prisma.courseAnnouncement.delete({ where: { id: existing.id } });
+  await withDbErrorHandling(() => prisma.courseAnnouncement.delete({ where: { id: existing.id } }), "Database operation failed");
 }

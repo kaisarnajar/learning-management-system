@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export const SOCIAL_LINKS_SETTINGS_ID = "default";
 
@@ -68,9 +69,9 @@ function rowToSettings(row: {
 }
 
 export async function getSocialLinksSettings(): Promise<SocialLinksSettingsData> {
-  const row = await prisma.socialLinksSettings.findUnique({
-    where: { id: SOCIAL_LINKS_SETTINGS_ID },
-  });
+  const row = await withDbErrorHandling(() => prisma.socialLinksSettings.findUnique({
+      where: { id: SOCIAL_LINKS_SETTINGS_ID },
+    }), "Database operation failed");
 
   if (!row) {
     return defaultSettings();

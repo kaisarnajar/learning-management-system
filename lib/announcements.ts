@@ -2,6 +2,7 @@ import type { AnnouncementCategory, CourseAnnouncement, Prisma } from "@prisma/c
 import { clampPage, paginationArgs } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { andWhere, buildSearchOr } from "@/lib/text-search";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function courseAnnouncementWhere(
   courseId: string,
@@ -81,14 +82,14 @@ export async function getCourseWideAnnouncementsForCoursePaginated(
   searchQuery?: string,
 ) {
   const where = courseAnnouncementWhere(courseId, searchQuery);
-  const totalCount = await prisma.courseAnnouncement.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.courseAnnouncement.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.courseAnnouncement.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: announcementInclude,
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.courseAnnouncement.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: announcementInclude,
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
@@ -98,14 +99,14 @@ export async function getStudentAnnouncementsForEnrollmentPaginated(
   pageSize: number,
 ) {
   const where = { enrollmentId };
-  const totalCount = await prisma.courseAnnouncement.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.courseAnnouncement.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.courseAnnouncement.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: announcementInclude,
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.courseAnnouncement.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: announcementInclude,
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
@@ -116,10 +117,10 @@ export async function getAnnouncementsVisibleToStudentPaginated(
   courseWidePage: number,
   pageSize: number,
 ) {
-  const enrollment = await prisma.enrollment.findUnique({
-    where: { userId_courseId: { userId, courseId } },
-    select: { id: true },
-  });
+  const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+      select: { id: true },
+    }), "Database operation failed");
   if (!enrollment) {
     return {
       courseWide: [],
@@ -149,14 +150,14 @@ export async function getAnnouncementForCourse(
   announcementId: string,
   options?: { enrollmentId?: string | null },
 ) {
-  return prisma.courseAnnouncement.findFirst({
-    where: {
-      id: announcementId,
-      courseId,
-      ...(options?.enrollmentId !== undefined ? { enrollmentId: options.enrollmentId } : {}),
-    },
-    include: announcementInclude,
-  });
+  return withDbErrorHandling(() => prisma.courseAnnouncement.findFirst({
+      where: {
+        id: announcementId,
+        courseId,
+        ...(options?.enrollmentId !== undefined ? { enrollmentId: options.enrollmentId } : {}),
+      },
+      include: announcementInclude,
+    }), "Database operation failed");
 }
 
 export function canTeacherManageCourseAnnouncement(

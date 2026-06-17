@@ -15,6 +15,7 @@ import {
   reviewStatusClass,
   reviewStatusLabel,
 } from "@/lib/student-reviews";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export default async function ProfileReviewsPage({
   searchParams,
@@ -36,10 +37,10 @@ export default async function ProfileReviewsPage({
 
   const [reviewsPaginated, user, editingReviewFromDb] = await Promise.all([
     getStudentReviewsForUserPaginated(session.user.id, requestedPage, pageSize),
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { address: true },
-    }),
+    withDbErrorHandling(() => prisma.user.findUnique({
+            where: { id: session.user.id },
+            select: { address: true },
+          }), "Database operation failed"),
     params.edit
       ? getStudentReviewForUser(params.edit, session.user.id)
       : Promise.resolve(null),

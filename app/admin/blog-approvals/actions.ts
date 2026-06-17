@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-actions";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function revalidateBlogPaths(postId?: string) {
   revalidatePath("/");
@@ -34,16 +35,16 @@ export async function approveBlogPost(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const post = await prisma.blogPost.findUnique({ where: { id: postId } });
+  const post = await withDbErrorHandling(() => prisma.blogPost.findUnique({ where: { id: postId } }), "Database operation failed");
   if (!post) return { error: "Blog post not found." };
   if (post.approvalStatus !== "PENDING") {
     return { error: "This post is no longer pending approval." };
   }
 
-  await prisma.blogPost.update({
-    where: { id: postId },
-    data: { approvalStatus: "APPROVED", published: true },
-  });
+  await withDbErrorHandling(() => prisma.blogPost.update({
+      where: { id: postId },
+      data: { approvalStatus: "APPROVED", published: true },
+    }), "Database operation failed");
 
   revalidateBlogPaths(postId);
   revalidatePath(`/blog/${postId}`);
@@ -56,16 +57,16 @@ export async function rejectBlogPost(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const post = await prisma.blogPost.findUnique({ where: { id: postId } });
+  const post = await withDbErrorHandling(() => prisma.blogPost.findUnique({ where: { id: postId } }), "Database operation failed");
   if (!post) return { error: "Blog post not found." };
   if (post.approvalStatus !== "PENDING") {
     return { error: "This post is no longer pending approval." };
   }
 
-  await prisma.blogPost.update({
-    where: { id: postId },
-    data: { approvalStatus: "REJECTED", published: false, featuredOnHomepage: false, featuredAt: null },
-  });
+  await withDbErrorHandling(() => prisma.blogPost.update({
+      where: { id: postId },
+      data: { approvalStatus: "REJECTED", published: false, featuredOnHomepage: false, featuredAt: null },
+    }), "Database operation failed");
 
   revalidateBlogPaths(postId);
   redirect(returnUrl(returnTo, "rejected"));

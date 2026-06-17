@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/auth-actions";
 import { normalizeWhatsAppNumber, SOCIAL_LINKS_SETTINGS_ID } from "@/lib/social-links";
 import { prisma } from "@/lib/prisma";
 import { socialLinksSettingsSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function revalidateSocialLinksPaths() {
   revalidatePath("/", "layout");
@@ -40,11 +41,11 @@ export async function updateSocialLinksSettings(formData: FormData) {
     youtubeUrl: parsed.data.youtubeUrl,
   };
 
-  await prisma.socialLinksSettings.upsert({
-    where: { id: SOCIAL_LINKS_SETTINGS_ID },
-    create: { id: SOCIAL_LINKS_SETTINGS_ID, ...data },
-    update: data,
-  });
+  await withDbErrorHandling(() => prisma.socialLinksSettings.upsert({
+      where: { id: SOCIAL_LINKS_SETTINGS_ID },
+      create: { id: SOCIAL_LINKS_SETTINGS_ID, ...data },
+      update: data,
+    }), "Database operation failed");
 
   revalidateSocialLinksPaths();
   redirect("/admin/social-links?saved=1");

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { isAdminEmail } from "@/lib/admin";
 import { requireAdmin } from "@/lib/auth-actions";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function revalidateStudentPaths(courseIds: string[] = []) {
   revalidatePath("/admin/students");
@@ -22,7 +23,7 @@ function revalidateStudentPaths(courseIds: string[] = []) {
 export async function deleteStudentUser(id: string): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const user = await prisma.user.findUnique({ where: { id } });
+  const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { id } }), "Database operation failed");
   if (!user) {
     return { error: "Student not found." };
   }
@@ -32,13 +33,13 @@ export async function deleteStudentUser(id: string): Promise<{ error?: string }>
   }
 
   const courseIds = (
-    await prisma.enrollment.findMany({
-      where: { userId: id },
-      select: { courseId: true },
-    })
+    await withDbErrorHandling(() => prisma.enrollment.findMany({
+            where: { userId: id },
+            select: { courseId: true },
+          }), "Database operation failed")
   ).map((e) => e.courseId);
 
-  await prisma.user.delete({ where: { id } });
+  await withDbErrorHandling(() => prisma.user.delete({ where: { id } }), "Database operation failed");
 
   revalidateStudentPaths(courseIds);
 

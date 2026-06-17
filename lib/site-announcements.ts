@@ -2,6 +2,7 @@ import type { SiteAnnouncement } from "@prisma/client";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { buildSearchOr } from "@/lib/text-search";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function siteAnnouncementAdminWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -32,34 +33,34 @@ export async function getPublishedSiteAnnouncementsPaginated(
   pageSize: number,
 ): Promise<PaginatedResult<SiteAnnouncementPublic>> {
   const where = { published: true };
-  const totalCount = await prisma.siteAnnouncement.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.siteAnnouncement.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.siteAnnouncement.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: siteAnnouncementPublicInclude,
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.siteAnnouncement.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: siteAnnouncementPublicInclude,
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
 export async function getHomepageSiteAnnouncements(
   limit = HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX,
 ) {
-  return prisma.siteAnnouncement.findMany({
-    where: { published: true, showOnHomepage: true },
-    orderBy: { createdAt: "desc" },
-    take: limit,
-    include: {
-      createdBy: { select: { name: true } },
-    },
-  });
+  return withDbErrorHandling(() => prisma.siteAnnouncement.findMany({
+      where: { published: true, showOnHomepage: true },
+      orderBy: { createdAt: "desc" },
+      take: limit,
+      include: {
+        createdBy: { select: { name: true } },
+      },
+    }), "Database operation failed");
 }
 
 export async function getFeaturedHomepageAnnouncementCount(): Promise<number> {
-  return prisma.siteAnnouncement.count({
-    where: { published: true, showOnHomepage: true },
-  });
+  return withDbErrorHandling(() => prisma.siteAnnouncement.count({
+      where: { published: true, showOnHomepage: true },
+    }), "Database operation failed");
 }
 
 export async function resolveAnnouncementFeaturedUpdate(options: {
@@ -87,11 +88,11 @@ export async function resolveAnnouncementFeaturedUpdate(options: {
 
 /** Keeps at most {@link HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX} published homepage announcements (newest). */
 export async function enforceHomepageAnnouncementLimit() {
-  const featured = await prisma.siteAnnouncement.findMany({
-    where: { published: true, showOnHomepage: true },
-    orderBy: { createdAt: "desc" },
-    select: { id: true },
-  });
+  const featured = await withDbErrorHandling(() => prisma.siteAnnouncement.findMany({
+      where: { published: true, showOnHomepage: true },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    }), "Database operation failed");
 
   if (featured.length <= HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX) return;
 
@@ -99,19 +100,19 @@ export async function enforceHomepageAnnouncementLimit() {
     .slice(HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX)
     .map((announcement) => announcement.id);
 
-  await prisma.siteAnnouncement.updateMany({
-    where: { id: { in: demoteIds } },
-    data: { showOnHomepage: false },
-  });
+  await withDbErrorHandling(() => prisma.siteAnnouncement.updateMany({
+      where: { id: { in: demoteIds } },
+      data: { showOnHomepage: false },
+    }), "Database operation failed");
 }
 
 export async function getSiteAnnouncementById(id: string) {
-  return prisma.siteAnnouncement.findFirst({
-    where: { id, published: true },
-    include: {
-      createdBy: { select: { name: true } },
-    },
-  });
+  return withDbErrorHandling(() => prisma.siteAnnouncement.findFirst({
+      where: { id, published: true },
+      include: {
+        createdBy: { select: { name: true } },
+      },
+    }), "Database operation failed");
 }
 
 export async function getAllSiteAnnouncementsForAdminPaginated(
@@ -120,24 +121,24 @@ export async function getAllSiteAnnouncementsForAdminPaginated(
   searchQuery?: string,
 ) {
   const where = siteAnnouncementAdminWhere(searchQuery);
-  const totalCount = await prisma.siteAnnouncement.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.siteAnnouncement.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.siteAnnouncement.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: {
-      createdBy: { select: { name: true, email: true } },
-    },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.siteAnnouncement.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: {
+        createdBy: { select: { name: true, email: true } },
+      },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
 export async function getSiteAnnouncementForAdmin(id: string) {
-  return prisma.siteAnnouncement.findUnique({
-    where: { id },
-    include: {
-      createdBy: { select: { name: true, email: true } },
-    },
-  });
+  return withDbErrorHandling(() => prisma.siteAnnouncement.findUnique({
+      where: { id },
+      include: {
+        createdBy: { select: { name: true, email: true } },
+      },
+    }), "Database operation failed");
 }

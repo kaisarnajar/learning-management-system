@@ -8,6 +8,7 @@ import {
   userProfileSelect,
 } from "@/lib/profile";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export default async function ProfilePage({
   searchParams,
@@ -17,10 +18,10 @@ export default async function ProfilePage({
   const session = await requireUser();
   const { complete } = await searchParams;
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { ...userProfileSelect, createdAt: true },
-  });
+  const user = await withDbErrorHandling(() => prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { ...userProfileSelect, createdAt: true },
+    }), "Database operation failed");
 
   if (!user) {
     return null;

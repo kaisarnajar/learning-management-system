@@ -7,6 +7,7 @@ import { EXPENSE_CATEGORY_TEACHER_SALARY } from "@/lib/expense-categories";
 import { rupeesToPaise } from "@/lib/form";
 import { prisma } from "@/lib/prisma";
 import { expenseSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export type RecordExpenseState = {
   error?: string;
@@ -47,21 +48,21 @@ export async function recordExpense(
       : null;
 
   if (teacherId) {
-    const teacher = await prisma.teacher.findUnique({ where: { id: teacherId } });
+    const teacher = await withDbErrorHandling(() => prisma.teacher.findUnique({ where: { id: teacherId } }), "Database operation failed");
     if (!teacher) {
       return { error: "Teacher not found." };
     }
   }
 
-  await prisma.expense.create({
-    data: {
-      category: parsed.data.category,
-      amountInrPaise: rupeesToPaise(parsed.data.amountInr),
-      paidAt,
-      description: parsed.data.description?.trim() || null,
-      teacherId,
-    },
-  });
+  await withDbErrorHandling(() => prisma.expense.create({
+      data: {
+        category: parsed.data.category,
+        amountInrPaise: rupeesToPaise(parsed.data.amountInr),
+        paidAt,
+        description: parsed.data.description?.trim() || null,
+        teacherId,
+      },
+    }), "Database operation failed");
 
   revalidateExpensePaths();
   redirect("/admin/finance?tab=expenses&saved=1");

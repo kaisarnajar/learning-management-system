@@ -3,6 +3,7 @@ import { resolveHomepageFeaturedUpdate } from "@/lib/homepage-featured";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { andWhere, buildSearchOr } from "@/lib/text-search";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function fatwaSearchWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -34,19 +35,19 @@ export function isFatwaAnswered(fatwa: Pick<FatwaQuestion, "answer">): boolean {
 }
 
 export async function getFeaturedHomepageFatwas(): Promise<FatwaQuestion[]> {
-  const fatwas = await prisma.fatwaQuestion.findMany({
-    where: { featuredOnHomepage: true, answer: { not: null } },
-    orderBy: [{ featuredAt: "desc" }, { answeredAt: "desc" }],
-    take: HOMEPAGE_FEATURED_FATWA_MAX,
-  });
+  const fatwas = await withDbErrorHandling(() => prisma.fatwaQuestion.findMany({
+      where: { featuredOnHomepage: true, answer: { not: null } },
+      orderBy: [{ featuredAt: "desc" }, { answeredAt: "desc" }],
+      take: HOMEPAGE_FEATURED_FATWA_MAX,
+    }), "Database operation failed");
   return fatwas.filter(isFatwaAnswered);
 }
 
 export async function getFeaturedHomepageFatwaCount(): Promise<number> {
-  const fatwas = await prisma.fatwaQuestion.findMany({
-    where: { featuredOnHomepage: true, answer: { not: null } },
-    select: { answer: true },
-  });
+  const fatwas = await withDbErrorHandling(() => prisma.fatwaQuestion.findMany({
+      where: { featuredOnHomepage: true, answer: { not: null } },
+      select: { answer: true },
+    }), "Database operation failed");
   return fatwas.filter(isFatwaAnswered).length;
 }
 
@@ -79,20 +80,20 @@ export async function getAnsweredFatwasPaginated(
   category?: string,
 ): Promise<PaginatedResult<FatwaQuestion>> {
   const where = answeredFatwasWhere(category);
-  const totalCount = await prisma.fatwaQuestion.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.fatwaQuestion.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.fatwaQuestion.findMany({
-    where,
-    orderBy: { answeredAt: "desc" },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.fatwaQuestion.findMany({
+      where,
+      orderBy: { answeredAt: "desc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
 export async function getAnsweredFatwaById(id: string): Promise<FatwaQuestion | null> {
-  return prisma.fatwaQuestion.findFirst({
-    where: { id, answer: { not: null } },
-  });
+  return withDbErrorHandling(() => prisma.fatwaQuestion.findFirst({
+      where: { id, answer: { not: null } },
+    }), "Database operation failed");
 }
 
 function fatwaAdminWhere(filter?: "pending" | "answered", searchQuery?: string) {
@@ -112,18 +113,18 @@ export async function getAllFatwaQuestionsPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<FatwaQuestion>> {
   const where = fatwaAdminWhere(filter, searchQuery);
-  const totalCount = await prisma.fatwaQuestion.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.fatwaQuestion.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.fatwaQuestion.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.fatwaQuestion.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
 export async function getFatwaQuestionById(id: string): Promise<FatwaQuestion | null> {
-  return prisma.fatwaQuestion.findUnique({ where: { id } });
+  return withDbErrorHandling(() => prisma.fatwaQuestion.findUnique({ where: { id } }), "Database operation failed");
 }
 
 export function getFatwaPublicUrl(id: string): string {

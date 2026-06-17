@@ -1,6 +1,7 @@
 import { isAdminEmail } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { lookupRegisteredUser, normalizeAccountEmail } from "@/lib/user-account-lookup";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export const normalizeTeacherEmail = normalizeAccountEmail;
 
@@ -30,7 +31,7 @@ export async function lookupTeacherAccount(
     return { ok: false, error: "This email is reserved for administration." };
   }
 
-  const existingTeacher = await prisma.teacher.findUnique({ where: { email: normalized } });
+  const existingTeacher = await withDbErrorHandling(() => prisma.teacher.findUnique({ where: { email: normalized } }), "Database operation failed");
   if (existingTeacher && existingTeacher.id !== options?.excludeTeacherId) {
     return { ok: false, error: "This email is already linked to another teacher profile." };
   }

@@ -19,6 +19,7 @@ import {
 } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { getTeacherCourseForPortal, getTeacherEnrollmentInCourse } from "@/lib/teacher-portal";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function teacherCourseAnnouncementPath(courseId: string, suffix = "") {
   return `/teacher/courses/${courseId}/announcements${suffix}`;
@@ -120,9 +121,9 @@ export async function updateCourseAnnouncement(
     );
   }
 
-  const existing = await prisma.courseAnnouncement.findFirst({
-    where: { id: announcementId, courseId, enrollmentId: null },
-  });
+  const existing = await withDbErrorHandling(() => prisma.courseAnnouncement.findFirst({
+      where: { id: announcementId, courseId, enrollmentId: null },
+    }), "Database operation failed");
   if (!existing) {
     redirectWithError(teacherCourseAnnouncementPath(courseId), "notfound");
   }
@@ -147,9 +148,9 @@ export async function updateCourseAnnouncement(
 export async function deleteCourseAnnouncement(courseId: string, announcementId: string) {
   const { teacher } = await requireTeacherCourse(courseId);
 
-  const existing = await prisma.courseAnnouncement.findFirst({
-    where: { id: announcementId, courseId, enrollmentId: null },
-  });
+  const existing = await withDbErrorHandling(() => prisma.courseAnnouncement.findFirst({
+      where: { id: announcementId, courseId, enrollmentId: null },
+    }), "Database operation failed");
   if (!existing) {
     redirectWithError(teacherCourseAnnouncementPath(courseId), "notfound");
   }
@@ -217,9 +218,9 @@ export async function updateStudentCourseAnnouncement(
     );
   }
 
-  const existing = await prisma.courseAnnouncement.findFirst({
-    where: { id: announcementId, courseId, enrollmentId },
-  });
+  const existing = await withDbErrorHandling(() => prisma.courseAnnouncement.findFirst({
+      where: { id: announcementId, courseId, enrollmentId },
+    }), "Database operation failed");
   if (!existing) {
     redirectWithError(teacherStudentAnnouncementPath(courseId, enrollmentId), "notfound");
   }
@@ -251,9 +252,9 @@ export async function deleteStudentCourseAnnouncement(
 ) {
   const { teacher } = await requireTeacherEnrollment(courseId, enrollmentId);
 
-  const existing = await prisma.courseAnnouncement.findFirst({
-    where: { id: announcementId, courseId, enrollmentId },
-  });
+  const existing = await withDbErrorHandling(() => prisma.courseAnnouncement.findFirst({
+      where: { id: announcementId, courseId, enrollmentId },
+    }), "Database operation failed");
   if (!existing) {
     redirectWithError(teacherStudentAnnouncementPath(courseId, enrollmentId), "notfound");
   }
@@ -316,9 +317,9 @@ export async function updateAdminCourseAnnouncement(
     );
   }
 
-  const existing = await prisma.courseAnnouncement.findFirst({
-    where: { id: announcementId, courseId },
-  });
+  const existing = await withDbErrorHandling(() => prisma.courseAnnouncement.findFirst({
+      where: { id: announcementId, courseId },
+    }), "Database operation failed");
   if (!existing) {
     redirectWithError(adminCourseAnnouncementPath(courseId), "notfound");
   }
@@ -341,9 +342,9 @@ export async function deleteAdminCourseAnnouncement(courseId: string, announceme
   await requireAdmin();
   await requireAdminCourse(courseId);
 
-  const existing = await prisma.courseAnnouncement.findFirst({
-    where: { id: announcementId, courseId },
-  });
+  const existing = await withDbErrorHandling(() => prisma.courseAnnouncement.findFirst({
+      where: { id: announcementId, courseId },
+    }), "Database operation failed");
   if (!existing) {
     redirectWithError(adminCourseAnnouncementPath(courseId), "notfound");
   }

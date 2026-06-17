@@ -21,6 +21,7 @@ import {
   normalizeStudentEmail,
 } from "@/lib/student-admin";
 import { adminEnrollUserSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function revalidateEnrollmentPaths(courseId: string) {
   const paths = [
@@ -53,9 +54,9 @@ export async function approveEnrollmentRequest(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const enrollment = await prisma.enrollment.findUnique({
-    where: { id: enrollmentId },
-  });
+  const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+    }), "Database operation failed");
 
   if (!enrollment || enrollment.courseId !== courseId) {
     return { error: "Enrollment not found." };
@@ -78,10 +79,10 @@ export async function approveEnrollmentRequest(
     return { error: "Course not found." };
   }
 
-  await prisma.enrollment.update({
-    where: { id: enrollmentId },
-    data: { status: getRosterEnrollmentStatusForCourse(course.status) },
-  });
+  await withDbErrorHandling(() => prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: { status: getRosterEnrollmentStatusForCourse(course.status) },
+    }), "Database operation failed");
 
   await notifyEnrollmentApproved({
     userId: enrollment.userId,
@@ -103,9 +104,9 @@ export async function rejectEnrollmentRequest(
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const enrollment = await prisma.enrollment.findUnique({
-    where: { id: enrollmentId },
-  });
+  const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+    }), "Database operation failed");
 
   if (!enrollment || enrollment.courseId !== courseId) {
     return { error: "Enrollment not found." };
@@ -124,7 +125,7 @@ export async function rejectEnrollmentRequest(
     enrollmentId,
   });
 
-  await prisma.enrollment.delete({ where: { id: enrollmentId } });
+  await withDbErrorHandling(() => prisma.enrollment.delete({ where: { id: enrollmentId } }), "Database operation failed");
 
   revalidateEnrollmentPaths(courseId);
   revalidatePath(`/admin/students/${enrollment.userId}`, "page");
@@ -164,17 +165,17 @@ export async function adminEnrollUser(
 
   const status = getRosterEnrollmentStatusForCourse(course.status);
 
-  await prisma.enrollment.upsert({
-    where: {
-      userId_courseId: { userId: account.userId, courseId: course.id },
-    },
-    create: {
-      userId: account.userId,
-      courseId: course.id,
-      status,
-    },
-    update: { status },
-  });
+  await withDbErrorHandling(() => prisma.enrollment.upsert({
+      where: {
+        userId_courseId: { userId: account.userId, courseId: course.id },
+      },
+      create: {
+        userId: account.userId,
+        courseId: course.id,
+        status,
+      },
+      update: { status },
+    }), "Database operation failed");
 
   revalidateEnrollmentPaths(course.id);
 
@@ -196,7 +197,7 @@ export async function uploadCertificate(
 ) {
   await requireAdmin();
 
-  const enrollment = await prisma.enrollment.findUnique({ where: { id: enrollmentId } });
+  const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({ where: { id: enrollmentId } }), "Database operation failed");
   if (!enrollment || enrollment.courseId !== courseId) {
     return { error: "Enrollment not found." };
   }
@@ -226,10 +227,10 @@ export async function uploadCertificate(
 
   const uploadedPath = await saveUploadedCertificate(enrollmentId, file as File);
 
-  await prisma.enrollment.update({
-    where: { id: enrollmentId },
-    data: { uploadedCertificatePath: uploadedPath },
-  });
+  await withDbErrorHandling(() => prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: { uploadedCertificatePath: uploadedPath },
+    }), "Database operation failed");
 
   revalidateEnrollmentPaths(courseId);
   revalidatePath("/profile/courses");
@@ -240,16 +241,16 @@ export async function uploadCertificate(
 export async function removeEnrollmentFromCourse(enrollmentId: string, courseId: string) {
   await requireAdmin();
 
-  const enrollment = await prisma.enrollment.findUnique({
-    where: { id: enrollmentId },
-  });
+  const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+    }), "Database operation failed");
 
   if (!enrollment || enrollment.courseId !== courseId) {
     return { error: "Enrollment not found." };
   }
 
   await deleteUploadedCertificate(enrollment.uploadedCertificatePath);
-  await prisma.enrollment.delete({ where: { id: enrollmentId } });
+  await withDbErrorHandling(() => prisma.enrollment.delete({ where: { id: enrollmentId } }), "Database operation failed");
 
   revalidateEnrollmentPaths(courseId);
   revalidatePath(`/admin/students/${enrollment.userId}`);

@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { notifyAllStudentsOfSiteAnnouncement } from "@/lib/notifications";
 import { enforceHomepageAnnouncementLimit, resolveAnnouncementFeaturedUpdate } from "@/lib/site-announcements";
 import { siteAnnouncementSchema } from "@/lib/validations";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function adminListPath(query = "") {
   return `/admin/announcements${query}`;
@@ -91,6 +92,7 @@ export async function createSiteAnnouncement(formData: FormData) {
       });
     }
   } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
     console.error("Database error creating site announcement:", error);
     redirect(`${adminListPath("/new")}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
   }
@@ -111,6 +113,7 @@ export async function updateSiteAnnouncement(id: string, formData: FormData) {
   try {
     existing = await prisma.siteAnnouncement.findUnique({ where: { id } });
   } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
     console.error("Database error fetching site announcement:", error);
     redirect(`${adminListPath(`/${id}/edit`)}?error=${encodeURIComponent("Database error.")}`);
   }
@@ -149,6 +152,7 @@ export async function updateSiteAnnouncement(id: string, formData: FormData) {
       });
     }
   } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
     console.error("Database error updating site announcement:", error);
     redirect(`${adminListPath(`/${id}/edit`)}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
   }
@@ -160,7 +164,7 @@ export async function updateSiteAnnouncement(id: string, formData: FormData) {
 export async function toggleSiteAnnouncementHomepage(id: string) {
   await requireAdmin();
 
-  const existing = await prisma.siteAnnouncement.findUnique({ where: { id } });
+  const existing = await withDbErrorHandling(() => prisma.siteAnnouncement.findUnique({ where: { id } }), "Database operation failed");
   if (!existing) {
     redirect(`${adminListPath()}?error=notfound`);
   }
@@ -183,6 +187,7 @@ export async function toggleSiteAnnouncementHomepage(id: string) {
       await enforceHomepageAnnouncementLimit();
     }
   } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
     console.error("Database error toggling site announcement homepage:", error);
     redirect(`${adminListPath()}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
   }
@@ -194,7 +199,7 @@ export async function toggleSiteAnnouncementHomepage(id: string) {
 export async function deleteSiteAnnouncement(id: string) {
   await requireAdmin();
 
-  const existing = await prisma.siteAnnouncement.findUnique({ where: { id } });
+  const existing = await withDbErrorHandling(() => prisma.siteAnnouncement.findUnique({ where: { id } }), "Database operation failed");
   if (!existing) {
     redirect(`${adminListPath()}?error=notfound`);
   }
@@ -202,6 +207,7 @@ export async function deleteSiteAnnouncement(id: string) {
   try {
     await prisma.siteAnnouncement.delete({ where: { id } });
   } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
     console.error("Database error deleting site announcement:", error);
     redirect(`${adminListPath()}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
   }

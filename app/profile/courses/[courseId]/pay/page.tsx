@@ -7,6 +7,7 @@ import { getMonthlyFeePaise } from "@/lib/course-pricing";
 import { formatPrice, getCourseById } from "@/lib/courses";
 import { prisma } from "@/lib/prisma";
 import { isUpiConfigured } from "@/lib/upi";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export default async function PayMonthlyFeePage({
   params,
@@ -19,9 +20,9 @@ export default async function PayMonthlyFeePage({
   const course = await getCourseById(courseId);
   if (!course) notFound();
 
-  const enrollment = await prisma.enrollment.findUnique({
-    where: { userId_courseId: { userId: session.user.id, courseId } },
-  });
+  const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId: session.user.id, courseId } },
+    }), "Database operation failed");
 
   if (!enrollment || (enrollment.status !== "active" && enrollment.status !== "completed")) {
     redirect("/profile/courses");

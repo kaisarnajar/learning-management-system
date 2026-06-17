@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { clampPage, paginationArgs } from "@/lib/pagination";
 import { andWhere, buildSearchOr } from "@/lib/text-search";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export type ContactInquiryFilter = "pending" | "replied" | undefined;
 
@@ -30,28 +31,28 @@ export async function getAllContactInquiriesPaginated(
   searchQuery?: string,
 ) {
   const where = contactInquiryWhere(filter, searchQuery);
-  const totalCount = await prisma.contactInquiry.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.contactInquiry.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.contactInquiry.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: contactInquiryInclude,
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.contactInquiry.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: contactInquiryInclude,
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
 export async function getContactInquiryById(id: string) {
-  return prisma.contactInquiry.findUnique({
-    where: { id },
-    include: {
-      repliedBy: { select: { id: true, name: true, email: true } },
-    },
-  });
+  return withDbErrorHandling(() => prisma.contactInquiry.findUnique({
+      where: { id },
+      include: {
+        repliedBy: { select: { id: true, name: true, email: true } },
+      },
+    }), "Database operation failed");
 }
 
 export async function getPendingContactInquiryCount() {
-  return prisma.contactInquiry.count({ where: { reply: null } });
+  return withDbErrorHandling(() => prisma.contactInquiry.count({ where: { reply: null } }), "Database operation failed");
 }
 
 export function normalizeContactPhone(phone: string) {

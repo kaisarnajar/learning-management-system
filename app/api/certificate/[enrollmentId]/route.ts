@@ -6,6 +6,7 @@ import { isAdminSession } from "@/lib/admin";
 import { getCertificateFilename, hasUploadedCertificate } from "@/lib/certificate";
 import { getCourseById } from "@/lib/courses";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export async function GET(
   request: Request,
@@ -14,16 +15,16 @@ export async function GET(
   const { enrollmentId } = await params;
   const inline = new URL(request.url).searchParams.get("inline") === "1";
 
-  const enrollment = await prisma.enrollment.findUnique({
-    where: { id: enrollmentId },
-    select: {
-      id: true,
-      userId: true,
-      courseId: true,
-      status: true,
-      uploadedCertificatePath: true,
-    },
-  });
+  const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      select: {
+        id: true,
+        userId: true,
+        courseId: true,
+        status: true,
+        uploadedCertificatePath: true,
+      },
+    }), "Database operation failed");
 
   if (!enrollment || !hasUploadedCertificate(enrollment)) {
     return NextResponse.json({ error: "Certificate is not available yet." }, { status: 404 });
@@ -59,7 +60,9 @@ export async function GET(
         "Cache-Control": "private, no-cache",
       },
     });
-  } catch {
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    console.error("Caught error:", error);
     return NextResponse.json({ error: "Certificate file not found." }, { status: 404 });
-  }
+    }
 }

@@ -7,6 +7,7 @@ import {
   paginationArgs,
 } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 export type CreateStudentNotificationInput = {
   userId: string;
@@ -71,40 +72,40 @@ export async function createStudentNotification(input: CreateStudentNotification
   const { userId, type, title, body, href, sourceType, sourceId } = input;
 
   if (sourceId) {
-    return prisma.studentNotification.upsert({
-      where: {
-        userId_type_sourceId: { userId, type, sourceId },
-      },
-      create: {
+    return withDbErrorHandling(() => prisma.studentNotification.upsert({
+          where: {
+            userId_type_sourceId: { userId, type, sourceId },
+          },
+          create: {
+            userId,
+            type,
+            title,
+            body: body ?? null,
+            href,
+            sourceType: sourceType ?? null,
+            sourceId,
+          },
+          update: {
+            title,
+            body: body ?? null,
+            href,
+            sourceType: sourceType ?? null,
+            readAt: null,
+          },
+        }), "Database operation failed");
+  }
+
+  return withDbErrorHandling(() => prisma.studentNotification.create({
+      data: {
         userId,
         type,
         title,
         body: body ?? null,
         href,
         sourceType: sourceType ?? null,
-        sourceId,
+        sourceId: null,
       },
-      update: {
-        title,
-        body: body ?? null,
-        href,
-        sourceType: sourceType ?? null,
-        readAt: null,
-      },
-    });
-  }
-
-  return prisma.studentNotification.create({
-    data: {
-      userId,
-      type,
-      title,
-      body: body ?? null,
-      href,
-      sourceType: sourceType ?? null,
-      sourceId: null,
-    },
-  });
+    }), "Database operation failed");
 }
 
 export async function createStudentNotificationsForUsers(
@@ -117,17 +118,17 @@ export async function createStudentNotificationsForUsers(
   const { type, title, body, href, sourceType, sourceId } = payload;
 
   if (!sourceId) {
-    await prisma.studentNotification.createMany({
-      data: uniqueUserIds.map((userId) => ({
-        userId,
-        type,
-        title,
-        body: body ?? null,
-        href,
-        sourceType: sourceType ?? null,
-        sourceId: null,
-      })),
-    });
+    await withDbErrorHandling(() => prisma.studentNotification.createMany({
+          data: uniqueUserIds.map((userId) => ({
+            userId,
+            type,
+            title,
+            body: body ?? null,
+            href,
+            sourceType: sourceType ?? null,
+            sourceId: null,
+          })),
+        }), "Database operation failed");
     return;
   }
 
@@ -147,26 +148,26 @@ export async function createStudentNotificationsForUsers(
 }
 
 async function getEnrolledStudentUserIdsForCourse(courseId: string): Promise<string[]> {
-  const enrollments = await prisma.enrollment.findMany({
-    where: {
-      courseId,
-      status: { not: PENDING_ENROLLMENT_APPROVAL },
-    },
-    select: { userId: true },
-  });
+  const enrollments = await withDbErrorHandling(() => prisma.enrollment.findMany({
+      where: {
+        courseId,
+        status: { not: PENDING_ENROLLMENT_APPROVAL },
+      },
+      select: { userId: true },
+    }), "Database operation failed");
   return enrollments.map((enrollment) => enrollment.userId);
 }
 
 async function getNonTeacherUserIds(): Promise<string[]> {
-  const teachers = await prisma.teacher.findMany({ select: { email: true } });
+  const teachers = await withDbErrorHandling(() => prisma.teacher.findMany({ select: { email: true } }), "Database operation failed");
   const teacherEmails = teachers.flatMap((teacher) =>
     teacher.email ? [teacher.email.toLowerCase()] : [],
   );
 
-  const users = await prisma.user.findMany({
-    where: teacherEmails.length > 0 ? { email: { notIn: teacherEmails } } : {},
-    select: { id: true },
-  });
+  const users = await withDbErrorHandling(() => prisma.user.findMany({
+      where: teacherEmails.length > 0 ? { email: { notIn: teacherEmails } } : {},
+      select: { id: true },
+    }), "Database operation failed");
 
   return users.map((user) => user.id);
 }
@@ -297,35 +298,35 @@ export async function getNotificationsForUserPaginated(
   };
 
   const [items, totalCount] = await Promise.all([
-    prisma.studentNotification.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      ...paginationArgs(page, pageSize),
-    }),
-    prisma.studentNotification.count({ where }),
+    withDbErrorHandling(() => prisma.studentNotification.findMany({
+            where,
+            orderBy: { createdAt: "desc" },
+            ...paginationArgs(page, pageSize),
+          }), "Database operation failed"),
+    withDbErrorHandling(() => prisma.studentNotification.count({ where }), "Database operation failed"),
   ]);
 
   return { items, totalCount };
 }
 
 export async function getUnreadNotificationCount(userId: string): Promise<number> {
-  return prisma.studentNotification.count({
-    where: { userId, readAt: null },
-  });
+  return withDbErrorHandling(() => prisma.studentNotification.count({
+      where: { userId, readAt: null },
+    }), "Database operation failed");
 }
 
 export async function markNotificationRead(userId: string, notificationId: string) {
-  const notification = await prisma.studentNotification.findFirst({
-    where: { id: notificationId, userId },
-  });
+  const notification = await withDbErrorHandling(() => prisma.studentNotification.findFirst({
+      where: { id: notificationId, userId },
+    }), "Database operation failed");
 
   if (!notification) return null;
 
   if (!notification.readAt) {
-    await prisma.studentNotification.update({
-      where: { id: notificationId },
-      data: { readAt: new Date() },
-    });
+    await withDbErrorHandling(() => prisma.studentNotification.update({
+          where: { id: notificationId },
+          data: { readAt: new Date() },
+        }), "Database operation failed");
   }
 
   revalidateNotificationPaths(userId);
@@ -333,10 +334,10 @@ export async function markNotificationRead(userId: string, notificationId: strin
 }
 
 export async function markAllNotificationsRead(userId: string) {
-  await prisma.studentNotification.updateMany({
-    where: { userId, readAt: null },
-    data: { readAt: new Date() },
-  });
+  await withDbErrorHandling(() => prisma.studentNotification.updateMany({
+      where: { userId, readAt: null },
+      data: { readAt: new Date() },
+    }), "Database operation failed");
   revalidateNotificationPaths(userId);
 }
 

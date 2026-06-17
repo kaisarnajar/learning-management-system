@@ -11,6 +11,7 @@ import { getPendingStudentReviewCount } from "@/lib/student-reviews";
 import { getPendingPaymentCount } from "@/lib/monthly-payments";
 import { prisma } from "@/lib/prisma";
 import { getStudentCount } from "@/lib/students";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 type DashboardStat = {
   label: string;
@@ -69,18 +70,18 @@ export default async function AdminDashboardPage() {
     pendingReviewCount,
     pendingPaymentCount,
   ] = await Promise.all([
-    prisma.siteAnnouncement.count(),
-    prisma.blogPost.count(),
-    prisma.dailyInspiration.count(),
-    prisma.course.count(),
+    withDbErrorHandling(() => prisma.siteAnnouncement.count(), "Database operation failed"),
+    withDbErrorHandling(() => prisma.blogPost.count(), "Database operation failed"),
+    withDbErrorHandling(() => prisma.dailyInspiration.count(), "Database operation failed"),
+    withDbErrorHandling(() => prisma.course.count(), "Database operation failed"),
     getPendingEnrollmentApprovalCount(),
     getAwaitingEnrollmentFeeCount(),
     getStudentCount(),
-    prisma.teacher.count(),
-    prisma.libraryItem.count(),
+    withDbErrorHandling(() => prisma.teacher.count(), "Database operation failed"),
+    withDbErrorHandling(() => prisma.libraryItem.count(), "Database operation failed"),
     getBookCount(),
     getPendingBookOrderCount(),
-    prisma.fatwaQuestion.count({ where: { answer: null } }),
+    withDbErrorHandling(() => prisma.fatwaQuestion.count({ where: { answer: null } }), "Database operation failed"),
     getPendingContactInquiryCount(),
     getPendingBlogApprovalCount(),
     getPendingStudentReviewCount(),

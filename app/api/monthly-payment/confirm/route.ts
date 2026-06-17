@@ -134,7 +134,9 @@ export async function POST(request: Request) {
       redirectUrl: "/profile/payments?submitted=1",
       message: "Thank you! We will verify your monthly fee payment shortly.",
     });
-  } catch {
+  } catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    console.error("Caught error:", error);
     return NextResponse.json({ error: "Could not submit payment. Please try again." }, { status: 500 });
-  }
+    }
 }

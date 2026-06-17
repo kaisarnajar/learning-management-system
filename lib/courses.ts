@@ -3,6 +3,7 @@ import { isCoursePubliclyVisible } from "@/lib/course-status";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { buildSearchOr } from "@/lib/text-search";
+import { withDbErrorHandling } from "@/lib/db-error";
 
 function allCoursesWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -37,32 +38,32 @@ export async function getPublicCoursesPaginated(
   pageSize: number,
 ): Promise<PaginatedResult<CourseWithTeacher>> {
   const where = { status: { not: "DRAFT" as const } };
-  const totalCount = await prisma.course.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.course.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.course.findMany({
-    where,
-    include: courseWithTeacherInclude,
-    orderBy: { createdAt: "desc" },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.course.findMany({
+      where,
+      include: courseWithTeacherInclude,
+      orderBy: { createdAt: "desc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
 export async function getFeaturedHomepageCourses(): Promise<CourseWithTeacher[]> {
-  const courses = await prisma.course.findMany({
-    where: { featuredOnHomepage: true },
-    include: courseWithTeacherInclude,
-    orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
-    take: HOMEPAGE_FEATURED_COURSES_MAX,
-  });
+  const courses = await withDbErrorHandling(() => prisma.course.findMany({
+      where: { featuredOnHomepage: true },
+      include: courseWithTeacherInclude,
+      orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
+      take: HOMEPAGE_FEATURED_COURSES_MAX,
+    }), "Database operation failed");
   return courses.filter((c) => isCoursePubliclyVisible(c.status));
 }
 
 export async function getFeaturedHomepageCourseCount(): Promise<number> {
-  const courses = await prisma.course.findMany({
-    where: { featuredOnHomepage: true },
-    select: { status: true },
-  });
+  const courses = await withDbErrorHandling(() => prisma.course.findMany({
+      where: { featuredOnHomepage: true },
+      select: { status: true },
+    }), "Database operation failed");
   return courses.filter((c) => isCoursePubliclyVisible(c.status)).length;
 }
 
@@ -97,18 +98,18 @@ export async function resolveCourseFeaturedUpdate(options: {
 }
 
 export async function getAllCourses(): Promise<CourseWithTeacher[]> {
-  return prisma.course.findMany({
-    include: courseWithTeacherInclude,
-    orderBy: { createdAt: "desc" },
-  });
+  return withDbErrorHandling(() => prisma.course.findMany({
+      include: courseWithTeacherInclude,
+      orderBy: { createdAt: "desc" },
+    }), "Database operation failed");
 }
 
 /** Course IDs whose title matches a search query (for models that only store courseId). */
 export async function getCourseIdsByTitleSearch(searchQuery: string): Promise<string[]> {
-  const courses = await prisma.course.findMany({
-    where: { title: { contains: searchQuery } },
-    select: { id: true },
-  });
+  const courses = await withDbErrorHandling(() => prisma.course.findMany({
+      where: { title: { contains: searchQuery } },
+      select: { id: true },
+    }), "Database operation failed");
   return courses.map((course) => course.id);
 }
 
@@ -118,22 +119,22 @@ export async function getAllCoursesPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<CourseWithTeacher>> {
   const where = allCoursesWhere(searchQuery);
-  const totalCount = await prisma.course.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.course.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.course.findMany({
-    where,
-    include: courseWithTeacherInclude,
-    orderBy: { createdAt: "desc" },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.course.findMany({
+      where,
+      include: courseWithTeacherInclude,
+      orderBy: { createdAt: "desc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 
 export async function getCourseById(id: string): Promise<CourseWithTeacher | null> {
-  return prisma.course.findUnique({
-    where: { id },
-    include: courseWithTeacherInclude,
-  });
+  return withDbErrorHandling(() => prisma.course.findUnique({
+      where: { id },
+      include: courseWithTeacherInclude,
+    }), "Database operation failed");
 }
 
 export async function getPublicCoursesByTeacherIdPaginated(
@@ -142,14 +143,14 @@ export async function getPublicCoursesByTeacherIdPaginated(
   pageSize: number,
 ): Promise<PaginatedResult<CourseWithTeacher>> {
   const where = { teacherId, status: { not: "DRAFT" as const } };
-  const totalCount = await prisma.course.count({ where });
+  const totalCount = await withDbErrorHandling(() => prisma.course.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
-  const items = await prisma.course.findMany({
-    where,
-    include: courseWithTeacherInclude,
-    orderBy: { createdAt: "desc" },
-    ...paginationArgs(safePage, pageSize),
-  });
+  const items = await withDbErrorHandling(() => prisma.course.findMany({
+      where,
+      include: courseWithTeacherInclude,
+      orderBy: { createdAt: "desc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
   return { items, totalCount };
 }
 

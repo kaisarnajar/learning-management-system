@@ -123,9 +123,10 @@ async function embedLogo(pdf: PDFDocument): Promise<PDFImage | null> {
     const logoPath = path.join(process.cwd(), "public", "logo.png");
     const bytes = await readFile(logoPath);
     return pdf.embedPng(bytes);
-  } catch {
+  } catch (error) {
+    console.error("Caught error:", error);
     return null;
-  }
+    }
 }
 
 function buildPaymentNote(data: PaymentReceiptData): string {

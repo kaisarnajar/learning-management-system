@@ -27,7 +27,7 @@ function formatPrice(paise: number): string {
 
 function PastOrderCard({ order }: { order: PastOrder }) {
   return (
-    <div className="rounded-xl border border-border bg-surface p-4">
+    <div className="flex flex-col h-full rounded-xl border border-border bg-surface p-4 shadow-sm hover:shadow-md transition-shadow">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm text-muted">
@@ -260,7 +260,7 @@ export function CartPageClient({
       {orders.length > 0 && (
         <section>
           <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Order History</h3>
-          <div className="mt-3 space-y-3">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {orders.map((order) => (
               <PastOrderCard key={order.id} order={order} />
             ))}

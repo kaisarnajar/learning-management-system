@@ -48,9 +48,9 @@ function HeaderContent({ pathname }: { pathname: string }) {
   };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-white shadow-sm">
+    <header className="sticky top-0 z-50 border-b border-border bg-surface shadow-sm">
       <div className="mx-auto flex max-w-[1310px] items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6 lg:px-8">
-        <div className="relative z-10 shrink-0 bg-white pr-1">
+        <div className="relative z-10 shrink-0 bg-surface pr-1">
           <SiteLogo priority />
         </div>
 
@@ -100,7 +100,7 @@ function HeaderContent({ pathname }: { pathname: string }) {
       {menuOpen && (
         <nav
           id="mobile-menu"
-          className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-border bg-white px-4 py-2 xl:hidden"
+          className="max-h-[calc(100dvh-4rem)] overflow-y-auto border-t border-border bg-surface px-4 py-2 xl:hidden"
           aria-label="Mobile navigation"
         >
           <ul className="flex flex-col pb-2">

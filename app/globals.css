@@ -15,10 +15,52 @@
   --accent-warm: var(--gold-dark);
   --accent-muted: #fef9e7;
   --surface: #ffffff;
+  --surface-muted: #f9fafb;
+  --surface-muted-hover: #f3f4f6;
   --muted: #5c5c5c;
   --border: #e5e5e5;
+  --input-bg: #ffffff;
+  --input-border: #e5e5e5;
+  --ring: var(--gold);
+  
+  /* Status Colors (Light Mode) */
+  --success-bg: #d1fae5;
+  --success-text: #064e3b;
+  --info-bg: #f5f3ff;
+  --info-text: #4c1d95;
+  --warning-bg: #fffbeb;
+  --warning-text: #78350f;
+  --destructive-bg: #fef2f2;
+  --destructive-text: #7f1d1d;
+
   --card-shadow: 0 8px 30px -8px rgb(0 0 0 / 0.12);
   --header-height: 4.5rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #121212;
+    --foreground: #e5e5e5;
+    --surface: #1e1e1e;
+    --surface-muted: #262626;
+    --surface-muted-hover: #333333;
+    --muted: #a3a3a3;
+    --border: #333333;
+    --accent-muted: #2d2612;
+    --input-bg: #1e1e1e;
+    --input-border: #333333;
+    --card-shadow: 0 8px 30px -8px rgb(0 0 0 / 0.5);
+
+    /* Status Colors (Dark Mode) */
+    --success-bg: #064e3b;
+    --success-text: #d1fae5;
+    --info-bg: #2e1065;
+    --info-text: #ede9fe;
+    --warning-bg: #451a03;
+    --warning-text: #fef3c7;
+    --destructive-bg: #450a0a;
+    --destructive-text: #fee2e2;
+  }
 }
 
 @theme inline {
@@ -30,8 +72,23 @@
   --color-accent-warm: var(--accent-warm);
   --color-accent-muted: var(--accent-muted);
   --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-muted-hover: var(--surface-muted-hover);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-input-bg: var(--input-bg);
+  --color-input-border: var(--input-border);
+  --color-ring: var(--ring);
+  
+  --color-success-bg: var(--success-bg);
+  --color-success-text: var(--success-text);
+  --color-info-bg: var(--info-bg);
+  --color-info-text: var(--info-text);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-text: var(--warning-text);
+  --color-destructive-bg: var(--destructive-bg);
+  --color-destructive-text: var(--destructive-text);
+
   --color-gold: var(--gold);
   --color-gold-light: var(--gold-light);
   --color-teal: var(--teal);

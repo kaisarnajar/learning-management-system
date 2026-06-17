@@ -56,11 +56,12 @@ function CompletedOrderRow({ order }: { order: BookOrderWithItems }) {
             year: "numeric",
           })}
         </p>
-        {order.deliveryAddress && order.deliveryAddress !== "No address provided" && (
-          <div className="mt-3 rounded-md bg-muted/10 p-2 text-xs">
-            <p className="font-semibold text-foreground/80">Delivery Address</p>
-            <p className="mt-0.5 whitespace-pre-wrap text-muted">{order.deliveryAddress}</p>
-          </div>
+      </td>
+      <td className="px-4 py-4 align-top max-w-[200px]">
+        {order.deliveryAddress && order.deliveryAddress !== "No address provided" ? (
+          <p className="whitespace-pre-wrap text-sm text-muted">{order.deliveryAddress}</p>
+        ) : (
+          <p className="text-sm text-muted italic">No address provided</p>
         )}
       </td>
       <td className="px-4 py-4 align-top">
@@ -120,6 +121,7 @@ export function CompletedBookOrdersTable({
       <thead className="border-b border-border bg-background/50 text-muted">
         <tr>
           <th className="px-4 py-3 font-medium">Student</th>
+          <th className="px-4 py-3 font-medium">Delivery Address</th>
           <th className="px-4 py-3 font-medium">Books</th>
           <th className="px-4 py-3 font-medium">Total</th>
           <th className="px-4 py-3 font-medium">Payment</th>

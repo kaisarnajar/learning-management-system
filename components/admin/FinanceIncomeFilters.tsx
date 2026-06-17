@@ -40,7 +40,7 @@ export function FinanceIncomeFilters({ filters, courses, students }: FinanceInco
         <input key={field.name} type="hidden" name={field.name} value={field.value} />
       ))}
 
-      <div className="min-w-[160px]">
+      <div className="w-full sm:w-auto sm:min-w-[160px]">
         <label htmlFor="income-course" className="block text-xs font-medium text-muted">
           Course
         </label>
@@ -59,7 +59,7 @@ export function FinanceIncomeFilters({ filters, courses, students }: FinanceInco
         </select>
       </div>
 
-      <div className="min-w-[180px]">
+      <div className="w-full sm:w-auto sm:min-w-[180px]">
         <label htmlFor="income-student" className="block text-xs font-medium text-muted">
           Student
         </label>
@@ -78,7 +78,7 @@ export function FinanceIncomeFilters({ filters, courses, students }: FinanceInco
         </select>
       </div>
 
-      <div className="min-w-[140px]">
+      <div className="w-full sm:w-auto sm:min-w-[140px]">
         <label htmlFor="income-type" className="block text-xs font-medium text-muted">
           Payment type
         </label>
@@ -99,7 +99,7 @@ export function FinanceIncomeFilters({ filters, courses, students }: FinanceInco
 
       <button
         type="submit"
-        className="min-h-11 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
+        className="min-h-11 w-full sm:w-auto rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
       >
         Apply filters
       </button>

@@ -72,7 +72,8 @@ function ReviewTable({
   }
 
   return (
-    <table className="w-full min-w-[1040px] text-left text-sm">
+    <div className="w-full overflow-x-auto">
+      <table className="w-full min-w-[1040px] text-left text-sm">
       <thead className="border-b border-border bg-background/50 text-muted">
         <tr>
           <th className="px-4 py-3 font-medium">Name</th>
@@ -113,7 +114,8 @@ function ReviewTable({
           </tr>
         ))}
       </tbody>
-    </table>
+      </table>
+    </div>
   );
 }
 

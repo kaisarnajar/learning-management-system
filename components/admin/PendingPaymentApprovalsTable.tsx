@@ -22,7 +22,8 @@ export function PendingPaymentApprovalsTable({
   }
 
   return (
-    <table className="w-full min-w-[1100px] text-left text-sm">
+    <div className="w-full overflow-x-auto">
+      <table className="w-full min-w-[1100px] text-left text-sm">
       <thead className="border-b border-border bg-background/50 text-muted">
         <tr>
           <th className="px-4 py-3 font-medium">Name</th>
@@ -89,6 +90,7 @@ export function PendingPaymentApprovalsTable({
           </tr>
         ))}
       </tbody>
-    </table>
+      </table>
+    </div>
   );
 }

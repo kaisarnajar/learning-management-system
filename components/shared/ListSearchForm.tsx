@@ -40,7 +40,7 @@ export function ListSearchForm({
           <input key={key} type="hidden" name={key} value={value} />
         ))}
 
-        <div className="relative min-w-[200px] flex-1 max-w-md">
+        <div className="relative w-full sm:w-auto sm:min-w-[200px] flex-1 max-w-md">
           <input
             type="search"
             name={SEARCH_PARAM}
@@ -53,7 +53,7 @@ export function ListSearchForm({
 
         <button
           type="submit"
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
+          className="w-full sm:w-auto rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
         >
           Search
         </button>

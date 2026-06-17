@@ -81,7 +81,14 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
         setServerError(result.error);
         setLoading(false);
       }
-    } catch {
+    } catch (err) {
+      const error = err as { digest?: string; message?: string };
+      if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) {
+        throw err;
+      }
+      if (error?.message === "NEXT_REDIRECT") {
+        throw err;
+      }
       setServerError("Something went wrong. Please try again.");
       setLoading(false);
     }

@@ -1,0 +1,84 @@
+"use client";
+
+import { usePathname, useSearchParams } from "next/navigation";
+import { useState, useTransition } from "react";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
+
+export type ActionButtonVariant = "primary" | "destructive" | "secondary";
+
+export function getReturnToUrl(pathname: string, searchParams: URLSearchParams) {
+  const query = searchParams.toString();
+  return query ? `${pathname}?${query}` : pathname;
+}
+
+export function ActionButton({
+  action,
+  confirmMessage,
+  children,
+  loadingText = "…",
+  variant = "primary",
+  hideOnSuccess = true,
+  className = "",
+}: {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  action: (returnTo: string) => Promise<{ error?: string } | void | any>;
+  confirmMessage?: string;
+  children: React.ReactNode;
+  loadingText?: React.ReactNode;
+  variant?: ActionButtonVariant;
+  hideOnSuccess?: boolean;
+  className?: string;
+}) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [hidden, setHidden] = useState(false);
+  const [pending, startTransition] = useTransition();
+
+  if (hidden) return null;
+
+  function handleAction() {
+    if (confirmMessage && !window.confirm(confirmMessage)) return;
+
+    startTransition(async () => {
+      try {
+        const returnTo = getReturnToUrl(pathname, searchParams);
+        const result = await action(returnTo);
+        if (result?.error) {
+          window.alert(result.error);
+          return;
+        }
+        if (hideOnSuccess) {
+          setHidden(true);
+        }
+      } catch (error) {
+        if (isRedirectError(error)) {
+          if (hideOnSuccess) {
+            setHidden(true);
+          }
+          return;
+        }
+        window.alert("An unexpected error occurred. Please try again.");
+      }
+    });
+  }
+
+  let buttonClass = "";
+  if (variant === "primary") {
+    buttonClass = "rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60";
+  } else if (variant === "destructive") {
+    buttonClass = "rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-red-100 disabled:opacity-60";
+  } else if (variant === "secondary") {
+    buttonClass = "rounded-md border border-border bg-surface-muted px-3 py-1.5 text-xs font-semibold text-muted hover:bg-surface-muted-hover disabled:opacity-60 transition-colors";
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleAction}
+      disabled={pending}
+      className={`${buttonClass} ${className}`}
+    >
+      {pending ? loadingText : children}
+    </button>
+  );
+}

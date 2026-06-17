@@ -2,14 +2,13 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getMonthlyFeePaise } from "@/lib/course-pricing";
 import { getCourseById } from "@/lib/courses";
-import {
-  buildMonthlyFeeLabel,
-} from "@/lib/monthly-payments";
+import { buildMonthlyFeeLabel } from "@/lib/monthly-payments";
 import {
   MONTHLY_PAYMENT_PENDING,
   PAYMENT_TYPE_MONTHLY,
 } from "@/lib/monthly-payment-status";
-import { savePaymentScreenshot, validatePaymentScreenshot } from "@/lib/payment-upload";
+import { createCoursePaymentSubmission } from "@/lib/payment-submission";
+import { validatePaymentScreenshot } from "@/lib/payment-upload";
 import { prisma } from "@/lib/prisma";
 import { isUpiConfigured } from "@/lib/upi";
 import { monthlyPaymentSubmitSchema } from "@/lib/validations";
@@ -93,41 +92,20 @@ export async function POST(request: Request) {
       );
     }
 
-    const duplicateUtrSubmission = await prisma.coursePaymentSubmission.findFirst({
-      where: { upiTransactionId: parsed.data.upiTransactionId },
+    const submissionResult = await createCoursePaymentSubmission({
+      userId: session.user.id,
+      courseId: course.id,
+      paymentType: PAYMENT_TYPE_MONTHLY,
+      label,
+      amountInrPaise: getMonthlyFeePaise(course),
+      status: MONTHLY_PAYMENT_PENDING,
+      paymentMethod: parsed.data.paymentMethod ?? null,
+      upiTransactionId: parsed.data.upiTransactionId ?? null,
+      screenshotFile,
     });
 
-    if (duplicateUtrSubmission) {
-      return NextResponse.json(
-        { error: "This transaction reference was already used. Contact support if this is a mistake." },
-        { status: 400 },
-      );
-    }
-
-    const created = await prisma.coursePaymentSubmission.create({
-      data: {
-        userId: session.user.id,
-        courseId: course.id,
-        paymentType: PAYMENT_TYPE_MONTHLY,
-        label,
-        amountInrPaise: getMonthlyFeePaise(course),
-        status: MONTHLY_PAYMENT_PENDING,
-        paymentMethod: parsed.data.paymentMethod,
-        upiTransactionId: parsed.data.upiTransactionId,
-      },
-    });
-
-    await prisma.coursePaymentSubmission.update({
-      where: { id: created.id },
-      data: { paymentReference: created.id },
-    });
-
-    if (screenshotFile && screenshotFile.size > 0) {
-      const paymentScreenshotPath = await savePaymentScreenshot(created.id, screenshotFile);
-      await prisma.coursePaymentSubmission.update({
-        where: { id: created.id },
-        data: { paymentScreenshotPath },
-      });
+    if (submissionResult.error) {
+      return NextResponse.json({ error: submissionResult.error }, { status: 400 });
     }
 
     return NextResponse.json({
@@ -138,5 +116,5 @@ export async function POST(request: Request) {
     if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
     console.error("Caught error:", error);
     return NextResponse.json({ error: "Could not submit payment. Please try again." }, { status: 500 });
-    }
+  }
 }

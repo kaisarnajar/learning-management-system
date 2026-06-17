@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-actions";
 import { saveBookImage, validateBookImage, deleteBookImage } from "@/lib/bookstore-upload";
 import { prisma } from "@/lib/prisma";
+import { resolveBookFeaturedUpdate } from "@/lib/bookstore";
 import { bookSchema } from "@/lib/validations";
 
 function parseBookForm(formData: FormData) {
@@ -17,6 +18,7 @@ function parseBookForm(formData: FormData) {
     inventoryPurchased: formData.get("inventoryPurchased"),
     status: formData.get("status"),
     published: formData.get("published") === "true" || formData.get("published") === "on",
+    featuredOnHomepage: formData.get("featuredOnHomepage") === "true" || formData.get("featuredOnHomepage") === "on",
   });
 }
 
@@ -45,6 +47,19 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
   const purchasePriceInrPaise = Math.round(parseFloat(parsed.data.purchasePriceInr) * 100);
   const inventoryPurchased = parseInt(parsed.data.inventoryPurchased, 10);
 
+  const featured = await resolveBookFeaturedUpdate({
+    item: {
+      published: parsed.data.published,
+      featuredOnHomepage: false,
+      featuredAt: null,
+    },
+    requestFeatured: parsed.data.featuredOnHomepage ?? false,
+  });
+
+  if ("error" in featured) {
+    return { error: featured.error };
+  }
+
   try {
     const book = await prisma.book.create({
       data: {
@@ -56,6 +71,7 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
         inventoryPurchased,
         status: parsed.data.status,
         published: parsed.data.published,
+        ...featured,
       },
     });
 
@@ -94,6 +110,22 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
   const purchasePriceInrPaise = Math.round(parseFloat(parsed.data.purchasePriceInr) * 100);
   const inventoryPurchased = parseInt(parsed.data.inventoryPurchased, 10);
 
+  const existing = await prisma.book.findUnique({ where: { id: bookId } });
+  if (!existing) return { error: "Book not found." };
+
+  const featured = await resolveBookFeaturedUpdate({
+    item: {
+      published: parsed.data.published,
+      featuredOnHomepage: existing.featuredOnHomepage,
+      featuredAt: existing.featuredAt,
+    },
+    requestFeatured: parsed.data.featuredOnHomepage ?? false,
+  });
+
+  if ("error" in featured) {
+    return { error: featured.error };
+  }
+
   try {
     let imagePath: string | undefined;
     if (imageFile && imageFile.size > 0) {
@@ -111,6 +143,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
         inventoryPurchased,
         status: parsed.data.status,
         published: parsed.data.published,
+        ...featured,
         ...(imagePath ? { imagePath } : {}),
       },
     });

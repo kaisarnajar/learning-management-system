@@ -372,6 +372,7 @@ export const bookSchema = z.object({
     }, "Inventory must be a non-negative integer."),
   status: bookStatusEnum,
   published: z.boolean(),
+  featuredOnHomepage: z.boolean().optional(),
 });
 
 export const bookstoreCheckoutSchema = z.object({

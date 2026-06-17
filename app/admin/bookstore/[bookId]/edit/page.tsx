@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookForm } from "@/components/admin/BookForm";
 import { updateBook } from "@/app/admin/bookstore/actions";
-import { getBookById } from "@/lib/bookstore";
+import { getBookById, getFeaturedHomepageBookCount } from "@/lib/bookstore";
 
 export const metadata: Metadata = {
   title: "Edit Book — Admin",
@@ -16,7 +16,10 @@ export default async function AdminBookEditPage({
   params: Promise<{ bookId: string }>;
 }) {
   const { bookId } = await params;
-  const book = await getBookById(bookId);
+  const [book, featuredCount] = await Promise.all([
+    getBookById(bookId),
+    getFeaturedHomepageBookCount(),
+  ]);
 
   if (!book) notFound();
 
@@ -43,7 +46,7 @@ export default async function AdminBookEditPage({
       </p>
 
       <div className="mt-8 max-w-2xl">
-        <BookForm book={book} action={handleUpdate} submitLabel="Save Changes" />
+        <BookForm book={book} featuredCount={featuredCount} action={handleUpdate} submitLabel="Save Changes" />
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { FeatureCards } from "@/components/home/FeatureCards";
 import { FeaturedBlogs } from "@/components/home/FeaturedBlogs";
 import { FeaturedCourses } from "@/components/home/FeaturedCourses";
 import { FeaturedResources } from "@/components/home/FeaturedResources";
+import { FeaturedBooks } from "@/components/home/FeaturedBooks";
 import { HomeAbout } from "@/components/home/HomeAbout";
 import { HomeDailyInspiration } from "@/components/home/HomeDailyInspiration";
 import { HeroWave } from "@/components/home/HeroWave";
@@ -30,6 +31,7 @@ export default async function HomePage() {
       <HomeAnnouncements />
       <FeaturedBlogs />
       <FeaturedResources />
+      <FeaturedBooks />
       <HomeFatwa />
       <HomeAbout />
       <ExperienceBanner />

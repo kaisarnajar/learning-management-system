@@ -243,6 +243,7 @@ export type BookFormValues = {
   inventoryPurchased: string;
   status: "AVAILABLE" | "OUT_OF_STOCK" | "COMING_SOON";
   published: boolean;
+  featuredOnHomepage: boolean;
 };
 
 export function validateBookForm(values: BookFormValues): FormValidationResult {
@@ -256,6 +257,7 @@ export function validateBookForm(values: BookFormValues): FormValidationResult {
       inventoryPurchased: values.inventoryPurchased,
       status: values.status,
       published: values.published,
+      featuredOnHomepage: values.featuredOnHomepage,
     }),
   );
 }

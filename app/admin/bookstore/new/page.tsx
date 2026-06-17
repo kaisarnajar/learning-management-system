@@ -2,13 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BookForm } from "@/components/admin/BookForm";
 import { createBook } from "@/app/admin/bookstore/actions";
+import { getFeaturedHomepageBookCount } from "@/lib/bookstore";
 
 export const metadata: Metadata = {
   title: "Add Book — Admin",
   description: "Add a new physical book to the Darse Quran Academy bookstore.",
 };
 
-export default function AdminBookstoreNewPage() {
+export default async function AdminBookstoreNewPage() {
+  const featuredCount = await getFeaturedHomepageBookCount();
+
   return (
     <div>
       <Link
@@ -27,7 +30,7 @@ export default function AdminBookstoreNewPage() {
       </p>
 
       <div className="mt-8 max-w-2xl">
-        <BookForm action={createBook} submitLabel="Add Book" />
+        <BookForm featuredCount={featuredCount} action={createBook} submitLabel="Add Book" />
       </div>
     </div>
   );

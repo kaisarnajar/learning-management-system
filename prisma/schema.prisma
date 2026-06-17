@@ -506,6 +506,8 @@ model Book {
   status      BookStatus @default(AVAILABLE)
   imagePath   String?
   published   Boolean    @default(true)
+  featuredOnHomepage Boolean @default(false)
+  featuredAt  DateTime?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   orderItems  BookOrderItem[]

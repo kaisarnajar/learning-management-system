@@ -3,6 +3,7 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/paginatio
 import { buildSearchOr } from "@/lib/text-search";
 import { prisma } from "@/lib/prisma";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { resolveHomepageFeaturedUpdate } from "@/lib/homepage-featured";
 
 export { BookStatus };
 
@@ -234,4 +235,36 @@ export async function getBookOrdersForUser(userId: string) {
 
 export async function getBookCount(): Promise<number> {
   return withDbErrorHandling(() => prisma.book.count(), "Database operation failed");
+}
+
+export const HOMEPAGE_FEATURED_BOOKS_MAX = 4;
+
+export async function getFeaturedHomepageBooks(): Promise<BookWithDetails[]> {
+  return withDbErrorHandling(() => prisma.book.findMany({
+      where: { featuredOnHomepage: true, published: true },
+      orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
+      take: HOMEPAGE_FEATURED_BOOKS_MAX,
+    }), "Database operation failed");
+}
+
+export async function getFeaturedHomepageBookCount(): Promise<number> {
+  return withDbErrorHandling(() => prisma.book.count({
+      where: { featuredOnHomepage: true, published: true },
+    }), "Database operation failed");
+}
+
+export async function resolveBookFeaturedUpdate(options: {
+  item: Pick<BookWithDetails, "published"> & { featuredOnHomepage: boolean; featuredAt: Date | null };
+  requestFeatured: boolean;
+}) {
+  const featuredCount = await getFeaturedHomepageBookCount();
+  return resolveHomepageFeaturedUpdate({
+    isEligible: options.item.published,
+    requestFeatured: options.requestFeatured,
+    currentlyFeatured: options.item.featuredOnHomepage,
+    currentFeaturedAt: options.item.featuredAt,
+    featuredCount,
+    maxFeatured: HOMEPAGE_FEATURED_BOOKS_MAX,
+    resourceLabel: "books",
+  });
 }

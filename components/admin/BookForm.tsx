@@ -6,13 +6,14 @@ import {
   validateBookForm,
   type BookFormValues,
 } from "@/lib/admin-form-validation";
-import type { BookWithDetails } from "@/lib/bookstore";
+import { type BookWithDetails, HOMEPAGE_FEATURED_BOOKS_MAX } from "@/lib/bookstore";
 import { useZodForm } from "@/lib/use-zod-form";
 import { labelClassName } from "@/lib/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
 
 type BookFormProps = {
-  book?: BookWithDetails;
+  book?: BookWithDetails & { featuredOnHomepage?: boolean };
+  featuredCount: number;
   action: (formData: FormData) => Promise<{ error?: string }>;
   submitLabel: string;
 };
@@ -23,7 +24,12 @@ const STATUS_OPTIONS = [
   { value: "COMING_SOON", label: "Coming Soon" },
 ];
 
-export function BookForm({ book, action, submitLabel }: BookFormProps) {
+export function BookForm({ book, featuredCount, action, submitLabel }: BookFormProps) {
+  const isCurrentlyFeatured = book?.featuredOnHomepage ?? false;
+  const featuredSlotsFull = featuredCount >= HOMEPAGE_FEATURED_BOOKS_MAX;
+  const canFeatureThisItem = isCurrentlyFeatured || !featuredSlotsFull;
+  const displayedFeaturedCount = Math.min(featuredCount, HOMEPAGE_FEATURED_BOOKS_MAX);
+
   const validate = useCallback((values: BookFormValues) => validateBookForm(values), []);
 
   const { values, updateField, markTouched, showError, errors, isValid } = useZodForm({
@@ -36,8 +42,9 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
       inventoryPurchased: book ? String(book.inventoryPurchased) : "",
       status: (book?.status as BookFormValues["status"]) ?? "AVAILABLE",
       published: book?.published ?? true,
+      featuredOnHomepage: book?.featuredOnHomepage ?? false,
     },
-    fields: ["title", "author", "description", "priceInr", "purchasePriceInr", "inventoryPurchased", "status", "published"],
+    fields: ["title", "author", "description", "priceInr", "purchasePriceInr", "inventoryPurchased", "status", "published", "featuredOnHomepage"],
     validate,
   });
 
@@ -66,6 +73,7 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
 
     const formData = new FormData(e.currentTarget);
     formData.set("published", values.published ? "true" : "false");
+    formData.set("featuredOnHomepage", values.featuredOnHomepage ? "true" : "false");
 
     try {
       const result = await action(formData);
@@ -252,22 +260,49 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
         </div>
       </div>
 
-      {/* Published toggle */}
-      <label className="flex cursor-pointer items-center gap-3">
-        <input
-          type="checkbox"
-          name="published"
-          checked={values.published}
-          onChange={(e) => updateField("published", e.target.checked)}
-          className="h-4 w-4 rounded text-primary"
-        />
-        <span className="text-sm font-medium text-foreground">
-          Published{" "}
-          <span className="font-normal text-muted">
-            (visible to users on the Bookstore page)
+      <div className="space-y-3 rounded-lg border border-border bg-background/40 px-4 py-4">
+        <label className="flex cursor-pointer items-start gap-3 text-sm text-foreground">
+          <input
+            type="checkbox"
+            name="published"
+            checked={values.published}
+            onChange={(e) => updateField("published", e.target.checked)}
+            className="mt-1 rounded border-border"
+          />
+          <span>
+            <span className="font-medium">Published</span>
+            <span className="mt-0.5 block text-muted">Uncheck to hide from the public bookstore.</span>
           </span>
-        </span>
-      </label>
+        </label>
+        <label
+          className={`flex items-start gap-3 text-sm text-foreground ${
+            canFeatureThisItem ? "cursor-pointer" : ""
+          }`}
+        >
+          <input
+            type="checkbox"
+            name="featuredOnHomepage"
+            defaultChecked={isCurrentlyFeatured}
+            disabled={!canFeatureThisItem}
+            className="mt-1 rounded border-border disabled:cursor-not-allowed"
+          />
+          <span>
+            <span className="font-medium">Show on homepage</span>
+            {canFeatureThisItem ? (
+              <span className="mt-0.5 block text-muted">
+                Featured in the Featured Books section when published (up to{" "}
+                {HOMEPAGE_FEATURED_BOOKS_MAX}; {displayedFeaturedCount}/{HOMEPAGE_FEATURED_BOOKS_MAX}{" "}
+                slots used). All published books still appear in the bookstore.
+              </span>
+            ) : (
+              <span className="mt-0.5 block text-muted">
+                There are already {HOMEPAGE_FEATURED_BOOKS_MAX} featured books. Remove one book
+                from the homepage to add this item as a featured book.
+              </span>
+            )}
+          </span>
+        </label>
+      </div>
 
       {serverError && (
         <p className="rounded-lg bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">

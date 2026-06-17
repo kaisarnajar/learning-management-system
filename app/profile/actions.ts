@@ -48,5 +48,5 @@ export async function updateProfile(
   revalidatePath("/profile/courses");
   revalidatePath("/courses");
 
-  redirect("/courses");
+  redirect("/profile");
 }

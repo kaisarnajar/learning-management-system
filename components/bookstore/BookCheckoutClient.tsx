@@ -29,6 +29,7 @@ export function BookCheckoutClient({
 }) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
   const [transactionId, setTransactionId] = useState("");
+  const [deliveryAddress, setDeliveryAddress] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -44,6 +45,11 @@ export function BookCheckoutClient({
       return;
     }
 
+    if (deliveryAddress.trim().length < 10) {
+      setError("Please enter a complete delivery address (minimum 10 characters).");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -51,6 +57,7 @@ export function BookCheckoutClient({
       formData.append("items", JSON.stringify(items.map((i) => ({ bookId: i.bookId, quantity: i.quantity }))));
       formData.append("paymentMethod", paymentMethod);
       formData.append("upiTransactionId", transactionId.trim());
+      formData.append("deliveryAddress", deliveryAddress.trim());
       if (screenshot && screenshot.size > 0) {
         formData.append("screenshot", screenshot);
       }
@@ -180,6 +187,22 @@ export function BookCheckoutClient({
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 onChange={(e) => setScreenshot(e.target.files?.[0] ?? null)}
                 className="mt-2 w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white"
+              />
+            </div>
+
+            {/* Delivery Address */}
+            <div>
+              <label htmlFor="checkout-address" className="block text-sm font-medium text-foreground">
+                Delivery Address
+              </label>
+              <textarea
+                id="checkout-address"
+                required
+                rows={3}
+                placeholder="Enter your full address (Street, City, State, ZIP)..."
+                value={deliveryAddress}
+                onChange={(e) => setDeliveryAddress(e.target.value)}
+                className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </div>
 

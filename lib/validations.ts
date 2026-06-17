@@ -367,5 +367,6 @@ export const bookstoreCheckoutSchema = z.object({
   ).min(1, "Cart cannot be empty."),
   paymentMethod: z.string().min(1, "Payment method is required."),
   upiTransactionId: z.string().trim().min(1, "Transaction / UTR reference is required."),
+  deliveryAddress: z.string().trim().min(10, "Delivery address must be at least 10 characters long."),
   notes: z.string().trim().optional(),
 });

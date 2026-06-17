@@ -32,6 +32,7 @@ export async function POST(req: NextRequest) {
     items: parsedItems,
     paymentMethod: formData.get("paymentMethod"),
     upiTransactionId: formData.get("upiTransactionId"),
+    deliveryAddress: formData.get("deliveryAddress"),
     notes: formData.get("notes") || undefined,
   });
 
@@ -101,6 +102,7 @@ export async function POST(req: NextRequest) {
       paymentMethod: body.paymentMethod,
       upiTransactionId: body.upiTransactionId.trim() || null,
       paymentScreenshotPath,
+      deliveryAddress: body.deliveryAddress,
       notes: body.notes?.trim() || null,
       status: "PENDING_VERIFICATION",
       items: {

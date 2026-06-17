@@ -56,6 +56,12 @@ function CompletedOrderRow({ order }: { order: BookOrderWithItems }) {
             year: "numeric",
           })}
         </p>
+        {order.deliveryAddress && order.deliveryAddress !== "No address provided" && (
+          <div className="mt-3 rounded-md bg-muted/10 p-2 text-xs">
+            <p className="font-semibold text-foreground/80">Delivery Address</p>
+            <p className="mt-0.5 whitespace-pre-wrap text-muted">{order.deliveryAddress}</p>
+          </div>
+        )}
       </td>
       <td className="px-4 py-4 align-top">
         <ul className="space-y-1">

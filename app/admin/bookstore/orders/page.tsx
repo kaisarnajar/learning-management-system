@@ -124,7 +124,7 @@ export default async function AdminBookOrdersPage({
 
       <section id="approved-orders" className="mt-10 scroll-mt-6">
         <h2 className="font-serif text-lg font-semibold text-foreground">
-          Approved orders to fulfill
+          Approved Orders
           {approvedCount > 0 && (
             <span className="ml-2 inline-flex rounded-full bg-amber-100 px-2.5 py-0.5 text-xs font-semibold text-amber-900">
               {approvedCount}

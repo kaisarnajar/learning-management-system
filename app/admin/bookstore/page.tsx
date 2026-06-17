@@ -4,7 +4,11 @@ import Image from "next/image";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { DeleteBookButton } from "@/components/admin/DeleteBookButton";
-import { getAllBooks } from "@/lib/bookstore";
+import { ListSearchForm } from "@/components/shared/ListSearchForm";
+import { Pagination } from "@/components/shared/Pagination";
+import { getAllBooksPaginated } from "@/lib/bookstore";
+import { clampPage, parsePaginationParams } from "@/lib/pagination";
+import { parseSearchQuery } from "@/lib/text-search";
 
 export const metadata: Metadata = {
   title: "Bookstore — Admin",
@@ -18,17 +22,21 @@ function formatPrice(paise: number): string {
 export default async function AdminBookstorePage({
   searchParams,
 }: {
-  searchParams: Promise<{ created?: string; updated?: string; deleted?: string }>;
+  searchParams: Promise<{ created?: string; updated?: string; deleted?: string; page?: string; q?: string }>;
 }) {
   const params = await searchParams;
-  const books = await getAllBooks();
+  const q = parseSearchQuery(params.q);
+  const { page: requestedPage, pageSize } = parsePaginationParams(params);
+  
+  const { items: books, totalCount } = await getAllBooksPaginated(requestedPage, pageSize, q);
+  const page = clampPage(requestedPage, totalCount, pageSize);
 
   return (
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-bold text-primary">Bookstore</h1>
-          <p className="mt-1 text-sm text-muted">{books.length} total</p>
+          <p className="mt-1 text-sm text-muted">{totalCount} total</p>
         </div>
         <Link
           href="/admin/bookstore/new"
@@ -48,9 +56,20 @@ export default async function AdminBookstorePage({
         <p className="mt-4 rounded-md bg-violet-50 px-4 py-3 text-sm text-violet-800">Book deleted.</p>
       )}
 
+      <div className="mt-6">
+        <ListSearchForm
+          action="/admin/bookstore"
+          query={q}
+          placeholder="Search by title or author"
+          totalCount={q ? totalCount : undefined}
+        />
+      </div>
+
       <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-        {books.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted">No books yet.</p>
+        {totalCount === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-muted">
+            {q ? "No books match your search." : "No books yet."}
+          </p>
         ) : (
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-border bg-background/50 text-muted">
@@ -120,6 +139,8 @@ export default async function AdminBookstorePage({
           </table>
         )}
       </div>
+
+      <Pagination basePath="/admin/bookstore" params={params} page={page} totalCount={totalCount} pageSize={pageSize} />
     </div>
   );
 }

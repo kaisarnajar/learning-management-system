@@ -1,7 +1,6 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
 import { useRouter } from "next/navigation";

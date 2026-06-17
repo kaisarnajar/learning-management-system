@@ -92,7 +92,7 @@ export function CartPageClient({
   submitted: boolean;
   orders: PastOrder[];
 }) {
-  const { items, totalAmount, totalCount, updateQuantity, removeItem } = useCart();
+  const { items, totalCount, updateQuantity, removeItem } = useCart();
   const [selected, setSelected] = useState<Set<string>>(new Set(items.map((i) => i.bookId)));
   const [showSuccess, setShowSuccess] = useState(submitted);
 

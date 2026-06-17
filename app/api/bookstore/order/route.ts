@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { validatePaymentScreenshot, savePaymentScreenshot } from "@/lib/payment-upload";
+import { bookstoreCheckoutSchema } from "@/lib/validations";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -11,45 +12,37 @@ export async function POST(req: NextRequest) {
 
   const userId = session.user.id;
 
-  let body: {
-    items: { bookId: string; quantity: number }[];
-    paymentMethod: string;
-    upiTransactionId?: string;
-    notes?: string;
-  };
-
   // Parse multipart form data
   const formData = await req.formData();
   const rawItems = formData.get("items");
-  const paymentMethod = formData.get("paymentMethod") as string;
-  const upiTransactionId = (formData.get("upiTransactionId") as string) ?? "";
-  const notes = (formData.get("notes") as string) ?? "";
   const screenshotFile = formData.get("screenshot") as File | null;
 
   if (!rawItems) {
     return NextResponse.json({ error: "No items provided." }, { status: 400 });
   }
 
+  let parsedItems;
   try {
-    body = { items: JSON.parse(rawItems as string), paymentMethod, upiTransactionId, notes };
+    parsedItems = JSON.parse(rawItems as string);
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  if (!body.items || body.items.length === 0) {
-    return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
-  }
+  const validation = bookstoreCheckoutSchema.safeParse({
+    items: parsedItems,
+    paymentMethod: formData.get("paymentMethod"),
+    upiTransactionId: formData.get("upiTransactionId"),
+    notes: formData.get("notes") || undefined,
+  });
 
-  if (!paymentMethod) {
-    return NextResponse.json({ error: "Payment method is required." }, { status: 400 });
-  }
-
-  if (!upiTransactionId.trim()) {
+  if (!validation.success) {
     return NextResponse.json(
-      { error: "Transaction / UTR reference is required." },
+      { error: validation.error.issues[0]?.message ?? "Invalid form data." },
       { status: 400 },
     );
   }
+
+  const body = validation.data;
 
   // Validate screenshot
   if (screenshotFile && screenshotFile.size > 0) {
@@ -105,10 +98,10 @@ export async function POST(req: NextRequest) {
     data: {
       userId,
       totalAmountInrPaise,
-      paymentMethod,
-      upiTransactionId: upiTransactionId.trim() || null,
+      paymentMethod: body.paymentMethod,
+      upiTransactionId: body.upiTransactionId.trim() || null,
       paymentScreenshotPath,
-      notes: notes.trim() || null,
+      notes: body.notes?.trim() || null,
       status: "PENDING_VERIFICATION",
       items: {
         create: body.items.map((item) => ({

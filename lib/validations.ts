@@ -357,3 +357,15 @@ export const bookSchema = z.object({
   status: bookStatusEnum,
   published: z.boolean(),
 });
+
+export const bookstoreCheckoutSchema = z.object({
+  items: z.array(
+    z.object({
+      bookId: z.string().min(1, "Book ID is required."),
+      quantity: z.number().int().min(1, "Quantity must be at least 1."),
+    })
+  ).min(1, "Cart cannot be empty."),
+  paymentMethod: z.string().min(1, "Payment method is required."),
+  upiTransactionId: z.string().trim().min(1, "Transaction / UTR reference is required."),
+  notes: z.string().trim().optional(),
+});

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { BookCard } from "@/components/bookstore/BookCard";
 import { PageHeader } from "@/components/site/PageHeader";
 import { Section } from "@/components/site/Section";
-import { getPublishedBooks } from "@/lib/bookstore";
+import { Pagination } from "@/components/shared/Pagination";
+import { getPublishedBooksPaginated } from "@/lib/bookstore";
+import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
 
 export const metadata: Metadata = {
   title: "Bookstore",
@@ -11,8 +13,21 @@ export const metadata: Metadata = {
     "Browse and purchase physical Islamic books from Darse Quran Academy. Add books to your cart and submit your order for approval.",
 };
 
-export default async function BookstorePage() {
-  const books = await getPublishedBooks();
+export default async function BookstorePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>;
+}) {
+  const params = await searchParams;
+  const { page: requestedPage, pageSize } = parsePaginationParams(params, {
+    pageSize: GRID_PAGE_SIZE,
+  });
+
+  const { items: books, totalCount } = await getPublishedBooksPaginated(
+    requestedPage,
+    pageSize,
+  );
+  const page = clampPage(requestedPage, totalCount, pageSize);
 
   return (
     <Section>
@@ -22,7 +37,7 @@ export default async function BookstorePage() {
       />
 
       <div className="mx-auto mt-10 max-w-7xl">
-        {books.length === 0 ? (
+        {totalCount === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface py-20 text-center">
             <svg
               className="h-16 w-16 text-muted/40"
@@ -49,7 +64,7 @@ export default async function BookstorePage() {
           <>
             <div className="mb-6 flex items-center justify-between">
               <p className="text-sm text-muted">
-                {books.length} {books.length === 1 ? "book" : "books"} available
+                {totalCount} {totalCount === 1 ? "book" : "books"} available
               </p>
               <Link
                 href="/profile/cart"
@@ -66,6 +81,10 @@ export default async function BookstorePage() {
               {books.map((book) => (
                 <BookCard key={book.id} book={book} />
               ))}
+            </div>
+
+            <div className="mt-10">
+              <Pagination basePath="/bookstore" params={params} page={page} totalCount={totalCount} pageSize={pageSize} />
             </div>
           </>
         )}

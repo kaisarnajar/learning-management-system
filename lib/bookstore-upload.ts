@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, writeFile, unlink } from "fs/promises";
 import path from "path";
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
@@ -38,4 +38,19 @@ export async function saveBookImage(bookId: string, file: File): Promise<string>
   await writeFile(path.join(dir, filename), buffer);
 
   return `/uploads/books/${filename}`;
+}
+
+export async function deleteBookImage(imagePath: string): Promise<void> {
+  if (!imagePath || !imagePath.startsWith("/uploads/books/")) return;
+  
+  try {
+    const filename = path.basename(imagePath);
+    const fullPath = path.join(process.cwd(), "public", "uploads", "books", filename);
+    await unlink(fullPath);
+  } catch (error) {
+    // Ignore error if file doesn't exist
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      console.error("Failed to delete book image:", error);
+    }
+  }
 }

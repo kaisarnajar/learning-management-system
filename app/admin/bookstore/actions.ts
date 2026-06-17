@@ -3,10 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-actions";
-import { validateBookForm } from "@/lib/admin-form-validation";
-import { saveBookImage, validateBookImage } from "@/lib/bookstore-upload";
+import { saveBookImage, validateBookImage, deleteBookImage } from "@/lib/bookstore-upload";
 import { prisma } from "@/lib/prisma";
-import type { BookStatus } from "@prisma/client";
+import { bookSchema } from "@/lib/validations";
+
+function parseBookForm(formData: FormData) {
+  return bookSchema.safeParse({
+    title: formData.get("title"),
+    author: formData.get("author"),
+    description: formData.get("description"),
+    priceInr: formData.get("priceInr"),
+    status: formData.get("status"),
+    published: formData.get("published") === "true" || formData.get("published") === "on",
+  });
+}
 
 function revalidateBookstorePaths() {
   revalidatePath("/admin/bookstore", "page");
@@ -18,47 +28,30 @@ function revalidateBookstorePaths() {
 export async function createBook(formData: FormData): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const title = (formData.get("title") as string) ?? "";
-  const author = (formData.get("author") as string) ?? "";
-  const description = (formData.get("description") as string) ?? "";
-  const priceInr = (formData.get("priceInr") as string) ?? "";
-  const status = (formData.get("status") as string) ?? "AVAILABLE";
-  const published = formData.get("published") === "true";
-  const imageFile = formData.get("image") as File | null;
-
-  const validation = validateBookForm({
-    title,
-    author,
-    description,
-    priceInr,
-    status: status as BookStatus,
-    published,
-  });
-
-  if (!validation.success) {
-    return { error: validation.issues?.[0]?.message ?? "Invalid form data." };
+  const parsed = parseBookForm(formData);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
   }
 
-  // Validate image
+  const imageFile = formData.get("image") as File | null;
   if (imageFile && imageFile.size > 0) {
     const { error } = validateBookImage(imageFile);
     if (error) return { error };
   }
 
-  const priceInrPaise = Math.round(parseFloat(priceInr) * 100);
+  const priceInrPaise = Math.round(parseFloat(parsed.data.priceInr) * 100);
 
   const book = await prisma.book.create({
     data: {
-      title: title.trim(),
-      author: author.trim(),
-      description: description.trim(),
+      title: parsed.data.title,
+      author: parsed.data.author,
+      description: parsed.data.description,
       priceInrPaise,
-      status: status as BookStatus,
-      published,
+      status: parsed.data.status,
+      published: parsed.data.published,
     },
   });
 
-  // Save image after book is created (needs book id)
   if (imageFile && imageFile.size > 0) {
     const imagePath = await saveBookImage(book.id, imageFile);
     await prisma.book.update({
@@ -74,33 +67,18 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
 export async function updateBook(bookId: string, formData: FormData): Promise<{ error?: string }> {
   await requireAdmin();
 
-  const title = (formData.get("title") as string) ?? "";
-  const author = (formData.get("author") as string) ?? "";
-  const description = (formData.get("description") as string) ?? "";
-  const priceInr = (formData.get("priceInr") as string) ?? "";
-  const status = (formData.get("status") as string) ?? "AVAILABLE";
-  const published = formData.get("published") === "true";
-  const imageFile = formData.get("image") as File | null;
-
-  const validation = validateBookForm({
-    title,
-    author,
-    description,
-    priceInr,
-    status: status as BookStatus,
-    published,
-  });
-
-  if (!validation.success) {
-    return { error: validation.issues?.[0]?.message ?? "Invalid form data." };
+  const parsed = parseBookForm(formData);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
   }
 
+  const imageFile = formData.get("image") as File | null;
   if (imageFile && imageFile.size > 0) {
     const { error } = validateBookImage(imageFile);
     if (error) return { error };
   }
 
-  const priceInrPaise = Math.round(parseFloat(priceInr) * 100);
+  const priceInrPaise = Math.round(parseFloat(parsed.data.priceInr) * 100);
 
   let imagePath: string | undefined;
   if (imageFile && imageFile.size > 0) {
@@ -110,12 +88,12 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
   await prisma.book.update({
     where: { id: bookId },
     data: {
-      title: title.trim(),
-      author: author.trim(),
-      description: description.trim(),
+      title: parsed.data.title,
+      author: parsed.data.author,
+      description: parsed.data.description,
       priceInrPaise,
-      status: status as BookStatus,
-      published,
+      status: parsed.data.status,
+      published: parsed.data.published,
       ...(imagePath ? { imagePath } : {}),
     },
   });
@@ -143,6 +121,10 @@ export async function deleteBook(bookId: string): Promise<{ error?: string }> {
       error:
         "Cannot delete a book with existing active or pending orders. Set it to Out of Stock instead.",
     };
+  }
+
+  if (book.imagePath) {
+    await deleteBookImage(book.imagePath);
   }
 
   await prisma.book.delete({ where: { id: bookId } });

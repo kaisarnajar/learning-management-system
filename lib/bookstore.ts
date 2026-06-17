@@ -1,4 +1,6 @@
-import type { BookStatus, BookOrderStatus, Prisma } from "@prisma/client";
+import type { BookStatus, Prisma } from "@prisma/client";
+import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
+import { buildSearchOr } from "@/lib/text-search";
 import { prisma } from "@/lib/prisma";
 
 export { BookStatus };
@@ -96,17 +98,51 @@ export function bookOrderStatusClass(status: string): string {
   }
 }
 
-export async function getAllBooks(): Promise<BookWithDetails[]> {
-  return prisma.book.findMany({
-    orderBy: { createdAt: "desc" },
-  });
+function allBooksWhere(searchQuery?: string) {
+  if (!searchQuery) return undefined;
+  return buildSearchOr(["title", "author"], [], searchQuery);
 }
 
-export async function getPublishedBooks(): Promise<BookWithDetails[]> {
-  return prisma.book.findMany({
-    where: { published: true },
-    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+export async function getAllBooksPaginated(
+  page: number,
+  pageSize: number,
+  searchQuery?: string,
+): Promise<PaginatedResult<BookWithDetails>> {
+  const where = allBooksWhere(searchQuery);
+  const totalCount = await prisma.book.count({ where });
+  const safePage = clampPage(page, totalCount, pageSize);
+  
+  const items = await prisma.book.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    ...paginationArgs(safePage, pageSize),
   });
+
+  return { items, totalCount };
+}
+
+function publishedBooksWhere(searchQuery?: string) {
+  const base = { published: true };
+  if (!searchQuery) return base;
+  return { AND: [base, buildSearchOr(["title", "author"], [], searchQuery)] };
+}
+
+export async function getPublishedBooksPaginated(
+  page: number,
+  pageSize: number,
+  searchQuery?: string,
+): Promise<PaginatedResult<BookWithDetails>> {
+  const where = publishedBooksWhere(searchQuery);
+  const totalCount = await prisma.book.count({ where });
+  const safePage = clampPage(page, totalCount, pageSize);
+
+  const items = await prisma.book.findMany({
+    where,
+    orderBy: [{ status: "asc" }, { createdAt: "desc" }],
+    ...paginationArgs(safePage, pageSize),
+  });
+
+  return { items, totalCount };
 }
 
 export async function getBookById(id: string): Promise<BookWithDetails | null> {

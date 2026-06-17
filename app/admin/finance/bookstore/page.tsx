@@ -73,7 +73,7 @@ export default async function AdminBookstoreFinancePage({
       </div>
 
       <div className="mt-8">
-        <FinanceTabs filters={filters} />
+        <FinanceTabs />
       </div>
       
       <div className="mt-6">

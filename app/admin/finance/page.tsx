@@ -104,86 +104,103 @@ export default async function AdminFinancePage({
       </div>
 
       <div className="mt-8">
-        <FinanceTabs filters={filters} />
+        <FinanceTabs />
       </div>
 
-      {filters.tab === "income" ? (
-        <section className="mt-6 space-y-4">
-          <ListSearchForm
-            action="/admin/finance"
-            query={filters.q}
-            placeholder="Search by student, course, or description"
-            preserveParams={searchPreserveParams}
-            totalCount={filters.q ? incomeTotalCount : undefined}
-          />
+      <div className="mt-6">
+        <nav className="flex gap-4 border-b border-border mb-6">
+          <Link
+            href={`/admin/finance?${new URLSearchParams({ ...searchPreserveParams, tab: "income" }).toString()}`}
+            className={`pb-2 text-sm font-medium border-b-2 ${filters.tab === "income" ? "border-primary text-primary" : "border-transparent text-muted hover:border-border hover:text-foreground"}`}
+          >
+            Income
+          </Link>
+          <Link
+            href={`/admin/finance?${new URLSearchParams({ ...searchPreserveParams, tab: "expenses" }).toString()}`}
+            className={`pb-2 text-sm font-medium border-b-2 ${filters.tab === "expenses" ? "border-primary text-primary" : "border-transparent text-muted hover:border-border hover:text-foreground"}`}
+          >
+            Expense
+          </Link>
+        </nav>
 
-          <FinanceIncomeFilters
-            filters={filters}
-            courses={courses.map((c) => ({ id: c.id, title: c.title }))}
-            students={students.map((s) => ({ id: s.id, name: s.name, email: s.email }))}
-          />
+        {filters.tab === "income" ? (
+          <section className="space-y-4">
+            <ListSearchForm
+              action="/admin/finance"
+              query={filters.q}
+              placeholder="Search by student, course, or description"
+              preserveParams={searchPreserveParams}
+              totalCount={filters.q ? incomeTotalCount : undefined}
+            />
 
-          <FinanceFilteredSummary
-            recordCount={incomeTotalCount}
-            totalPaise={filteredIncomeTotal}
-            variant="income"
-          />
+            <FinanceIncomeFilters
+              filters={filters}
+              courses={courses.map((c) => ({ id: c.id, title: c.title }))}
+              students={students.map((s) => ({ id: s.id, name: s.name, email: s.email }))}
+            />
 
-          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-            <FinanceIncomeTable records={incomeRecords} />
-          </div>
+            <FinanceFilteredSummary
+              recordCount={incomeTotalCount}
+              totalPaise={filteredIncomeTotal}
+              variant="income"
+            />
 
-          <Pagination
-            basePath="/admin/finance"
-            params={params}
-            page={page}
-            totalCount={incomeTotalCount}
-            pageSize={pageSize}
-          />
-        </section>
-      ) : (
-        <section className="mt-6 space-y-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-            <Link
-              href="/admin/record-expense"
-              className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
-            >
-              Record expense
-            </Link>
-          </div>
+            <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+              <FinanceIncomeTable records={incomeRecords} />
+            </div>
 
-          <ListSearchForm
-            action="/admin/finance"
-            query={filters.q}
-            placeholder="Search by description, category, or teacher"
-            preserveParams={searchPreserveParams}
-            totalCount={filters.q ? expenseTotalCount : undefined}
-          />
+            <Pagination
+              basePath="/admin/finance"
+              params={params}
+              page={page}
+              totalCount={incomeTotalCount}
+              pageSize={pageSize}
+            />
+          </section>
+        ) : (
+          <section className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <Link
+                href="/admin/record-expense"
+                className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
+              >
+                Record expense
+              </Link>
+            </div>
 
-          <FinanceExpenseFilters
-            filters={filters}
-            teachers={teachers.map((t) => ({ id: t.id, name: t.name }))}
-          />
+            <ListSearchForm
+              action="/admin/finance"
+              query={filters.q}
+              placeholder="Search by description, category, or teacher"
+              preserveParams={searchPreserveParams}
+              totalCount={filters.q ? expenseTotalCount : undefined}
+            />
 
-          <FinanceFilteredSummary
-            recordCount={expenseTotalCount}
-            totalPaise={filteredExpenseTotal}
-            variant="expense"
-          />
+            <FinanceExpenseFilters
+              filters={filters}
+              teachers={teachers.map((t) => ({ id: t.id, name: t.name }))}
+            />
 
-          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-            <FinanceExpenseTable expenses={expenses} returnQuery={returnQuery} />
-          </div>
+            <FinanceFilteredSummary
+              recordCount={expenseTotalCount}
+              totalPaise={filteredExpenseTotal}
+              variant="expense"
+            />
 
-          <Pagination
-            basePath="/admin/finance"
-            params={params}
-            page={page}
-            totalCount={expenseTotalCount}
-            pageSize={pageSize}
-          />
-        </section>
-      )}
+            <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+              <FinanceExpenseTable expenses={expenses} returnQuery={returnQuery} />
+            </div>
+
+            <Pagination
+              basePath="/admin/finance"
+              params={params}
+              page={page}
+              totalCount={expenseTotalCount}
+              pageSize={pageSize}
+            />
+          </section>
+        )}
+      </div>
     </div>
   );
 }

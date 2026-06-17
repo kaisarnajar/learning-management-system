@@ -33,7 +33,7 @@ export function BookCheckoutClient({
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const { clearCart } = useCart();
+  const { removeItem } = useCart();
   const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -71,9 +71,8 @@ export function BookCheckoutClient({
 
       // Clear only the purchased items from cart
       for (const item of items) {
-        // We don't remove from cart here — let user decide. Cart clears on submit.
+        removeItem(item.bookId);
       }
-      clearCart();
       router.push(data.redirectUrl || "/profile/cart?submitted=1");
     } catch {
       setError("Something went wrong. Please try again.");

@@ -15,56 +15,18 @@ type CheckoutItem = {
   quantity: number;
 };
 
-type BankDetails = {
-  accountName: string;
-  bankName: string;
-  accountNumber: string;
-  ifsc: string;
-  branch: string;
-};
+type PaymentMethod = "upi" | "bank";
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
 }
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // ignore
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={handleCopy}
-      className="ml-2 rounded px-1.5 py-0.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
-    >
-      {copied ? "Copied!" : "Copy"}
-    </button>
-  );
-}
-
-type PaymentMethod = "upi" | "bank";
-
 export function BookCheckoutClient({
   items,
   totalAmountInrPaise,
-  upiId,
-  upiPayeeName,
-  bankDetails,
 }: {
   items: CheckoutItem[];
   totalAmountInrPaise: number;
-  upiId: string;
-  upiPayeeName: string;
-  bankDetails: BankDetails;
 }) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
   const [transactionId, setTransactionId] = useState("");
@@ -123,23 +85,9 @@ export function BookCheckoutClient({
 
   return (
     <div className="space-y-8">
-      <div>
-        <Link href="/profile/cart" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-foreground transition-colors">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          Back to Cart
-        </Link>
-        <h2 className="mt-3 font-serif text-lg font-semibold text-foreground">Checkout</h2>
-        <p className="mt-1 text-sm text-muted">
-          Review your order, transfer the payment, then fill in the details below.
-        </p>
-      </div>
-
-      <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
+      <div className="grid gap-8 lg:grid-cols-2 lg:items-start">
         {/* Left — Order Summary */}
         <div className="space-y-6">
-          {/* Items */}
           <section>
             <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Order Summary</h3>
             <div className="mt-3 rounded-xl border border-border bg-surface divide-y divide-border">
@@ -170,54 +118,13 @@ export function BookCheckoutClient({
               </div>
             </div>
           </section>
-
-          {/* Payment Details */}
-          <section>
-            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Payment Details</h3>
-            <div className="mt-3 rounded-xl border border-border bg-surface p-4 space-y-3 text-sm">
-              {upiId && (
-                <div>
-                  <p className="font-semibold text-foreground">Pay via UPI</p>
-                  <div className="mt-1 flex items-center">
-                    <span className="text-muted">UPI ID: </span>
-                    <span className="ml-1 font-mono font-medium text-foreground">{upiId}</span>
-                    <CopyButton text={upiId} />
-                  </div>
-                  <p className="text-muted">Payee: {upiPayeeName}</p>
-                  <p className="mt-1 font-bold text-primary">Amount: {formatPrice(totalAmountInrPaise)}</p>
-                </div>
-              )}
-              {(bankDetails.accountNumber || bankDetails.bankName) && (
-                <div className={upiId ? "border-t border-border pt-3" : ""}>
-                  <p className="font-semibold text-foreground">Bank Transfer</p>
-                  {bankDetails.accountName && <p className="mt-1 text-muted">Account: <span className="text-foreground">{bankDetails.accountName}</span></p>}
-                  {bankDetails.bankName && <p className="text-muted">Bank: <span className="text-foreground">{bankDetails.bankName}</span></p>}
-                  {bankDetails.accountNumber && (
-                    <div className="flex items-center">
-                      <span className="text-muted">Account No: </span>
-                      <span className="ml-1 font-mono text-foreground">{bankDetails.accountNumber}</span>
-                      <CopyButton text={bankDetails.accountNumber} />
-                    </div>
-                  )}
-                  {bankDetails.ifsc && (
-                    <div className="flex items-center">
-                      <span className="text-muted">IFSC: </span>
-                      <span className="ml-1 font-mono text-foreground">{bankDetails.ifsc}</span>
-                      <CopyButton text={bankDetails.ifsc} />
-                    </div>
-                  )}
-                  {bankDetails.branch && <p className="text-muted">Branch: <span className="text-foreground">{bankDetails.branch}</span></p>}
-                </div>
-              )}
-            </div>
-          </section>
         </div>
 
         {/* Right — Payment Confirmation Form */}
-        <section className="rounded-xl border border-border bg-surface p-5">
-          <h3 className="font-serif text-base font-semibold text-foreground">Confirm Payment</h3>
+        <section className="rounded-xl border border-border bg-surface p-5 h-fit">
+          <h3 className="font-serif text-base font-semibold text-foreground">Submit payment</h3>
           <p className="mt-1 text-xs text-muted">
-            Transfer the amount above, then fill in the details to submit your order for approval.
+            After paying by UPI or bank transfer, fill in the details below to submit your order for approval.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">

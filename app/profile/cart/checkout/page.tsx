@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { BookCheckoutClient } from "@/components/bookstore/BookCheckoutClient";
+import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { requireUser } from "@/lib/auth-actions";
 import { prisma } from "@/lib/prisma";
 import { getPaymentSettings } from "@/lib/payment-settings";
+
+function formatPrice(paise: number): string {
+  return `₹${(paise / 100).toFixed(2)}`;
+}
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -71,19 +77,36 @@ export default async function CartCheckoutPage({
     0,
   );
 
+  const amountLabel = formatPrice(totalAmountInrPaise);
+
   return (
-    <BookCheckoutClient
-      items={resolvedItems}
-      totalAmountInrPaise={totalAmountInrPaise}
-      upiId={paymentSettings.upiId}
-      upiPayeeName={paymentSettings.upiPayeeName}
-      bankDetails={{
-        accountName: paymentSettings.bankAccountName,
-        bankName: paymentSettings.bankName,
-        accountNumber: paymentSettings.bankAccountNumber,
-        ifsc: paymentSettings.bankIfsc,
-        branch: paymentSettings.bankBranch,
-      }}
-    />
+    <div>
+      <Link href="/profile/cart" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted hover:text-foreground transition-colors">
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Back to Cart
+      </Link>
+
+      <h2 className="mt-3 font-serif text-lg font-semibold text-foreground">Checkout</h2>
+      <p className="mt-1 text-sm text-muted">
+        Review your order, transfer the payment, then fill in the details below.
+      </p>
+
+      <div className="mx-auto mt-8 max-w-5xl space-y-8">
+        <PaymentDetailsPanel
+          amountLabel={amountLabel}
+          amountPaise={totalAmountInrPaise}
+          paymentNote="Bookstore order"
+        />
+
+        <div className="card-elevated p-6 sm:p-8">
+          <BookCheckoutClient
+            items={resolvedItems}
+            totalAmountInrPaise={totalAmountInrPaise}
+          />
+        </div>
+      </div>
+    </div>
   );
 }

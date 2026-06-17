@@ -1,12 +1,15 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   validateBookForm,
   type BookFormValues,
 } from "@/lib/admin-form-validation";
 import type { BookWithDetails } from "@/lib/bookstore";
+import { useZodForm } from "@/lib/use-zod-form";
+import { labelClassName } from "@/lib/form";
+import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
 
 type BookFormProps = {
   book?: BookWithDetails;
@@ -21,34 +24,27 @@ const STATUS_OPTIONS = [
 ];
 
 export function BookForm({ book, action, submitLabel }: BookFormProps) {
-  const [values, setValues] = useState<BookFormValues>({
-    title: book?.title ?? "",
-    author: book?.author ?? "",
-    description: book?.description ?? "",
-    priceInr: book ? String(book.priceInrPaise / 100) : "",
-    status: (book?.status as BookFormValues["status"]) ?? "AVAILABLE",
-    published: book?.published ?? true,
+  const validate = useCallback((values: BookFormValues) => validateBookForm(values), []);
+
+  const { values, updateField, markTouched, showError, errors, isValid } = useZodForm({
+    initialValues: {
+      title: book?.title ?? "",
+      author: book?.author ?? "",
+      description: book?.description ?? "",
+      priceInr: book ? String(book.priceInrPaise / 100) : "",
+      status: (book?.status as BookFormValues["status"]) ?? "AVAILABLE",
+      published: book?.published ?? true,
+    },
+    fields: ["title", "author", "description", "priceInr", "status", "published"],
+    validate,
   });
 
   const [imagePreview, setImagePreview] = useState<string | null>(
     book?.imagePath ?? null,
   );
-  const [errors, setErrors] = useState<Record<string, string>>({});
   const [serverError, setServerError] = useState("");
   const [loading, setLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
-
-  function handleChange(
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
-  ) {
-    const { name, value, type } = e.target;
-    const checked = type === "checkbox" ? (e.target as HTMLInputElement).checked : undefined;
-    setValues((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-    setErrors((prev) => ({ ...prev, [name]: "" }));
-  }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -62,16 +58,7 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
     e.preventDefault();
     setServerError("");
 
-    const validation = validateBookForm(values);
-    if (!validation.success) {
-      const newErrors: Record<string, string> = {};
-      for (const issue of validation.issues ?? []) {
-        const key = issue.path[0] as string;
-        newErrors[key] = issue.message;
-      }
-      setErrors(newErrors);
-      return;
-    }
+    if (!isValid) return;
 
     setLoading(true);
 
@@ -120,7 +107,7 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
 
       {/* Title */}
       <div>
-        <label htmlFor="book-title" className="block text-sm font-medium text-foreground">
+        <label htmlFor="book-title" className={labelClassName}>
           Title <span className="text-red-600">*</span>
         </label>
         <input
@@ -129,15 +116,17 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
           type="text"
           required
           value={values.title}
-          onChange={handleChange}
-          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+          onChange={(e) => updateField("title", e.target.value)}
+          onBlur={() => markTouched("title")}
+          aria-invalid={showError("title") || undefined}
+          className={formFieldInputClass(showError("title"))}
         />
-        {errors.title && <p className="mt-1 text-xs text-red-600">{errors.title}</p>}
+        {showError("title") && <p className={formErrorTextClassName} role="alert">{errors.title}</p>}
       </div>
 
       {/* Author */}
       <div>
-        <label htmlFor="book-author" className="block text-sm font-medium text-foreground">
+        <label htmlFor="book-author" className={labelClassName}>
           Author <span className="text-red-600">*</span>
         </label>
         <input
@@ -146,15 +135,17 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
           type="text"
           required
           value={values.author}
-          onChange={handleChange}
-          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+          onChange={(e) => updateField("author", e.target.value)}
+          onBlur={() => markTouched("author")}
+          aria-invalid={showError("author") || undefined}
+          className={formFieldInputClass(showError("author"))}
         />
-        {errors.author && <p className="mt-1 text-xs text-red-600">{errors.author}</p>}
+        {showError("author") && <p className={formErrorTextClassName} role="alert">{errors.author}</p>}
       </div>
 
       {/* Description */}
       <div>
-        <label htmlFor="book-description" className="block text-sm font-medium text-foreground">
+        <label htmlFor="book-description" className={labelClassName}>
           Description <span className="text-red-600">*</span>
         </label>
         <textarea
@@ -163,16 +154,18 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
           required
           rows={4}
           value={values.description}
-          onChange={handleChange}
-          className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+          onChange={(e) => updateField("description", e.target.value)}
+          onBlur={() => markTouched("description")}
+          aria-invalid={showError("description") || undefined}
+          className={formFieldInputClass(showError("description"))}
         />
-        {errors.description && <p className="mt-1 text-xs text-red-600">{errors.description}</p>}
+        {showError("description") && <p className={formErrorTextClassName} role="alert">{errors.description}</p>}
       </div>
 
       {/* Price & Status */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="book-price" className="block text-sm font-medium text-foreground">
+          <label htmlFor="book-price" className={labelClassName}>
             Price (₹) <span className="text-red-600">*</span>
           </label>
           <input
@@ -183,23 +176,27 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
             step="0.01"
             required
             value={values.priceInr}
-            onChange={handleChange}
+            onChange={(e) => updateField("priceInr", e.target.value)}
+            onBlur={() => markTouched("priceInr")}
+            aria-invalid={showError("priceInr") || undefined}
             placeholder="e.g. 299"
-            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            className={formFieldInputClass(showError("priceInr"))}
           />
-          {errors.priceInr && <p className="mt-1 text-xs text-red-600">{errors.priceInr}</p>}
+          {showError("priceInr") && <p className={formErrorTextClassName} role="alert">{errors.priceInr}</p>}
         </div>
 
         <div>
-          <label htmlFor="book-status" className="block text-sm font-medium text-foreground">
+          <label htmlFor="book-status" className={labelClassName}>
             Availability status <span className="text-red-600">*</span>
           </label>
           <select
             id="book-status"
             name="status"
             value={values.status}
-            onChange={handleChange}
-            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+            onChange={(e) => updateField("status", e.target.value as BookFormValues["status"])}
+            onBlur={() => markTouched("status")}
+            aria-invalid={showError("status") || undefined}
+            className={formFieldInputClass(showError("status"))}
           >
             {STATUS_OPTIONS.map((opt) => (
               <option key={opt.value} value={opt.value}>
@@ -207,6 +204,7 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
               </option>
             ))}
           </select>
+          {showError("status") && <p className={formErrorTextClassName} role="alert">{errors.status}</p>}
         </div>
       </div>
 
@@ -216,7 +214,7 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
           type="checkbox"
           name="published"
           checked={values.published}
-          onChange={handleChange}
+          onChange={(e) => updateField("published", e.target.checked)}
           className="h-4 w-4 rounded text-primary"
         />
         <span className="text-sm font-medium text-foreground">
@@ -235,8 +233,8 @@ export function BookForm({ book, action, submitLabel }: BookFormProps) {
 
       <button
         type="submit"
-        disabled={loading}
-        className="min-h-11 rounded-full bg-primary px-8 py-2.5 text-sm font-semibold text-white hover:bg-primary-light disabled:opacity-60"
+        disabled={loading || !isValid}
+        className="min-h-11 rounded-full bg-primary px-8 py-2.5 text-sm font-semibold text-white hover:bg-primary-light disabled:opacity-60 transition-colors"
       >
         {loading ? "Saving…" : submitLabel}
       </button>

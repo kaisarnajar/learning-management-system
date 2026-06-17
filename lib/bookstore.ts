@@ -158,7 +158,7 @@ async function fetchBookOrdersPaginated(
   page: number,
   pageSize: number,
   search?: string,
-  orderBy: Prisma.BookOrderOrderByWithRelationInput = { createdAt: "asc" }
+  orderBy: Prisma.BookOrderOrderByWithRelationInput = { createdAt: "desc" }
 ): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
   const where: Prisma.BookOrderWhereInput = {
     status: statusCondition,
@@ -197,7 +197,7 @@ export async function getPendingBookOrdersPaginated(
   pageSize = 20,
   search?: string,
 ): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
-  return fetchBookOrdersPaginated("PENDING_VERIFICATION", page, pageSize, search, { createdAt: "asc" });
+  return fetchBookOrdersPaginated("PENDING_VERIFICATION", page, pageSize, search, { createdAt: "desc" });
 }
 
 export async function getApprovedBookOrdersPaginated(
@@ -205,7 +205,7 @@ export async function getApprovedBookOrdersPaginated(
   pageSize = 20,
   search?: string,
 ): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
-  return fetchBookOrdersPaginated("APPROVED", page, pageSize, search, { createdAt: "asc" });
+  return fetchBookOrdersPaginated("APPROVED", page, pageSize, search, { createdAt: "desc" });
 }
 
 export async function getCompletedBookOrdersPaginated(

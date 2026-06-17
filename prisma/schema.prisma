@@ -320,6 +320,7 @@ model LibraryItem {
   level     String
   language  String
   pdfUrl              String?
+  imagePath           String?
   published           Boolean  @default(true)
   featuredOnHomepage  Boolean  @default(false)
   featuredAt          DateTime?

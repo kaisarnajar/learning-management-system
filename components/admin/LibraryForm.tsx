@@ -1,7 +1,8 @@
 "use client";
 
 import type { LibraryItem } from "@prisma/client";
-import { useCallback } from "react";
+import Image from "next/image";
+import { useCallback, useRef, useState } from "react";
 import {
   type LibraryFormValues,
   validateLibraryForm,
@@ -36,6 +37,19 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
   const topicOptions = getLibraryTopicOptions(item?.topic);
   const languageOptions = getLibraryLanguageOptions(item?.language);
 
+  const [imagePreview, setImagePreview] = useState<string | null>(
+    (item as LibraryItem & { imagePath?: string | null })?.imagePath ?? null
+  );
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setImagePreview(url);
+    }
+  }
+
   const validate = useCallback((values: LibraryFormValues) => validateLibraryForm(values), []);
 
   const { values, updateField, markTouched, showError, errors, isValid } = useZodForm({
@@ -54,6 +68,30 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
 
   return (
     <form action={action} className="mx-auto max-w-2xl space-y-5">
+      <div>
+        <label className="block text-sm font-medium text-foreground">
+          Cover image <span className="font-normal text-muted">(optional, max 2 MB)</span>
+        </label>
+        {imagePreview && (
+          <div className="mt-2 h-40 w-32 overflow-hidden rounded-lg border border-border">
+            <Image
+              src={imagePreview}
+              alt="Cover preview"
+              width={128}
+              height={160}
+              className="h-full w-full object-cover"
+            />
+          </div>
+        )}
+        <input
+          ref={fileRef}
+          name="image"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={handleImageChange}
+          className="mt-2 w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-primary-light"
+        />
+      </div>
       <div>
         <label htmlFor="title" className={labelClassName}>
           Title

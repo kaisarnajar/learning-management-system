@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
+import { StatusBadge } from "@/components/admin/StatusBadge";
 import { DeleteBookButton } from "@/components/admin/DeleteBookButton";
 import { getAllBooks } from "@/lib/bookstore";
 
@@ -57,7 +58,7 @@ export default async function AdminBookstorePage({
                 <th className="px-4 py-3 font-medium">Book</th>
                 <th className="px-4 py-3 font-medium">Price</th>
                 <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Published</th>
+                <th className="px-4 py-3 font-medium">Visibility</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
             </thead>
@@ -93,8 +94,8 @@ export default async function AdminBookstorePage({
                   <td className="px-4 py-3">
                     <BookStatusBadge status={book.status} />
                   </td>
-                  <td className="px-4 py-3 text-muted">
-                    {book.published ? "Published" : "Draft"}
+                  <td className="px-4 py-3">
+                    <StatusBadge published={book.published} />
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center justify-end gap-2">

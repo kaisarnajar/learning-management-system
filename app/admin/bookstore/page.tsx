@@ -55,11 +55,11 @@ export default async function AdminBookstorePage({
           <table className="w-full min-w-[720px] text-left text-sm">
             <thead className="border-b border-border bg-background/50 text-muted">
               <tr>
-                <th className="px-4 py-3 font-medium">Book</th>
-                <th className="px-4 py-3 font-medium">Price</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Visibility</th>
-                <th className="px-4 py-3 font-medium" />
+                <th className="w-full px-4 py-3 font-medium">Book</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">Price</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">Status</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium">Visibility</th>
+                <th className="whitespace-nowrap px-4 py-3 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">

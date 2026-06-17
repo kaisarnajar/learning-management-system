@@ -33,9 +33,9 @@ export default async function AdminBookstorePage({
         </div>
         <Link
           href="/admin/bookstore/new"
-          className="shrink-0 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-light transition-colors"
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
         >
-          + Add Book
+          Add book
         </Link>
       </div>
 
@@ -62,9 +62,9 @@ export default async function AdminBookstorePage({
             <p className="mt-1 text-sm text-muted">Add your first book to the store.</p>
             <Link
               href="/admin/bookstore/new"
-              className="mt-4 rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-light"
+              className="mt-4 inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
             >
-              Add Book
+              Add book
             </Link>
           </div>
         ) : (

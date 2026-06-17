@@ -12,7 +12,7 @@ function formatPrice(paise: number): string {
 export function BookCard({ book }: { book: BookWithDetails }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-md">
-      <div className="relative aspect-[3/4] w-full overflow-hidden bg-accent-muted/30">
+      <div className="relative aspect-[4/5] w-full overflow-hidden bg-accent-muted/30">
         {book.imagePath ? (
           <Image
             src={book.imagePath}
@@ -46,17 +46,17 @@ export function BookCard({ book }: { book: BookWithDetails }) {
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 p-4">
+      <div className="flex flex-1 flex-col gap-3 p-3.5">
         <div className="flex-1">
-          <h2 className="font-serif text-base font-semibold leading-snug text-foreground line-clamp-2">
+          <h2 className="font-serif text-base font-semibold leading-tight text-foreground line-clamp-2">
             {book.title}
           </h2>
-          <p className="mt-1 text-sm text-muted">{book.author}</p>
-          <p className="mt-2 text-xs text-muted line-clamp-3">{book.description}</p>
+          <p className="mt-0.5 text-xs text-muted">{book.author}</p>
+          <p className="mt-1.5 text-xs text-muted line-clamp-2">{book.description}</p>
         </div>
 
         <div className="flex items-center justify-between gap-2">
-          <span className="text-lg font-bold text-primary">{formatPrice(book.priceInrPaise)}</span>
+          <span className="text-base font-bold text-primary">{formatPrice(book.priceInrPaise)}</span>
         </div>
 
         <AddToCartButton

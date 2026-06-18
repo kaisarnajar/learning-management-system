@@ -63,14 +63,14 @@ Auth: email/password (register, forgot/reset password), optional Google OAuth. A
 
 ## Quick start
 
-**Prerequisites:** Node.js 20+ and npm.
+**Prerequisites:** Node.js 20+, npm, and a running **PostgreSQL** database.
 
 ```bash
 git clone https://github.com/kaisarnajar/darse-quran-academy.git
 cd darse-quran-academy
 npm install
-cp .env.example .env   # edit values — see table below
-npm run db:migrate
+cp .env.example .env   # edit DATABASE_URL to point to your PostgreSQL instance
+npx prisma migrate dev --name init   # Create the initial PostgreSQL tables
 npm run db:seed:demo
 npm run dev
 ```
@@ -109,7 +109,7 @@ After `npm run db:seed:demo`, use these accounts for local QA (passwords are sha
 |----------|----------|-------------|
 | `AUTH_URL` | Yes | Public site URL (NextAuth, OAuth callbacks, email links). |
 | `AUTH_SECRET` | Yes | Session secret. Generate: `openssl rand -base64 32` |
-| `DATABASE_URL` | Yes | SQLite database path. Local: `"file:./dev.db"`. Production on a persistent server: `"file:/absolute/path/to/prod.db"` or `"file:./prod.db"` relative to the Prisma directory. |
+| `DATABASE_URL` | Yes | PostgreSQL connection string. Format: `"postgresql://user:password@host:port/database"` |
 | `ADMIN_EMAIL` | Yes | Comma-separated admin emails for `/admin`. |
 | `AUTH_GOOGLE_ID` | No | Google OAuth client ID. |
 | `AUTH_GOOGLE_SECRET` | No | Google OAuth client secret. |

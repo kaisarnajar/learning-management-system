@@ -24,7 +24,7 @@ function buildIncomeWhere(filters: FinanceFilters) {
   const base = {
     ...(filters.courseId ? { courseId: filters.courseId } : {}),
     ...(filters.studentId ? { userId: filters.studentId } : {}),
-    ...(filters.paymentType ? { paymentType: filters.paymentType } : {}),
+    paymentType: filters.paymentType ? filters.paymentType : { not: "book_purchase" },
     ...(paidAt ? { paidAt } : {}),
   };
 

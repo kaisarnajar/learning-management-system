@@ -1,0 +1,25 @@
+---
+description: "Guidelines for CSS, Tailwind usage, typography, theming, and layout patterns."
+globs: ["**/*.tsx", "**/*.css"]
+---
+# Design System & Theme Rules
+
+## Styling & Tailwind v4
+- **No `tailwind.config.ts`**: The project uses Tailwind CSS v4, which defines its configuration via `@theme inline` directly within `app/globals.css`.
+- **Theme Variables**: Strictly use the custom color variables defined in `app/globals.css` rather than raw hex codes or standard Tailwind colors unless necessary. 
+  - Primary/Gold: `--gold` (mapped to `var(--primary)`).
+  - Teal/Pattern: `--teal`.
+  - Backgrounds: `--background`, `--surface`, `--surface-muted`.
+  - Foreground/Text: `--foreground`, `--muted`.
+- **Dark Mode**: Dark mode is implemented via native CSS `@media (prefers-color-scheme: dark)` in `app/globals.css`. Do not use `dark:` Tailwind classes. Rely on CSS variables adapting automatically (e.g., `var(--background)`, `var(--surface)`).
+
+## Typography
+- **Primary Font**: `Poppins` is configured via `next/font/google` and mapped to `--font-poppins` in `app/layout.tsx`. Tailwind `font-sans` uses this.
+- **Arabic Typography**: Use the `.indo-pak-arabic` class for rendering Quranic/Arabic text. This uses the `Indo-Pak` traditional font with full tashkeel support.
+- **Headings**: Use defined classes for section headings (e.g., `.section-title-split`, `.title-muted`, `.title-accent`). 
+
+## Aesthetics & Layout
+- **Cards**: Use `.card-elevated` for elevated standard cards with unified shadows, or `.feature-card` for cards needing a gold bottom border accent.
+- **Gradients**: Use `.hero-gradient` where applicable for overlaying text on images.
+- **Patterns**: Use `.pattern-islamic` and `.pattern-teal` for subtle geometric background patterns.
+- **Responsiveness**: Design mobile-first. Rely on Tailwind's native breakpoints (`sm:`, `md:`, `lg:`, `xl:`). Keep `app/globals.css` updated if new global container patterns are introduced.

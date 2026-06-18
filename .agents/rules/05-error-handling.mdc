@@ -1,0 +1,28 @@
+---
+description: "Rules for handling errors gracefully, particularly regarding Next.js Redirects and Prisma exceptions."
+globs: ["**/*.ts", "**/*.tsx", "app/**/actions.ts"]
+---
+# Error Handling Rules
+
+## Next.js Redirect Exception Rule
+> [!WARNING]
+> Next.js implements `redirect()` by throwing an error under the hood (`NEXT_REDIRECT`). If you use `try...catch` blocks in Server Actions and call `redirect()` inside the `try` block, the catch block will intercept it and break the intended navigation.
+
+- **Mandatory Catch Block Handling**: Every `catch` block inside a Server Action must include the following check at the very top to re-throw Next.js redirect exceptions:
+  ```typescript
+  catch (error) {
+    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { 
+      throw error; 
+    }
+    // Handle other errors below
+    console.error("Error context:", error);
+    redirect(`/path?error=${encodeURIComponent("Friendly message.")}`);
+  }
+  ```
+
+## Database Error Handling
+- **Database Wrapper**: When making solitary Prisma calls that might fail unexpectedly, wrap them using `withDbErrorHandling` from `lib/db-error.ts` to provide generic fail-safes.
+- **Explicit Logging**: Always log full error objects using `console.error("Context...", error)` before returning a generic error string to the user. Do not expose raw database error strings to the UI.
+
+## Client-Side Error Presentation
+- **URL Query Parameters**: The UI should consume `?error=` search parameters to display `Alert` or `Toast` components to the user. Do not rely heavily on React Error Boundaries for expected validation failures.

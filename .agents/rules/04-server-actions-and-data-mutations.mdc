@@ -1,0 +1,25 @@
+---
+description: "Guidelines for implementing Server Actions, data fetching, and Next.js mutations."
+globs: ["**/*.ts", "**/*.tsx", "app/**/actions.ts"]
+---
+# Server Actions & Data Mutations Rules
+
+## Server Actions
+- **Location**: Co-locate Server Actions in an `actions.ts` file within the feature's `app/` directory branch (e.g., `app/admin/courses/actions.ts`).
+- **Directive**: Always use the `"use server";` directive at the top of the file.
+- **Authorization**: Require authorization at the start of the action (e.g., `const session = await requireAdmin();`).
+
+## Handling Form Data
+- **Parsing**: Receive `FormData` natively in the action signature.
+- **Validation**: Use Zod schemas defined in `lib/validations.ts` to strictly validate the parsed data. Create dedicated parse functions to encapsulate extraction and validation logic (e.g., `parseSiteAnnouncementForm(formData: FormData)`).
+- **Return Values**: Return objects with `{ ok: true, data }` or `{ ok: false, message: string }` from parsing functions.
+
+## Redirect Pattern
+- **URL Parameters**: Use URL query parameters for displaying success or error notifications after a server action. 
+  - Success: `redirect('/admin/path?saved=1')` or `redirect('/admin/path?posted=1')`.
+  - Error: `redirect('/admin/path?error=' + encodeURIComponent('Error message'))`.
+- **Revalidation**: Always call `revalidatePath(...)` for the relevant routes before redirecting to ensure UI freshness.
+
+## Data Fetching
+- Favor fetching data directly in Server Components using Prisma.
+- Pass fetched data down as props to Client Components.

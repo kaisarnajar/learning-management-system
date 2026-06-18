@@ -158,21 +158,44 @@ scripts/      Build and maintenance scripts
 
 ## Deployment
 
-This project is currently configured for **SQLite** in `prisma/schema.prisma` and the committed Prisma migrations are SQLite migrations. You can use SQLite in production when the app runs on a server with a persistent filesystem, such as a VPS, dedicated server, or single persistent container volume.
+This project requires **PostgreSQL** and uses **local file uploads** (`/public/uploads/...`) for courses, books, libraries, and user content.
 
-Recommended production setup:
+Because of the local file upload dependency, **serverless platforms like Vercel or Netlify are not suitable** unless you rewrite the upload functionality to use a Cloud Storage provider (e.g., AWS S3). If you deploy to Vercel, uploaded files will be instantly deleted because serverless containers are ephemeral.
 
-1. Deploy to a persistent server, not an ephemeral/serverless runtime.
-2. Set env vars (`AUTH_URL`, `AUTH_SECRET`, `ADMIN_EMAIL`, `DATABASE_URL`, optional SMTP and Google OAuth).
-3. Use a production SQLite path, for example `DATABASE_URL="file:/var/www/darse-quran-academy/prod.db"`.
-4. Run `npx prisma migrate deploy` during deployment, then `npm run build` and `npm run start`.
-5. Sign in as admin and add courses, teachers, library items, **Payment details**, and **Social links** in `/admin`.
+### Recommended Hosting: Railway, Render, or VPS
 
-Do not use the demo seed on the real production database. Use it only for local QA or staging.
+We strongly recommend deploying to a Platform as a Service (PaaS) like **Railway**, **Render**, or a traditional **VPS** (e.g., DigitalOcean). These platforms support **Persistent Disk Volumes**, which guarantees your file uploads are saved permanently without needing to rewrite any code.
 
-SQLite is not a good fit for Vercel/serverless deployment because the local filesystem is not durable between deployments/functions and multiple instances can make file-based writes unreliable. If you want Vercel or horizontally scaled production hosting, migrate Prisma from SQLite to PostgreSQL first and regenerate PostgreSQL migrations.
+### Deployment Steps (Example using Railway)
 
-Uploaded files (certificates, receipts, blog images, payment screenshots) live under `public/uploads/` on the server. For production, ensure persistent storage or accept that uploads are local to the deployment instance unless you add external storage.
+1. **Create a PostgreSQL Database:** Provision a managed PostgreSQL instance on your platform and copy the connection string.
+2. **Set Environment Variables:** 
+   ```bash
+   DATABASE_URL="postgresql://user:password@host:port/database"
+   AUTH_URL="https://your-domain.com"
+   AUTH_SECRET="your-32-char-secret"
+   ADMIN_EMAIL="admin@youracademy.org"
+   ```
+3. **Mount a Persistent Volume:** In your hosting dashboard, mount a persistent volume specifically to the `/public/uploads` directory to ensure files survive deployments.
+4. **Deploy the Code:** Push your code. Ensure the build command is `npm run build` (which runs `prisma generate` and builds the Next.js app).
+5. **Run Migrations:** Run the following command against your production database to create the tables:
+   ```bash
+   npx prisma migrate deploy
+   ```
+6. **Start the Server:** The start command should be `npm run start`.
+7. **First Login:** Sign in using the email you provided in `ADMIN_EMAIL`. You can now manage Payment Details, Social Links, Courses, and more at `/admin`.
+
+### Database Migrations
+
+The project is configured for PostgreSQL (`provider = "postgresql"` in `prisma/schema.prisma`).
+If you need to make future schema changes during development:
+1. Ensure your local `DATABASE_URL` is pointing to a local PostgreSQL instance.
+2. Run `npx prisma migrate dev --name <migration_name>`
+3. This will generate a new migration file inside `prisma/migrations` which you must commit to Git.
+
+### Backup Recommendations
+- Use managed PostgreSQL backups provided by your hosting platform.
+- Periodically back up the contents of the `/public/uploads` volume to an external storage service (like AWS S3 or a local NAS).
 
 ## License
 

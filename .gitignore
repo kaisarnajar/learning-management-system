@@ -62,6 +62,10 @@ yarn-error.log*
 /public/uploads/blogs/*
 !/public/uploads/blogs/.gitkeep
 
+# library uploads
+/public/uploads/library/*
+!/public/uploads/library/.gitkeep
+
 # vercel
 .vercel
 

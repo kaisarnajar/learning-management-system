@@ -10,7 +10,7 @@ import {
   EXPENSE_CATEGORY_TEACHER_SALARY,
   EXPENSE_CATEGORY_WEBSITE_HOSTING,
 } from "../lib/expense-categories";
-import { demoStudentUserId } from "./seed-helpers";
+import { demoStudentUserId, demoTeacherUserId } from "./seed-helpers";
 import { writeDemoPngFile } from "./seed-demo-assets";
 
 const BULK_MONTHS = ["01", "02", "03", "04", "05", "06"] as const;
@@ -432,7 +432,7 @@ export async function seedDemoBulkBookOrders(prisma: PrismaClient) {
     const studentId = demoStudentUserId(String(index).padStart(2, "0"));
     const orderId = `seed-demo-book-order-${index}`;
     const status = statuses[index % statuses.length];
-    const createdAt = new Date(`2026-03-${String(index).padStart(2, "0")}T10:00:00.000Z`);
+    const createdAt = new Date(`2026-03-${String((index % 28) + 1).padStart(2, "0")}T10:00:00.000Z`);
 
     let totalAmount = 0;
     const itemsData = orderItems.map((b, i) => {

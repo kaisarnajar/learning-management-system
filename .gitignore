@@ -34,9 +34,6 @@ yarn-error.log*
 .env*
 !.env.example
 
-# database
-/prisma/*.db
-/prisma/*.db-journal
 
 # user-uploaded payment screenshots
 /public/uploads/payments/*

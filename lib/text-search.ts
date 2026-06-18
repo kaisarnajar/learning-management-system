@@ -1,7 +1,6 @@
 /**
  * Text search helpers for admin list filters.
- * Uses Prisma `contains` (SQLite LIKE) — case-sensitive on SQLite;
- * `mode: 'insensitive'` is not supported by the current database provider.
+ * Uses Prisma `contains` with PostgreSQL `mode: 'insensitive'`.
  */
 
 export const SEARCH_PARAM = "q";
@@ -16,10 +15,10 @@ export function parseSearchQuery(raw: string | undefined): string | undefined {
   return trimmed.slice(0, MAX_QUERY_LENGTH);
 }
 
-/** Build `{ OR: [{ field: { contains: q } }, ...] }` for top-level string fields. */
+/** Build `{ OR: [{ field: { contains: q, mode: 'insensitive' } }, ...] }` for top-level string fields. */
 export function buildContainsOr(fields: readonly string[], q: string): TextSearchWhere {
   return {
-    OR: fields.map((field) => ({ [field]: { contains: q } })),
+    OR: fields.map((field) => ({ [field]: { contains: q, mode: "insensitive" } })),
   };
 }
 
@@ -33,7 +32,7 @@ export function andWhere(
   return { AND: [base, extra] };
 }
 
-/** Build OR clause matching nested relation string fields, e.g. `{ user: { name: { contains: q } } }`. */
+/** Build OR clause matching nested relation string fields, e.g. `{ user: { name: { contains: q, mode: 'insensitive' } } }`. */
 export function buildRelationContainsOr(
   relations: { relation: string; fields: readonly string[] }[],
   q: string,
@@ -42,7 +41,7 @@ export function buildRelationContainsOr(
 
   for (const { relation, fields } of relations) {
     for (const field of fields) {
-      clauses.push({ [relation]: { [field]: { contains: q } } });
+      clauses.push({ [relation]: { [field]: { contains: q, mode: "insensitive" } } });
     }
   }
 

@@ -175,7 +175,7 @@ export async function seedDemoBulkNotifications(prisma: PrismaClient) {
 export async function seedDemoBulkFatwa(prisma: PrismaClient) {
   const answererId = "seed-demo-teacher-user-1";
 
-  for (let index = 1; index <= 20; index += 1) {
+  for (let index = 1; index <= 50; index += 1) {
     const id = `seed-demo-fatwa-bulk-${String(index).padStart(2, "0")}`;
     const answered = index % 3 !== 0;
     const createdAt = new Date(`2026-01-${String((index % 28) + 1).padStart(2, "0")}T08:00:00.000Z`);
@@ -221,7 +221,7 @@ export async function seedDemoBulkFatwa(prisma: PrismaClient) {
 
 /** Additional contact inquiries (pending and replied). */
 export async function seedDemoBulkContactInquiries(prisma: PrismaClient) {
-  for (let index = 1; index <= 20; index += 1) {
+  for (let index = 1; index <= 50; index += 1) {
     const id = `seed-demo-contact-bulk-${String(index).padStart(2, "0")}`;
     const replied = index % 4 === 0;
     const studentId = index % 5 === 0 ? String((index % 25) + 1).padStart(2, "0") : null;
@@ -261,7 +261,7 @@ export async function seedDemoBulkContactInquiries(prisma: PrismaClient) {
 
 /** Additional site announcements. */
 export async function seedDemoBulkSiteAnnouncements(prisma: PrismaClient) {
-  for (let index = 1; index <= 15; index += 1) {
+  for (let index = 1; index <= 40; index += 1) {
     const id = `seed-demo-announcement-bulk-${String(index).padStart(2, "0")}`;
     const published = index % 5 !== 0;
     const showOnHomepage = published && index % 3 === 0;
@@ -294,7 +294,7 @@ export async function seedDemoBulkSiteAnnouncements(prisma: PrismaClient) {
 export async function seedDemoBulkDailyInspirations(prisma: PrismaClient) {
   const authorId = "seed-demo-teacher-user-1";
 
-  for (let index = 1; index <= 20; index += 1) {
+  for (let index = 1; index <= 40; index += 1) {
     const id = `seed-demo-inspiration-bulk-${String(index).padStart(2, "0")}`;
     const kind = index % 2 === 0 ? "HADITH" : "QURAN";
     const published = index % 4 !== 0;
@@ -428,7 +428,7 @@ export async function seedDemoBulkBookOrders(prisma: PrismaClient) {
   ];
   const orderItems = demoBooks.slice(0, 3);
 
-  for (let index = 1; index <= 10; index += 1) {
+  for (let index = 1; index <= 50; index += 1) {
     const studentId = demoStudentUserId(String(index).padStart(2, "0"));
     const orderId = `seed-demo-book-order-${index}`;
     const status = statuses[index % statuses.length];
@@ -518,6 +518,145 @@ export async function seedDemoBulkBookOrders(prisma: PrismaClient) {
   }
 }
 
+export async function seedDemoBulkBooks(prisma: PrismaClient) {
+  for (let index = 1; index <= 30; index += 1) {
+    const id = `seed-demo-book-bulk-${String(index).padStart(2, "0")}`;
+    const published = index % 6 !== 0;
+    const status = index % 5 === 0 ? "OUT_OF_STOCK" : index % 7 === 0 ? "COMING_SOON" : "AVAILABLE";
+    const featuredOnHomepage = index <= 8 && published;
+    const createdAt = new Date(`2026-02-${String((index % 28) + 1).padStart(2, "0")}T09:00:00.000Z`);
+
+    await prisma.book.upsert({
+      where: { id },
+      create: {
+        id,
+        title: `Bulk Demo Book ${index}: Studies in Islam`,
+        author: index % 2 === 0 ? "Imam Al-Ghazali" : "Ibn Taymiyyah",
+        description: `This is an auto-generated description for book ${index}. A comprehensive guide covering various aspects of Islamic theology and jurisprudence.`,
+        priceInrPaise: 150_00 + (index * 10_00),
+        status,
+        published,
+        featuredOnHomepage,
+        featuredAt: featuredOnHomepage ? createdAt : null,
+        createdAt,
+        updatedAt: createdAt,
+      },
+      update: {
+        title: `Bulk Demo Book ${index}: Studies in Islam`,
+        author: index % 2 === 0 ? "Imam Al-Ghazali" : "Ibn Taymiyyah",
+        description: `This is an auto-generated description for book ${index}. A comprehensive guide covering various aspects of Islamic theology and jurisprudence.`,
+        priceInrPaise: 150_00 + (index * 10_00),
+        status,
+        published,
+        featuredOnHomepage,
+        featuredAt: featuredOnHomepage ? createdAt : null,
+      },
+    });
+  }
+}
+
+export async function seedDemoBulkLibraryItems(prisma: PrismaClient) {
+  for (let index = 1; index <= 40; index += 1) {
+    const id = `seed-demo-library-bulk-${String(index).padStart(2, "0")}`;
+    const published = index % 8 !== 0;
+    const featuredOnHomepage = index <= 6 && published;
+    const createdAt = new Date(`2026-03-${String((index % 28) + 1).padStart(2, "0")}T11:00:00.000Z`);
+
+    await prisma.libraryItem.upsert({
+      where: { id },
+      create: {
+        id,
+        title: `Bulk Digital Resource ${index}`,
+        author: `Author ${index}`,
+        topic: index % 3 === 0 ? "Fiqh" : index % 2 === 0 ? "Seerah" : "Aqeedah",
+        level: index % 2 === 0 ? "Intermediate" : "Beginner",
+        language: index % 3 === 0 ? "Urdu" : "English",
+        published,
+        featuredOnHomepage,
+        featuredAt: featuredOnHomepage ? createdAt : null,
+        createdAt,
+        updatedAt: createdAt,
+      },
+      update: {
+        title: `Bulk Digital Resource ${index}`,
+        topic: index % 3 === 0 ? "Fiqh" : index % 2 === 0 ? "Seerah" : "Aqeedah",
+        published,
+        featuredOnHomepage,
+        featuredAt: featuredOnHomepage ? createdAt : null,
+      },
+    });
+  }
+}
+
+export async function seedDemoBulkStudentReviews(prisma: PrismaClient) {
+  for (let index = 1; index <= 30; index += 1) {
+    const id = `seed-demo-review-bulk-${String(index).padStart(2, "0")}`;
+    const studentId = demoStudentUserId(String((index % 50) + 1).padStart(2, "0"));
+    const status = index % 4 === 0 ? "PENDING" : index % 5 === 0 ? "REJECTED" : "APPROVED";
+    const featuredOnHomepage = status === "APPROVED" && index <= 5;
+    const createdAt = new Date(`2026-04-${String((index % 28) + 1).padStart(2, "0")}T14:00:00.000Z`);
+
+    await prisma.studentReview.upsert({
+      where: { id },
+      create: {
+        id,
+        userId: studentId,
+        quote: `This is a bulk auto-generated review ${index}. The courses have been highly beneficial for my studies.`,
+        course: index % 2 === 0 ? "Quran Nazira" : "Tajweed Intensive",
+        location: "Kashmir",
+        rating: 4 + (index % 2),
+        status,
+        featuredOnHomepage,
+        featuredAt: featuredOnHomepage ? createdAt : null,
+        createdAt,
+        updatedAt: createdAt,
+      },
+      update: {
+        quote: `This is a bulk auto-generated review ${index}. The courses have been highly beneficial for my studies.`,
+        status,
+        featuredOnHomepage,
+        featuredAt: featuredOnHomepage ? createdAt : null,
+      },
+    });
+  }
+}
+
+export async function seedDemoBulkBlogPosts(prisma: PrismaClient) {
+  for (let index = 1; index <= 30; index += 1) {
+    const id = `seed-demo-blog-bulk-${String(index).padStart(2, "0")}`;
+    const teacherId = demoTeacherUserId(String((index % 12) + 1));
+    const published = index % 5 !== 0;
+    const approvalStatus = published ? "APPROVED" : (index % 2 === 0 ? "PENDING" : "DRAFT");
+    const featuredOnHomepage = approvalStatus === "APPROVED" && index <= 6;
+    const createdAt = new Date(`2026-05-${String((index % 28) + 1).padStart(2, "0")}T15:00:00.000Z`);
+
+    await prisma.blogPost.upsert({
+      where: { id },
+      create: {
+        id,
+        title: `Bulk Blog Article ${index} on Islamic Sciences`,
+        excerpt: `A short excerpt for bulk blog post ${index}.`,
+        body: `This is the auto-generated body for blog post ${index}. It contains multiple paragraphs discussing various aspects of Islamic sciences, targeted to help students understand the depth of the subject matter.`,
+        published,
+        approvalStatus,
+        featuredOnHomepage,
+        featuredAt: featuredOnHomepage ? createdAt : null,
+        createdById: teacherId,
+        createdAt,
+        updatedAt: createdAt,
+      },
+      update: {
+        title: `Bulk Blog Article ${index} on Islamic Sciences`,
+        published,
+        approvalStatus,
+        featuredOnHomepage,
+        featuredAt: featuredOnHomepage ? createdAt : null,
+        createdById: teacherId,
+      },
+    });
+  }
+}
+
 /** Run all bulk seeders that fill tables with large demo datasets. */
 export async function seedDemoBulk(prisma: PrismaClient) {
   await seedDemoBlogImages(prisma);
@@ -530,6 +669,10 @@ export async function seedDemoBulk(prisma: PrismaClient) {
   await seedDemoBulkCourseAnnouncements(prisma);
   await seedDemoBulkBookOrders(prisma);
   await seedDemoPasswordResetTokens(prisma);
+  await seedDemoBulkBooks(prisma);
+  await seedDemoBulkLibraryItems(prisma);
+  await seedDemoBulkStudentReviews(prisma);
+  await seedDemoBulkBlogPosts(prisma);
 }
 
 export async function logDemoTableCounts(prisma: PrismaClient) {

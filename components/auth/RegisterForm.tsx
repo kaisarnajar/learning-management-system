@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { trackButtonClick } from "@/lib/analytics-client";
 import { authContinueUrl, getPostLoginPath } from "@/lib/auth-redirect";
 
 export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
@@ -22,6 +23,8 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
     e.preventDefault();
     setError("");
     setLoading(true);
+
+    trackButtonClick("Create Account", "/register");
 
     try {
       const res = await fetch("/api/auth/register", {

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 import type { SiteAnnouncementPublic } from "@/lib/site-announcements";
 import { formatSiteAnnouncementDate } from "@/lib/site-announcements";
 
@@ -30,12 +30,14 @@ export function SiteAnnouncementCard({ announcement, compact = false }: SiteAnno
         <p className="mt-4 text-xs text-muted">
           Posted {formatSiteAnnouncementDate(announcement.createdAt)}
         </p>
-        <Link
+        <TrackedLink
           href={`/announcements/${announcement.id}`}
+          eventName="Read Announcement"
+          pageName="/announcements"
           className="mt-4 inline-flex text-sm font-semibold text-primary hover:underline"
         >
           Read more
-        </Link>
+        </TrackedLink>
       </div>
     </article>
   );

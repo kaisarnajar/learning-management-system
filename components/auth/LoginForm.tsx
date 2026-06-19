@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useState } from "react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { trackButtonClick } from "@/lib/analytics-client";
 import { authContinueUrl, getPostLoginPath } from "@/lib/auth-redirect";
 
 export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
@@ -22,6 +23,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    trackButtonClick("Sign In", "/login");
     setError("");
     setLoading(true);
 

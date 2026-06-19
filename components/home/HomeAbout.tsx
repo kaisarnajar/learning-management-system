@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 
 export function HomeAbout() {
@@ -18,12 +19,14 @@ export function HomeAbout() {
           Darse Quran Academy is our online platform for structured Quran and Islamic studies—with
           qualified teachers, classes are generally after Isha salah, and structured progress through each course.
         </p>
-        <Link
+        <TrackedLink
           href="/about"
+          eventName="Read More"
+          pageName="/"
           className="btn-gold-outline mt-8 inline-flex border-white px-8 py-3 text-sm text-white hover:bg-surface hover:text-teal"
         >
           Read More
-        </Link>
+        </TrackedLink>
       </div>
     </section>
   );

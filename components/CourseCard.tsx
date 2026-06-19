@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { CourseEnrollButton } from "@/components/auth/CourseEnrollButton";
 import { CoursePricingDisplay } from "@/components/courses/CoursePricingDisplay";
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
@@ -30,12 +30,14 @@ export function CourseCard({
 
   return (
     <article className="card-elevated flex flex-col overflow-hidden p-0 transition-transform hover:-translate-y-0.5">
-      <Link
+      <TrackedLink
         href={detailHref}
+        eventName="View Course"
+        pageName="/courses"
         className={`flex h-32 items-center justify-center bg-gradient-to-br ${getCourseBannerClass(course.category)} text-white`}
       >
         <CourseCategoryIcon category={course.category} size="md" />
-      </Link>
+      </TrackedLink>
       <div className="flex flex-col p-5">
         <div className="mb-2 flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-gold">
@@ -47,21 +49,23 @@ export function CourseCard({
           <CourseStatusBadge status={course.status} />
         </div>
         <h3 className="text-lg font-bold text-foreground">
-          <Link href={detailHref} className="hover:text-gold">
+          <TrackedLink href={detailHref} eventName="View Course" pageName="/courses" className="hover:text-gold">
             {course.title}
-          </Link>
+          </TrackedLink>
         </h3>
         <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted">{course.description}</p>
         <CourseTeacherInfo teacher={course.teacher} />
         <p className="mt-4 text-sm text-muted">Starts: {course.startDate}</p>
         <CourseDurationDisplay duration={course.duration} className="mt-1" />
         <CoursePricingDisplay course={course} className="mt-2" />
-        <Link
+        <TrackedLink
           href={detailHref}
+          eventName="View Course"
+          pageName="/courses"
           className="btn-gold-outline mt-4 inline-flex w-full items-center justify-center py-2.5 text-xs"
         >
           Course Details
-        </Link>
+        </TrackedLink>
         <CourseEnrollButton
           courseId={course.id}
           courseStatus={course.status}

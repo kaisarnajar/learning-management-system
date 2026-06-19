@@ -11,6 +11,7 @@ import {
   validateAskFatwaForm,
 } from "@/lib/profile-form-validation";
 import { useZodForm } from "@/lib/use-zod-form";
+import { trackButtonClick } from "@/lib/analytics-client";
 
 type AskFatwaFormProps = {
   defaultName?: string;
@@ -53,7 +54,15 @@ export function AskFatwaForm({
   });
 
   return (
-    <form action={formAction} className="card-elevated space-y-5 p-6 sm:p-8">
+    <form
+      action={formAction}
+      onSubmit={() => {
+        if (isValid) {
+          trackButtonClick("Submit Question", "/fatwa/ask");
+        }
+      }}
+      className="card-elevated space-y-5 p-6 sm:p-8"
+    >
       {state.error && (
         <p className="rounded-lg bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {state.error}

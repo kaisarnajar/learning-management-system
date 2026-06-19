@@ -3,6 +3,7 @@
 import { useCallback } from "react";
 import { useActionState } from "react";
 import { submitContactInquiry, type SubmitContactInquiryState } from "@/app/contact/actions";
+import { trackButtonClick } from "@/lib/analytics-client";
 import { labelClassName } from "@/lib/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
 import {
@@ -41,7 +42,15 @@ export function ContactForm({ defaultName = "", defaultEmail = "", isLoggedIn = 
   });
 
   return (
-    <form action={formAction} className="card-elevated space-y-5 p-6 sm:p-8">
+    <form
+      action={formAction}
+      onSubmit={() => {
+        if (isValid) {
+          trackButtonClick("Send Us a Message", "/contact");
+        }
+      }}
+      className="card-elevated space-y-5 p-6 sm:p-8"
+    >
       {state.error && (
         <p className="rounded-lg bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {state.error}

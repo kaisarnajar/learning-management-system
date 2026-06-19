@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 
 const items = [
@@ -51,7 +52,17 @@ export function LearnAccordion() {
                   </span>
                 </button>
                 {isOpen && (
-                  <p className="pb-4 text-sm leading-relaxed text-muted">{item.body}</p>
+                  <>
+                    <p className="pb-4 text-sm leading-relaxed text-muted">{item.body}</p>
+                    <TrackedLink
+                      href="/courses"
+                      eventName="View Courses"
+                      pageName="/"
+                      className="mt-4 inline-flex items-center text-sm font-semibold text-gold hover:underline"
+                    >
+                      Start learning →
+                    </TrackedLink>
+                  </>
                 )}
               </li>
             );

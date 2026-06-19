@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { CoursePricingDisplay } from "@/components/courses/CoursePricingDisplay";
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
@@ -42,12 +43,14 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
                   <CourseTeacherInfo teacher={course.teacher} compact />
                   <CourseDurationDisplay duration={course.duration} className="mt-2" />
                   <CoursePricingDisplay course={course} className="mt-2" compact />
-                  <Link
+                  <TrackedLink
                     href={detailHref}
+                    eventName="View Course"
+                    pageName="/"
                     className="btn-gold-outline mt-4 inline-flex w-full items-center justify-center py-2.5 text-xs"
                   >
                     Course Details
-                  </Link>
+                  </TrackedLink>
                 </div>
               </li>
             );
@@ -57,9 +60,9 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
           <p className="mt-8 text-center text-muted">New courses will be announced soon.</p>
         )}
         <div className="mt-10 text-center">
-          <Link href="/courses" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
+          <TrackedLink href="/courses" eventName="View All Courses" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
             View All Courses
-          </Link>
+          </TrackedLink>
         </div>
       </div>
     </section>

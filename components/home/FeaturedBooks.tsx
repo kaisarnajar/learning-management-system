@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { BookCard } from "@/components/bookstore/BookCard";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { getFeaturedHomepageBooks } from "@/lib/bookstore";
@@ -20,9 +20,9 @@ export async function FeaturedBooks() {
               Recommended titles available in the academy bookstore.
             </p>
           </div>
-          <Link href="/bookstore" className="btn-gold-outline inline-flex shrink-0 px-6 py-2.5 text-sm">
-            Shop all
-          </Link>
+          <TrackedLink href="/bookstore" eventName="View All Books" pageName="/" className="btn-gold-outline inline-flex shrink-0 px-6 py-2.5 text-sm">
+            View all
+          </TrackedLink>
         </div>
         <ul className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {books.map((book) => (

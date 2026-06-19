@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AuthNav } from "@/components/auth/AuthNav";
@@ -62,15 +63,17 @@ function HeaderContent({ pathname }: { pathname: string }) {
             {navLinks.map((link) => {
             const active = isActive(link.href);
             return (
-              <Link
+              <TrackedLink
                 key={link.label}
                 href={link.href}
+                eventName={`Nav: ${link.label}`}
+                pageName="/"
                 className={`shrink-0 whitespace-nowrap px-1.5 py-2 text-[0.6875rem] font-semibold uppercase tracking-normal transition-colors 2xl:px-2.5 2xl:text-sm ${
                   active ? "text-gold" : "text-foreground hover:text-gold"
                 }`}
               >
                 {link.label}
-              </Link>
+              </TrackedLink>
             );
             })}
           </div>
@@ -108,15 +111,17 @@ function HeaderContent({ pathname }: { pathname: string }) {
               const active = isActive(link.href);
               return (
                 <li key={link.label}>
-                  <Link
+                  <TrackedLink
                     href={link.href}
+                    eventName={`Nav: ${link.label}`}
+                    pageName="/"
                     className={`flex min-h-11 items-center px-3 text-sm font-semibold uppercase tracking-wide ${
                       active ? "text-gold" : "text-foreground"
                     }`}
                     onClick={() => setMenuOpen(false)}
                   >
                     {link.label}
-                  </Link>
+                  </TrackedLink>
                 </li>
               );
             })}

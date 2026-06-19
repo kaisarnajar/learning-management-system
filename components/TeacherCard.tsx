@@ -1,5 +1,5 @@
-import Link from "next/link";
 import Image from "next/image";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 import type { Teacher } from "@/lib/teachers";
 
 type TeacherCardProps = {
@@ -7,12 +7,12 @@ type TeacherCardProps = {
 };
 
 export function TeacherCard({ teacher }: TeacherCardProps) {
-  const href = `/teachers/${teacher.id}`;
-
   return (
-    <Link
-      href={href}
-      className="card-elevated flex flex-col items-center p-6 text-center transition-transform hover:-translate-y-0.5"
+    <TrackedLink
+      href={`/teachers/${teacher.id}`}
+      eventName="View Profile"
+      pageName="/teachers"
+      className="card-elevated flex h-full flex-col p-6 transition-all hover:-translate-y-1 hover:shadow-xl"
     >
       {teacher.imageUrl ? (
         <Image
@@ -35,6 +35,6 @@ export function TeacherCard({ teacher }: TeacherCardProps) {
       <p className="mt-1 text-sm font-medium text-gold">{teacher.specialization}</p>
       <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted">{teacher.bio}</p>
       <span className="mt-4 text-xs font-semibold uppercase tracking-wide text-gold">View profile →</span>
-    </Link>
+    </TrackedLink>
   );
 }

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { SignOutButton } from "@/components/auth/SignOutButton";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 
 export function AuthNav({ mobile = false }: { mobile?: boolean }) {
   const { data: session, status } = useSession();
@@ -23,19 +24,19 @@ export function AuthNav({ mobile = false }: { mobile?: boolean }) {
     return (
       <div className={mobile ? "flex flex-col" : "flex items-center gap-0.5"}>
         {session.user.role === "ADMIN" && (
-          <Link href="/admin" className={linkClass}>
+          <TrackedLink href="/admin" eventName="Admin" pageName="auth-nav" className={linkClass}>
             Admin
-          </Link>
+          </TrackedLink>
         )}
         {session.user.role === "TEACHER" && (
-          <Link href="/teacher" className={linkClass}>
+          <TrackedLink href="/teacher" eventName="Teacher Portal" pageName="auth-nav" className={linkClass}>
             {mobile ? "Teacher portal" : "Teacher"}
-          </Link>
+          </TrackedLink>
         )}
         {session.user.role !== "TEACHER" && (
-          <Link href="/profile" className={linkClass}>
-            {mobile ? "My Profile" : "Profile"}
-          </Link>
+          <TrackedLink href="/profile" eventName="Profile" pageName="/" className={linkClass}>
+          {mobile ? "My Profile" : "Profile"}
+        </TrackedLink>
         )}
         <SignOutButton className={`${linkClass} ${mobile ? "w-full text-left" : ""}`}>
           Sign Out
@@ -46,11 +47,13 @@ export function AuthNav({ mobile = false }: { mobile?: boolean }) {
 
   return (
     <div className={mobile ? "flex flex-col gap-1" : "flex items-center gap-1"}>
-      <Link href="/login" className={linkClass}>
+      <TrackedLink href="/login" eventName="Login" pageName="/" className={linkClass}>
         Sign In
-      </Link>
-      <Link
+      </TrackedLink>
+      <TrackedLink
         href="/register"
+        eventName="Register"
+        pageName="/"
         className={
           mobile
             ? "flex min-h-11 items-center rounded-full bg-primary px-3 text-base font-medium text-white"
@@ -58,7 +61,7 @@ export function AuthNav({ mobile = false }: { mobile?: boolean }) {
         }
       >
         Register
-      </Link>
+      </TrackedLink>
     </div>
   );
 }

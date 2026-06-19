@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { FatwaCard } from "@/components/fatwa/FatwaCard";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { getFeaturedHomepageFatwas } from "@/lib/fatwa";
@@ -28,12 +28,12 @@ export async function HomeFatwa() {
         )}
 
         <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-          <Link href="/fatwa" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
-            Browse Answers
-          </Link>
-          <Link href="/fatwa/ask" className="btn-gold-outline inline-flex px-8 py-3 text-sm">
-            Ask a Question
-          </Link>
+          <TrackedLink href="/fatwa" eventName="Read Fatwas" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
+            Read Fatwas
+          </TrackedLink>
+          <TrackedLink href="/fatwa/ask" eventName="Ask Question" pageName="/" className="btn-gold-outline inline-flex px-8 py-3 text-sm">
+            Ask Question
+          </TrackedLink>
         </div>
       </div>
     </section>

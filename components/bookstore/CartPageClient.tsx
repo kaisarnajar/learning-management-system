@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
+import { trackButtonClick } from "@/lib/analytics-client";
 import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";
 
 type OrderItem = {
@@ -263,6 +264,11 @@ export function CartPageClient({
                     )}`
                   : "#"
               }
+              onClick={() => {
+                if (selectedItems.length > 0) {
+                  trackButtonClick("Checkout", "/cart");
+                }
+              }}
               aria-disabled={selectedItems.length === 0}
               className={`mt-4 flex min-h-11 items-center justify-center rounded-full px-6 text-sm font-semibold text-white transition-colors ${
                 selectedItems.length > 0

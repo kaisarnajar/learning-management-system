@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { bismillahArabic, bismillahEnglish } from "@/content/bismillah";
 import { indoPakArabic } from "@/lib/fonts/indo-pak-arabic";
 
@@ -11,9 +12,9 @@ export function HomeHero() {
           <p className="mt-3 text-base leading-relaxed text-white/90 sm:text-lg">
             Learn Quran, Tajweed, and Islamic studies online with qualified teachers—wherever you are.
           </p>
-          <Link href="/courses" className="btn-gold-outline mt-6 inline-flex px-6 py-2.5 text-sm">
+          <TrackedLink href="/courses" eventName="View Courses" pageName="/" className="btn-gold-outline mt-6 inline-flex px-6 py-2.5 text-sm">
             View Courses
-          </Link>
+          </TrackedLink>
         </div>
 
         <div className="min-w-0 md:max-w-md md:text-right">

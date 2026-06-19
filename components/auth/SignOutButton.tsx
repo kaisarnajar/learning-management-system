@@ -2,6 +2,7 @@
 
 import { signOut } from "next-auth/react";
 import { useCallback, useEffect, useId, useState } from "react";
+import { trackButtonClick } from "@/lib/analytics-client";
 
 type SignOutButtonProps = {
   className?: string;
@@ -32,6 +33,7 @@ export function SignOutButton({ className, children = "Sign Out" }: SignOutButto
   }, [open, close]);
 
   function handleConfirmSignOut() {
+    trackButtonClick("Sign Out", "/");
     void signOut({ callbackUrl: "/" });
   }
 

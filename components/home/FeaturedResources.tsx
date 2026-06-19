@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { LibraryCard } from "@/components/LibraryCard";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { getFeaturedHomepageLibraryItems } from "@/lib/library";
 
@@ -20,9 +21,9 @@ export async function FeaturedResources() {
               Books and study materials from the academy digital library.
             </p>
           </div>
-          <Link href="/library" className="btn-gold-outline inline-flex shrink-0 px-6 py-2.5 text-sm">
+          <TrackedLink href="/library" eventName="View All Resources" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
             View all
-          </Link>
+          </TrackedLink>
         </div>
         <ul className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {items.map((item) => (

@@ -2,18 +2,20 @@ import { Metadata } from "next";
 import { getAnalyticsSummary, getPageAnalytics, getButtonAnalytics } from "@/lib/analytics-server";
 import { parsePaginationParams, clampPage } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
+import { requireDeveloper } from "@/lib/auth-actions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 
 export const metadata: Metadata = {
-  title: "Analytics | Admin",
+  title: "Analytics | Developer",
 };
 
-export default async function AdminAnalyticsPage({
+export default async function DeveloperAnalyticsPage({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string; q?: string; tab?: string }>;
 }) {
+  await requireDeveloper();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
   const activeTab = params.tab === "buttons" ? "buttons" : "pages";
@@ -73,7 +75,7 @@ export default async function AdminAnalyticsPage({
 
       <div className="mt-6">
         <ListSearchForm
-          action="/admin/analytics"
+          action="/developer/analytics"
           query={q}
           placeholder={`Search by ${activeTab === "pages" ? "page URL" : "event name"}...`}
           totalCount={q ? activeData.totalCount : undefined}
@@ -134,7 +136,7 @@ export default async function AdminAnalyticsPage({
       </div>
 
       <Pagination
-        basePath="/admin/analytics"
+        basePath="/developer/analytics"
         params={{ ...params, tab: activeTab }}
         page={page}
         totalCount={activeData.totalCount}

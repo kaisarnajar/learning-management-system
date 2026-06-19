@@ -14,7 +14,6 @@ export const ADMIN_DASHBOARD_LINK_HREFS = new Set<string>([
 
 /** Admin sidebar links (excluding Dashboard). */
 export const ADMIN_NAV_LINKS: AdminNavLink[] = [
-  { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/announcements", label: "Announcements" },
   { href: "/admin/blogs", label: "Blogs" },
   { href: "/admin/daily-inspiration", label: "Verse & Hadith" },

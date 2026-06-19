@@ -1,9 +1,10 @@
 import type { Session } from "next-auth";
 import { isAdminEmail } from "@/lib/admin";
+import { isDeveloperEmail } from "@/lib/developer";
 import { prisma } from "@/lib/prisma";
 import { withDbErrorHandling } from "@/lib/db-error";
 
-export type UserRole = "USER" | "ADMIN" | "TEACHER";
+export type UserRole = "USER" | "ADMIN" | "TEACHER" | "DEVELOPER";
 
 export async function getTeacherByEmail(email: string | null | undefined) {
   if (!email) return null;
@@ -12,12 +13,13 @@ export async function getTeacherByEmail(email: string | null | undefined) {
 }
 
 export async function isTeacherEmail(email: string | null | undefined): Promise<boolean> {
-  if (!email || isAdminEmail(email)) return false;
+  if (!email || isAdminEmail(email) || isDeveloperEmail(email)) return false;
   const teacher = await getTeacherByEmail(email);
   return Boolean(teacher);
 }
 
 export async function resolveUserRole(email: string | null | undefined): Promise<UserRole> {
+  if (isDeveloperEmail(email)) return "DEVELOPER";
   if (isAdminEmail(email)) return "ADMIN";
   if (await isTeacherEmail(email)) return "TEACHER";
   return "USER";

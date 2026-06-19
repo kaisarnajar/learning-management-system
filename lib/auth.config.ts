@@ -33,7 +33,7 @@ export const authConfig = {
           session.user.id = token.id as string;
         }
         if (token.role) {
-          session.user.role = token.role as "USER" | "ADMIN" | "TEACHER";
+          session.user.role = token.role as "USER" | "ADMIN" | "TEACHER" | "DEVELOPER";
         }
         if (token.teacherId) {
           session.user.teacherId = token.teacherId as string;
@@ -45,7 +45,11 @@ export const authConfig = {
       const { pathname } = request.nextUrl;
 
       if (pathname.startsWith("/admin")) {
-        return auth?.user?.role === "ADMIN";
+        return auth?.user?.role === "ADMIN" || auth?.user?.role === "DEVELOPER";
+      }
+
+      if (pathname.startsWith("/developer")) {
+        return auth?.user?.role === "DEVELOPER";
       }
 
       if (pathname.startsWith("/teacher")) {

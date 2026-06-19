@@ -1,22 +1,20 @@
 import type { Metadata } from "next";
-import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { DeveloperSidebar } from "@/components/developer/DeveloperSidebar";
-import { requireAdmin } from "@/lib/auth-actions";
+import { requireDeveloper } from "@/lib/auth-actions";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Admin",
+  title: "Developer Panel",
   robots: { index: false, follow: false },
 };
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await requireAdmin();
-  const isDeveloper = session.user.role === "DEVELOPER";
+export default async function DeveloperLayout({ children }: { children: React.ReactNode }) {
+  await requireDeveloper();
 
   return (
     <div className="min-h-[calc(100vh-4rem)] md:flex">
-      {isDeveloper ? <DeveloperSidebar /> : <AdminSidebar />}
+      <DeveloperSidebar />
       <div className="flex-1 p-4 sm:p-6 lg:p-8">{children}</div>
     </div>
   );

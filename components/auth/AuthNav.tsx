@@ -28,6 +28,11 @@ export function AuthNav({ mobile = false }: { mobile?: boolean }) {
             Admin
           </TrackedLink>
         )}
+        {session.user.role === "DEVELOPER" && (
+          <TrackedLink href="/admin" eventName="Developer" pageName="auth-nav" className={linkClass}>
+            Developer
+          </TrackedLink>
+        )}
         {session.user.role === "TEACHER" && (
           <TrackedLink href="/teacher" eventName="Teacher Portal" pageName="auth-nav" className={linkClass}>
             {mobile ? "Teacher portal" : "Teacher"}

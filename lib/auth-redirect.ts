@@ -7,6 +7,11 @@ export function getPostLoginPath(
 ): string {
   const target = callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/";
 
+  if (role === "DEVELOPER") {
+    if (target.startsWith("/developer") || target.startsWith("/admin")) return target;
+    return "/developer";
+  }
+
   if (role === "TEACHER") {
     if (target.startsWith("/teacher")) return target;
     return "/teacher";

@@ -2,6 +2,7 @@
 
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
+import { isDeveloperSession } from "@/lib/developer";
 import { getTeacherForSession, isTeacherSession } from "@/lib/teacher-auth";
 import { redirect } from "next/navigation";
 
@@ -9,6 +10,14 @@ export async function requireAdmin() {
   const session = await auth();
   if (!isAdminSession(session)) {
     redirect("/login?callbackUrl=/admin");
+  }
+  return session!;
+}
+
+export async function requireDeveloper() {
+  const session = await auth();
+  if (!isDeveloperSession(session)) {
+    redirect("/login?callbackUrl=/developer");
   }
   return session!;
 }

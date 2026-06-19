@@ -22,5 +22,5 @@ export function isAdminEmail(email: string | null | undefined): boolean {
 }
 
 export function isAdminSession(session: Session | null): boolean {
-  return session?.user?.role === "ADMIN";
+  return session?.user?.role === "ADMIN" || session?.user?.role === "DEVELOPER";
 }

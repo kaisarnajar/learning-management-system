@@ -98,9 +98,6 @@ export function PaymentApprovalsTable({
               <div className="flex items-center justify-end gap-2">
                 {submission.status === MONTHLY_PAYMENT_APPROVED ? (
                   <>
-                    <span className="inline-flex items-center rounded-full bg-success-bg px-2.5 py-0.5 text-xs font-semibold text-success-text">
-                      Approved
-                    </span>
                     {submission.paymentScreenshotPath && (
                       <a
                         href={submission.paymentScreenshotPath}

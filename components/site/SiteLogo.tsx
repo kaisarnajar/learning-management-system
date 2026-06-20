@@ -1,9 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
 
-/** Intrinsic dimensions of public/logo.png after optimization */
+/** Intrinsic dimensions of public/assets/logo.png after optimization */
 const LOGO_WIDTH = 480;
-const LOGO_HEIGHT = 331;
+const LOGO_HEIGHT = 480;
 
 type SiteLogoProps = {
   href?: string;
@@ -23,7 +23,7 @@ export function SiteLogo({
 }: SiteLogoProps) {
   const image = (
     <Image
-      src="/logo.png"
+      src="/assets/logo.png"
       alt="Darse Quran Academy — Come towards Quran, come towards success"
       width={LOGO_WIDTH}
       height={LOGO_HEIGHT}

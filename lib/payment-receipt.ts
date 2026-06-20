@@ -269,7 +269,7 @@ export async function generatePaymentReceiptPdf(data: PaymentReceiptData): Promi
         
         let base64Logo = null;
         try {
-          const logoPath = path.join(process.cwd(), "public", "logo.png");
+          const logoPath = path.join(process.cwd(), "public", "assets", "logo.png");
           const bytes = await readFile(logoPath);
           base64Logo = `data:image/png;base64,${bytes.toString('base64')}`;
         } catch (e) {

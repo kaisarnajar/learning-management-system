@@ -10,6 +10,7 @@ import {
 import { StarRating } from "@/components/reviews/StarRating";
 import { HOMEPAGE_FEATURED_REVIEWS_MAX } from "@/lib/student-reviews";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import type { StudentReviewStatus } from "@prisma/client";
 
 type AdminStudentReviewEditFormProps = {
@@ -44,40 +45,6 @@ export function AdminStudentReviewEditForm({
   function getReturnTo() {
     const query = searchParams.toString();
     return query ? `${pathname}?${query}` : pathname;
-  }
-
-  function handleApprove() {
-    if (!window.confirm("Approve this student review?")) return;
-
-    startTransition(async () => {
-      try {
-        const result = await approveStudentReview(review.id, featureOnHomepage, getReturnTo());
-        if (result?.error) {
-          window.alert(result.error);
-        }
-      } catch (error) {
-        if (!isRedirectError(error)) {
-          window.alert("Could not approve review. Please try again.");
-        }
-      }
-    });
-  }
-
-  function handleReject() {
-    if (!window.confirm("Reject this review? The student can edit and resubmit.")) return;
-
-    startTransition(async () => {
-      try {
-        const result = await rejectStudentReview(review.id, getReturnTo());
-        if (result?.error) {
-          window.alert(result.error);
-        }
-      } catch (error) {
-        if (!isRedirectError(error)) {
-          window.alert("Could not reject review. Please try again.");
-        }
-      }
-    });
   }
 
   function handleSaveHomepage() {
@@ -174,22 +141,42 @@ export function AdminStudentReviewEditForm({
 
       {isPending ? (
         <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={handleApprove}
-            disabled={pending}
-            className="min-h-11 rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-light disabled:opacity-60"
-          >
-            {pending ? "…" : "Approve"}
-          </button>
-          <button
-            type="button"
-            onClick={handleReject}
-            disabled={pending}
-            className="min-h-11 rounded-md border border-red-300 px-6 py-2.5 text-sm font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60"
-          >
-            Reject
-          </button>
+          <ConfirmationModal
+            title="Approve Review"
+            description="Approve this student review?"
+            actionLabel="Approve"
+            variant="primary"
+            onConfirm={async () => {
+              const result = await approveStudentReview(review.id, featureOnHomepage, getReturnTo());
+              if (result?.error) { window.alert(result.error); }
+            }}
+            trigger={
+              <button
+                type="button"
+                className="min-h-11 rounded-md bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-light disabled:opacity-60"
+              >
+                Approve
+              </button>
+            }
+          />
+          <ConfirmationModal
+            title="Reject Review"
+            description="Reject this review? The student can edit and resubmit."
+            actionLabel="Reject"
+            variant="destructive"
+            onConfirm={async () => {
+              const result = await rejectStudentReview(review.id, getReturnTo());
+              if (result?.error) { window.alert(result.error); }
+            }}
+            trigger={
+              <button
+                type="button"
+                className="min-h-11 rounded-md border border-red-300 px-6 py-2.5 text-sm font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60"
+              >
+                Reject
+              </button>
+            }
+          />
         </div>
       ) : review.status === "APPROVED" ? (
         <button

@@ -1,5 +1,6 @@
 "use server";
 
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-actions";
@@ -84,7 +85,7 @@ export async function createCourse(formData: FormData) {
       data: { id, title, ...courseData, ...featured },
     });
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    if (isRedirectError(error)) { throw error; }
     console.error("Database error creating course:", error);
     redirect("/admin/courses/new?saveError=" + encodeURIComponent("An unexpected database error occurred."));
   }
@@ -107,7 +108,7 @@ export async function updateCourse(id: string, formData: FormData) {
   try {
     existing = await prisma.course.findUnique({ where: { id } });
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    if (isRedirectError(error)) { throw error; }
     console.error("Database error fetching course:", error);
     redirect(`/admin/courses/${id}/edit?saveError=${encodeURIComponent("Database error.")}`);
   }
@@ -136,7 +137,7 @@ export async function updateCourse(id: string, formData: FormData) {
 
     await syncEnrollmentsWithCourseStatus(id, courseData.status);
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    if (isRedirectError(error)) { throw error; }
     console.error("Database error updating course:", error);
     redirect(`/admin/courses/${id}/edit?saveError=${encodeURIComponent("An unexpected database error occurred.")}`);
   }
@@ -179,9 +180,7 @@ export async function deleteCourse(id: string) {
     await prisma.course.delete({ where: { id } });
   } catch (error) {
     // If the error is a NEXT_REDIRECT, rethrow it so Next.js handles the redirect.
-    if (error && typeof error === "object" && "digest" in error && String(error.digest).startsWith("NEXT_REDIRECT")) {
-      throw error;
-    }
+    if (isRedirectError(error)) { throw error; }
     console.error("Database error deleting course:", error);
     redirect("/admin/courses?deleteError=" + encodeURIComponent("An unexpected database error occurred."));
   }

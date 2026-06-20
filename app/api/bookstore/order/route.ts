@@ -1,3 +1,4 @@
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
   try {
     parsedItems = JSON.parse(rawItems as string);
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    if (isRedirectError(error)) { throw error; }
     console.error("Caught error:", error);
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
     }

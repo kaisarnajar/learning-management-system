@@ -3,6 +3,9 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { BookOrderWithItems } from "@/lib/bookstore";
+import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrderRefunded } from "@/app/admin/bookstore/orders/actions";
+import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";
+import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 
 export function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
@@ -42,12 +45,89 @@ export function ScreenshotPreview({ path }: { path: string }) {
   );
 }
 
+function OrderActions({ order }: { order: BookOrderWithItems }) {
+  if (order.status === "PENDING") {
+     return (
+        <td className="whitespace-nowrap px-4 py-4 align-top">
+          <div className="flex items-center justify-end gap-2">
+            <ConfirmationModal
+               title="Approve Order"
+               description="Approve this book order and notify the student?"
+               actionLabel="Approve"
+               variant="primary"
+               onConfirm={async () => {
+                 const result = await approveBookOrder(order.id);
+                 if (result?.error) window.alert(result.error);
+               }}
+               trigger={
+                  <button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>
+               }
+            />
+            <ConfirmationModal
+               title="Decline Order"
+               description="Are you sure you want to decline this order?"
+               actionLabel="Decline"
+               variant="destructive"
+               onConfirm={async () => {
+                 const result = await declineBookOrder(order.id);
+                 if (result?.error) window.alert(result.error);
+               }}
+               trigger={
+                  <button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Decline</button>
+               }
+            />
+          </div>
+        </td>
+     );
+  }
+  
+  if (order.status === "APPROVED") {
+     return (
+        <td className="whitespace-nowrap px-4 py-4 align-top">
+          <div className="flex items-center justify-end gap-2">
+            <ConfirmationModal
+               title="Mark as Shipped"
+               description="Mark this book order as shipped and notify the student?"
+               actionLabel="Mark as Shipped"
+               variant="primary"
+               onConfirm={async () => {
+                 const result = await markBookOrderShipped(order.id);
+                 if (result?.error) window.alert(result.error);
+               }}
+               trigger={
+                  <button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light transition-colors">Mark as Shipped</button>
+               }
+            />
+            <ConfirmationModal
+               title="Refund Order"
+               description="Are you sure you want to refund this order? The student will be notified."
+               actionLabel="Refund"
+               onConfirm={async () => {
+                 const result = await markBookOrderRefunded(order.id);
+                 if (result?.error) window.alert(result.error);
+               }}
+               trigger={
+                  <button type="button" className="rounded-md border border-border bg-surface-muted px-3 py-1.5 text-xs font-semibold text-muted hover:bg-surface-muted-hover transition-colors">Refund</button>
+               }
+            />
+          </div>
+        </td>
+     );
+  }
+  
+  return (
+    <td className="whitespace-nowrap px-4 py-4 align-top text-right">
+      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${bookOrderStatusClass(order.status)}`}>
+        {bookOrderStatusLabel(order.status)}
+      </span>
+    </td>
+  );
+}
+
 export function BaseOrderRow({
   order,
-  actionSlot,
 }: {
   order: BookOrderWithItems;
-  actionSlot: React.ReactNode;
 }) {
   return (
     <tr className="border-b border-border last:border-0">
@@ -95,23 +175,19 @@ export function BaseOrderRow({
           </div>
         )}
       </td>
-      {actionSlot}
+      <OrderActions order={order} />
     </tr>
   );
 }
 
-export function BookOrdersTableBase({
+export function BookOrdersTable({
   orders,
   emptyMessage,
-  lastColumnHeader = "",
-  lastColumnClassName = "",
-  renderActionCell,
+  showStatusColumn = false,
 }: {
   orders: BookOrderWithItems[];
   emptyMessage: string;
-  lastColumnHeader?: string;
-  lastColumnClassName?: string;
-  renderActionCell: (order: BookOrderWithItems) => React.ReactNode;
+  showStatusColumn?: boolean;
 }) {
   if (orders.length === 0) {
     return <p className="px-4 py-8 text-center text-sm text-muted">{emptyMessage}</p>;
@@ -127,8 +203,8 @@ export function BookOrdersTableBase({
             <th className="px-4 py-3 font-medium">Books</th>
             <th className="px-4 py-3 font-medium">Total</th>
             <th className="px-4 py-3 font-medium">Payment</th>
-            <th className={`px-4 py-3 font-medium ${lastColumnClassName}`}>
-              {lastColumnHeader}
+            <th className={`px-4 py-3 font-medium ${showStatusColumn ? 'text-right' : ''}`}>
+              {showStatusColumn ? 'Status' : ''}
             </th>
           </tr>
         </thead>
@@ -137,7 +213,6 @@ export function BookOrdersTableBase({
             <BaseOrderRow
               key={order.id}
               order={order}
-              actionSlot={renderActionCell(order)}
             />
           ))}
         </tbody>

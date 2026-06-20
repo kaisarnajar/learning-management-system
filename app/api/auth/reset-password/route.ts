@@ -1,3 +1,4 @@
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { consumePasswordResetToken } from "@/lib/password-reset";
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    if (isRedirectError(error)) { throw error; }
     console.error("Caught error:", error);
     return NextResponse.json(
           { error: "Could not reset your password. Please try again." },

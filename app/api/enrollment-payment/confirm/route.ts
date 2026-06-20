@@ -1,3 +1,4 @@
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { getRegistrationFeePaise } from "@/lib/course-pricing";
@@ -117,7 +118,7 @@ export async function POST(request: Request) {
       redirectUrl: "/profile/payments?submitted=1",
     });
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    if (isRedirectError(error)) { throw error; }
     console.error("Caught error:", error);
     return NextResponse.json({ error: "Could not submit payment. Please try again." }, { status: 500 });
   }

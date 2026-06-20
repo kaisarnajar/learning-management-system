@@ -159,3 +159,13 @@ export async function getPublicCourseById(id: string): Promise<CourseWithTeacher
   if (!course || !isCoursePubliclyVisible(course.status)) return null;
   return course;
 }
+
+export async function getCoursesByIds(ids: string[]): Promise<Map<string, CourseWithTeacher>> {
+  if (ids.length === 0) return new Map();
+  const courses = await withDbErrorHandling(() => prisma.course.findMany({
+    where: { id: { in: ids } },
+    include: courseWithTeacherInclude,
+  }), "Database operation failed");
+  return new Map(courses.map(c => [c.id, c]));
+}
+

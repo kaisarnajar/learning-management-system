@@ -1,3 +1,4 @@
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isCourseEnrollmentOpen } from "@/lib/course-status";
@@ -111,7 +112,7 @@ export async function POST(request: Request) {
         : "/profile/courses",
     });
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    if (isRedirectError(error)) { throw error; }
     console.error("Caught error:", error);
     return NextResponse.json({ error: "Could not submit enrollment request. Please try again." }, { status: 500 });
     }

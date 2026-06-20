@@ -1,3 +1,4 @@
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { readFile } from "fs/promises";
 import path from "path";
 import { NextResponse } from "next/server";
@@ -61,7 +62,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    if (isRedirectError(error)) { throw error; }
     console.error("Caught error:", error);
     return NextResponse.json({ error: "Certificate file not found." }, { status: 404 });
     }

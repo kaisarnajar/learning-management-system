@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ApprovedBookOrdersTable } from "@/components/admin/ApprovedBookOrdersTable";
-import { CompletedBookOrdersTable } from "@/components/admin/CompletedBookOrdersTable";
-import { PendingBookOrdersTable } from "@/components/admin/PendingBookOrdersTable";
+import { BookOrdersTable } from "@/components/admin/BookOrdersTable";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import {
@@ -157,7 +155,7 @@ export default async function AdminBookOrdersPage({
       {status === "pending" && (
         <section id="pending-orders" className="mt-6">
           <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-            <PendingBookOrdersTable
+            <BookOrdersTable
               orders={pendingResult.items}
               emptyMessage={
                 q
@@ -179,7 +177,7 @@ export default async function AdminBookOrdersPage({
       {status === "approved" && (
         <section id="approved-orders" className="mt-6">
           <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-            <ApprovedBookOrdersTable
+            <BookOrdersTable
               orders={approvedResult.items}
               emptyMessage={
                 q
@@ -201,13 +199,14 @@ export default async function AdminBookOrdersPage({
       {status === "completed" && (
         <section id="completed-orders" className="mt-6">
           <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-            <CompletedBookOrdersTable
+            <BookOrdersTable
               orders={completedResult.items}
               emptyMessage={
                 q
                   ? "No completed orders match your search."
                   : "No completed orders found."
               }
+              showStatusColumn={true}
             />
           </div>
           <Pagination

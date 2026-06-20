@@ -33,12 +33,13 @@ export default async function ProfileCoursesPage({
   const totalCount = enrollmentsPaginated.totalCount;
   const page = clampPage(requestedPage, totalCount, pageSize);
 
-  const enrollmentRows = await Promise.all(
-    enrollments.map(async (enrollment) => {
-      const course = await getCourseById(enrollment.courseId);
-      return { enrollment, course };
-    }),
-  );
+  const courseIds = [...new Set(enrollments.map((e) => e.courseId))];
+  const courseMap = await import("@/lib/courses").then((m) => m.getCoursesByIds(courseIds));
+
+  const enrollmentRows = enrollments.map((enrollment) => ({
+    enrollment,
+    course: courseMap.get(enrollment.courseId),
+  }));
 
   return (
     <div>

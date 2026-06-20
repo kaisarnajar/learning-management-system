@@ -1,6 +1,7 @@
 "use client";
 
 import { deleteTeacherBlogPost } from "@/app/teacher/(portal)/blogs/actions";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 
 type DeleteTeacherBlogPostButtonProps = {
   id: string;
@@ -14,22 +15,16 @@ export function DeleteTeacherBlogPostButton({
   title,
   isPublished = false,
 }: DeleteTeacherBlogPostButtonProps) {
-  const message = isPublished
-    ? `Delete “${title}”? It will be removed from the public blog. This cannot be undone.`
-    : `Delete “${title}”? This cannot be undone.`;
+  const warningMessage = isPublished
+    ? `Are you sure? It will be removed from the public blog. This cannot be undone.`
+    : undefined;
 
   return (
-    <form
+    <DeleteActionButton
       action={deleteTeacherBlogPost.bind(null, id)}
-      onSubmit={(e) => {
-        if (!confirm(message)) {
-          e.preventDefault();
-        }
-      }}
-    >
-      <button type="submit" className="text-sm font-medium text-destructive-text hover:underline">
-        Delete
-      </button>
-    </form>
+      itemName={title}
+      warningMessage={warningMessage}
+      className="text-sm font-medium text-destructive-text hover:underline"
+    />
   );
 }

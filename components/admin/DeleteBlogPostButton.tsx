@@ -1,24 +1,14 @@
 "use client";
 
 import { deleteBlogPost } from "@/app/admin/blogs/actions";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 
 export function DeleteBlogPostButton({ id, title }: { id: string; title: string }) {
   return (
-    <form
-      className="contents"
+    <DeleteActionButton
       action={deleteBlogPost.bind(null, id)}
-      onSubmit={(e) => {
-        if (!confirm(`Delete the blog post "${title}"? This cannot be undone.`)) {
-          e.preventDefault();
-        }
-      }}
-    >
-      <button
-        type="submit"
-        className="text-sm font-medium text-destructive-text hover:underline"
-      >
-        Delete
-      </button>
-    </form>
+      itemName="blog post"
+      className="text-sm font-medium text-destructive-text hover:underline"
+    />
   );
 }

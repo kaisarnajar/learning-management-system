@@ -1,6 +1,7 @@
 "use client";
 
 import { deleteStudentReview } from "@/app/profile/reviews/actions";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 
 type DeleteStudentReviewButtonProps = {
   id: string;
@@ -8,23 +9,16 @@ type DeleteStudentReviewButtonProps = {
 };
 
 export function DeleteStudentReviewButton({ id, onHomepage = false }: DeleteStudentReviewButtonProps) {
-  const message = onHomepage
-    ? "Delete this review? It will be removed from the homepage. This cannot be undone."
-    : "Delete this review? This cannot be undone.";
+  const warningMessage = onHomepage
+    ? "Are you sure? It will be removed from the homepage. This cannot be undone."
+    : undefined;
 
   return (
-    <form
-      className="contents"
+    <DeleteActionButton
       action={deleteStudentReview.bind(null, id)}
-      onSubmit={(e) => {
-        if (!confirm(message)) {
-          e.preventDefault();
-        }
-      }}
-    >
-      <button type="submit" className="text-sm font-medium text-destructive-text hover:underline">
-        Delete
-      </button>
-    </form>
+      itemName="review"
+      warningMessage={warningMessage}
+      className="text-sm font-medium text-destructive-text hover:underline"
+    />
   );
 }

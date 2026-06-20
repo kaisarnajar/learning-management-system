@@ -1,5 +1,6 @@
 "use server";
 
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-actions";
@@ -83,7 +84,7 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
       });
     }
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    if (isRedirectError(error)) { throw error; }
     console.error("Database error creating book:", error);
     return { error: "An unexpected error occurred while creating the book." };
   }
@@ -148,7 +149,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
       },
     });
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    if (isRedirectError(error)) { throw error; }
     console.error("Database error updating book:", error);
     return { error: "An unexpected error occurred while updating the book." };
   }
@@ -185,7 +186,7 @@ export async function deleteBook(bookId: string): Promise<{ error?: string }> {
 
     await prisma.book.delete({ where: { id: bookId } });
   } catch (error) {
-    if (error && typeof error === "object" && "digest" in error && typeof error.digest === "string" && error.digest.startsWith("NEXT_REDIRECT")) { throw error; }
+    if (isRedirectError(error)) { throw error; }
     console.error("Database error deleting book:", error);
     return { error: "An unexpected error occurred while deleting the book." };
   }

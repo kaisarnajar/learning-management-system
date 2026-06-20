@@ -31,7 +31,7 @@ export function ToggleHomepageAnnouncementButton({
         className={`rounded-full px-2.5 py-0.5 text-xs font-semibold transition-colors ${
           showOnHomepage
             ? "bg-info-bg text-info-text hover:bg-violet-200"
-            : "bg-stone-100 text-stone-700 hover:bg-surface-muted-hover"
+            : "bg-surface-muted text-muted hover:bg-surface-muted-hover"
         }`}
         title={showOnHomepage ? "Remove from homepage" : "Feature on homepage"}
       >

@@ -71,7 +71,7 @@ export function AskFatwaForm({
 
       <div>
         <label htmlFor="category" className={labelClassName}>
-          Category <span className="text-red-600">*</span>
+          Category <span className="text-destructive-text">*</span>
         </label>
         <select
           id="category"
@@ -101,7 +101,7 @@ export function AskFatwaForm({
 
       <div>
         <label htmlFor="title" className={labelClassName}>
-          Subject <span className="text-red-600">*</span>
+          Subject <span className="text-destructive-text">*</span>
         </label>
         <input
           id="title"
@@ -125,7 +125,7 @@ export function AskFatwaForm({
 
       <div>
         <label htmlFor="question" className={labelClassName}>
-          Your question <span className="text-red-600">*</span>
+          Your question <span className="text-destructive-text">*</span>
         </label>
         <textarea
           id="question"
@@ -151,7 +151,7 @@ export function AskFatwaForm({
         <>
           <div>
             <label htmlFor="askerName" className={labelClassName}>
-              Your name <span className="text-red-600">*</span>
+              Your name <span className="text-destructive-text">*</span>
             </label>
             <input
               id="askerName"
@@ -173,7 +173,7 @@ export function AskFatwaForm({
           </div>
           <div>
             <label htmlFor="askerEmail" className={labelClassName}>
-              Email <span className="text-red-600">*</span>
+              Email <span className="text-destructive-text">*</span>
             </label>
             <p className="mt-0.5 text-xs text-muted">We will email you when your question is answered.</p>
             <input

@@ -37,7 +37,7 @@ export function blogApprovalStatusLabel(
 
 export function blogApprovalStatusClass(status: BlogApprovalStatus, published: boolean): string {
   if (status === "PENDING") return "bg-warning-bg text-warning-text";
-  if (status === "REJECTED") return "bg-red-100 text-red-900";
+  if (status === "REJECTED") return "bg-destructive-bg text-destructive-text";
   if (status === "DRAFT") return "bg-surface-muted-hover text-muted";
   if (published) return "bg-success-bg text-success-text";
   return "bg-info-bg text-info-text";

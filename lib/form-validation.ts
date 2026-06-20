@@ -1,6 +1,6 @@
 import { inputClassName } from "@/lib/form";
 
-export const formErrorTextClassName = "mt-1 text-sm text-red-700";
+export const formErrorTextClassName = "mt-1 text-sm text-destructive-text";
 
 export function formFieldInputClass(hasError: boolean, base = inputClassName) {
   return hasError

@@ -14,7 +14,7 @@ export function DeleteSiteAnnouncementButton({ id, title }: { id: string; title:
     <button
       type="button"
       onClick={handleClick}
-      className="text-sm font-medium text-red-700 hover:underline"
+      className="text-sm font-medium text-destructive-text hover:underline"
     >
       Delete
     </button>

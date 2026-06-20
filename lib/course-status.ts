@@ -19,17 +19,17 @@ export function courseStatusLabel(status: CourseStatus): string {
 export function courseStatusBadgeClass(status: CourseStatus): string {
   switch (status) {
     case "DRAFT":
-      return "bg-surface-muted-hover text-stone-700";
+      return "bg-surface-muted-hover text-muted";
     case "PUBLISHED":
       return "bg-info-bg text-info-text";
     case "ONGOING":
       return "bg-success-bg text-success-text";
     case "COMPLETED":
-      return "bg-slate-200 text-slate-800";
+      return "bg-surface-muted-hover text-foreground";
     case "ON_HOLD":
       return "bg-warning-bg text-warning-text";
     default:
-      return "bg-surface-muted-hover text-stone-700";
+      return "bg-surface-muted-hover text-muted";
   }
 }
 

@@ -49,7 +49,7 @@ function ApprovedOrderActions({ order }: { order: BookOrderWithItems }) {
 
   return (
     <td className="whitespace-nowrap px-4 py-4 align-top">
-      {error && <p className="mb-2 text-xs text-red-600">{error}</p>}
+      {error && <p className="mb-2 text-xs text-destructive-text">{error}</p>}
       <div className="flex items-center justify-end gap-2">
         <button
           type="button"

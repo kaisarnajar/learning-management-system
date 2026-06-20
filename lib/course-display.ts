@@ -27,5 +27,5 @@ export function getCourseBannerClass(category: string): string {
 }
 
 export function getCourseLevelClass(level: string): string {
-  return courseLevelColors[level] ?? "bg-slate-100 text-slate-800";
+  return courseLevelColors[level] ?? "bg-surface-muted text-foreground";
 }

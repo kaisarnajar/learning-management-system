@@ -56,7 +56,7 @@ export function notificationTypeClass(type: StudentNotificationType): string {
       return "bg-success-bg text-success-text";
     case "ENROLLMENT_REJECTED":
     case "BOOK_ORDER_DECLINED":
-      return "bg-red-100 text-destructive-text";
+      return "bg-destructive-bg text-destructive-text";
     case "PERSONAL_MESSAGE":
       return "bg-info-bg text-info-text";
     case "COURSE_ANNOUNCEMENT":

@@ -38,9 +38,9 @@ function notificationIconClass(type: StudentNotificationType): string {
   switch (type) {
     case "PAYMENT_APPROVED":
     case "ENROLLMENT_APPROVED":
-      return "bg-success-bg text-emerald-700 ring-emerald-200/80";
+      return "bg-success-bg text-success-text ring-success-text/30";
     case "ENROLLMENT_REJECTED":
-      return "bg-red-100 text-red-700 ring-red-200/80";
+      return "bg-destructive-bg text-destructive-text ring-destructive-text/30";
     case "PERSONAL_MESSAGE":
       return "bg-info-bg text-violet-700 ring-violet-200/80";
     case "COURSE_ANNOUNCEMENT":

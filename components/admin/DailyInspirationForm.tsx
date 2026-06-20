@@ -86,7 +86,7 @@ export function DailyInspirationForm({ action, submitLabel, item, error }: Daily
 
       <div>
         <label htmlFor="arabicText" className={labelClassName}>
-          Arabic text <span className="text-red-600">*</span>
+          Arabic text <span className="text-destructive-text">*</span>
         </label>
         <textarea
           id="arabicText"
@@ -110,7 +110,7 @@ export function DailyInspirationForm({ action, submitLabel, item, error }: Daily
 
       <div>
         <label htmlFor="englishTranslation" className={labelClassName}>
-          English translation <span className="text-red-600">*</span>
+          English translation <span className="text-destructive-text">*</span>
         </label>
         <textarea
           id="englishTranslation"

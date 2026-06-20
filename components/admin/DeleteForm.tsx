@@ -16,10 +16,10 @@ export function DeleteForm({ action, label = "Delete" }: DeleteFormProps) {
         }
       }}
     >
-      <p className="text-sm font-medium text-red-700">Danger zone</p>
+      <p className="text-sm font-medium text-destructive-text">Danger zone</p>
       <button
         type="submit"
-        className="mt-2 rounded-md border border-red-300 bg-destructive-bg px-4 py-2 text-sm font-medium text-destructive-text hover:bg-red-100"
+        className="mt-2 rounded-md border border-red-300 bg-destructive-bg px-4 py-2 text-sm font-medium text-destructive-text hover:bg-destructive-bg"
       >
         {label}
       </button>

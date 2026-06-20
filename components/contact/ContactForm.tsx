@@ -61,7 +61,7 @@ export function ContactForm({ defaultName = "", defaultEmail = "", isLoggedIn = 
         <>
           <div>
             <label htmlFor="name" className={labelClassName}>
-              Full name <span className="text-red-600">*</span>
+              Full name <span className="text-destructive-text">*</span>
             </label>
             <input
               id="name"
@@ -84,7 +84,7 @@ export function ContactForm({ defaultName = "", defaultEmail = "", isLoggedIn = 
 
           <div>
             <label htmlFor="email" className={labelClassName}>
-              Email <span className="text-red-600">*</span>
+              Email <span className="text-destructive-text">*</span>
             </label>
             <input
               id="email"
@@ -118,7 +118,7 @@ export function ContactForm({ defaultName = "", defaultEmail = "", isLoggedIn = 
 
       <div>
         <label htmlFor="phone" className={labelClassName}>
-          Phone / WhatsApp <span className="text-red-600">*</span>
+          Phone / WhatsApp <span className="text-destructive-text">*</span>
         </label>
         <input
           id="phone"
@@ -143,7 +143,7 @@ export function ContactForm({ defaultName = "", defaultEmail = "", isLoggedIn = 
 
       <div>
         <label htmlFor="message" className={labelClassName}>
-          Your message <span className="text-red-600">*</span>
+          Your message <span className="text-destructive-text">*</span>
         </label>
         <textarea
           id="message"

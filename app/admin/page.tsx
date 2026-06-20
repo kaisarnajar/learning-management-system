@@ -30,7 +30,7 @@ function DashboardCountCard({ stat }: { stat: DashboardStat }) {
     <Link
       href={stat.href}
       className={`rounded-lg border bg-surface p-5 shadow-sm transition-shadow hover:shadow-md ${
-        stat.highlight ? "border-amber-300 ring-1 ring-amber-200" : "border-border"
+        stat.highlight ? "border-warning-text/30 ring-1 ring-amber-200" : "border-border"
       }`}
     >
       <p className="text-sm text-muted">{stat.label}</p>

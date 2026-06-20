@@ -66,7 +66,7 @@ export function ActionButton({
   if (variant === "primary") {
     buttonClass = "rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60";
   } else if (variant === "destructive") {
-    buttonClass = "rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-red-100 disabled:opacity-60";
+    buttonClass = "rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60";
   } else if (variant === "secondary") {
     buttonClass = "rounded-md border border-border bg-surface-muted px-3 py-1.5 text-xs font-semibold text-muted hover:bg-surface-muted-hover disabled:opacity-60 transition-colors";
   }

@@ -69,7 +69,7 @@ export function StudentReviewForm({
 
       <div>
         <label htmlFor="quote" className={labelClassName}>
-          Your review <span className="text-red-600">*</span>
+          Your review <span className="text-destructive-text">*</span>
         </label>
         <textarea
           id="quote"

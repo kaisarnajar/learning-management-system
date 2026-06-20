@@ -39,7 +39,7 @@ export function RemoveEnrollmentButton({
       type="button"
       onClick={handleRemove}
       disabled={loading}
-      className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-red-100 disabled:opacity-60"
+      className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60"
     >
       {loading ? "…" : "Remove"}
     </button>

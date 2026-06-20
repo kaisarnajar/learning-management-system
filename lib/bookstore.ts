@@ -63,7 +63,7 @@ export function bookStatusClass(status: BookStatus): string {
     case "AVAILABLE":
       return "bg-success-bg text-success-text";
     case "OUT_OF_STOCK":
-      return "bg-red-100 text-destructive-text";
+      return "bg-destructive-bg text-destructive-text";
     case "COMING_SOON":
       return "bg-warning-bg text-warning-text";
     default:
@@ -95,9 +95,9 @@ export function bookOrderStatusClass(status: string): string {
     case "APPROVED":
       return "bg-success-bg text-success-text";
     case "DECLINED":
-      return "bg-red-100 text-destructive-text";
+      return "bg-destructive-bg text-destructive-text";
     case "SHIPPED":
-      return "bg-blue-100 text-info-text";
+      return "bg-info-bg text-info-text";
     case "REFUNDED":
       return "bg-surface-muted-hover text-muted";
     default:

@@ -33,7 +33,7 @@ export default async function ProfilePage({
     <div className="space-y-6">
       {!profileComplete && (
         <div
-          className="rounded-lg border border-amber-200 border-l-4 border-l-amber-500 bg-warning-bg px-4 py-4 text-sm text-amber-950 sm:px-5"
+          className="rounded-lg border border-warning-text/20 border-l-4 border-l-warning-text bg-warning-bg px-4 py-4 text-sm text-warning-text sm:px-5"
           role="status"
         >
           <p className="font-semibold">Complete your profile to enroll in courses</p>

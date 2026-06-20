@@ -15,7 +15,7 @@ export function DeleteBlogPostButton({ id, title }: { id: string; title: string 
     >
       <button
         type="submit"
-        className="text-sm font-medium text-red-700 hover:underline"
+        className="text-sm font-medium text-destructive-text hover:underline"
       >
         Delete
       </button>

@@ -41,9 +41,9 @@ export const announcementCategoryLabels: Record<AnnouncementCategory, string> = 
 };
 
 export const announcementCategoryStyles: Record<AnnouncementCategory, string> = {
-  EXAMS_TESTS: "bg-red-100 text-red-900",
-  ASSIGNMENTS_HOMEWORK: "bg-orange-100 text-orange-900",
-  STUDY_MATERIALS: "bg-blue-100 text-blue-900",
+  EXAMS_TESTS: "bg-destructive-bg text-destructive-text",
+  ASSIGNMENTS_HOMEWORK: "bg-warning-bg text-warning-text",
+  STUDY_MATERIALS: "bg-info-bg text-info-text",
   CLASS_SCHEDULE: "bg-info-bg text-info-text",
   COURSE_ANNOUNCEMENT: "bg-teal/15 text-teal-dark",
   GENERAL_NOTICE: "bg-surface-muted-hover text-muted",

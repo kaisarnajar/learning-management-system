@@ -69,7 +69,7 @@ export function CourseEnrollButton({
       <div className="mt-4">
         <Link
           href="/profile/courses"
-          className="flex min-h-11 w-full items-center justify-center rounded-full border border-amber-300 bg-warning-bg px-4 py-3 text-sm font-medium text-warning-text"
+          className="flex min-h-11 w-full items-center justify-center rounded-full border border-warning-text/30 bg-warning-bg px-4 py-3 text-sm font-medium text-warning-text"
         >
           Awaiting enrollment approval
         </Link>
@@ -82,7 +82,7 @@ export function CourseEnrollButton({
       <div className="mt-4">
         <Link
           href={hasPendingEnrollmentPayment ? "/profile/payments" : enrollmentPayHref}
-          className="flex min-h-11 w-full items-center justify-center rounded-full border border-amber-300 bg-warning-bg px-4 py-3 text-sm font-medium text-warning-text"
+          className="flex min-h-11 w-full items-center justify-center rounded-full border border-warning-text/30 bg-warning-bg px-4 py-3 text-sm font-medium text-warning-text"
         >
           {hasPendingEnrollmentPayment ? "Awaiting payment verification" : "Pay enrollment fee"}
         </Link>
@@ -107,7 +107,7 @@ export function CourseEnrollButton({
     return (
       <div className="mt-4">
         <p
-          className="rounded-lg border border-amber-200 bg-warning-bg px-3 py-2.5 text-center text-sm text-warning-text"
+          className="rounded-lg border border-warning-text/20 bg-warning-bg px-3 py-2.5 text-center text-sm text-warning-text"
           role="status"
         >
           {enrollmentClosedMessage}
@@ -184,7 +184,7 @@ export function CourseEnrollButton({
     return (
       <Link
         href={PROFILE_COMPLETE_REDIRECT}
-        className="mt-4 flex min-h-11 w-full items-center justify-center rounded-full border border-amber-300 bg-warning-bg px-4 py-3 text-sm font-medium text-amber-950 transition-colors hover:bg-warning-bg"
+        className="mt-4 flex min-h-11 w-full items-center justify-center rounded-full border border-warning-text/30 bg-warning-bg px-4 py-3 text-sm font-medium text-warning-text transition-colors hover:bg-warning-bg"
       >
         Complete profile to enroll
       </Link>
@@ -194,7 +194,7 @@ export function CourseEnrollButton({
   return (
     <div className="mt-4">
       {error && (
-        <p className="mb-2 text-center text-xs text-red-600" role="alert">
+        <p className="mb-2 text-center text-xs text-destructive-text" role="alert">
           {error}
         </p>
       )}

@@ -70,7 +70,7 @@ export default async function TeacherDashboardPage({
                 <div className="p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <CourseStatusBadge status={course.status} />
-                    <span className="rounded-full bg-stone-100 px-2.5 py-0.5 text-xs font-medium text-stone-700">
+                    <span className="rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-muted">
                       {course.level}
                     </span>
                   </div>

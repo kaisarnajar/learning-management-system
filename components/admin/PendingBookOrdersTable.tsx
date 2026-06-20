@@ -49,7 +49,7 @@ function PendingOrderActions({ order }: { order: BookOrderWithItems }) {
 
   return (
     <td className="whitespace-nowrap px-4 py-4 align-top">
-      {error && <p className="mb-2 text-xs text-red-600">{error}</p>}
+      {error && <p className="mb-2 text-xs text-destructive-text">{error}</p>}
       <div className="flex items-center justify-end gap-2">
         <button
           type="button"
@@ -63,7 +63,7 @@ function PendingOrderActions({ order }: { order: BookOrderWithItems }) {
           type="button"
           onClick={handleDecline}
           disabled={loading !== null}
-          className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-red-100 disabled:opacity-60"
+          className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60"
         >
           {loading === "decline" ? "Declining…" : "Decline"}
         </button>

@@ -145,7 +145,7 @@ export function CartPageClient({
           <button 
             type="button" 
             onClick={() => setShowSuccess(false)}
-            className="absolute top-4 right-4 text-emerald-600 hover:text-success-text transition-colors"
+            className="absolute top-4 right-4 text-success-text hover:text-success-text transition-colors"
             aria-label="Dismiss message"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -233,7 +233,7 @@ export function CartPageClient({
                     <button
                       type="button"
                       onClick={() => removeItem(item.bookId)}
-                      className="ml-2 text-muted hover:text-red-600 transition-colors"
+                      className="ml-2 text-muted hover:text-destructive-text transition-colors"
                       aria-label={`Remove ${item.title}`}
                     >
                       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>

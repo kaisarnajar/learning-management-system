@@ -41,7 +41,7 @@ export function StarRatingInput({
   return (
     <div>
       <span className={labelClassName}>
-        Your rating <span className="text-red-600">*</span>
+        Your rating <span className="text-destructive-text">*</span>
       </span>
       <input type="hidden" name={name} value={rating > 0 ? rating : ""} required={required} />
       <div

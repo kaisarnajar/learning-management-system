@@ -26,7 +26,7 @@ export default async function AdminSocialLinksPage({
         </p>
       ) : null}
       {params.error ? (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-red-900">{params.error}</p>
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{params.error}</p>
       ) : null}
 
       <div className="mt-8">

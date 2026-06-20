@@ -44,7 +44,7 @@ export function reviewStatusLabel(status: StudentReviewStatus): string {
 
 export function reviewStatusClass(status: StudentReviewStatus): string {
   if (status === "PENDING") return "bg-warning-bg text-warning-text";
-  if (status === "REJECTED") return "bg-red-100 text-red-900";
+  if (status === "REJECTED") return "bg-destructive-bg text-destructive-text";
   return "bg-success-bg text-success-text";
 }
 

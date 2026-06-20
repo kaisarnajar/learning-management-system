@@ -25,16 +25,16 @@ export function BookstoreFinanceSummaryCards({ summary }: { summary: BookstoreFi
 
       <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
         <p className="text-sm text-muted">Total Purchase Cost</p>
-        <p className="mt-1 text-2xl font-bold text-red-700">{formatPrice(summary.totalPurchaseCostPaise)}</p>
+        <p className="mt-1 text-2xl font-bold text-destructive-text">{formatPrice(summary.totalPurchaseCostPaise)}</p>
       </div>
       <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
         <p className="text-sm text-muted">Total Sales Revenue</p>
-        <p className="mt-1 text-2xl font-bold text-emerald-700">{formatPrice(summary.totalSalesRevenuePaise)}</p>
+        <p className="mt-1 text-2xl font-bold text-success-text">{formatPrice(summary.totalSalesRevenuePaise)}</p>
       </div>
       <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
         <p className="text-sm text-muted">Total Profit / Loss</p>
         <p
-          className={`mt-1 text-2xl font-bold ${profitPositive ? "text-emerald-700" : "text-red-700"}`}
+          className={`mt-1 text-2xl font-bold ${profitPositive ? "text-success-text" : "text-destructive-text"}`}
         >
           {formatPrice(summary.totalProfitLossPaise)}
         </p>
@@ -46,11 +46,11 @@ export function BookstoreFinanceSummaryCards({ summary }: { summary: BookstoreFi
       </div>
       <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
         <p className="text-sm text-muted">Approved Orders Value</p>
-        <p className="mt-1 text-xl font-bold text-emerald-600">{formatPrice(summary.approvedOrdersValuePaise)}</p>
+        <p className="mt-1 text-xl font-bold text-success-text">{formatPrice(summary.approvedOrdersValuePaise)}</p>
       </div>
       <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
         <p className="text-sm text-muted">Completed Orders Value</p>
-        <p className="mt-1 text-xl font-bold text-blue-600">{formatPrice(summary.completedOrdersValuePaise)}</p>
+        <p className="mt-1 text-xl font-bold text-info-text">{formatPrice(summary.completedOrdersValuePaise)}</p>
       </div>
     </div>
   );

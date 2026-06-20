@@ -125,7 +125,7 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
       {/* Title */}
       <div>
         <label htmlFor="book-title" className={labelClassName}>
-          Title <span className="text-red-600">*</span>
+          Title <span className="text-destructive-text">*</span>
         </label>
         <input
           id="book-title"
@@ -144,7 +144,7 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
       {/* Author */}
       <div>
         <label htmlFor="book-author" className={labelClassName}>
-          Author <span className="text-red-600">*</span>
+          Author <span className="text-destructive-text">*</span>
         </label>
         <input
           id="book-author"
@@ -163,7 +163,7 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
       {/* Description */}
       <div>
         <label htmlFor="book-description" className={labelClassName}>
-          Description <span className="text-red-600">*</span>
+          Description <span className="text-destructive-text">*</span>
         </label>
         <textarea
           id="book-description"
@@ -183,7 +183,7 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="book-price" className={labelClassName}>
-            Selling Price (₹) <span className="text-red-600">*</span>
+            Selling Price (₹) <span className="text-destructive-text">*</span>
           </label>
           <input
             id="book-price"
@@ -204,7 +204,7 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
 
         <div>
           <label htmlFor="book-purchase-price" className={labelClassName}>
-            Purchase Price (₹) <span className="text-red-600">*</span>
+            Purchase Price (₹) <span className="text-destructive-text">*</span>
           </label>
           <input
             id="book-purchase-price"
@@ -225,7 +225,7 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
         
         <div>
           <label htmlFor="book-inventory" className={labelClassName}>
-            Total Inventory Procured <span className="text-red-600">*</span>
+            Total Inventory Procured <span className="text-destructive-text">*</span>
           </label>
           <input
             id="book-inventory"
@@ -246,7 +246,7 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
 
         <div>
           <label htmlFor="book-status" className={labelClassName}>
-            Availability status <span className="text-red-600">*</span>
+            Availability status <span className="text-destructive-text">*</span>
           </label>
           <select
             id="book-status"

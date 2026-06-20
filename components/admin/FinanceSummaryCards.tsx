@@ -13,16 +13,16 @@ export function FinanceSummaryCards({ incomeTotal, expenseTotal }: FinanceSummar
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
         <p className="text-sm text-muted">Total income</p>
-        <p className="mt-1 text-2xl font-bold text-emerald-700">{formatPrice(incomeTotal)}</p>
+        <p className="mt-1 text-2xl font-bold text-success-text">{formatPrice(incomeTotal)}</p>
       </div>
       <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
         <p className="text-sm text-muted">Total expenses</p>
-        <p className="mt-1 text-2xl font-bold text-red-700">{formatPrice(expenseTotal)}</p>
+        <p className="mt-1 text-2xl font-bold text-destructive-text">{formatPrice(expenseTotal)}</p>
       </div>
       <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
         <p className="text-sm text-muted">Net balance</p>
         <p
-          className={`mt-1 text-2xl font-bold ${netPositive ? "text-emerald-700" : "text-red-700"}`}
+          className={`mt-1 text-2xl font-bold ${netPositive ? "text-success-text" : "text-destructive-text"}`}
         >
           {formatPrice(netBalance)}
         </p>

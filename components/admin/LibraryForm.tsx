@@ -220,7 +220,7 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
       </div>
       <div>
         <label htmlFor="pdfUrl" className={labelClassName}>
-          PDF URL <span className="text-red-600">*</span>
+          PDF URL <span className="text-destructive-text">*</span>
         </label>
         <input
           id="pdfUrl"

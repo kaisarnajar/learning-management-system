@@ -11,7 +11,7 @@ export function FinanceFilteredSummary({
   totalPaise,
   variant,
 }: FinanceFilteredSummaryProps) {
-  const amountClass = variant === "income" ? "text-emerald-700" : "text-red-700";
+  const amountClass = variant === "income" ? "text-success-text" : "text-destructive-text";
 
   return (
     <div className="rounded-lg border border-border bg-surface p-4 shadow-sm">

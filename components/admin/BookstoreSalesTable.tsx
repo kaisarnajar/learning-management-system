@@ -54,7 +54,7 @@ export function BookstoreSalesTable({ records }: BookstoreSalesTableProps) {
               <td className="px-4 py-3 text-right font-medium text-foreground">
                 {formatPrice(record.revenuePaise)}
               </td>
-              <td className={`px-4 py-3 text-right font-medium ${profitPositive ? "text-emerald-700" : "text-red-700"}`}>
+              <td className={`px-4 py-3 text-right font-medium ${profitPositive ? "text-success-text" : "text-destructive-text"}`}>
                 {formatPrice(record.profitPaise)}
               </td>
             </tr>

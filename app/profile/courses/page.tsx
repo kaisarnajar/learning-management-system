@@ -49,7 +49,7 @@ export default async function ProfileCoursesPage({
       </p>
 
       {params.declined === "1" && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-red-900">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
           Your previous payment was declined. Use the payment link below to submit again.
         </p>
       )}
@@ -91,7 +91,7 @@ export default async function ProfileCoursesPage({
                         ? "/profile/payments"
                         : `/profile/courses/${course.id}/enrollment-pay`
                     }
-                    className="mt-4 flex min-h-11 items-center justify-center rounded-full border border-amber-300 bg-warning-bg px-4 py-3 text-sm font-semibold text-warning-text hover:bg-warning-bg"
+                    className="mt-4 flex min-h-11 items-center justify-center rounded-full border border-warning-text/30 bg-warning-bg px-4 py-3 text-sm font-semibold text-warning-text hover:bg-warning-bg"
                   >
                     {hasPendingEnrollmentPayment ? "Awaiting payment verification" : "Pay enrollment fee"}
                   </Link>

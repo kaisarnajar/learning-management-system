@@ -51,7 +51,7 @@ const FORM_FIELDS: FormField[] = [
 
 const initialState: ProfileUpdateState = {};
 
-const errorTextClassName = "mt-1 text-sm text-red-700";
+const errorTextClassName = "mt-1 text-sm text-destructive-text";
 
 function FormSection({ title, description, children }: { title: string; description?: string; children: ReactNode }) {
   return (

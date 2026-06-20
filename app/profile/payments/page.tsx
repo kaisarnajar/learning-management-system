@@ -44,7 +44,7 @@ export default async function ProfilePaymentsPage({
         </p>
       )}
       {params.declined === "1" && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-red-900">
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
           Your previous payment was declined. You can submit again from My Courses.
         </p>
       )}

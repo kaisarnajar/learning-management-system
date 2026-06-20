@@ -81,7 +81,7 @@ export function enrollmentStatusClass(status: string) {
   if (status === "active") return "bg-info-bg text-info-text";
   if (status === PENDING_ENROLLMENT_APPROVAL) return "bg-warning-bg text-warning-text";
   if (status === AWAITING_ENROLLMENT_FEE) return "bg-warning-bg text-warning-text";
-  return "bg-surface-muted-hover text-stone-700";
+  return "bg-surface-muted-hover text-muted";
 }
 
 export async function getEnrollmentsForCoursePaginated(

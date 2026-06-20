@@ -22,7 +22,7 @@ export function DeleteStudentReviewButton({ id, onHomepage = false }: DeleteStud
         }
       }}
     >
-      <button type="submit" className="text-sm font-medium text-red-700 hover:underline">
+      <button type="submit" className="text-sm font-medium text-destructive-text hover:underline">
         Delete
       </button>
     </form>

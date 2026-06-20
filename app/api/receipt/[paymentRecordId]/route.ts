@@ -73,8 +73,8 @@ export async function GET(
     academy: {
       name: ACADEMY_INVOICE.name,
       address: `${ACADEMY_INVOICE.addressLine1}, ${ACADEMY_INVOICE.addressLine2}`,
-      phone: formatWhatsAppForDisplay(socialLinks.whatsappNumber) || ACADEMY_INVOICE.phone,
-      email: socialLinks.contactEmail || ACADEMY_INVOICE.email,
+      phone: formatWhatsAppForDisplay(socialLinks.whatsappNumber) || "",
+      email: socialLinks.contactEmail || "",
       website: ACADEMY_INVOICE.website,
       logoUrl: base64Logo, // Use injected Base64 to fix Puppeteer rendering
     },

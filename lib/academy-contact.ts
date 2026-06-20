@@ -3,9 +3,7 @@ export const ACADEMY_INVOICE = {
   name: "Darse Quran Academy",
   addressLine1: "Treran Tangmarg",
   addressLine2: "Baramulla J&K 193402",
-  phone: "+91 9622966911",
-  email: "darsequraann@gmail.com",
-  website: "www.daraequrann.blogspot.com",
+  website: "www.darsequranacademy.com",
 } as const;
 
 export const INVOICE_TERMS = [
@@ -15,5 +13,5 @@ export const INVOICE_TERMS = [
 
 export const AUTHORITY_SIGNATURE = {
   name: "Authorized Signatory",
-  designation: "Finance Department",
+  designation: "Academy Administrator",
 } as const;

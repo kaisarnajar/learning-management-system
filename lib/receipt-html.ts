@@ -75,7 +75,6 @@ export function renderReceiptToHtml(data: ReceiptData): string {
         <thead>
           <tr class="bg-[#1a4d2e] text-white text-left">
             <th class="py-3 px-4 font-semibold">Description</th>
-            <th class="py-3 px-4 font-semibold">Academic Term</th>
             <th class="py-3 px-4 font-semibold text-right">Amount</th>
           </tr>
         </thead>
@@ -85,13 +84,12 @@ export function renderReceiptToHtml(data: ReceiptData): string {
               <span class="font-bold block">${payment.courseName}</span>
               <span class="text-sm text-slate-500">Course / Enrollment Fee</span>
             </td>
-            <td class="py-4 px-4 text-slate-700">${payment.academicTerm || 'N/A'}</td>
             <td class="py-4 px-4 text-right font-mono text-lg text-slate-800">
               ${currencySymbol} ${payment.amount.toFixed(2)}
             </td>
           </tr>
           <tr class="bg-slate-50 border-y-2 border-[#1a4d2e]">
-            <td colspan="2" class="py-4 px-4 text-right font-bold text-lg text-[#1a4d2e]">Total Amount Paid:</td>
+            <td class="py-4 px-4 text-right font-bold text-lg text-[#1a4d2e]">Total Amount Paid:</td>
             <td class="py-4 px-4 text-right font-bold font-mono text-xl text-[#1a4d2e]">
               ${currencySymbol} ${payment.amount.toFixed(2)}
             </td>

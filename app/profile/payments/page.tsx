@@ -1,4 +1,4 @@
-import { DownloadReceiptButton } from "@/components/payment/DownloadReceiptButton";
+import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
 import { Pagination } from "@/components/shared/Pagination";
 import { formatPrice, getAllCourses } from "@/lib/courses";
 import { requireUser } from "@/lib/auth-actions";
@@ -129,7 +129,11 @@ export default async function ProfilePaymentsPage({
                     </td>
                     <td className="px-4 py-3 text-muted">{payment.description ?? "—"}</td>
                     <td className="px-4 py-3">
-                      <DownloadReceiptButton paymentRecordId={payment.id} />
+                      <ReceiptActionButtons 
+                        paymentRecordId={payment.id} 
+                        receiptGeneratedAt={payment.receiptGeneratedAt}
+                        isAdmin={false}
+                      />
                     </td>
                   </tr>
                 ))}

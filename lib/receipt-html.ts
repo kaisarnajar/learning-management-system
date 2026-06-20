@@ -85,9 +85,19 @@ export function renderReceiptToHtml(data: ReceiptData): string {
               <span class="text-sm text-slate-500">Course / Enrollment Fee</span>
             </td>
             <td class="py-4 px-4 text-right font-mono text-lg text-slate-800">
-              ${currencySymbol} ${payment.amount.toFixed(2)}
+              ${currencySymbol} ${(payment.baseAmount ?? payment.amount).toFixed(2)}
             </td>
           </tr>
+          ${payment.gstAmount ? `
+          <tr class="border-b border-slate-200">
+            <td class="py-4 px-4 text-right text-sm text-slate-600">
+              GST (18% inclusive)
+            </td>
+            <td class="py-4 px-4 text-right font-mono text-lg text-slate-800">
+              ${currencySymbol} ${payment.gstAmount.toFixed(2)}
+            </td>
+          </tr>
+          ` : ""}
           <tr class="bg-slate-50 border-y-2 border-[#1a4d2e]">
             <td class="py-4 px-4 text-right font-bold text-lg text-[#1a4d2e]">Total Amount Paid:</td>
             <td class="py-4 px-4 text-right font-bold font-mono text-xl text-[#1a4d2e]">

@@ -6,7 +6,7 @@ import { getReturnToUrl } from "@/components/shared/ActionButton";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { confirmMonthlyPayment, declineMonthlyPayment, deleteApprovedPayment } from "@/app/admin/payments/actions";
-import { DownloadReceiptButton } from "@/components/payment/DownloadReceiptButton";
+import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
 import { formatPrice } from "@/lib/courses";
 import type { CoursePaymentSubmissionWithUser } from "@/lib/monthly-payments";
 import { MONTHLY_PAYMENT_APPROVED } from "@/lib/monthly-payment-status";
@@ -108,7 +108,12 @@ export function PaymentApprovalsTable({
                 {submission.status === MONTHLY_PAYMENT_APPROVED ? (
                   <>
                     {submission.paymentRecordId && (
-                      <DownloadReceiptButton paymentRecordId={submission.paymentRecordId} label="View Receipt" />
+                      <ReceiptActionButtons 
+                        paymentRecordId={submission.paymentRecordId}
+                        receiptGeneratedAt={submission.paymentRecord?.receiptGeneratedAt ?? null}
+                        isAdmin={true}
+                        label="View Receipt" 
+                      />
                     )}
                     <DeleteActionButton action={deleteApprovedPayment.bind(null, submission.id, returnTo)} itemName="payment" />
                   </>

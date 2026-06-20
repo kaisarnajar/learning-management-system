@@ -20,6 +20,8 @@ export interface PaymentInfo {
   courseName: string;
   academicTerm?: string;
   amount: number;
+  baseAmount?: number;
+  gstAmount?: number;
   currency?: string;
 }
 

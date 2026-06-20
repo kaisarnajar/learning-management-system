@@ -49,6 +49,9 @@ export type CoursePaymentSubmissionWithUser = {
     name: string | null;
     email: string;
   };
+  paymentRecord?: {
+    receiptGeneratedAt: Date | null;
+  } | null;
 };
 
 export async function getPendingMonthlyPaymentsPaginated(
@@ -197,6 +200,7 @@ export async function getApprovedMonthlyPaymentsPaginated(
       orderBy: { updatedAt: "desc" },
       include: {
         user: { select: { id: true, name: true, email: true } },
+        paymentRecord: { select: { receiptGeneratedAt: true } },
       },
       ...paginationArgs(safePage, pageSize),
     }), "Database operation failed");
@@ -218,6 +222,7 @@ export async function getApprovedEnrollmentFeePaymentsPaginated(
       orderBy: { updatedAt: "desc" },
       include: {
         user: { select: { id: true, name: true, email: true } },
+        paymentRecord: { select: { receiptGeneratedAt: true } },
       },
       ...paginationArgs(safePage, pageSize),
     }), "Database operation failed");

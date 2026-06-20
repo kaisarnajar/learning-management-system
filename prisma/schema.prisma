@@ -398,6 +398,10 @@ model PaymentRecord {
   invoiceNumber        String?  @unique
   description          String?
   receiptEmailSentAt   DateTime?
+  receiptGeneratedAt   DateTime?
+  receiptIncludesGst   Boolean?
+  receiptFeeAmountPaise Int?
+  receiptGstAmountPaise Int?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
   user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)

@@ -45,13 +45,8 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  let invoiceNumber = record.invoiceNumber;
-  if (!invoiceNumber) {
-    invoiceNumber = `DQA-INV-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-    await withDbErrorHandling(() => prisma.paymentRecord.update({
-      where: { id: paymentRecordId },
-      data: { invoiceNumber },
-    }), "Failed to save invoice number");
+  if (!record.receiptGeneratedAt || !record.invoiceNumber) {
+    return NextResponse.json({ error: "Receipt has not been generated yet." }, { status: 400 });
   }
 
   const course = record.courseId ? await getCourseById(record.courseId) : null;
@@ -98,8 +93,8 @@ export async function GET(
       phone: record.user.whatsapp ? formatWhatsAppForDisplay(record.user.whatsapp) : "N/A",
     },
     payment: {
-      receiptId: invoiceNumber,
-      date: record.paidAt.toLocaleDateString("en-IN", {
+      receiptId: record.invoiceNumber,
+      date: record.receiptGeneratedAt.toLocaleDateString("en-IN", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -107,6 +102,8 @@ export async function GET(
       method: record.submission?.paymentMethod || record.paymentType || "MANUAL",
       courseName: courseTitle,
       amount: record.amountInrPaise / 100,
+      baseAmount: record.receiptFeeAmountPaise ? record.receiptFeeAmountPaise / 100 : undefined,
+      gstAmount: record.receiptGstAmountPaise ? record.receiptGstAmountPaise / 100 : undefined,
       currency: "₹",
     },
     authority: {

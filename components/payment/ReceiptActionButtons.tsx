@@ -100,8 +100,7 @@ export function ReceiptActionButtons({
           
           <ActionButton
             action={() => handleGenerate(false)}
-            variant="primary"
-            className="bg-surface border border-primary text-primary hover:bg-primary/5"
+            variant="secondary"
           >
             No, without GST
           </ActionButton>

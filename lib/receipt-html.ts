@@ -9,11 +9,11 @@ export function renderReceiptToHtml(data: ReceiptData): string {
     .join('');
 
   const stampHtml = authority.stampUrl
-    ? `<img src="${authority.stampUrl}" alt="Official Stamp" class="h-16 mb-[-20px] opacity-50 absolute mix-blend-multiply" />`
+    ? `<img src="${authority.stampUrl}" alt="Official Stamp" class="h-16 mb-[-20px] opacity-50 absolute process-white-bg" />`
     : '';
 
   const signatureHtml = authority.signatureUrl
-    ? `<img src="${authority.signatureUrl}" alt="Authorized Signature" class="h-16 object-contain mb-2 relative z-10" />`
+    ? `<img src="${authority.signatureUrl}" alt="Authorized Signature" class="h-16 object-contain mb-2 relative z-10 process-white-bg" />`
     : `<div class="h-16 mb-2"></div>`;
 
   return `
@@ -21,7 +21,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
       <!-- Header Section -->
       <header class="flex justify-between items-center border-b-4 border-[#1a4d2e] pb-6 mb-8">
         <div class="relative w-32 h-32">
-          <img src="${academy.logoUrl}" alt="${academy.name} Logo" class="object-contain w-full h-full" />
+          <img src="${academy.logoUrl}" alt="${academy.name} Logo" class="object-contain w-full h-full process-white-bg" />
         </div>
         <div class="text-right">
           <h1 class="text-3xl font-serif font-bold text-[#1a4d2e] mb-2">${academy.name}</h1>
@@ -115,5 +115,48 @@ export function renderReceiptToHtml(data: ReceiptData): string {
         </div>
       </div>
     </div>
+    <script>
+      window.addEventListener('load', () => {
+        const imgs = document.querySelectorAll('.process-white-bg');
+        
+        imgs.forEach((img) => {
+          if (!img.src || img.src.length < 100) return;
+
+          const processImage = () => {
+            try {
+              const canvas = document.createElement('canvas');
+              canvas.width = img.naturalWidth || img.width || 400;
+              canvas.height = img.naturalHeight || img.height || 200;
+              const ctx = canvas.getContext('2d');
+              
+              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+              const data = imageData.data;
+              
+              for (let i = 0; i < data.length; i += 4) {
+                const r = data[i];
+                const g = data[i+1];
+                const b = data[i+2];
+                // Remove white/light pixels
+                if (r > 200 && g > 200 && b > 200) {
+                  data[i+3] = 0; // Transparent
+                }
+              }
+              
+              ctx.putImageData(imageData, 0, 0);
+              img.src = canvas.toDataURL('image/png');
+            } catch (e) {
+              console.error("Canvas processing failed", e);
+            }
+          };
+
+          if (img.complete) {
+            processImage();
+          } else {
+            img.onload = processImage;
+          }
+        });
+      });
+    </script>
   `;
 }

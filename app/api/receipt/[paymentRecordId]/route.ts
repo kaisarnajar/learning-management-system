@@ -7,7 +7,8 @@ import { getReceiptFilename, formatInvoiceNumber } from "@/lib/payment-receipt";
 import { prisma } from "@/lib/prisma";
 import { withDbErrorHandling } from "@/lib/db-error";
 import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-links";
-import { ACADEMY_INVOICE, INVOICE_TERMS, AUTHORITY_SIGNATURE } from "@/lib/academy-contact";
+import { INVOICE_TERMS, AUTHORITY_SIGNATURE } from "@/lib/academy-contact";
+import { getAcademySettings } from "@/lib/academy-settings";
 import { renderReceiptToHtml } from "@/lib/receipt-html";
 import { ReceiptData } from "@/types/receipt";
 import fs from "fs/promises";
@@ -48,7 +49,10 @@ export async function GET(
   const filename = getReceiptFilename(courseTitle, paymentRecordId);
   
   // 1. Fetch Dynamic Configuration
-  const socialLinks = await getSocialLinksSettings();
+  const [socialLinks, academySettings] = await Promise.all([
+    getSocialLinksSettings(),
+    getAcademySettings(),
+  ]);
   
   // 2. Read Images and convert to Base64 to guarantee rendering inside Puppeteer
   let base64Logo = "";
@@ -71,11 +75,11 @@ export async function GET(
   // 3. Assemble Data Layer (No Mock Data)
   const data: ReceiptData = {
     academy: {
-      name: ACADEMY_INVOICE.name,
-      address: `${ACADEMY_INVOICE.addressLine1}, ${ACADEMY_INVOICE.addressLine2}`,
+      name: academySettings.academyName,
+      address: academySettings.academyAddress,
       phone: formatWhatsAppForDisplay(socialLinks.whatsappNumber) || "",
       email: socialLinks.contactEmail || "",
-      website: ACADEMY_INVOICE.website,
+      website: academySettings.academyWebsite,
       logoUrl: base64Logo, // Use injected Base64 to fix Puppeteer rendering
     },
     student: {

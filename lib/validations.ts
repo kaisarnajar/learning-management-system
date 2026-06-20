@@ -123,6 +123,12 @@ export const socialLinksSettingsSchema = z.object({
   youtubeUrl: optionalHttpUrl,
 });
 
+export const academySettingsSchema = z.object({
+  academyName: z.string().trim().min(2, "Academy name is required."),
+  academyAddress: z.string().trim().min(5, "Academy address is required."),
+  academyWebsite: z.string().trim().min(4, "Website is required."),
+});
+
 export const paymentSettingsSchema = z.object({
   upiId: z
     .string()

@@ -438,6 +438,15 @@ model SocialLinksSettings {
   updatedAt              DateTime @updatedAt
 }
 
+/** Core academy info (single row, id = "default"). Editable in admin. */
+model AcademySettings {
+  id             String   @id @default("default")
+  academyName    String   @default("Darse Quran Academy")
+  academyAddress String   @default("Treran Tangmarg, Baramulla J&K 193402")
+  academyWebsite String   @default("www.darsequranacademy.com")
+  updatedAt      DateTime @updatedAt
+}
+
 /** Academy UPI and bank details (single row, id = "default"). Editable in admin. */
 model PaymentSettings {
   id                String   @id @default("default")

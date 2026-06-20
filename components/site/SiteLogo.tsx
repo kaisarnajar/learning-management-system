@@ -10,8 +10,6 @@ type SiteLogoProps = {
   className?: string;
   imageClassName?: string;
   priority?: boolean;
-  /** Use on white/light surfaces — teal badge + blend for contrast */
-  onLight?: boolean;
 };
 
 export function SiteLogo({
@@ -19,7 +17,6 @@ export function SiteLogo({
   className = "",
   imageClassName = "",
   priority = false,
-  onLight = true,
 }: SiteLogoProps) {
   const image = (
     <Image
@@ -29,7 +26,6 @@ export function SiteLogo({
       height={LOGO_HEIGHT}
       className={[
         "h-10 w-auto sm:h-11",
-        onLight ? "mix-blend-lighten" : "",
         imageClassName,
         className,
       ]
@@ -40,25 +36,14 @@ export function SiteLogo({
     />
   );
 
-  const wrapped = onLight ? (
-    <span
-      className="inline-flex items-center rounded-lg bg-gradient-to-br from-teal to-teal-dark px-2.5 py-1.5 shadow-md ring-1 ring-teal-dark/40"
-      aria-hidden
-    >
-      {image}
-    </span>
-  ) : (
-    image
-  );
-
-  if (!href) return wrapped;
+  if (!href) return image;
 
   return (
     <Link
       href={href}
       className="inline-flex shrink-0 items-center rounded-lg transition-opacity hover:opacity-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
     >
-      {wrapped}
+      {image}
     </Link>
   );
 }

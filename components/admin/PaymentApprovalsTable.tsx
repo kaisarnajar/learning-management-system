@@ -57,20 +57,31 @@ export function PaymentApprovalsTable({
             </td>
             <td className="px-4 py-3">
               {submission.paymentScreenshotPath ? (
-                <a
-                  href={submission.paymentScreenshotPath}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  <Image
-                    src={submission.paymentScreenshotPath}
-                    alt="Payment screenshot"
-                    width={64}
-                    height={64}
-                    className="h-14 w-14 rounded border border-border object-cover"
-                    unoptimized
-                  />
-                </a>
+                <div className="flex flex-col gap-1.5">
+                  {submission.paymentScreenshotPath.toLowerCase().endsWith(".pdf") ? (
+                    <div className="flex h-14 w-14 items-center justify-center rounded border border-border bg-accent-muted text-muted">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                      </svg>
+                    </div>
+                  ) : (
+                    <a
+                      href={submission.paymentScreenshotPath}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block overflow-hidden"
+                    >
+                      <Image
+                        src={submission.paymentScreenshotPath}
+                        alt="Payment screenshot"
+                        width={64}
+                        height={64}
+                        className="h-14 w-14 rounded border border-border object-cover transition-opacity hover:opacity-80"
+                        unoptimized
+                      />
+                    </a>
+                  )}
+                </div>
               ) : (
                 <span className="text-muted">—</span>
               )}
@@ -90,6 +101,19 @@ export function PaymentApprovalsTable({
                     <span className="inline-flex items-center rounded-full bg-success-bg px-2.5 py-0.5 text-xs font-semibold text-success-text">
                       Approved
                     </span>
+                    {submission.paymentScreenshotPath && (
+                      <a
+                        href={submission.paymentScreenshotPath}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center rounded-md border border-primary bg-transparent px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 ml-2"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="mr-1 h-3 w-3">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                        </svg>
+                        View Receipt
+                      </a>
+                    )}
                     <DeletePaymentButton submissionId={submission.id} />
                   </>
                 ) : (

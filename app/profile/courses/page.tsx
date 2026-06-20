@@ -4,7 +4,7 @@ import { DownloadCertificateButton } from "@/components/certificate/DownloadCert
 import { Pagination } from "@/components/shared/Pagination";
 import { requireUser } from "@/lib/auth-actions";
 import { hasUploadedCertificate } from "@/lib/certificate";
-import { getCourseById } from "@/lib/courses";
+
 import {
   AWAITING_ENROLLMENT_FEE,
   PENDING_ENROLLMENT_APPROVAL,
@@ -43,11 +43,23 @@ export default async function ProfileCoursesPage({
 
   return (
     <div>
-      <h2 className="font-serif text-lg font-semibold text-foreground">My Courses</h2>
-      <p className="mt-1 text-sm text-muted">
-        {session.user.name ? `Welcome, ${session.user.name}. ` : ""}
-        Enrolled programs and monthly fee payments appear below.
-      </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="font-serif text-lg font-semibold text-foreground">My Courses</h2>
+          <p className="mt-1 text-sm text-muted">
+            {session.user.name ? `Welcome, ${session.user.name}. ` : ""}
+            Enrolled programs and monthly fee payments appear below.
+          </p>
+        </div>
+        {totalCount > 0 && (
+          <Link
+            href="/courses"
+            className="inline-flex min-h-10 items-center justify-center rounded-full bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light transition-colors shrink-0 self-start"
+          >
+            View All Courses
+          </Link>
+        )}
+      </div>
 
       {params.declined === "1" && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">

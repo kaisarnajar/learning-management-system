@@ -57,7 +57,6 @@ export const authConfig = {
       }
 
       if (pathname.startsWith("/profile")) {
-        if (auth?.user?.role === "TEACHER") return false;
         return !!auth?.user;
       }
 

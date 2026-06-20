@@ -39,8 +39,5 @@ export async function requireUser() {
   if (!session?.user?.id) {
     redirect("/login?callbackUrl=/profile");
   }
-  if (session.user.role === "TEACHER") {
-    redirect("/teacher");
-  }
   return session;
 }

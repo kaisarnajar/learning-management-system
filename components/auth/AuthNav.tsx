@@ -38,11 +38,9 @@ export function AuthNav({ mobile = false }: { mobile?: boolean }) {
             {mobile ? "Teacher portal" : "Teacher"}
           </TrackedLink>
         )}
-        {session.user.role !== "TEACHER" && (
-          <TrackedLink href="/profile" eventName="Profile" pageName="/" className={linkClass}>
+        <TrackedLink href="/profile" eventName="Profile" pageName="/" className={linkClass}>
           {mobile ? "My Profile" : "Profile"}
         </TrackedLink>
-        )}
         <SignOutButton className={`${linkClass} ${mobile ? "w-full text-left" : ""}`}>
           Sign Out
         </SignOutButton>

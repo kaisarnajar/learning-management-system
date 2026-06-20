@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 
-import { ViewCertificateButton } from "@/components/admin/ViewCertificateButton";
+import { CertificateActionButtons } from "@/components/certificate/CertificateActionButtons";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
@@ -95,7 +95,12 @@ export default async function CourseStudentsPage({
                   <td className="whitespace-nowrap px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
                       {isCompletedCourse && (
-                          <ViewCertificateButton enrollmentId={enrollment.id} />
+                          <CertificateActionButtons 
+                            enrollmentId={enrollment.id}
+                            certificateGeneratedAt={enrollment.certificateGeneratedAt}
+                            isAdmin={true}
+                            courseTitle={course.title}
+                          />
                         )}
                       <ConfirmationModal 
                         title="Remove Enrollment" 

@@ -48,13 +48,8 @@ export async function GET(
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  let certificateNumber = enrollment.certificateNumber;
-  if (!certificateNumber) {
-    certificateNumber = `DQA-CERT-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-    await withDbErrorHandling(() => prisma.enrollment.update({
-      where: { id: enrollmentId },
-      data: { certificateNumber },
-    }), "Failed to save certificate number");
+  if (!enrollment.certificateGeneratedAt || !enrollment.certificateNumber) {
+    return NextResponse.json({ error: "Certificate has not been generated yet." }, { status: 400 });
   }
 
   const filename = getCertificateFilename(course.title, enrollmentId);
@@ -106,7 +101,9 @@ export async function GET(
     academyName: academySettings.academyName,
     academyEmail: socialLinks.contactEmail || "",
     academyPhone: formatWhatsAppForDisplay(socialLinks.whatsappNumber) || "",
-    certificateNumber,
+    certificateNumber: enrollment.certificateNumber,
+    certificateType: enrollment.certificateType || undefined,
+    certificateGrade: enrollment.certificateGrade,
   };
 
   // 4. Generate HTML String

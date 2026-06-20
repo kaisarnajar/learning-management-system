@@ -9,7 +9,13 @@ export function renderCertificateToHtml(data: {
   academyEmail: string;
   academyPhone: string;
   certificateNumber: string;
+  certificateType?: string; // "APPRECIATION" or "COMPLETION"
+  certificateGrade?: number | null; // 0-10
 }) {
+  const isCompletion = data.certificateType === "COMPLETION";
+  const title = isCompletion ? "Certificate of Completion" : "Certificate of Appreciation";
+  const gradeText = (isCompletion && data.certificateGrade != null) ? `, and has obtained ${data.certificateGrade}/10` : "";
+
   return `
 <div
   class="w-[1123px] h-[794px] relative overflow-hidden bg-[#fdfaf3]"
@@ -56,7 +62,7 @@ export function renderCertificateToHtml(data: {
       class="text-[52px] font-serif mt-5 text-[#b8860b]"
       style="letter-spacing:2px"
     >
-      Certificate of Appreciation
+      ${title}
     </h2>
   </div>
 
@@ -87,7 +93,7 @@ export function renderCertificateToHtml(data: {
     <p class="text-[22px] text-gray-700 leading-snug mt-5">
       The student has shown admirable effort, discipline,
       and enthusiasm in the study of
-      <strong>${data.courseName}</strong>
+      <strong>${data.courseName}</strong>${gradeText},
       reflecting excellent character and devotion
       to Islamic learning.
     </p>

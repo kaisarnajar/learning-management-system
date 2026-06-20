@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
-import { DownloadCertificateButton } from "@/components/certificate/DownloadCertificateButton";
+import { CertificateActionButtons } from "@/components/certificate/CertificateActionButtons";
 import { Pagination } from "@/components/shared/Pagination";
 import { requireUser } from "@/lib/auth-actions";
 import { canDownloadCertificate } from "@/lib/certificate";
@@ -131,7 +131,12 @@ export default async function ProfileCoursesPage({
                 </Link>
 
                 {canDownloadCertificate(course.status, enrollment.status) && (
-                  <DownloadCertificateButton enrollmentId={enrollment.id} courseTitle={course.title} />
+                  <CertificateActionButtons 
+                    enrollmentId={enrollment.id} 
+                    certificateGeneratedAt={enrollment.certificateGeneratedAt}
+                    isAdmin={false}
+                    courseTitle={course.title} 
+                  />
                 )}
 
                 {enrollment.completedAt && (

@@ -336,6 +336,9 @@ model Enrollment {
   courseId         String
   status           String   @default("pending_approval")
   certificateNumber String? @unique
+  certificateGeneratedAt DateTime?
+  certificateType        String?
+  certificateGrade       Int?
   completedAt               DateTime?
   certificateEmailSentAt    DateTime?
   createdAt               DateTime  @default(now())

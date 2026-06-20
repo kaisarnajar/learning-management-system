@@ -50,7 +50,7 @@ function HeaderContent({ pathname }: { pathname: string }) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface shadow-sm">
-      <div className="mx-auto flex max-w-[1310px] items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex max-w-[1440px] items-center gap-3 px-4 py-3 sm:gap-4 sm:px-6 lg:px-8">
         <div className="relative z-10 shrink-0 bg-surface pr-1">
           <SiteLogo priority />
         </div>

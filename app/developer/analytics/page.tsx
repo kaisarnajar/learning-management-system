@@ -110,7 +110,7 @@ export default async function DeveloperAnalyticsPage({
             </thead>
             <tbody className="divide-y divide-border">
               {activeTab === "pages" &&
-                (activeData.items as any[]).map((item) => (
+                pagesData?.items.map((item) => (
                   <tr key={item.page}>
                     <td className="px-4 py-3 font-medium text-foreground">{item.page}</td>
                     <td className="px-4 py-3 text-muted">{item.views}</td>
@@ -120,7 +120,7 @@ export default async function DeveloperAnalyticsPage({
                   </tr>
                 ))}
               {activeTab === "buttons" &&
-                (activeData.items as any[]).map((item) => (
+                buttonsData?.items.map((item) => (
                   <tr key={`${item.eventName}-${item.page}`}>
                     <td className="px-4 py-3 font-medium text-foreground">{item.eventName}</td>
                     <td className="px-4 py-3 text-muted">{item.page}</td>

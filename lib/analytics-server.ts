@@ -69,7 +69,7 @@ export async function getPageAnalytics(page = 1, pageSize = 20, query = "") {
   });
 
   return {
-    items: pages.map((p: any) => ({
+    items: pages.map((p) => ({
       page: p.page,
       views: p._count.page,
       lastViewed: p._max.createdAt,
@@ -104,7 +104,7 @@ export async function getButtonAnalytics(page = 1, pageSize = 20, query = "") {
   });
 
   return {
-    items: buttons.map((b: any) => ({
+    items: buttons.map((b) => ({
       eventName: b.eventName!,
       page: b.page,
       clicks: b._count.eventName,

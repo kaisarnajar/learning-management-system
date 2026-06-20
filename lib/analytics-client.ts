@@ -10,6 +10,7 @@ export function trackEvent(type: AnalyticsEventType | "PAGE_VIEW" | "BUTTON_CLIC
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ type, page, eventName: eventName || "" }),
+      keepalive: true,
     }).catch((e) => console.error("Analytics fetch error:", e));
   } catch (error) {
     console.error("Failed to track event:", error);

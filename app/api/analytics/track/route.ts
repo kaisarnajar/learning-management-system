@@ -19,6 +19,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
+    const validTypes = ["PAGE_VIEW", "BUTTON_CLICK", "CUSTOM"];
+    if (!validTypes.includes(type)) {
+      return NextResponse.json({ error: "Invalid event type" }, { status: 400 });
+    }
+
     await prisma.analyticsEvent.create({
       data: {
         type,

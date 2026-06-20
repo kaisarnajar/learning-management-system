@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { DeleteForm } from "@/components/admin/DeleteForm";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { getBookById } from "@/lib/bookstore";
 import { deleteBookFromProfile } from "@/app/admin/bookstore/actions";
 
@@ -109,7 +109,7 @@ export default async function AdminBookDetailPage({
         </dl>
       </div>
 
-      <DeleteForm action={deleteAction} label="Delete book" />
+      <DeleteActionButton action={deleteAction} itemName="book" />
     </div>
   );
 }

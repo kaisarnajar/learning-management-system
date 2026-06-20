@@ -2,7 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { updateTeacherBlogPost } from "@/app/teacher/(portal)/blogs/actions";
 import { BlogPostForm } from "@/components/admin/BlogPostForm";
-import { DeleteTeacherBlogPostButton } from "@/components/teacher/DeleteTeacherBlogPostButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteTeacherBlogPost } from "@/app/teacher/(portal)/blogs/actions";
 import { requireTeacher } from "@/lib/auth-actions";
 import { canTeacherEditBlogPost } from "@/lib/blog-approval";
 import { getBlogPostForTeacher } from "@/lib/blogs";
@@ -34,7 +35,7 @@ export default async function EditTeacherBlogPage({
       </Link>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <h1 className="font-serif text-2xl font-bold text-primary">Edit blog post</h1>
-        <DeleteTeacherBlogPostButton id={post.id} title={post.title} />
+        <DeleteActionButton action={deleteTeacherBlogPost.bind(null, post.id)} itemName={post.title} onSuccessRedirect="/teacher/blogs" className="text-sm font-medium text-destructive-text hover:underline" />
       </div>
 
       <div className="mt-8">

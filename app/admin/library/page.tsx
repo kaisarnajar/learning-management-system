@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
-import { DeleteLibraryButton } from "@/components/admin/DeleteLibraryButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteLibraryItem } from "@/app/admin/library/actions";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
@@ -118,7 +119,7 @@ export default async function AdminLibraryPage({
                       >
                         Edit
                       </Link>
-                      <DeleteLibraryButton id={item.id} label={item.title} />
+                      <DeleteActionButton action={deleteLibraryItem.bind(null, item.id)} itemName={item.title} className="text-sm font-medium text-destructive-text hover:underline" />
                     </div>
                   </td>
                 </tr>

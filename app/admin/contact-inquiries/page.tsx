@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { DeleteContactInquiryButton } from "@/components/admin/DeleteContactInquiryButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteContactInquiryById as deleteContactInquiry } from "@/app/admin/contact-inquiries/actions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { getAllContactInquiriesPaginated } from "@/lib/contact-inquiries";
@@ -156,10 +157,7 @@ export default async function AdminContactInquiriesPage({
                       >
                         {inquiry.reply ? "Edit" : "Reply"}
                       </Link>
-                      <DeleteContactInquiryButton
-                        id={inquiry.id}
-                        label={`${inquiry.name} (${inquiry.email})`}
-                      />
+                      <DeleteActionButton action={deleteContactInquiry.bind(null, inquiry.id)} itemName={`${inquiry.name} (${inquiry.email})`} className="text-sm font-medium text-destructive-text hover:underline" />
                     </div>
                   </td>
                 </tr>

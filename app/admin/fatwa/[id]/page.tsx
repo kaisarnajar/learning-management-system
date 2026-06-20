@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AnswerFatwaForm } from "@/components/admin/AnswerFatwaForm";
-import { DeleteForm } from "@/components/admin/DeleteForm";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { answerFatwaQuestion, deleteFatwaQuestionForm } from "@/app/admin/fatwa/actions";
 import { getFeaturedHomepageFatwaCount, getFatwaQuestionById } from "@/lib/fatwa";
 
@@ -76,7 +76,7 @@ export default async function AdminFatwaDetailPage({
         </p>
       )}
 
-      <DeleteForm action={deleteAction} label="Delete question" />
+      <DeleteActionButton action={deleteAction} itemName="question" />
     </div>
   );
 }

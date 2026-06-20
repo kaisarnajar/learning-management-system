@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DeleteForm } from "@/components/admin/DeleteForm";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { TeacherForm } from "@/components/admin/TeacherForm";
 import { deleteTeacher, updateTeacher } from "@/app/admin/teachers/actions";
 import { getTeacherById } from "@/lib/teachers";
@@ -44,7 +44,7 @@ export default async function EditTeacherPage({
         />
       </div>
 
-      <DeleteForm action={boundDelete} label="Delete teacher" />
+      <DeleteActionButton action={boundDelete} itemName="teacher" />
     </div>
   );
 }

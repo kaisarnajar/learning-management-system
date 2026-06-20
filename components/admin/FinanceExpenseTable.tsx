@@ -1,6 +1,7 @@
 import { expenseCategoryLabel } from "@/lib/expense-categories";
 import { formatPrice } from "@/lib/courses";
-import { DeleteExpenseButton } from "@/components/admin/DeleteExpenseButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteExpenseById } from "@/app/admin/finance/actions";
 
 type ExpenseRecord = {
   id: string;
@@ -55,7 +56,7 @@ export function FinanceExpenseTable({ expenses, returnQuery }: FinanceExpenseTab
             <td className="px-4 py-3 font-medium text-destructive-text">{formatPrice(expense.amountInrPaise)}</td>
             <td className="px-4 py-3 text-muted">{expense.description ?? "—"}</td>
             <td className="px-4 py-3">
-              <DeleteExpenseButton id={expense.id} returnQuery={returnQuery} />
+              <DeleteActionButton action={deleteExpenseById.bind(null, expense.id, returnQuery)} itemName="expense" className="text-sm font-medium text-destructive-text hover:underline" />
             </td>
           </tr>
         ))}

@@ -1,6 +1,8 @@
 import Link from "next/link";
-import { ApproveBlogPostButton } from "@/components/admin/ApproveBlogPostButton";
-import { RejectBlogPostButton } from "@/components/admin/RejectBlogPostButton";
+
+import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
+import { approveBlogPost, rejectBlogPost } from "@/app/admin/blog-approvals/actions";
+
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { getPendingBlogPostsForAdminPaginated } from "@/lib/blog-approval";
@@ -100,8 +102,8 @@ export default async function AdminBlogApprovalsPage({
                       >
                         Edit
                       </Link>
-                      <ApproveBlogPostButton postId={post.id} />
-                      <RejectBlogPostButton postId={post.id} />
+                      <ConfirmationModal title="Approve Blog Post" description="Approve this blog post and publish it on the public blog?" actionLabel="Approve" variant="primary" onConfirm={async () => { const result = await approveBlogPost(post.id); if (result?.error) window.alert(result.error); }} trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>} />
+                      <ConfirmationModal title="Reject Blog Post" description="Reject this blog post and mark it as declined?" actionLabel="Reject" variant="destructive" onConfirm={async () => { const result = await rejectBlogPost(post.id); if (result?.error) window.alert(result.error); }} trigger={<button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Reject</button>} />
                     </div>
                   </td>
                 </tr>

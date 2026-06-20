@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { DeleteBlogPostButton } from "@/components/admin/DeleteBlogPostButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteBlogPost } from "@/app/admin/blogs/actions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { blogApprovalStatusClass, blogApprovalStatusLabel } from "@/lib/blog-approval";
@@ -130,7 +131,7 @@ export default async function AdminBlogsPage({
                         >
                           Edit
                         </Link>
-                        <DeleteBlogPostButton id={post.id} title={post.title} />
+                        <DeleteActionButton action={deleteBlogPost.bind(null, post.id)} itemName={post.title} className="text-sm font-medium text-destructive-text hover:underline" />
                       </div>
                     </td>
                   </tr>

@@ -245,27 +245,6 @@ export async function updateStudentCourseAnnouncement(
   redirectWithSuccess(teacherStudentAnnouncementPath(courseId, enrollmentId), "saved");
 }
 
-export async function deleteStudentCourseAnnouncement(
-  courseId: string,
-  enrollmentId: string,
-  announcementId: string,
-) {
-  const { teacher } = await requireTeacherEnrollment(courseId, enrollmentId);
-
-  const existing = await withDbErrorHandling(() => prisma.courseAnnouncement.findFirst({
-      where: { id: announcementId, courseId, enrollmentId },
-    }), "Database operation failed");
-  if (!existing) {
-    redirectWithError(teacherStudentAnnouncementPath(courseId, enrollmentId), "notfound");
-  }
-  if (!canTeacherManageCourseAnnouncement(existing, teacher.id)) {
-    redirectWithError(teacherStudentAnnouncementPath(courseId, enrollmentId), "forbidden");
-  }
-
-  await deleteCourseAnnouncementRecord(existing);
-  revalidateStudentAnnouncementPaths(courseId, enrollmentId);
-  redirectWithSuccess(teacherStudentAnnouncementPath(courseId, enrollmentId), "deleted");
-}
 
 export async function createAdminCourseAnnouncement(courseId: string, formData: FormData) {
   const session = await requireAdmin();

@@ -1,7 +1,8 @@
 import type { AnnouncementCategory } from "@prisma/client";
 import Link from "next/link";
 import { AnnouncementCategoryBadge } from "@/components/announcements/AnnouncementCategoryBadge";
-import { DeleteAnnouncementButton } from "@/components/teacher/DeleteAnnouncementButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteCourseAnnouncement } from "@/lib/course-announcement-actions";
 import { formatAnnouncementDate } from "@/lib/announcements";
 
 type TeacherCourseAnnouncementCardProps = {
@@ -60,10 +61,9 @@ export function TeacherCourseAnnouncementCard({
             <Link href={editHref} className="text-sm font-medium text-primary hover:underline">
               Edit
             </Link>
-            <DeleteAnnouncementButton
-              courseId={courseId}
-              announcementId={announcementId}
-              enrollmentId={enrollmentId}
+            <DeleteActionButton
+              action={deleteCourseAnnouncement.bind(null, courseId, announcementId)}
+              itemName="announcement"
             />
           </div>
         )}

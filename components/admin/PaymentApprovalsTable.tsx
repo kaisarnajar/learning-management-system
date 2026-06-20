@@ -1,7 +1,11 @@
+"use client";
+
 import Image from "next/image";
-import { ConfirmMonthlyPaymentButton } from "@/components/admin/ConfirmMonthlyPaymentButton";
-import { DeclineMonthlyPaymentButton } from "@/components/admin/DeclineMonthlyPaymentButton";
-import { DeletePaymentButton } from "@/components/admin/DeletePaymentButton";
+import { usePathname, useSearchParams } from "next/navigation";
+import { getReturnToUrl } from "@/components/shared/ActionButton";
+import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { confirmMonthlyPayment, declineMonthlyPayment, deleteApprovedPayment } from "@/app/admin/payments/actions";
 import { DownloadReceiptButton } from "@/components/payment/DownloadReceiptButton";
 import { formatPrice } from "@/lib/courses";
 import type { CoursePaymentSubmissionWithUser } from "@/lib/monthly-payments";
@@ -18,6 +22,10 @@ export function PaymentApprovalsTable({
   courseTitleById,
   emptyMessage,
 }: PaymentApprovalsTableProps) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const returnTo = getReturnToUrl(pathname, searchParams);
+
   if (submissions.length === 0) {
     return (
       <p className="px-4 py-8 text-center text-sm text-muted">{emptyMessage}</p>
@@ -102,12 +110,40 @@ export function PaymentApprovalsTable({
                     {submission.paymentRecordId && (
                       <DownloadReceiptButton paymentRecordId={submission.paymentRecordId} label="View Receipt" />
                     )}
-                    <DeletePaymentButton submissionId={submission.id} />
+                    <DeleteActionButton action={deleteApprovedPayment.bind(null, submission.id, returnTo)} itemName="payment" />
                   </>
                 ) : (
                   <>
-                    <ConfirmMonthlyPaymentButton submissionId={submission.id} />
-                    <DeclineMonthlyPaymentButton submissionId={submission.id} />
+                    <ConfirmationModal
+                      title="Approve Payment"
+                      description="Approve this payment and record it on the student's account?"
+                      actionLabel="Approve"
+                      variant="primary"
+                      onConfirm={async () => {
+                         const result = await confirmMonthlyPayment(submission.id, returnTo);
+                         if (result?.error) { window.alert(result.error); }
+                      }}
+                      trigger={
+                        <button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">
+                          Approve
+                        </button>
+                      }
+                    />
+                    <ConfirmationModal
+                      title="Decline Payment"
+                      description="Decline this payment? The student will be notified."
+                      actionLabel="Decline"
+                      variant="destructive"
+                      onConfirm={async () => {
+                         const result = await declineMonthlyPayment(submission.id, returnTo);
+                         if (result?.error) { window.alert(result.error); }
+                      }}
+                      trigger={
+                        <button type="button" className="ml-2 rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">
+                          Decline
+                        </button>
+                      }
+                    />
                   </>
                 )}
               </div>

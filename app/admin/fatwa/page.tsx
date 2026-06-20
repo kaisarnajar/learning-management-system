@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { DeleteFatwaButton } from "@/components/admin/DeleteFatwaButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteFatwaQuestion as deleteFatwa } from "@/app/admin/fatwa/actions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { getAllFatwaQuestionsPaginated } from "@/lib/fatwa";
@@ -142,7 +143,7 @@ export default async function AdminFatwaPage({
                       <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
                         {q.answer ? "View" : "Answer"}
                       </Link>
-                      <DeleteFatwaButton id={q.id} title={q.title} />
+                      <DeleteActionButton action={deleteFatwa.bind(null, q.id)} itemName={q.title} className="text-sm font-medium text-destructive-text hover:underline" />
                     </div>
                   </td>
                 </tr>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DeleteForm } from "@/components/admin/DeleteForm";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { LibraryForm } from "@/components/admin/LibraryForm";
 import { deleteLibraryItem, updateLibraryItem } from "@/app/admin/library/actions";
 import { getFeaturedHomepageLibraryCount, getLibraryItemById } from "@/lib/library";
@@ -45,7 +45,7 @@ export default async function EditLibraryPage({
         <LibraryForm item={item} featuredCount={featuredCount} action={boundUpdate} submitLabel="Save changes" />
       </div>
 
-      <DeleteForm action={boundDelete} label="Delete item" />
+      <DeleteActionButton action={boundDelete} itemName="item" />
     </div>
   );
 }

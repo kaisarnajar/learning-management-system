@@ -3,7 +3,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { DeleteBookButton } from "@/components/admin/DeleteBookButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteBook } from "@/app/admin/bookstore/actions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { getAllBooksPaginated } from "@/lib/bookstore";
@@ -134,7 +135,7 @@ export default async function AdminBookstorePage({
                       >
                         Edit
                       </Link>
-                      <DeleteBookButton bookId={book.id} bookTitle={book.title} />
+                      <DeleteActionButton action={deleteBook.bind(null, book.id)} itemName={book.title} onSuccessRedirect="/admin/bookstore?deleted=1" />
                     </div>
                   </td>
                 </tr>

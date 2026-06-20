@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ApproveBlogPostButton } from "@/components/admin/ApproveBlogPostButton";
-import { RejectBlogPostButton } from "@/components/admin/RejectBlogPostButton";
+
+import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
+import { approveBlogPost, rejectBlogPost } from "@/app/admin/blog-approvals/actions";
+
 import { getBlogPostForAdmin } from "@/lib/blogs";
 import Image from "next/image";
 
@@ -32,8 +34,8 @@ export default async function AdminBlogApprovalDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <ApproveBlogPostButton postId={post.id} />
-          <RejectBlogPostButton postId={post.id} />
+          <ConfirmationModal title="Approve Blog Post" description="Approve this blog post and publish it on the public blog?" actionLabel="Approve" variant="primary" onConfirm={async () => { const result = await approveBlogPost(post.id, "/admin/blog-approvals"); if (result?.error) window.alert(result.error); }} trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>} />
+          <ConfirmationModal title="Reject Blog Post" description="Reject this blog post and mark it as declined?" actionLabel="Reject" variant="destructive" onConfirm={async () => { const result = await rejectBlogPost(post.id, "/admin/blog-approvals"); if (result?.error) window.alert(result.error); }} trigger={<button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Reject</button>} />
           <Link
             href={`/admin/blogs/${post.id}/edit`}
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-4 py-2 text-sm font-semibold text-foreground hover:bg-accent-muted/50"

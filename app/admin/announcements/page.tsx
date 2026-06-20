@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { DeleteSiteAnnouncementButton } from "@/components/admin/DeleteSiteAnnouncementButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteSiteAnnouncement } from "@/app/admin/announcements/actions";
 import { ToggleHomepageAnnouncementButton } from "@/components/admin/ToggleHomepageAnnouncementButton";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
@@ -142,7 +143,7 @@ export default async function AdminAnnouncementsPage({
                         >
                           Edit
                         </Link>
-                        <DeleteSiteAnnouncementButton id={item.id} title={item.title} />
+                        <DeleteActionButton action={deleteSiteAnnouncement.bind(null, item.id)} itemName={item.title} className="text-sm font-medium text-destructive-text hover:underline" />
                       </div>
                     </td>
                   </tr>

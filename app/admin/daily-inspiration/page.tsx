@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { DeleteDailyInspirationButton } from "@/components/admin/DeleteDailyInspirationButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteDailyInspiration } from "@/app/admin/daily-inspiration/actions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import {
@@ -125,7 +126,7 @@ export default async function AdminDailyInspirationPage({
                         >
                           Edit
                         </Link>
-                        <DeleteDailyInspirationButton id={item.id} kind={item.kind} />
+                        <DeleteActionButton action={deleteDailyInspiration.bind(null, item.id)} itemName={item.kind} className="text-sm font-medium text-destructive-text hover:underline" />
                       </div>
                     </td>
                   </tr>

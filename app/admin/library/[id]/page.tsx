@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DeleteForm } from "@/components/admin/DeleteForm";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { deleteLibraryItemFromProfile } from "@/app/admin/library/actions";
 import { getLibraryItemById } from "@/lib/library";
@@ -104,7 +104,7 @@ export default async function AdminLibraryDetailPage({
         </div>
       </dl>
 
-      <DeleteForm action={deleteAction} label="Delete item" />
+      <DeleteActionButton action={deleteAction} itemName="item" />
     </div>
   );
 }

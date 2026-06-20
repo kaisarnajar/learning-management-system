@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { AdminEnrollUserForm } from "@/components/admin/AdminEnrollUserForm";
-import { ApproveEnrollmentButton } from "@/components/admin/ApproveEnrollmentButton";
-import { RejectEnrollmentButton } from "@/components/admin/RejectEnrollmentButton";
+
+import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
+import { approveEnrollmentRequest as approveEnrollment, rejectEnrollmentRequest as rejectEnrollment, removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
+
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { isCourseEnrollmentOpen } from "@/lib/course-status";
@@ -62,16 +64,10 @@ function EnrollmentRequestsTable({
             <td className="px-4 py-3 text-right">
               <div className="flex flex-wrap justify-end gap-2">
                 {showApprove && (
-                  <ApproveEnrollmentButton
-                    enrollmentId={enrollment.id}
-                    courseId={enrollment.courseId}
-                  />
+                  <ConfirmationModal title="Approve Enrollment" description="Approve this student enrollment and notify them?" actionLabel="Approve" variant="primary" onConfirm={async () => { const result = await approveEnrollment(enrollment.id, enrollment.courseId); if (result?.error) window.alert(result.error); }} trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>} />
                 )}
                 {showReject && (
-                  <RejectEnrollmentButton
-                    enrollmentId={enrollment.id}
-                    courseId={enrollment.courseId}
-                  />
+                  <ConfirmationModal title="Reject Enrollment" description="Reject this student enrollment and notify them?" actionLabel="Reject" variant="destructive" onConfirm={async () => { const result = await rejectEnrollment(enrollment.id, enrollment.courseId); if (result?.error) window.alert(result.error); }} trigger={<button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Reject</button>} />
                 )}
                 <Link
                   href={`/admin/students/${enrollment.user.id}`}

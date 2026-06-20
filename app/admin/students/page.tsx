@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { DeleteStudentButton } from "@/components/admin/DeleteStudentButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteStudentUser as deleteStudent } from "@/app/admin/students/actions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
@@ -77,10 +78,7 @@ export default async function AdminStudentsPage({
                       >
                         View
                       </Link>
-                      <DeleteStudentButton
-                        id={student.id}
-                        label={`${student.name ?? student.email} (${student.email})`}
-                      />
+                      <DeleteActionButton action={deleteStudent.bind(null, student.id)} itemName={student.name ?? student.email} className="text-sm font-medium text-destructive-text hover:underline" />
                     </div>
                   </td>
                 </tr>

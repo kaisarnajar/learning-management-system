@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteContactInquiryForm } from "@/app/admin/contact-inquiries/actions";
-import { DeleteForm } from "@/components/admin/DeleteForm";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { getContactInquiryById } from "@/lib/contact-inquiries";
 
 function statusLabel(reply: string | null) {
@@ -109,7 +109,7 @@ export default async function AdminContactInquiryDetailPage({
         </div>
       </dl>
 
-      <DeleteForm action={deleteAction} label="Delete inquiry" />
+      <DeleteActionButton action={deleteAction} itemName="inquiry" />
     </div>
   );
 }

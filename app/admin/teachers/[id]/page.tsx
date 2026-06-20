@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DeleteForm } from "@/components/admin/DeleteForm";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { deleteTeacherFromProfile } from "@/app/admin/teachers/actions";
@@ -148,7 +148,7 @@ export default async function AdminTeacherDetailPage({
         </div>
       </section>
 
-      <DeleteForm action={deleteAction} label="Delete teacher" />
+      <DeleteActionButton action={deleteAction} itemName="teacher" />
     </div>
   );
 }

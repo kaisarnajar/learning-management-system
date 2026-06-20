@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ApproveStudentReviewButton } from "@/components/admin/ApproveStudentReviewButton";
-import { RejectStudentReviewButton } from "@/components/admin/RejectStudentReviewButton";
+
+import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
+import { approveStudentReview, rejectStudentReview } from "@/app/admin/review-approvals/actions";
+
 import { StarRating } from "@/components/reviews/StarRating";
 import { reviewStatusClass, reviewStatusLabel, getStudentReviewForAdmin } from "@/lib/student-reviews";
 
@@ -37,8 +39,8 @@ export default async function AdminReviewDetailPage({
           </Link>
           {isPending && (
             <>
-              <ApproveStudentReviewButton reviewId={review.id} />
-              <RejectStudentReviewButton reviewId={review.id} />
+              <ConfirmationModal title="Approve Review" description="Approve this review and display it on the public course page?" actionLabel="Approve" variant="primary" onConfirm={async () => { const result = await approveStudentReview(review.id, false, "/admin/review-approvals"); if (result?.error) window.alert(result.error); }} trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>} />
+              <ConfirmationModal title="Reject Review" description="Reject this review and mark it as declined?" actionLabel="Reject" variant="destructive" onConfirm={async () => { const result = await rejectStudentReview(review.id, "/admin/review-approvals"); if (result?.error) window.alert(result.error); }} trigger={<button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Reject</button>} />
             </>
           )}
         </div>

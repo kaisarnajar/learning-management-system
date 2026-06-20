@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { DeleteForm } from "@/components/admin/DeleteForm";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { RecordStudentPaymentForm } from "@/components/admin/RecordStudentPaymentForm";
-import { RemoveEnrollmentButton } from "@/components/admin/RemoveEnrollmentButton";
+import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
+import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
 import { Pagination } from "@/components/shared/Pagination";
 import { deleteStudentUserForm } from "@/app/admin/students/actions";
 import { formatPrice, getAllCourses } from "@/lib/courses";
@@ -193,11 +194,7 @@ export default async function AdminStudentDetailPage({
                       })}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <RemoveEnrollmentButton
-                        enrollmentId={enrollment.id}
-                        courseId={enrollment.courseId}
-                        studentLabel={student.name ?? student.email}
-                      />
+                      <ConfirmationModal title="Remove Enrollment" description={`Remove ${student.name ?? student.email} from this course? Their account will not be deleted; they can enroll again later.`} actionLabel="Remove" variant="destructive" onConfirm={async () => { const result = await removeEnrollmentFromCourse(enrollment.id, enrollment.courseId); if (result?.error) window.alert(result.error); }} trigger={<button type="button" className="text-sm font-medium text-destructive-text hover:underline">Remove</button>} />
                     </td>
                   </tr>
                 ))}
@@ -207,9 +204,9 @@ export default async function AdminStudentDetailPage({
         </div>
       </section>
 
-      <DeleteForm
+      <DeleteActionButton
         action={deleteAction}
-        label="Delete student account"
+        itemName="student account"
       />
     </div>
   );

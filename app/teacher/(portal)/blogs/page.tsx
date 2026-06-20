@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { DeleteTeacherBlogPostButton } from "@/components/teacher/DeleteTeacherBlogPostButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteTeacherBlogPost } from "@/app/teacher/(portal)/blogs/actions";
 import { Pagination } from "@/components/shared/Pagination";
 import { requireTeacher } from "@/lib/auth-actions";
 import {
@@ -126,11 +127,7 @@ export default async function TeacherBlogsPage({
                           </Link>
                         )}
                         {deletable && (
-                          <DeleteTeacherBlogPostButton
-                            id={post.id}
-                            title={post.title}
-                            isPublished={post.published && post.approvalStatus === "APPROVED"}
-                          />
+                          <DeleteActionButton action={deleteTeacherBlogPost.bind(null, post.id)} itemName={post.title} className="text-sm font-medium text-destructive-text hover:underline" />
                         )}
                       </div>
                     </td>

@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { RemoveEnrollmentButton } from "@/components/admin/RemoveEnrollmentButton";
+
 import { UploadCertificateButton } from "@/components/admin/UploadCertificateButton";
 import { ViewCertificateButton } from "@/components/admin/ViewCertificateButton";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
+import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { Pagination } from "@/components/shared/Pagination";
+import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
 import { getCourseById } from "@/lib/courses";
 import { getCourseRosterEnrollmentsPaginated } from "@/lib/enrollments";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
@@ -104,10 +106,13 @@ export default async function CourseStudentsPage({
                           />
                         </>
                       )}
-                      <RemoveEnrollmentButton
-                        enrollmentId={enrollment.id}
-                        courseId={id}
-                        studentLabel={enrollment.user.name ?? enrollment.user.email}
+                      <ConfirmationModal 
+                        title="Remove Enrollment" 
+                        description={`Remove ${enrollment.user.name ?? enrollment.user.email} from this course? Their account will not be deleted; they can enroll again later.`} 
+                        actionLabel="Remove" 
+                        variant="destructive" 
+                        onConfirm={async () => { "use server"; const result = await removeEnrollmentFromCourse(enrollment.id, id); if (result?.error) throw new Error(result.error); }} 
+                        trigger={<button type="button" className="text-sm font-medium text-destructive-text hover:underline">Remove</button>} 
                       />
                     </div>
                   </td>

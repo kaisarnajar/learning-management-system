@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteContactInquiryForm, replyToContactInquiry } from "@/app/admin/contact-inquiries/actions";
-import { DeleteForm } from "@/components/admin/DeleteForm";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { ReplyContactInquiryForm } from "@/components/admin/ReplyContactInquiryForm";
 import { getContactInquiryById } from "@/lib/contact-inquiries";
 
@@ -66,7 +66,7 @@ export default async function AdminContactInquiryReplyPage({
         <ReplyContactInquiryForm inquiry={inquiry} action={replyAction} />
       </div>
 
-      <DeleteForm action={deleteAction} label="Delete inquiry" />
+      <DeleteActionButton action={deleteAction} itemName="inquiry" />
     </div>
   );
 }

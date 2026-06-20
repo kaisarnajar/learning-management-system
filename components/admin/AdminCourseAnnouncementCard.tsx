@@ -1,7 +1,7 @@
 import type { AnnouncementCategory } from "@prisma/client";
 import Link from "next/link";
 import { AnnouncementCategoryBadge } from "@/components/announcements/AnnouncementCategoryBadge";
-import { DeleteAnnouncementButton } from "@/components/teacher/DeleteAnnouncementButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { formatAnnouncementDate } from "@/lib/announcements";
 
 type AdminCourseAnnouncementCardProps = {
@@ -48,10 +48,9 @@ export function AdminCourseAnnouncementCard({
           >
             Edit
           </Link>
-          <DeleteAnnouncementButton
-            courseId={courseId}
-            announcementId={announcementId}
-            deleteAction={deleteAction}
+          <DeleteActionButton
+            action={deleteAction.bind(null, courseId, announcementId)}
+            itemName="announcement"
           />
         </div>
       </div>

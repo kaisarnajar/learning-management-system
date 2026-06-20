@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { DeleteTeacherButton } from "@/components/admin/DeleteTeacherButton";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteTeacher } from "@/app/admin/teachers/actions";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
@@ -101,10 +102,7 @@ export default async function AdminTeachersPage({
                       >
                         Edit
                       </Link>
-                      <DeleteTeacherButton
-                        id={teacher.id}
-                        label={`${teacher.name}${teacher.email ? ` (${teacher.email})` : ""}`}
-                      />
+                      <DeleteActionButton action={deleteTeacher.bind(null, teacher.id)} itemName={teacher.name ?? teacher.email} className="text-sm font-medium text-destructive-text hover:underline" />
                     </div>
                   </td>
                 </tr>

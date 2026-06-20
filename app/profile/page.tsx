@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { ProfileForm } from "@/components/profile/ProfileForm";
+import { ProfileSection } from "@/components/profile/ProfileSection";
 import { ProfileSummaryCard } from "@/components/profile/ProfileSummaryCard";
 import { requireUser } from "@/lib/auth-actions";
 import {
-  formatDateOfBirthForInput,
   isProfileComplete,
   userProfileSelect,
 } from "@/lib/profile";
@@ -71,11 +70,11 @@ export default async function ProfilePage({
           occupation={user.occupation}
         />
 
-        <ProfileForm
+        <ProfileSection
           name={user.name}
           email={user.email}
           fatherName={user.fatherName}
-          dateOfBirth={formatDateOfBirthForInput(user.dateOfBirth)}
+          dateOfBirth={user.dateOfBirth}
           occupation={user.occupation}
           address={user.address}
           whatsapp={user.whatsapp}

@@ -25,6 +25,7 @@ type ProfileFormProps = {
   occupation: Occupation | null;
   address: string | null;
   whatsapp: string | null;
+  onCancel?: () => void;
 };
 
 type ProfileFormValues = {
@@ -87,6 +88,7 @@ export function ProfileForm({
   occupation,
   address,
   whatsapp,
+  onCancel,
 }: ProfileFormProps) {
   const parsedWhatsApp = parseStoredProfileWhatsApp(whatsapp);
   const [state, formAction, pending] = useActionState(updateProfile, initialState);
@@ -380,6 +382,16 @@ export function ProfileForm({
       </FormSection>
 
       <div className="flex flex-col-reverse gap-3 border-t border-border pt-6 sm:flex-row sm:justify-end">
+        {onCancel && (
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={pending}
+            className="min-h-11 rounded-full border border-border px-8 py-2.5 text-sm font-semibold text-foreground hover:bg-surface-muted transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+        )}
         <button
           type="submit"
           disabled={!isValid || pending}

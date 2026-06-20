@@ -161,3 +161,25 @@ export async function markBookOrderRefunded(
   revalidateOrderPaths(order.userId);
   redirect("/admin/bookstore/orders?refunded=1");
 }
+
+export async function deleteBookOrder(
+  orderId: string,
+): Promise<{ error?: string } | void> {
+  await requireAdmin();
+
+  const order = await withDbErrorHandling(() => prisma.bookOrder.findUnique({
+      where: { id: orderId },
+    }), "Database operation failed");
+
+  if (!order) return { error: "Order not found." };
+
+  if (order.status === "APPROVED" || order.status === "PENDING_VERIFICATION") {
+    return { error: "Only completed orders can be deleted." };
+  }
+
+  await withDbErrorHandling(() => prisma.bookOrder.delete({
+      where: { id: orderId },
+    }), "Database operation failed");
+
+  revalidateOrderPaths(order.userId);
+}

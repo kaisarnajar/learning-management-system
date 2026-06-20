@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { BookOrderWithItems } from "@/lib/bookstore";
-import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrderRefunded } from "@/app/admin/bookstore/orders/actions";
+import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrderRefunded, deleteBookOrder } from "@/app/admin/bookstore/orders/actions";
 import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 
@@ -117,9 +117,26 @@ function OrderActions({ order }: { order: BookOrderWithItems }) {
   
   return (
     <td className="whitespace-nowrap px-4 py-4 align-top text-right">
-      <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${bookOrderStatusClass(order.status)}`}>
-        {bookOrderStatusLabel(order.status)}
-      </span>
+      <div className="flex items-center justify-end gap-3">
+        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${bookOrderStatusClass(order.status)}`}>
+          {bookOrderStatusLabel(order.status)}
+        </span>
+        <ConfirmationModal
+           title="Delete Order"
+           description="Are you sure you want to permanently delete this transaction? This action cannot be undone."
+           actionLabel="Delete"
+           variant="destructive"
+           onConfirm={async () => {
+             const result = await deleteBookOrder(order.id);
+             if (result?.error) window.alert(result.error);
+           }}
+           trigger={
+              <button type="button" className="text-muted hover:text-destructive-text transition-colors" title="Delete Transaction">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+              </button>
+           }
+        />
+      </div>
     </td>
   );
 }

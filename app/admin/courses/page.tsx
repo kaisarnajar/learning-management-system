@@ -113,10 +113,10 @@ export default async function AdminCoursesPage({
                   <td className="whitespace-nowrap px-4 py-3">
                     <div className="flex items-center justify-end gap-3">
                       <Link
-                        href={`/admin/courses/${course.id}/announcements`}
-                        className="text-primary hover:underline"
+                        href={`/admin/courses/${course.id}/students`}
+                        className="font-medium text-primary hover:underline"
                       >
-                        Announcements
+                        View
                       </Link>
                       <Link href={`/admin/courses/${course.id}/edit`} className="font-medium text-primary hover:underline">
                         Edit

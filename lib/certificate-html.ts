@@ -100,17 +100,19 @@ export function renderCertificateToHtml(data: {
     
     <!-- Date & Info -->
     <div>
-      <p class="text-sm text-gray-500 tracking-wide mb-1 font-mono">
-        CERT NO: <span class="font-bold text-gray-800">${data.certificateNumber}</span>
-      </p>
+      <div class="translate-y-4">
+        <p class="text-sm text-gray-500 tracking-wide mb-1 font-mono">
+          CERT NO: <span class="font-bold text-gray-800">${data.certificateNumber}</span>
+        </p>
 
-      <p class="text-gray-600 text-lg">
-        Date of Issuance
-      </p>
+        <p class="text-gray-600 text-lg">
+          Date of Issuance
+        </p>
 
-      <p class="text-[28px] font-semibold text-[#0f3d2e]">
-        ${data.issueDate}
-      </p>
+        <p class="text-[28px] font-semibold text-[#0f3d2e]">
+          ${data.issueDate}
+        </p>
+      </div>
 
       <div class="mt-4 text-gray-700 text-[16px]">
         <p>${data.academyEmail}</p>

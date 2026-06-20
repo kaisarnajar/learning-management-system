@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import puppeteer from "puppeteer";
+import crypto from "crypto";
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { getCourseById } from "@/lib/courses";
@@ -45,6 +46,15 @@ export async function GET(
 
   if (!isOwner && !isAdmin) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
+  let certificateNumber = enrollment.certificateNumber;
+  if (!certificateNumber) {
+    certificateNumber = `DQA-CERT-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+    await withDbErrorHandling(() => prisma.enrollment.update({
+      where: { id: enrollmentId },
+      data: { certificateNumber },
+    }), "Failed to save certificate number");
   }
 
   const filename = getCertificateFilename(course.title, enrollmentId);
@@ -96,6 +106,7 @@ export async function GET(
     academyName: academySettings.academyName,
     academyEmail: socialLinks.contactEmail || "",
     academyPhone: formatWhatsAppForDisplay(socialLinks.whatsappNumber) || "",
+    certificateNumber,
   };
 
   // 4. Generate HTML String

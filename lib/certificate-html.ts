@@ -8,6 +8,7 @@ export function renderCertificateToHtml(data: {
   academyName: string;
   academyEmail: string;
   academyPhone: string;
+  certificateNumber: string;
 }) {
   return `
 <div
@@ -97,8 +98,12 @@ export function renderCertificateToHtml(data: {
     class="absolute bottom-12 left-20 right-20 flex justify-between items-end z-10"
   >
     
-    <!-- Date -->
+    <!-- Date & Info -->
     <div>
+      <p class="text-sm text-gray-500 tracking-wide mb-1 font-mono">
+        CERT NO: <span class="font-bold text-gray-800">${data.certificateNumber}</span>
+      </p>
+
       <p class="text-gray-600 text-lg">
         Date of Issuance
       </p>
@@ -107,7 +112,7 @@ export function renderCertificateToHtml(data: {
         ${data.issueDate}
       </p>
 
-      <div class="mt-6 text-gray-700 text-[16px]">
+      <div class="mt-4 text-gray-700 text-[16px]">
         <p>${data.academyEmail}</p>
         <p>${data.academyPhone}</p>
       </div>

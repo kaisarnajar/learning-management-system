@@ -114,22 +114,24 @@ export function renderCertificateToHtml(data: {
     </div>
 
     <!-- Signature Area -->
-    <div class="relative text-center">
+    <div class="relative flex flex-col items-center w-64">
       
-      <img
-        src="${data.signatureUrl}"
-        class="w-[220px] relative z-20"
-      />
+      <div class="relative flex justify-center items-end h-[100px] w-full">
+        <img
+          src="${data.signatureUrl}"
+          class="max-h-[140px] max-w-[240px] object-contain relative z-20"
+          style="mix-blend-mode: multiply;"
+        />
+        <img
+          src="${data.sealUrl}"
+          class="w-24 absolute left-[-40px] bottom-[-10px] opacity-80 z-10"
+        />
+      </div>
 
-      <img
-        src="${data.sealUrl}"
-        class="w-24 absolute left-[-50px] bottom-[-10px] opacity-90 z-10"
-      />
+      <div class="w-full border-t border-[#d4af37] mt-2"></div>
 
-      <div class="w-56 border-t border-[#d4af37] mt-1"></div>
-
-      <p class="text-lg text-[#0f3d2e] mt-1">
-        Signature Founder/CEO
+      <p class="text-lg text-[#0f3d2e] mt-2">
+        Founder / CEO
       </p>
     </div>
   </div>

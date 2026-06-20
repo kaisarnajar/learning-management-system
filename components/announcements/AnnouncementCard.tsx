@@ -30,7 +30,7 @@ export function AnnouncementCard({
   const edited = updatedAt.getTime() - createdAt.getTime() > 1000;
 
   return (
-    <article className="rounded-lg border border-border bg-surface p-5 shadow-sm">
+    <article className="flex h-full flex-col rounded-lg border border-border bg-surface p-5 shadow-sm">
       <div className="flex flex-wrap items-center gap-2">
         <AnnouncementCategoryBadge category={category} />
         {audienceLabel && (
@@ -45,7 +45,7 @@ export function AnnouncementCard({
       {attachmentPath && attachmentName && (
         <AnnouncementAttachment attachmentPath={attachmentPath} attachmentName={attachmentName} />
       )}
-      <p className="mt-4 text-xs text-muted">
+      <p className="mt-auto pt-4 text-xs text-muted">
         Posted by {authorName} · {formatAnnouncementDate(createdAt)}
       </p>
     </article>

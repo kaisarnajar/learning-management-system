@@ -66,7 +66,7 @@ export default async function StudentCourseAnnouncementsPage({
             <section>
               <h3 className="font-serif text-lg font-semibold text-foreground">For you</h3>
               <p className="mt-1 text-sm text-muted">Private messages from your instructor</p>
-              <ul className="mt-4 space-y-4">
+              <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {personal.map((announcement) => (
                   <li key={announcement.id}>
                     <AnnouncementCard
@@ -98,7 +98,7 @@ export default async function StudentCourseAnnouncementsPage({
             <section>
               <h3 className="font-serif text-lg font-semibold text-foreground">Course-wide</h3>
               <p className="mt-1 text-sm text-muted">Visible to everyone in this course</p>
-              <ul className="mt-4 space-y-4">
+              <ul className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {courseWide.map((announcement) => (
                   <li key={announcement.id}>
                     <AnnouncementCard

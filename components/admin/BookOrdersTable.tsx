@@ -46,7 +46,7 @@ export function ScreenshotPreview({ path }: { path: string }) {
 }
 
 function OrderActions({ order }: { order: BookOrderWithItems }) {
-  if (order.status === "PENDING") {
+  if (order.status === "PENDING_VERIFICATION") {
      return (
         <td className="whitespace-nowrap px-4 py-4 align-top">
           <div className="flex items-center justify-end gap-2">

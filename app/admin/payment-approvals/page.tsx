@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PendingPaymentApprovalsTable } from "@/components/admin/PendingPaymentApprovalsTable";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
@@ -9,33 +10,37 @@ import {
 import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
 
+function tabHref(type: "enrollment" | "monthly") {
+  const params = new URLSearchParams();
+  if (type !== "enrollment") params.set("type", type);
+  const qs = params.toString();
+  return qs ? `/admin/payment-approvals?${qs}` : "/admin/payment-approvals";
+}
+
 export default async function AdminPaymentApprovalsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ confirmed?: string; declined?: string; page?: string; monthlyPage?: string; q?: string }>;
+  searchParams: Promise<{ type?: string; confirmed?: string; declined?: string; page?: string; q?: string }>;
 }) {
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
-  const { page: enrollmentPage, pageSize: enrollmentPageSize } = parsePaginationParams(params, {
+  const type = params.type === "monthly" ? "monthly" : "enrollment";
+
+  const { page: requestedPage, pageSize } = parsePaginationParams(params, {
     pageSize: APPROVAL_PAGE_SIZE,
-  });
-  const { page: monthlyPage, pageSize: monthlyPageSize } = parsePaginationParams(params, {
-    pageSize: APPROVAL_PAGE_SIZE,
-    pageParam: "monthlyPage",
   });
 
   const [enrollmentFeesPaginated, monthlyFeesPaginated, courses] = await Promise.all([
-    getPendingEnrollmentFeePaymentsPaginated(enrollmentPage, enrollmentPageSize, q),
-    getPendingMonthlyPaymentsPaginated(monthlyPage, monthlyPageSize, q),
+    getPendingEnrollmentFeePaymentsPaginated(type === "enrollment" ? requestedPage : 1, pageSize, q),
+    getPendingMonthlyPaymentsPaginated(type === "monthly" ? requestedPage : 1, pageSize, q),
     getAllCourses(),
   ]);
 
-  const pendingEnrollmentFees = enrollmentFeesPaginated.items;
-  const pendingMonthlyFees = monthlyFeesPaginated.items;
   const enrollmentTotalCount = enrollmentFeesPaginated.totalCount;
   const monthlyTotalCount = monthlyFeesPaginated.totalCount;
-  const safeEnrollmentPage = clampPage(enrollmentPage, enrollmentTotalCount, enrollmentPageSize);
-  const safeMonthlyPage = clampPage(monthlyPage, monthlyTotalCount, monthlyPageSize);
+
+  const activeResult = type === "enrollment" ? enrollmentFeesPaginated : monthlyFeesPaginated;
+  const safePage = clampPage(requestedPage, activeResult.totalCount, pageSize);
 
   const titleById = new Map(courses.map((c) => [c.id, c.title]));
 
@@ -46,6 +51,7 @@ export default async function AdminPaymentApprovalsPage({
         Verify enrollment and monthly fee payments submitted by students. Free enrollment requests
         are managed under Enrollments.
       </p>
+      
       {params.confirmed === "1" && (
         <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
           Payment approved and recorded.
@@ -57,84 +63,96 @@ export default async function AdminPaymentApprovalsPage({
         </p>
       )}
 
-      <div className="mt-6">
+      <nav className="mt-8 flex flex-wrap gap-2" aria-label="Payment approval type">
+        {(
+          [
+            { label: "Enrollment Fees", value: "enrollment" as const, count: enrollmentTotalCount },
+            { label: "Monthly Fees", value: "monthly" as const, count: monthlyTotalCount },
+          ] as const
+        ).map((item) => {
+          const active = type === item.value;
+          const href = tabHref(item.value);
+          return (
+            <Link
+              key={item.value}
+              href={href}
+              className={`inline-flex min-h-10 items-center justify-center rounded-full px-4 text-sm font-medium transition-colors ${
+                active
+                  ? "bg-primary text-white"
+                  : "bg-surface text-foreground hover:bg-accent-muted/50"
+              }`}
+              aria-current={active ? "page" : undefined}
+            >
+              {item.label}
+              {item.count > 0 && (
+                <span
+                  className={`ml-2 inline-flex items-center justify-center rounded-full px-2 py-0.5 text-xs font-semibold ${
+                    active ? "bg-surface/20 text-white" : "bg-warning-bg text-warning-text"
+                  }`}
+                >
+                  {item.count}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="mt-6 mb-2">
         <ListSearchForm
           action="/admin/payment-approvals"
           query={q}
-          placeholder="Search by name, email, course, or reference"
-          preserveParams={{ monthlyPage: params.monthlyPage }}
-          totalCount={q ? enrollmentTotalCount + monthlyTotalCount : undefined}
+          preserveParams={{ type: type !== "enrollment" ? type : undefined }}
+          totalCount={activeResult.totalCount}
+          placeholder="Search by name, email, course, or reference..."
         />
       </div>
 
-      <section id="enrollment-fees" className="mt-8 scroll-mt-6">
-        <h2 className="font-serif text-lg font-semibold text-foreground">
-          Enrollment fee approvals
-          {enrollmentTotalCount > 0 && (
-            <span className="ml-2 inline-flex rounded-full bg-warning-bg px-2.5 py-0.5 text-xs font-semibold text-warning-text">
-              {enrollmentTotalCount}
-            </span>
-          )}
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Approve to activate the student&apos;s enrollment in the paid course.
-        </p>
-
-        <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-          <PendingPaymentApprovalsTable
-            submissions={pendingEnrollmentFees}
-            courseTitleById={titleById}
-            emptyMessage={
-              q
-                ? "No enrollment fee payments match your search."
-                : "No enrollment fee payments awaiting verification."
-            }
+      {type === "enrollment" && (
+        <section id="enrollment-fees" className="mt-6">
+          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+            <PendingPaymentApprovalsTable
+              submissions={activeResult.items}
+              courseTitleById={titleById}
+              emptyMessage={
+                q
+                  ? "No enrollment fee payments match your search."
+                  : "No enrollment fee payments awaiting verification."
+              }
+            />
+          </div>
+          <Pagination
+            basePath="/admin/payment-approvals"
+            params={params}
+            page={safePage}
+            totalCount={enrollmentTotalCount}
+            pageSize={pageSize}
           />
-        </div>
+        </section>
+      )}
 
-        <Pagination
-          basePath="/admin/payment-approvals"
-          params={params}
-          page={safeEnrollmentPage}
-          totalCount={enrollmentTotalCount}
-          pageSize={enrollmentPageSize}
-        />
-      </section>
-
-      <section id="monthly-fees" className="mt-10 scroll-mt-6">
-        <h2 className="font-serif text-lg font-semibold text-foreground">
-          Monthly fee approvals
-          {monthlyTotalCount > 0 && (
-            <span className="ml-2 inline-flex rounded-full bg-warning-bg px-2.5 py-0.5 text-xs font-semibold text-warning-text">
-              {monthlyTotalCount}
-            </span>
-          )}
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Verify monthly fee payments from active enrollments.
-        </p>
-
-        <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-          <PendingPaymentApprovalsTable
-            submissions={pendingMonthlyFees}
-            courseTitleById={titleById}
-            emptyMessage={
-              q
-                ? "No monthly fee payments match your search."
-                : "No monthly fee payments awaiting verification."
-            }
+      {type === "monthly" && (
+        <section id="monthly-fees" className="mt-6">
+          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+            <PendingPaymentApprovalsTable
+              submissions={activeResult.items}
+              courseTitleById={titleById}
+              emptyMessage={
+                q
+                  ? "No monthly fee payments match your search."
+                  : "No monthly fee payments awaiting verification."
+              }
+            />
+          </div>
+          <Pagination
+            basePath="/admin/payment-approvals"
+            params={params}
+            page={safePage}
+            totalCount={monthlyTotalCount}
+            pageSize={pageSize}
           />
-        </div>
-
-        <Pagination
-          basePath="/admin/payment-approvals"
-          params={params}
-          page={safeMonthlyPage}
-          totalCount={monthlyTotalCount}
-          pageSize={monthlyPageSize}
-          pageParam="monthlyPage"
-        />
-      </section>
+        </section>
+      )}
     </div>
   );
 }

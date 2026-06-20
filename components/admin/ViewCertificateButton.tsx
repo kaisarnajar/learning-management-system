@@ -1,15 +1,13 @@
-const actionButtonClass =
-  "inline-flex min-h-9 items-center justify-center rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-background/80";
+import Link from "next/link";
 
 export function ViewCertificateButton({ enrollmentId }: { enrollmentId: string }) {
   return (
-    <a
-      href={`/api/certificate/${enrollmentId}?inline=1`}
+    <Link
+      href={`/api/certificate/${enrollmentId}`}
       target="_blank"
-      rel="noopener noreferrer"
-      className={actionButtonClass}
+      className="inline-flex min-h-9 items-center justify-center rounded-md border border-primary bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
     >
-      View
-    </a>
+      View Certificate
+    </Link>
   );
 }

@@ -12,6 +12,7 @@ import { getPendingPaymentCount } from "@/lib/monthly-payments";
 import { prisma } from "@/lib/prisma";
 import { getStudentCount } from "@/lib/students";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { requireAdmin } from "@/lib/auth-actions";
 
 type DashboardStat = {
   label: string;
@@ -52,6 +53,9 @@ function DashboardLinkCard({ link }: { link: DashboardLink }) {
 }
 
 export default async function AdminDashboardPage() {
+  const session = await requireAdmin();
+  const isDeveloper = session.user.role === "DEVELOPER";
+
   const [
     announcementCount,
     blogCount,
@@ -146,6 +150,13 @@ export default async function AdminDashboardPage() {
     label: link.label,
     href: link.href,
   }));
+
+  if (isDeveloper) {
+    quickLinks.push({
+      label: "Analytics",
+      href: "/developer/analytics",
+    });
+  }
 
   return (
     <div>

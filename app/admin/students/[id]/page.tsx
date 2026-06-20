@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { RemoveStudentEnrollmentAction } from "@/components/admin/RemoveStudentEnrollmentAction";
 import { RecordStudentPaymentForm } from "@/components/admin/RecordStudentPaymentForm";
-import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
 import { Pagination } from "@/components/shared/Pagination";
 import { deleteStudentUserForm } from "@/app/admin/students/actions";
@@ -194,7 +194,7 @@ export default async function AdminStudentDetailPage({
                       })}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <ConfirmationModal title="Remove Enrollment" description={`Remove ${student.name ?? student.email} from this course? Their account will not be deleted; they can enroll again later.`} actionLabel="Remove" variant="destructive" onConfirm={async () => { const result = await removeEnrollmentFromCourse(enrollment.id, enrollment.courseId); if (result?.error) window.alert(result.error); }} trigger={<button type="button" className="text-sm font-medium text-destructive-text hover:underline">Remove</button>} />
+                      <RemoveStudentEnrollmentAction studentNameOrEmail={student.name ?? student.email} enrollmentId={enrollment.id} courseId={enrollment.courseId} />
                     </td>
                   </tr>
                 ))}

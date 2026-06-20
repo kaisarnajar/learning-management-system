@@ -18,7 +18,7 @@ function tabHref(type: TabType) {
   const params = new URLSearchParams();
   if (type !== "enrollment_pending") params.set("type", type);
   const qs = params.toString();
-  return qs ? `/admin/payment-approvals?${qs}` : "/admin/payment-approvals";
+  return qs ? `/admin/payments?${qs}` : "/admin/payments";
 }
 
 export default async function AdminPaymentApprovalsPage({
@@ -65,7 +65,7 @@ export default async function AdminPaymentApprovalsPage({
 
   return (
     <div>
-      <h1 className="font-serif text-2xl font-bold text-primary">Payment approvals</h1>
+      <h1 className="font-serif text-2xl font-bold text-primary">Payments</h1>
       <p className="mt-1 text-sm text-muted">
         Verify enrollment and monthly fee payments submitted by students. Free enrollment requests
         are managed under Enrollments.
@@ -114,7 +114,7 @@ export default async function AdminPaymentApprovalsPage({
 
       <div className="mt-6 mb-2">
         <ListSearchForm
-          action="/admin/payment-approvals"
+          action="/admin/payments"
           query={q}
           preserveParams={{ type: type !== "enrollment_pending" ? type : undefined }}
           totalCount={activeResult.totalCount}
@@ -135,7 +135,7 @@ export default async function AdminPaymentApprovalsPage({
           />
         </div>
         <Pagination
-          basePath="/admin/payment-approvals"
+          basePath="/admin/payments"
           params={params}
           page={safePage}
           totalCount={activeResult.totalCount}

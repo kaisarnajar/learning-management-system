@@ -123,7 +123,7 @@ export default async function AdminDashboardPage() {
       { count: pendingReviewCount, highlight: pendingReviewCount > 0 },
     ],
     [
-      "/admin/payment-approvals",
+      "/admin/payments",
       { count: pendingPaymentCount, highlight: pendingPaymentCount > 0 },
     ],
   ]);

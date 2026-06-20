@@ -122,7 +122,7 @@ export default async function AdminEnrollmentsPage({
       <h1 className="font-serif text-2xl font-bold text-primary">Course enrollments</h1>
       <p className="mt-1 text-sm text-muted">
         Approve free enrollment requests here. Paid courses are activated after you verify the
-        enrollment fee under Payment approvals.
+        enrollment fee under Payments.
       </p>
 
       <div className="mt-6">
@@ -191,7 +191,7 @@ export default async function AdminEnrollmentsPage({
             </p>
           </div>
           <Link
-            href="/admin/payment-approvals#enrollment-fees"
+            href="/admin/payments#enrollment-fees"
             className="inline-flex shrink-0 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90"
           >
             Go to enrollment fee approvals

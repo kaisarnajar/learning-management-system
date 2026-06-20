@@ -22,7 +22,7 @@ function revalidatePaymentPaths(userId: string, courseId?: string | null) {
     "/admin",
     "/admin/finance",
     "/admin/enrollments",
-    "/admin/payment-approvals",
+    "/admin/payments",
     "/admin/students",
     `/admin/students/${userId}`,
     "/profile/payments",
@@ -40,7 +40,7 @@ function revalidatePaymentPaths(userId: string, courseId?: string | null) {
 
 function paymentReturnUrl(returnTo: string | undefined, event: "confirmed" | "declined"): string {
   const param = event === "confirmed" ? "confirmed" : "declined";
-  const fallback = `/admin/payment-approvals?${param}=1`;
+  const fallback = `/admin/payments?${param}=1`;
   if (!returnTo?.startsWith("/admin")) return fallback;
   const [pathname, query = ""] = returnTo.split("?");
   const params = new URLSearchParams(query);

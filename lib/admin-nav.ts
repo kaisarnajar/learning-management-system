@@ -32,5 +32,5 @@ export const ADMIN_NAV_LINKS: AdminNavLink[] = [
   { href: "/admin/contact-inquiries", label: "Contact inquiries" },
   { href: "/admin/blog-approvals", label: "Blog approvals" },
   { href: "/admin/review-approvals", label: "Review approvals" },
-  { href: "/admin/payment-approvals", label: "Payment approvals" },
+  { href: "/admin/payments", label: "Payments" },
 ];

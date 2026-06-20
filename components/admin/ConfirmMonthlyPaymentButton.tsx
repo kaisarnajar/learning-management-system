@@ -1,6 +1,6 @@
 "use client";
 
-import { confirmMonthlyPayment } from "@/app/admin/payment-approvals/actions";
+import { confirmMonthlyPayment } from "@/app/admin/payments/actions";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { usePathname, useSearchParams } from "next/navigation";
 import { getReturnToUrl } from "@/components/shared/ActionButton";

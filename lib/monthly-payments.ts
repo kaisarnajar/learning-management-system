@@ -41,6 +41,7 @@ export type CoursePaymentSubmissionWithUser = {
   upiTransactionId: string | null;
   paymentScreenshotPath: string | null;
   paymentReference: string | null;
+  paymentRecordId: string | null;
   createdAt: Date;
   updatedAt: Date;
   user: {

@@ -2,6 +2,7 @@ import Image from "next/image";
 import { ConfirmMonthlyPaymentButton } from "@/components/admin/ConfirmMonthlyPaymentButton";
 import { DeclineMonthlyPaymentButton } from "@/components/admin/DeclineMonthlyPaymentButton";
 import { DeletePaymentButton } from "@/components/admin/DeletePaymentButton";
+import { DownloadReceiptButton } from "@/components/payment/DownloadReceiptButton";
 import { formatPrice } from "@/lib/courses";
 import type { CoursePaymentSubmissionWithUser } from "@/lib/monthly-payments";
 import { MONTHLY_PAYMENT_APPROVED } from "@/lib/monthly-payment-status";
@@ -98,18 +99,8 @@ export function PaymentApprovalsTable({
               <div className="flex items-center justify-end gap-2">
                 {submission.status === MONTHLY_PAYMENT_APPROVED ? (
                   <>
-                    {submission.paymentScreenshotPath && (
-                      <a
-                        href={submission.paymentScreenshotPath}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center justify-center rounded-md border border-primary bg-transparent px-2 py-1 text-xs font-semibold text-primary hover:bg-primary/10 ml-2"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="mr-1 h-3 w-3">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                        </svg>
-                        View Receipt
-                      </a>
+                    {submission.paymentRecordId && (
+                      <DownloadReceiptButton paymentRecordId={submission.paymentRecordId} label="View Receipt" />
                     )}
                     <DeletePaymentButton submissionId={submission.id} />
                   </>

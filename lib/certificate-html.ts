@@ -118,9 +118,9 @@ export function renderCertificateToHtml(data: {
       
       <div class="relative flex justify-center items-end h-[100px] w-full">
         <img
+          id="signature-image"
           src="${data.signatureUrl}"
           class="max-h-[140px] max-w-[240px] object-contain relative z-20"
-          style="mix-blend-mode: multiply;"
         />
         <img
           src="${data.sealUrl}"
@@ -152,6 +152,47 @@ export function renderCertificateToHtml(data: {
   <div
     class="absolute bottom-0 right-0 w-40 h-40 border-b-[12px] border-r-[12px] border-[#0f3d2e]"
   ></div>
+
+  <script>
+    window.addEventListener('load', () => {
+      const img = document.getElementById('signature-image');
+      if (!img || !img.src || img.src.length < 100) return;
+
+      const processSignature = () => {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.naturalWidth || img.width || 400;
+          canvas.height = img.naturalHeight || img.height || 200;
+          const ctx = canvas.getContext('2d');
+          
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const data = imageData.data;
+          
+          for (let i = 0; i < data.length; i += 4) {
+            const r = data[i];
+            const g = data[i+1];
+            const b = data[i+2];
+            // Remove white/light pixels
+            if (r > 200 && g > 200 && b > 200) {
+              data[i+3] = 0; // Transparent
+            }
+          }
+          
+          ctx.putImageData(imageData, 0, 0);
+          img.src = canvas.toDataURL('image/png');
+        } catch (e) {
+          console.error("Canvas processing failed", e);
+        }
+      };
+
+      if (img.complete) {
+        processSignature();
+      } else {
+        img.onload = processSignature;
+      }
+    });
+  </script>
 
 </div>
 `;

@@ -52,7 +52,7 @@ export function ConfirmationModal({
     try {
       await onConfirm();
       setIsOpen(false);
-    } catch (e) {
+    } catch {
       // Error handling can be caught by ActionButton or parent
     } finally {
       setIsPending(false);
@@ -67,10 +67,10 @@ export function ConfirmationModal({
 
       <dialog
         ref={dialogRef}
-        className="backdrop:bg-black/50 backdrop:backdrop-blur-sm fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md p-6 bg-surface rounded-xl shadow-xl border border-border open:animate-in open:fade-in-90 open:zoom-in-95 m-0"
+        className="backdrop:bg-black/50 backdrop:backdrop-blur-sm fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-md p-6 bg-surface rounded-xl shadow-xl border border-border open:animate-in open:fade-in-90 open:zoom-in-95 m-0 overflow-hidden"
       >
-        <h3 className="text-lg font-semibold text-foreground">{title}</h3>
-        <p className="mt-2 text-sm text-muted">{description}</p>
+        <h3 className="text-lg font-semibold text-foreground break-words">{title}</h3>
+        <p className="mt-2 text-sm text-muted break-words whitespace-pre-wrap">{description}</p>
         
         <div className="mt-6 flex justify-end gap-3">
           <button

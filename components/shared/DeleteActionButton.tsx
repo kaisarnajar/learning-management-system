@@ -12,7 +12,7 @@ export function DeleteActionButton({
   className,
   onSuccessRedirect,
 }: {
-  action: () => Promise<{ error?: string } | void | any> | void;
+  action: () => Promise<{ error?: string } | void | unknown> | void;
   title?: string;
   itemName: string;
   warningMessage?: string;

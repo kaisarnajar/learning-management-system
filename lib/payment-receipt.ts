@@ -1,14 +1,7 @@
+import puppeteer from "puppeteer";
+import { ACADEMY_INVOICE, INVOICE_TERMS } from "@/lib/academy-contact";
 import { readFile } from "fs/promises";
 import path from "path";
-import {
-  PDFDocument,
-  type PDFImage,
-  type PDFFont,
-  type PDFPage,
-  rgb,
-  StandardFonts,
-} from "pdf-lib";
-import { ACADEMY_INVOICE, INVOICE_TERMS } from "@/lib/academy-contact";
 
 export type PaymentReceiptData = {
   invoiceNumber: string;
@@ -28,18 +21,6 @@ export type PaymentReceiptData = {
   upiTransactionId: string | null;
 };
 
-const PAGE_W = 595;
-const PAGE_H = 842;
-const MARGIN = 44;
-const CONTENT_W = PAGE_W - MARGIN * 2;
-
-const INK = rgb(0.12, 0.12, 0.14);
-const MUTED = rgb(0.35, 0.34, 0.32);
-const BORDER = rgb(0.75, 0.73, 0.7);
-const HEADER_BG = rgb(0.94, 0.93, 0.91);
-const PAID_GREEN = rgb(0.15, 0.52, 0.32);
-const PAID_BG = rgb(0.88, 0.96, 0.9);
-
 export function formatInvoiceNumber(paymentRecordId: string): string {
   let hash = 0;
   for (let i = 0; i < paymentRecordId.length; i++) {
@@ -50,7 +31,7 @@ export function formatInvoiceNumber(paymentRecordId: string): string {
   return `INV${String(num).padStart(5, "0")}`;
 }
 
-function formatPriceForPdf(paise: number): string {
+function formatPriceForHtml(paise: number): string {
   const inr = paise / 100;
   return `Rs. ${inr.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -60,15 +41,7 @@ function formatPriceShort(paise: number): string {
   if (Number.isInteger(inr)) {
     return `Rs. ${inr.toLocaleString("en-IN")}`;
   }
-  return formatPriceForPdf(paise);
-}
-
-function sanitizePdfText(text: string): string {
-  return text
-    .replace(/\u20b9/g, "Rs.")
-    .replace(/\u2014/g, "-")
-    .replace(/\u2013/g, "-")
-    .replace(/[^\t\n\r\x20-\x7e\xa0-\xff]/g, "");
+  return formatPriceForHtml(paise);
 }
 
 function formatInvoiceDate(date: Date): string {
@@ -76,57 +49,6 @@ function formatInvoiceDate(date: Date): string {
   const m = String(date.getMonth() + 1).padStart(2, "0");
   const y = date.getFullYear();
   return `${d}/${m}/${y}`;
-}
-
-function wrapTextByWidth(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
-  const words = sanitizePdfText(text).split(/\s+/);
-  const lines: string[] = [];
-  let current = "";
-
-  for (const word of words) {
-    const test = current ? `${current} ${word}` : word;
-    if (font.widthOfTextAtSize(test, size) <= maxWidth) {
-      current = test;
-    } else {
-      if (current) lines.push(current);
-      current = word;
-    }
-  }
-  if (current) lines.push(current);
-  return lines.length > 0 ? lines : ["-"];
-}
-
-function drawRightText(
-  page: PDFPage,
-  text: string,
-  rightX: number,
-  y: number,
-  size: number,
-  font: PDFFont,
-  color = INK,
-) {
-  const w = font.widthOfTextAtSize(text, size);
-  page.drawText(text, { x: rightX - w, y, size, font, color });
-}
-
-function drawHLine(page: PDFPage, y: number, x1 = MARGIN, x2 = PAGE_W - MARGIN) {
-  page.drawLine({
-    start: { x: x1, y },
-    end: { x: x2, y },
-    thickness: 0.75,
-    color: BORDER,
-  });
-}
-
-async function embedLogo(pdf: PDFDocument): Promise<PDFImage | null> {
-  try {
-    const logoPath = path.join(process.cwd(), "public", "logo.png");
-    const bytes = await readFile(logoPath);
-    return pdf.embedPng(bytes);
-  } catch (error) {
-    console.error("Caught error:", error);
-    return null;
-    }
 }
 
 function buildPaymentNote(data: PaymentReceiptData): string {
@@ -137,245 +59,7 @@ function buildPaymentNote(data: PaymentReceiptData): string {
   if (detail) note += ` - ${detail}`;
   note += ` Via ${method}`;
   if (data.upiTransactionId) note += ` (Ref: ${data.upiTransactionId})`;
-  return sanitizePdfText(note).slice(0, 140);
-}
-
-export async function generatePaymentReceiptPdf(data: PaymentReceiptData): Promise<Uint8Array> {
-  const pdf = await PDFDocument.create();
-  const page = pdf.addPage([PAGE_W, PAGE_H]);
-
-  const font = await pdf.embedFont(StandardFonts.Helvetica);
-  const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
-  const logo = await embedLogo(pdf);
-
-  let y = PAGE_H - MARGIN;
-
-  if (logo) {
-    const logoH = 48;
-    const logoW = (logo.width / logo.height) * logoH;
-    page.drawImage(logo, {
-      x: MARGIN,
-      y: y - logoH,
-      width: logoW,
-      height: logoH,
-    });
-  }
-
-  const invoiceTitle = "INVOICE";
-  const titleSize = 26;
-  drawRightText(page, invoiceTitle, PAGE_W - MARGIN, y - 8, titleSize, fontBold, INK);
-
-  y -= 58;
-
-  const colMid = PAGE_W / 2 + 8;
-  const academyLines = [
-    ACADEMY_INVOICE.name,
-    ACADEMY_INVOICE.addressLine1,
-    ACADEMY_INVOICE.addressLine2,
-    ACADEMY_INVOICE.phone,
-    ACADEMY_INVOICE.email,
-    ACADEMY_INVOICE.website,
-  ];
-
-  for (const line of academyLines) {
-    const size = line === ACADEMY_INVOICE.name ? 11 : 9;
-    const f = line === ACADEMY_INVOICE.name ? fontBold : font;
-    page.drawText(sanitizePdfText(line), {
-      x: MARGIN,
-      y,
-      size,
-      font: f,
-      color: line === ACADEMY_INVOICE.name ? INK : MUTED,
-    });
-    y -= line === ACADEMY_INVOICE.name ? 16 : 13;
-  }
-
-  let metaY = PAGE_H - MARGIN - 58;
-  page.drawText(sanitizePdfText(`INVOICE # ${data.invoiceNumber}`), {
-    x: colMid,
-    y: metaY,
-    size: 10,
-    font: fontBold,
-    color: INK,
-  });
-  metaY -= 18;
-  page.drawText(sanitizePdfText(`DATE ${formatInvoiceDate(data.paidAt)}`), {
-    x: colMid,
-    y: metaY,
-    size: 10,
-    font,
-    color: INK,
-  });
-
-  y -= 20;
-  drawHLine(page, y);
-  y -= 22;
-
-  page.drawText("BILL TO", {
-    x: MARGIN,
-    y,
-    size: 9,
-    font: fontBold,
-    color: MUTED,
-  });
-  y -= 16;
-
-  const billLines = [
-    data.studentName || "Student",
-    data.studentAddress,
-    data.studentPhone,
-    data.studentEmail,
-  ].filter((line): line is string => Boolean(line?.trim()));
-
-  for (const line of billLines) {
-    for (const wrapped of wrapTextByWidth(line, font, 10, CONTENT_W * 0.55)) {
-      page.drawText(wrapped, { x: MARGIN, y, size: 10, font, color: INK });
-      y -= 14;
-    }
-  }
-
-  y -= 12;
-  drawHLine(page, y);
-  y -= 4;
-
-  const tableTop = y;
-  const colDesc = MARGIN;
-  const colQty = MARGIN + 268;
-  const colPrice = MARGIN + 310;
-  const colDisc = MARGIN + 378;
-  const colAmt = PAGE_W - MARGIN;
-  const headerH = 22;
-
-  page.drawRectangle({
-    x: MARGIN,
-    y: tableTop - headerH,
-    width: CONTENT_W,
-    height: headerH,
-    color: HEADER_BG,
-    borderColor: BORDER,
-    borderWidth: 0.75,
-  });
-
-  const headerY = tableTop - 15;
-  page.drawText("Description", { x: colDesc + 6, y: headerY, size: 8, font: fontBold, color: MUTED });
-  page.drawText("QTY", { x: colQty, y: headerY, size: 8, font: fontBold, color: MUTED });
-  page.drawText("Price", { x: colPrice, y: headerY, size: 8, font: fontBold, color: MUTED });
-  page.drawText("Discount", { x: colDisc, y: headerY, size: 8, font: fontBold, color: MUTED });
-  drawRightText(page, "Amount", colAmt - 6, headerY, 8, fontBold, MUTED);
-
-  y = tableTop - headerH;
-
-  const descWidth = colQty - colDesc - 12;
-  const titleLines = wrapTextByWidth(data.courseTitle, fontBold, 10, descWidth);
-  const detailLines = wrapTextByWidth(data.lineDescription, font, 9, descWidth);
-  const rowLineCount = Math.max(titleLines.length + detailLines.length, 1);
-  const rowH = Math.max(36, 14 + rowLineCount * 13);
-
-  page.drawRectangle({
-    x: MARGIN,
-    y: y - rowH,
-    width: CONTENT_W,
-    height: rowH,
-    borderColor: BORDER,
-    borderWidth: 0.75,
-  });
-
-  let rowY = y - 16;
-  for (const line of titleLines) {
-    page.drawText(line, { x: colDesc + 6, y: rowY, size: 10, font: fontBold, color: INK });
-    rowY -= 13;
-  }
-  for (const line of detailLines) {
-    page.drawText(line, { x: colDesc + 6, y: rowY, size: 9, font, color: MUTED });
-    rowY -= 12;
-  }
-
-  const qty = String(data.quantity);
-  const priceStr = formatPriceForPdf(data.unitPricePaise);
-  const discStr = data.discountPercent > 0 ? `${data.discountPercent}%` : "-";
-  const amtStr = formatPriceForPdf(data.amountInrPaise);
-  const rowMidY = y - rowH / 2 - 4;
-
-  page.drawText(qty, { x: colQty, y: rowMidY, size: 10, font, color: INK });
-  page.drawText(priceStr, { x: colPrice, y: rowMidY, size: 9, font, color: INK });
-  page.drawText(discStr, { x: colDisc, y: rowMidY, size: 9, font, color: INK });
-  drawRightText(page, amtStr, colAmt - 6, rowMidY, 10, fontBold, INK);
-
-  y -= rowH + 20;
-
-  page.drawText("Payment Method", {
-    x: MARGIN,
-    y,
-    size: 9,
-    font: fontBold,
-    color: MUTED,
-  });
-  y -= 16;
-
-  const note = buildPaymentNote(data);
-  for (const line of wrapTextByWidth(note, font, 9, CONTENT_W - 120)) {
-    page.drawText(line, { x: MARGIN, y, size: 9, font, color: INK });
-    y -= 13;
-  }
-
-  y -= 8;
-  drawHLine(page, y, MARGIN + 280, PAGE_W - MARGIN);
-  y -= 18;
-
-  page.drawText("TOTAL", {
-    x: MARGIN + 300,
-    y,
-    size: 11,
-    font: fontBold,
-    color: INK,
-  });
-  drawRightText(page, formatPriceForPdf(data.amountInrPaise), colAmt - 6, y, 12, fontBold, INK);
-
-  y -= 28;
-  page.drawText("Terms & Conditions", {
-    x: MARGIN,
-    y,
-    size: 9,
-    font: fontBold,
-    color: MUTED,
-  });
-  y -= 14;
-
-  for (let i = 0; i < INVOICE_TERMS.length; i++) {
-    const term = `${i + 1}. ${INVOICE_TERMS[i]}`;
-    for (const line of wrapTextByWidth(term, font, 8, CONTENT_W - 100)) {
-      page.drawText(line, { x: MARGIN, y, size: 8, font, color: MUTED });
-      y -= 11;
-    }
-    y -= 4;
-  }
-
-  const stampW = 88;
-  const stampH = 36;
-  const stampX = PAGE_W - MARGIN - stampW;
-  const stampY = MARGIN + 12;
-
-  page.drawRectangle({
-    x: stampX,
-    y: stampY,
-    width: stampW,
-    height: stampH,
-    color: PAID_BG,
-    borderColor: PAID_GREEN,
-    borderWidth: 2,
-  });
-  const paidLabel = "PAID";
-  const paidSize = 18;
-  const paidW = fontBold.widthOfTextAtSize(paidLabel, paidSize);
-  page.drawText(paidLabel, {
-    x: stampX + (stampW - paidW) / 2,
-    y: stampY + 10,
-    size: paidSize,
-    font: fontBold,
-    color: PAID_GREEN,
-  });
-
-  return pdf.save();
+  return note.slice(0, 140);
 }
 
 export function buildReceiptLineDescription(
@@ -397,4 +81,215 @@ export function getReceiptFilename(courseTitle: string, paymentRecordId: string)
     .replace(/^-|-$/g, "")
     .slice(0, 30);
   return `invoice-${slug || "payment"}-${paymentRecordId.slice(0, 8)}.pdf`;
+}
+
+function getInvoiceHtml(data: PaymentReceiptData, base64Logo: string | null): string {
+    const studentLines = [
+      data.studentName || "Student",
+      data.studentAddress,
+      data.studentPhone,
+      data.studentEmail,
+    ].filter(Boolean);
+
+    const logoHtml = base64Logo 
+        ? `<img src="${base64Logo}" alt="Logo" class="logo" />` 
+        : `<div class="logo"></div>`;
+
+    const discStr = data.discountPercent > 0 ? `${data.discountPercent}%` : "-";
+
+    return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            body {
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                color: #1e1e24;
+                margin: 0;
+                padding: 44px;
+                box-sizing: border-box;
+                font-size: 11px;
+            }
+            .muted { color: #595752; }
+            .bold { font-weight: bold; }
+            .right { text-align: right; }
+            .header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 58px;
+            }
+            .logo { height: 48px; width: auto; }
+            .invoice-title { font-size: 26px; font-weight: bold; color: #1e1e24; }
+            .top-section {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 20px;
+            }
+            .academy-info { font-size: 9px; line-height: 1.4; color: #595752; }
+            .academy-name { font-size: 11px; font-weight: bold; color: #1e1e24; margin-bottom: 4px; }
+            .meta-info { text-align: right; font-size: 10px; }
+            .meta-info > div { margin-bottom: 4px; }
+            .divider { border-bottom: 1px solid #bfbaba; margin: 20px 0; }
+            .bill-to-title { font-size: 9px; font-weight: bold; color: #595752; margin-bottom: 10px; }
+            .bill-to { font-size: 10px; line-height: 1.4; color: #1e1e24; margin-bottom: 12px; }
+            table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 20px;
+            }
+            th {
+                background-color: #f0ede8;
+                border: 1px solid #bfbaba;
+                font-size: 8px;
+                font-weight: bold;
+                color: #595752;
+                padding: 6px;
+                text-align: left;
+            }
+            th.right { text-align: right; }
+            td {
+                border: 1px solid #bfbaba;
+                padding: 10px 6px;
+                vertical-align: top;
+            }
+            .item-title { font-size: 10px; font-weight: bold; margin-bottom: 4px; }
+            .item-desc { font-size: 9px; color: #595752; }
+            .payment-method-title { font-size: 9px; font-weight: bold; color: #595752; margin-bottom: 10px; }
+            .payment-method-note { font-size: 9px; margin-bottom: 20px; line-height: 1.4; }
+            .total-section {
+                display: flex;
+                justify-content: flex-end;
+                align-items: center;
+                gap: 40px;
+                margin-bottom: 28px;
+            }
+            .total-label { font-size: 11px; font-weight: bold; }
+            .total-amount { font-size: 12px; font-weight: bold; }
+            .terms-title { font-size: 9px; font-weight: bold; color: #595752; margin-bottom: 10px; }
+            .terms { font-size: 8px; color: #595752; line-height: 1.4; }
+            .paid-stamp {
+                position: absolute;
+                top: 56px;
+                right: 44px;
+                border: 2px solid #268552;
+                background-color: #e0f5e6;
+                color: #268552;
+                font-size: 18px;
+                font-weight: bold;
+                padding: 8px 20px;
+                letter-spacing: 1px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            ${logoHtml}
+            <div class="invoice-title">INVOICE</div>
+        </div>
+
+        <div class="paid-stamp">PAID</div>
+
+        <div class="top-section">
+            <div class="academy-info">
+                <div class="academy-name">${ACADEMY_INVOICE.name}</div>
+                <div>${ACADEMY_INVOICE.addressLine1}</div>
+                <div>${ACADEMY_INVOICE.addressLine2}</div>
+                <div>${ACADEMY_INVOICE.phone}</div>
+                <div>${ACADEMY_INVOICE.email}</div>
+                <div>${ACADEMY_INVOICE.website}</div>
+            </div>
+            <div class="meta-info">
+                <div class="bold">INVOICE # ${data.invoiceNumber}</div>
+                <div>DATE ${formatInvoiceDate(data.paidAt)}</div>
+            </div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="bill-to-title">BILL TO</div>
+        <div class="bill-to">
+            ${studentLines.map(l => `<div>${l}</div>`).join("")}
+        </div>
+
+        <div class="divider"></div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>QTY</th>
+                    <th>Price</th>
+                    <th>Discount</th>
+                    <th class="right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <div class="item-title">${data.courseTitle}</div>
+                        <div class="item-desc">${data.lineDescription}</div>
+                    </td>
+                    <td>${data.quantity}</td>
+                    <td>${formatPriceForHtml(data.unitPricePaise)}</td>
+                    <td>${discStr}</td>
+                    <td class="right bold">${formatPriceForHtml(data.amountInrPaise)}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="payment-method-title">Payment Method</div>
+        <div class="payment-method-note">${buildPaymentNote(data)}</div>
+
+        <div class="divider" style="margin-left: 280px;"></div>
+
+        <div class="total-section">
+            <div class="total-label">TOTAL</div>
+            <div class="total-amount">${formatPriceForHtml(data.amountInrPaise)}</div>
+        </div>
+
+        <div class="terms-title">Terms & Conditions</div>
+        <div class="terms">
+            ${INVOICE_TERMS.map((t, i) => `<div>${i + 1}. ${t}</div>`).join("")}
+        </div>
+    </body>
+    </html>
+    `;
+}
+
+export async function generatePaymentReceiptPdf(data: PaymentReceiptData): Promise<Uint8Array> {
+    const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+
+    try {
+        const page = await browser.newPage();
+        
+        let base64Logo = null;
+        try {
+          const logoPath = path.join(process.cwd(), "public", "logo.png");
+          const bytes = await readFile(logoPath);
+          base64Logo = `data:image/png;base64,${bytes.toString('base64')}`;
+        } catch (e) {
+          console.error("Could not load logo:", e);
+        }
+
+        const htmlContent = getInvoiceHtml(data, base64Logo);
+        await page.setContent(htmlContent, { waitUntil: 'domcontentloaded' });
+
+        const pdfBuffer = await page.pdf({
+            format: 'A4',
+            printBackground: true,
+            margin: { top: '0', right: '0', bottom: '0', left: '0' }
+        });
+
+        return new Uint8Array(pdfBuffer);
+    } catch (error) {
+        console.error("Failed to generate invoice PDF via Puppeteer:", error);
+        throw error;
+    } finally {
+        await browser.close();
+    }
 }

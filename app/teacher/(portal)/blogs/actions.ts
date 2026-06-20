@@ -94,6 +94,8 @@ export async function updateTeacherBlogPost(id: string, formData: FormData) {
       body: parsed.data.body,
       published: false,
       approvalStatus: "PENDING",
+      featuredOnHomepage: false,
+      featuredAt: null,
     },
   });
 

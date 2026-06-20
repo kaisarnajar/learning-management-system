@@ -44,7 +44,7 @@ export function blogApprovalStatusClass(status: BlogApprovalStatus, published: b
 }
 
 export function canTeacherEditBlogPost(post: Pick<BlogPost, "approvalStatus" | "createdById">, userId: string) {
-  return post.createdById === userId && (post.approvalStatus === "PENDING" || post.approvalStatus === "REJECTED");
+  return post.createdById === userId;
 }
 
 /** Teachers may delete their own posts at any approval stage. */

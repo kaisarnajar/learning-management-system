@@ -168,9 +168,9 @@ async function fetchBookOrdersPaginated(
     ...(search
       ? {
           OR: [
-            { user: { name: { contains: search } } },
-            { user: { email: { contains: search } } },
-            { upiTransactionId: { contains: search } },
+            { user: { name: { contains: search, mode: "insensitive" } } },
+            { user: { email: { contains: search, mode: "insensitive" } } },
+            { upiTransactionId: { contains: search, mode: "insensitive" } },
           ],
         }
       : {}),

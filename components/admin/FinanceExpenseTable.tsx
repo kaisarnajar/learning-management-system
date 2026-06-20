@@ -52,7 +52,7 @@ export function FinanceExpenseTable({ expenses, returnQuery }: FinanceExpenseTab
             <td className="px-4 py-3 text-muted">{formatDate(expense.paidAt)}</td>
             <td className="px-4 py-3 text-muted">{expenseCategoryLabel(expense.category)}</td>
             <td className="px-4 py-3 text-muted">{expense.teacher?.name ?? "—"}</td>
-            <td className="px-4 py-3 font-medium text-red-700">{formatPrice(expense.amountInrPaise)}</td>
+            <td className="px-4 py-3 font-medium text-destructive-text">{formatPrice(expense.amountInrPaise)}</td>
             <td className="px-4 py-3 text-muted">{expense.description ?? "—"}</td>
             <td className="px-4 py-3">
               <DeleteExpenseButton id={expense.id} returnQuery={returnQuery} />

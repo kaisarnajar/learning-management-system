@@ -107,7 +107,7 @@ export async function getAllCourses(): Promise<CourseWithTeacher[]> {
 /** Course IDs whose title matches a search query (for models that only store courseId). */
 export async function getCourseIdsByTitleSearch(searchQuery: string): Promise<string[]> {
   const courses = await withDbErrorHandling(() => prisma.course.findMany({
-      where: { title: { contains: searchQuery } },
+      where: { title: { contains: searchQuery, mode: "insensitive" } },
       select: { id: true },
     }), "Database operation failed");
   return courses.map((course) => course.id);

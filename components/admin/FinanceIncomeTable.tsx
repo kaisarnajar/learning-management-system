@@ -58,7 +58,7 @@ export function FinanceIncomeTable({ records }: FinanceIncomeTableProps) {
             </td>
             <td className="px-4 py-3 text-muted">{record.course?.title ?? "—"}</td>
             <td className="px-4 py-3 text-muted">{incomePaymentTypeLabel(record.paymentType)}</td>
-            <td className="px-4 py-3 font-medium text-emerald-700">{formatPrice(record.amountInrPaise)}</td>
+            <td className="px-4 py-3 font-medium text-success-text">{formatPrice(record.amountInrPaise)}</td>
             <td className="px-4 py-3 text-muted">{record.description ?? "—"}</td>
           </tr>
         ))}

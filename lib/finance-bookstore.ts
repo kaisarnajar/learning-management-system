@@ -185,10 +185,10 @@ export async function getBookOrderFinancePaginated(
   const searchWhere = filters.q
     ? {
         OR: [
-          { user: { name: { contains: filters.q } } },
-          { user: { email: { contains: filters.q } } },
-          { upiTransactionId: { contains: filters.q } },
-          { id: { contains: filters.q } },
+          { user: { name: { contains: filters.q, mode: "insensitive" } } },
+          { user: { email: { contains: filters.q, mode: "insensitive" } } },
+          { upiTransactionId: { contains: filters.q, mode: "insensitive" } },
+          { id: { contains: filters.q, mode: "insensitive" } },
         ],
       }
     : {};

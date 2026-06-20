@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ADMIN_DASHBOARD_LINK_HREFS, ADMIN_NAV_LINKS } from "@/lib/admin-nav";
+import { ADMIN_DASHBOARD_LINK_HREFS, ADMIN_NAV_LINKS, ADMIN_NAV_GROUPS } from "@/lib/admin-nav";
 import { getPendingBlogApprovalCount } from "@/lib/blog-approval";
 import { getBookCount, getPendingBookOrderCount } from "@/lib/bookstore";
 import { getPendingContactInquiryCount } from "@/lib/contact-inquiries";
@@ -141,8 +141,10 @@ export default async function AdminDashboardPage() {
         highlight: meta.highlight ?? false,
       };
     })
-    .filter((stat): stat is DashboardStat => stat !== null)
-    .sort((a, b) => Number(a.highlight) - Number(b.highlight));
+    .filter((stat): stat is DashboardStat => stat !== null);
+
+  const actionRequiredStats = countStats.filter((s) => s.highlight);
+  const normalStats = countStats.filter((s) => !s.highlight);
 
   const quickLinks: DashboardLink[] = ADMIN_NAV_LINKS.filter((link) =>
     ADMIN_DASHBOARD_LINK_HREFS.has(link.href),
@@ -151,39 +153,61 @@ export default async function AdminDashboardPage() {
     href: link.href,
   }));
 
-  if (isDeveloper) {
-    quickLinks.push({
-      label: "Analytics",
-      href: "/developer/analytics",
-    });
-  }
-
   return (
     <div>
       <h1 className="font-serif text-2xl font-bold text-primary sm:text-3xl">Dashboard</h1>
       <p className="mt-2 text-sm text-muted">Manage academy content and pending approvals.</p>
 
-      <section className="mt-8">
-        <h2 className="font-serif text-lg font-semibold text-foreground">Overview</h2>
-        <p className="mt-1 text-sm text-muted">Counts for content, people, and pending items.</p>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {countStats.map((stat) => (
-            <DashboardCountCard key={stat.href} stat={stat} />
-          ))}
-        </div>
-      </section>
+      {actionRequiredStats.length > 0 && (
+        <section className="mt-8">
+          <h2 className="font-serif text-lg font-semibold text-amber-600 dark:text-amber-500">Action Required</h2>
+          <p className="mt-1 text-sm text-muted">Items that need your immediate attention.</p>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {actionRequiredStats.map((stat) => (
+              <DashboardCountCard key={stat.href} stat={stat} />
+            ))}
+          </div>
+        </section>
+      )}
 
-      <section className="mt-10">
-        <h2 className="font-serif text-lg font-semibold text-foreground">Quick links</h2>
-        <p className="mt-1 text-sm text-muted">
-          Payment settings, finance, expenses, and other academy tools.
-        </p>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {quickLinks.map((link) => (
-            <DashboardLinkCard key={link.href} link={link} />
-          ))}
-        </div>
-      </section>
+      {ADMIN_NAV_GROUPS.map((group) => {
+        const groupCountStats = normalStats.filter((stat) =>
+          group.links.some((l) => l.href === stat.href)
+        );
+        const groupQuickLinks = quickLinks.filter((link) =>
+          group.links.some((l) => l.href === link.href)
+        );
+
+        if (groupCountStats.length === 0 && groupQuickLinks.length === 0) {
+          return null;
+        }
+
+        return (
+          <section key={group.title} className="mt-10">
+            <h2 className="font-serif text-lg font-semibold text-foreground">{group.title}</h2>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {group.links.map((link) => {
+                const countStat = groupCountStats.find((s) => s.href === link.href);
+                if (countStat) return <DashboardCountCard key={countStat.href} stat={countStat} />;
+                
+                const quickLink = groupQuickLinks.find((q) => q.href === link.href);
+                if (quickLink) return <DashboardLinkCard key={quickLink.href} link={quickLink} />;
+                
+                return null;
+              })}
+            </div>
+          </section>
+        );
+      })}
+
+      {isDeveloper && (
+        <section className="mt-10">
+          <h2 className="font-serif text-lg font-semibold text-foreground">Analytics & Insights</h2>
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <DashboardLinkCard link={{ label: "Analytics", href: "/developer/analytics" }} />
+          </div>
+        </section>
+      )}
     </div>
   );
 }

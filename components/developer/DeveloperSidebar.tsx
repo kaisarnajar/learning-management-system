@@ -76,7 +76,7 @@ export function DeveloperSidebar() {
               <button
                 type="button"
                 onClick={() => toggleGroup(group.title)}
-                className="group flex w-full items-center justify-between rounded-lg px-3 py-2 mt-2 text-xs font-semibold text-muted hover:text-foreground transition-colors"
+                className="group flex w-full items-center justify-between rounded-lg px-3 py-2 mt-2 text-left text-xs font-semibold text-muted hover:text-foreground transition-colors"
               >
                 <span className="uppercase tracking-wider">{group.title}</span>
                 <svg

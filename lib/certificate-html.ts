@@ -31,7 +31,7 @@ export function renderCertificateToHtml(data: {
   >
     <img
       src="${data.sealUrl}"
-      class="w-[450px]"
+      class="w-[450px] process-white-bg"
     />
   </div>
 
@@ -40,7 +40,7 @@ export function renderCertificateToHtml(data: {
     
     <img
       src="${data.sealUrl}"
-      class="w-20 h-20 mx-auto mb-3"
+      class="w-20 h-20 mx-auto mb-3 process-white-bg"
     />
 
     <h1
@@ -120,11 +120,11 @@ export function renderCertificateToHtml(data: {
         <img
           id="signature-image"
           src="${data.signatureUrl}"
-          class="max-h-[140px] max-w-[240px] object-contain relative z-20"
+          class="max-h-[140px] max-w-[240px] object-contain relative z-20 translate-y-4 process-white-bg"
         />
         <img
           src="${data.sealUrl}"
-          class="w-24 absolute left-[-40px] bottom-[-10px] opacity-80 z-10"
+          class="w-24 absolute left-[-40px] bottom-[-10px] opacity-80 z-10 process-white-bg"
         />
       </div>
 
@@ -155,42 +155,45 @@ export function renderCertificateToHtml(data: {
 
   <script>
     window.addEventListener('load', () => {
-      const img = document.getElementById('signature-image');
-      if (!img || !img.src || img.src.length < 100) return;
+      const imgs = document.querySelectorAll('.process-white-bg');
+      
+      imgs.forEach((img) => {
+        if (!img.src || img.src.length < 100) return;
 
-      const processSignature = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth || img.width || 400;
-          canvas.height = img.naturalHeight || img.height || 200;
-          const ctx = canvas.getContext('2d');
-          
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-          const data = imageData.data;
-          
-          for (let i = 0; i < data.length; i += 4) {
-            const r = data[i];
-            const g = data[i+1];
-            const b = data[i+2];
-            // Remove white/light pixels
-            if (r > 200 && g > 200 && b > 200) {
-              data[i+3] = 0; // Transparent
+        const processImage = () => {
+          try {
+            const canvas = document.createElement('canvas');
+            canvas.width = img.naturalWidth || img.width || 400;
+            canvas.height = img.naturalHeight || img.height || 200;
+            const ctx = canvas.getContext('2d');
+            
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+            
+            for (let i = 0; i < data.length; i += 4) {
+              const r = data[i];
+              const g = data[i+1];
+              const b = data[i+2];
+              // Remove white/light pixels
+              if (r > 200 && g > 200 && b > 200) {
+                data[i+3] = 0; // Transparent
+              }
             }
+            
+            ctx.putImageData(imageData, 0, 0);
+            img.src = canvas.toDataURL('image/png');
+          } catch (e) {
+            console.error("Canvas processing failed", e);
           }
-          
-          ctx.putImageData(imageData, 0, 0);
-          img.src = canvas.toDataURL('image/png');
-        } catch (e) {
-          console.error("Canvas processing failed", e);
-        }
-      };
+        };
 
-      if (img.complete) {
-        processSignature();
-      } else {
-        img.onload = processSignature;
-      }
+        if (img.complete) {
+          processImage();
+        } else {
+          img.onload = processImage;
+        }
+      });
     });
   </script>
 

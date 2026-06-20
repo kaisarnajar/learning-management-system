@@ -38,8 +38,8 @@ function revalidatePaymentPaths(userId: string, courseId?: string | null) {
   }
 }
 
-function paymentReturnUrl(returnTo: string | undefined, event: "confirmed" | "declined"): string {
-  const param = event === "confirmed" ? "confirmed" : "declined";
+function paymentReturnUrl(returnTo: string | undefined, event: "confirmed" | "declined" | "deleted"): string {
+  const param = event === "confirmed" ? "confirmed" : event === "declined" ? "declined" : "deleted";
   const fallback = `/admin/payments?${param}=1`;
   if (!returnTo?.startsWith("/admin")) return fallback;
   const [pathname, query = ""] = returnTo.split("?");
@@ -184,4 +184,37 @@ export async function declineMonthlyPayment(
 
   revalidatePaymentPaths(submission.userId, submission.courseId);
   redirect(paymentReturnUrl(returnTo, "declined"));
+}
+
+export async function deleteApprovedPayment(
+  submissionId: string,
+  returnTo?: string,
+): Promise<{ error?: string } | void> {
+  await requireAdmin();
+
+  const submission = await withDbErrorHandling(() => prisma.coursePaymentSubmission.findUnique({
+      where: { id: submissionId },
+    }), "Database operation failed");
+
+  if (!submission) {
+    return { error: "Payment submission not found." };
+  }
+
+  if (submission.status !== MONTHLY_PAYMENT_APPROVED) {
+    return { error: "Only approved payments can be deleted." };
+  }
+
+  if (submission.paymentRecordId) {
+    const recordId = submission.paymentRecordId;
+    await withDbErrorHandling(() => prisma.paymentRecord.delete({
+        where: { id: recordId },
+      }), "Database operation failed");
+  }
+
+  await withDbErrorHandling(() => prisma.coursePaymentSubmission.delete({
+      where: { id: submissionId },
+    }), "Database operation failed");
+
+  revalidatePaymentPaths(submission.userId, submission.courseId);
+  redirect(paymentReturnUrl(returnTo, "deleted" as any));
 }

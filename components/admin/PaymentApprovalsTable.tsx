@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { ConfirmMonthlyPaymentButton } from "@/components/admin/ConfirmMonthlyPaymentButton";
 import { DeclineMonthlyPaymentButton } from "@/components/admin/DeclineMonthlyPaymentButton";
+import { DeletePaymentButton } from "@/components/admin/DeletePaymentButton";
 import { formatPrice } from "@/lib/courses";
 import type { CoursePaymentSubmissionWithUser } from "@/lib/monthly-payments";
 import { MONTHLY_PAYMENT_APPROVED } from "@/lib/monthly-payment-status";
@@ -85,9 +86,12 @@ export function PaymentApprovalsTable({
             <td className="whitespace-nowrap px-4 py-3">
               <div className="flex items-center justify-end gap-2">
                 {submission.status === MONTHLY_PAYMENT_APPROVED ? (
-                  <span className="inline-flex items-center rounded-full bg-success-bg px-2.5 py-0.5 text-xs font-semibold text-success-text">
-                    Approved
-                  </span>
+                  <>
+                    <span className="inline-flex items-center rounded-full bg-success-bg px-2.5 py-0.5 text-xs font-semibold text-success-text">
+                      Approved
+                    </span>
+                    <DeletePaymentButton submissionId={submission.id} />
+                  </>
                 ) : (
                   <>
                     <ConfirmMonthlyPaymentButton submissionId={submission.id} />

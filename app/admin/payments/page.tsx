@@ -24,7 +24,7 @@ function tabHref(type: TabType) {
 export default async function AdminPaymentApprovalsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; confirmed?: string; declined?: string; page?: string; q?: string }>;
+  searchParams: Promise<{ type?: string; confirmed?: string; declined?: string; deleted?: string; page?: string; q?: string }>;
 }) {
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
@@ -79,6 +79,11 @@ export default async function AdminPaymentApprovalsPage({
       {params.declined === "1" && (
         <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
           Payment declined. The student has been notified and can resubmit.
+        </p>
+      )}
+      {params.deleted === "1" && (
+        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
+          Payment record successfully deleted.
         </p>
       )}
 

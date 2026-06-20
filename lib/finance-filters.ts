@@ -11,10 +11,7 @@ import { parseSearchQuery } from "@/lib/text-search";
 
 export type FinanceTab = "income" | "expenses";
 
-export const FINANCE_TABS: { label: string; tab: FinanceTab }[] = [
-  { label: "Income", tab: "income" },
-  { label: "Expenses", tab: "expenses" },
-];
+
 
 export type FinanceDatePreset = "this_month" | "last_month" | "this_year" | "all_time" | "custom";
 

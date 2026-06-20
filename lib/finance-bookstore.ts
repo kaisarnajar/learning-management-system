@@ -182,7 +182,7 @@ export async function getBookOrderFinancePaginated(
 ): Promise<PaginatedResult<BookOrderFinanceRecord>> {
   const dateWhere = filters.from || filters.to ? { createdAt: financePaidAtWhere(filters) } : {};
   
-  const searchWhere = filters.q
+  const searchWhere: Prisma.BookOrderWhereInput = filters.q
     ? {
         OR: [
           { user: { name: { contains: filters.q, mode: "insensitive" } } },

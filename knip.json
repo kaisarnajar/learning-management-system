@@ -2,12 +2,10 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     "app/**/{page,layout,loading,error,not-found,route,default,global-error}.{js,jsx,ts,tsx}",
-    "proxy.ts",
     "prisma/seed*.ts",
     "scripts/*.{mjs,js}"
   ],
   "project": ["**/*.{ts,tsx,mjs}"],
-  "ignore": ["**/*.d.ts", ".next/**"],
   "ignoreExportsUsedInFile": true,
-  "ignoreDependencies": ["eslint-config-next", "@tailwindcss/postcss", "tailwindcss", "@types/bcryptjs"]
+  "ignoreDependencies": ["tailwindcss", "@types/bcryptjs"]
 }

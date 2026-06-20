@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+
 import { useSession } from "next-auth/react";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { TrackedLink } from "@/components/analytics/TrackedLink";

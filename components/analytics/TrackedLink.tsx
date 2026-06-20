@@ -1,7 +1,6 @@
 "use client";
 
-import Link, { LinkProps } from "next/link";
-import { ReactNode } from "react";
+import Link from "next/link";
 import { trackButtonClick } from "@/lib/analytics-client";
 
 type TrackedLinkProps = React.ComponentProps<typeof Link> & {

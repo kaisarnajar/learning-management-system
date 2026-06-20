@@ -1,4 +1,4 @@
-import Link from "next/link";
+
 import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { bismillahArabic, bismillahEnglish } from "@/content/bismillah";
 import { indoPakArabic } from "@/lib/fonts/indo-pak-arabic";

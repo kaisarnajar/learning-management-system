@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+
 import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";

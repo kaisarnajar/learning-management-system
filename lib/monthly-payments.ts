@@ -1,6 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 import {
   MONTHLY_PAYMENT_PENDING,
+  MONTHLY_PAYMENT_APPROVED,
   PAYMENT_TYPE_ENROLLMENT,
   PAYMENT_TYPE_MONTHLY,
 } from "@/lib/monthly-payment-status";
@@ -178,4 +179,46 @@ export async function getPendingEnrollmentFeeSubmissionMap(userId: string) {
       select: { courseId: true },
     }), "Database operation failed");
   return new Set(rows.map((row) => row.courseId));
+}
+
+export async function getApprovedMonthlyPaymentsPaginated(
+  page: number,
+  pageSize: number = APPROVAL_PAGE_SIZE,
+  searchQuery?: string,
+): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
+  noStore();
+  const base = { status: MONTHLY_PAYMENT_APPROVED, paymentType: PAYMENT_TYPE_MONTHLY };
+  const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
+  const totalCount = await withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where }), "Database operation failed");
+  const safePage = clampPage(page, totalCount, pageSize);
+  const items = await withDbErrorHandling(() => prisma.coursePaymentSubmission.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
+  return { items, totalCount };
+}
+
+export async function getApprovedEnrollmentFeePaymentsPaginated(
+  page: number,
+  pageSize: number = APPROVAL_PAGE_SIZE,
+  searchQuery?: string,
+): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
+  noStore();
+  const base = { status: MONTHLY_PAYMENT_APPROVED, paymentType: PAYMENT_TYPE_ENROLLMENT };
+  const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
+  const totalCount = await withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where }), "Database operation failed");
+  const safePage = clampPage(page, totalCount, pageSize);
+  const items = await withDbErrorHandling(() => prisma.coursePaymentSubmission.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      include: {
+        user: { select: { id: true, name: true, email: true } },
+      },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
+  return { items, totalCount };
 }

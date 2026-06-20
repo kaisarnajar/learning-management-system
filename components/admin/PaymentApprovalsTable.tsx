@@ -3,18 +3,19 @@ import { ConfirmMonthlyPaymentButton } from "@/components/admin/ConfirmMonthlyPa
 import { DeclineMonthlyPaymentButton } from "@/components/admin/DeclineMonthlyPaymentButton";
 import { formatPrice } from "@/lib/courses";
 import type { CoursePaymentSubmissionWithUser } from "@/lib/monthly-payments";
+import { MONTHLY_PAYMENT_APPROVED } from "@/lib/monthly-payment-status";
 
-type PendingPaymentApprovalsTableProps = {
+type PaymentApprovalsTableProps = {
   submissions: CoursePaymentSubmissionWithUser[];
   courseTitleById: Map<string, string>;
   emptyMessage: string;
 };
 
-export function PendingPaymentApprovalsTable({
+export function PaymentApprovalsTable({
   submissions,
   courseTitleById,
   emptyMessage,
-}: PendingPaymentApprovalsTableProps) {
+}: PaymentApprovalsTableProps) {
   if (submissions.length === 0) {
     return (
       <p className="px-4 py-8 text-center text-sm text-muted">{emptyMessage}</p>
@@ -83,8 +84,16 @@ export function PendingPaymentApprovalsTable({
             </td>
             <td className="whitespace-nowrap px-4 py-3">
               <div className="flex items-center justify-end gap-2">
-                <ConfirmMonthlyPaymentButton submissionId={submission.id} />
-                <DeclineMonthlyPaymentButton submissionId={submission.id} />
+                {submission.status === MONTHLY_PAYMENT_APPROVED ? (
+                  <span className="inline-flex items-center rounded-full bg-success-bg px-2.5 py-0.5 text-xs font-semibold text-success-text">
+                    Approved
+                  </span>
+                ) : (
+                  <>
+                    <ConfirmMonthlyPaymentButton submissionId={submission.id} />
+                    <DeclineMonthlyPaymentButton submissionId={submission.id} />
+                  </>
+                )}
               </div>
             </td>
           </tr>

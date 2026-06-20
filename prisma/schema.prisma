@@ -395,6 +395,7 @@ model PaymentRecord {
   amountInrPaise       Int
   paidAt               DateTime
   paymentType          String?
+  invoiceNumber        String?  @unique
   description          String?
   receiptEmailSentAt   DateTime?
   createdAt            DateTime @default(now())

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import puppeteer from "puppeteer";
+import crypto from "crypto";
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { getCourseById } from "@/lib/courses";
-import { getReceiptFilename, formatInvoiceNumber } from "@/lib/payment-receipt";
+import { getReceiptFilename } from "@/lib/payment-receipt";
 import { prisma } from "@/lib/prisma";
 import { withDbErrorHandling } from "@/lib/db-error";
 import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-links";
@@ -42,6 +43,15 @@ export async function GET(
 
   if (!isOwner && !isAdmin) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
+  let invoiceNumber = record.invoiceNumber;
+  if (!invoiceNumber) {
+    invoiceNumber = `DQA-INV-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
+    await withDbErrorHandling(() => prisma.paymentRecord.update({
+      where: { id: paymentRecordId },
+      data: { invoiceNumber },
+    }), "Failed to save invoice number");
   }
 
   const course = record.courseId ? await getCourseById(record.courseId) : null;
@@ -88,7 +98,7 @@ export async function GET(
       phone: record.user.whatsapp ? formatWhatsAppForDisplay(record.user.whatsapp) : "N/A",
     },
     payment: {
-      receiptId: formatInvoiceNumber(paymentRecordId),
+      receiptId: invoiceNumber,
       date: record.paidAt.toLocaleDateString("en-IN", {
         year: "numeric",
         month: "long",

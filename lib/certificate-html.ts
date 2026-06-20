@@ -36,23 +36,23 @@ export function renderCertificateToHtml(data: {
   </div>
 
   <!-- Header -->
-  <div class="pt-10 text-center relative z-10">
+  <div class="pt-8 text-center relative z-10">
     
     <img
       src="${data.sealUrl}"
-      class="w-24 h-24 mx-auto mb-4"
+      class="w-20 h-20 mx-auto mb-3"
     />
 
     <h1
-      class="text-5xl font-serif font-bold tracking-wide text-[#0f3d2e] uppercase"
+      class="text-[40px] font-serif font-bold tracking-wide text-[#0f3d2e] uppercase"
     >
       ${data.academyName}
     </h1>
 
-    <div class="w-48 h-[2px] bg-[#d4af37] mx-auto mt-4"></div>
+    <div class="w-48 h-[2px] bg-[#d4af37] mx-auto mt-3"></div>
 
     <h2
-      class="text-6xl font-serif mt-8 text-[#b8860b]"
+      class="text-[52px] font-serif mt-5 text-[#b8860b]"
       style="letter-spacing:2px"
     >
       Certificate of Appreciation
@@ -60,22 +60,22 @@ export function renderCertificateToHtml(data: {
   </div>
 
   <!-- Body -->
-  <div class="px-24 mt-12 text-center relative z-10">
+  <div class="px-24 mt-6 text-center relative z-10">
     
-    <p class="text-2xl text-gray-700">
+    <p class="text-xl text-gray-700">
       This certificate is proudly presented to
     </p>
 
     <h3
-      class="text-6xl font-bold mt-4 text-[#0f3d2e]"
+      class="text-5xl font-bold mt-3 text-[#0f3d2e]"
       style="font-family: 'Georgia', 'Cormorant Garamond', serif;"
     >
       ${data.studentName}
     </h3>
 
-    <div class="w-80 h-[2px] bg-[#d4af37] mx-auto my-5"></div>
+    <div class="w-80 h-[2px] bg-[#d4af37] mx-auto my-4"></div>
 
-    <p class="text-2xl text-gray-700 leading-relaxed">
+    <p class="text-[22px] text-gray-700 leading-snug">
       residing at
       <strong>${data.address}</strong>,
       in recognition and appreciation of their dedication,
@@ -83,7 +83,7 @@ export function renderCertificateToHtml(data: {
       at ${data.academyName}.
     </p>
 
-    <p class="text-2xl text-gray-700 leading-relaxed mt-8">
+    <p class="text-[22px] text-gray-700 leading-snug mt-5">
       The student has shown admirable effort, discipline,
       and enthusiasm in the study of
       <strong>${data.courseName}</strong>
@@ -94,7 +94,7 @@ export function renderCertificateToHtml(data: {
 
   <!-- Footer -->
   <div
-    class="absolute bottom-16 left-20 right-20 flex justify-between items-end z-10"
+    class="absolute bottom-12 left-20 right-20 flex justify-between items-end z-10"
   >
     
     <!-- Date -->
@@ -103,11 +103,11 @@ export function renderCertificateToHtml(data: {
         Date of Issuance
       </p>
 
-      <p class="text-3xl font-semibold text-[#0f3d2e]">
+      <p class="text-[28px] font-semibold text-[#0f3d2e]">
         ${data.issueDate}
       </p>
 
-      <div class="mt-8 text-gray-700 text-lg">
+      <div class="mt-6 text-gray-700 text-[16px]">
         <p>${data.academyEmail}</p>
         <p>${data.academyPhone}</p>
       </div>
@@ -118,17 +118,17 @@ export function renderCertificateToHtml(data: {
       
       <img
         src="${data.signatureUrl}"
-        class="w-[260px] relative z-20"
+        class="w-[220px] relative z-20"
       />
 
       <img
         src="${data.sealUrl}"
-        class="w-28 absolute left-[-60px] bottom-[-10px] opacity-90 z-10"
+        class="w-24 absolute left-[-50px] bottom-[-10px] opacity-90 z-10"
       />
 
-      <div class="w-64 border-t border-[#d4af37] mt-2"></div>
+      <div class="w-56 border-t border-[#d4af37] mt-1"></div>
 
-      <p class="text-xl text-[#0f3d2e] mt-2">
+      <p class="text-lg text-[#0f3d2e] mt-1">
         Signature Founder/CEO
       </p>
     </div>

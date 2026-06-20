@@ -7,9 +7,6 @@ export function getCertificateFilename(courseTitle: string, enrollmentId: string
   return `certificate-${slug || "course"}-${enrollmentId.slice(0, 8)}.pdf`;
 }
 
-export function hasUploadedCertificate(enrollment: {
-  status: string;
-  uploadedCertificatePath: string | null;
-}): boolean {
-  return enrollment.status === "completed" && Boolean(enrollment.uploadedCertificatePath);
+export function canDownloadCertificate(courseStatus: string, enrollmentStatus: string): boolean {
+  return courseStatus === "COMPLETED" && enrollmentStatus === "completed";
 }

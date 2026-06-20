@@ -35,7 +35,7 @@ async function assertDatabaseMigrated() {
       }),
     () =>
       prisma.enrollment.findFirst({
-        select: { uploadedCertificatePath: true, certificateEmailSentAt: true },
+        select: { certificateEmailSentAt: true },
       }),
     () =>
       prisma.paymentRecord.findFirst({

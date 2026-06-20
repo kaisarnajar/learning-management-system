@@ -3,7 +3,7 @@ import { CourseDurationDisplay } from "@/components/courses/CourseDurationDispla
 import { DownloadCertificateButton } from "@/components/certificate/DownloadCertificateButton";
 import { Pagination } from "@/components/shared/Pagination";
 import { requireUser } from "@/lib/auth-actions";
-import { hasUploadedCertificate } from "@/lib/certificate";
+import { canDownloadCertificate } from "@/lib/certificate";
 
 import {
   AWAITING_ENROLLMENT_FEE,
@@ -130,7 +130,7 @@ export default async function ProfileCoursesPage({
                   Course announcements
                 </Link>
 
-                {hasUploadedCertificate(enrollment) && (
+                {canDownloadCertificate(course.status, enrollment.status) && (
                   <DownloadCertificateButton enrollmentId={enrollment.id} courseTitle={course.title} />
                 )}
 

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { UploadCertificateButton } from "@/components/admin/UploadCertificateButton";
+
 import { ViewCertificateButton } from "@/components/admin/ViewCertificateButton";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
@@ -95,17 +95,8 @@ export default async function CourseStudentsPage({
                   <td className="whitespace-nowrap px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
                       {isCompletedCourse && (
-                        <>
-                          {enrollment.uploadedCertificatePath && (
-                            <ViewCertificateButton enrollmentId={enrollment.id} />
-                          )}
-                          <UploadCertificateButton
-                            enrollmentId={enrollment.id}
-                            courseId={id}
-                            hasCertificate={Boolean(enrollment.uploadedCertificatePath)}
-                          />
-                        </>
-                      )}
+                          <ViewCertificateButton enrollmentId={enrollment.id} />
+                        )}
                       <ConfirmationModal 
                         title="Remove Enrollment" 
                         description={`Remove ${enrollment.user.name ?? enrollment.user.email} from this course? Their account will not be deleted; they can enroll again later.`} 

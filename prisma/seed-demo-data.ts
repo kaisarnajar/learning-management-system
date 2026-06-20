@@ -1,7 +1,7 @@
 import { hash } from "bcryptjs";
 import type { PrismaClient } from "@prisma/client";
 import { getAdminEmails } from "../lib/admin";
-import { certificateUploadPath } from "../lib/certificate-upload";
+
 import { syncEnrollmentsWithCourseStatus } from "../lib/completion";
 import { courses } from "../content/courses";
 import {
@@ -250,13 +250,7 @@ async function seedCompletedCourseScenario(prisma: PrismaClient) {
   const studentId = "19";
   const userId = demoUserId(studentId);
   const enrollmentId = demoEnrollmentIdFor(studentId, courseId);
-  const uploadedCertificatePath = certificateUploadPath(enrollmentId);
-
-  await writeDemoPdfFile(uploadedCertificatePath, [
-    "Darse Quran Academy — Demo Certificate",
-    "Course: Advanced Qiraat",
-    "Student: Tabassum Gul",
-  ]);
+  
 
   await prisma.enrollment.upsert({
     where: {
@@ -268,12 +262,12 @@ async function seedCompletedCourseScenario(prisma: PrismaClient) {
       courseId,
       status: "completed",
       completedAt: new Date("2026-05-01T12:00:00.000Z"),
-      uploadedCertificatePath,
+      
     },
     update: {
       status: "completed",
       completedAt: new Date("2026-05-01T12:00:00.000Z"),
-      uploadedCertificatePath,
+      
     },
   });
 

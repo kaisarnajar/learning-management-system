@@ -44,7 +44,7 @@ type FooterCreditBlockProps = {
 };
 
 const footerIconLinkClassName =
-  "inline-flex h-9 w-9 items-center justify-center rounded-full border border-border text-muted transition-colors hover:border-[#cca72f] hover:text-[#cca72f]";
+  "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white/70 transition-colors hover:border-[#cca72f] hover:text-[#cca72f]";
 
 function FooterCreditBlock({
   title,
@@ -57,7 +57,7 @@ function FooterCreditBlock({
 }: FooterCreditBlockProps) {
   return (
     <div className="text-center sm:text-right">
-      <p className="font-medium text-foreground">{title}</p>
+      <p className="font-medium text-white/90">{title}</p>
       <p className="mt-1 text-[#cca72f] font-medium">{name}</p>
       <div className="mt-3 flex items-center justify-center gap-2 sm:justify-end">
         <a href={emailHref} className={footerIconLinkClassName} aria-label={`Email ${email}`}>
@@ -201,7 +201,7 @@ export async function Footer() {
       </div>
 
       {/* Sub-footer / Credits */}
-      <div className="relative z-10 border-t border-border bg-accent-muted/50 px-4 py-8 text-xs text-muted sm:px-6">
+      <div className="relative z-10 bg-gradient-to-br from-[#003527] via-teal-900 to-[#002117] px-4 py-10 text-xs text-white/60 sm:px-6 shadow-inner">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 sm:flex-row sm:items-start">
           <p className="text-center sm:text-left mt-2">
             © {new Date().getFullYear()} Darse Quran Academy. All rights reserved.

@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { ContactForm } from "@/components/contact/ContactForm";
-import { PageHeader } from "@/components/site/PageHeader";
-import { Section } from "@/components/site/Section";
-import { ACADEMY_LOCATION, getAcademyLocationEmbedUrl } from "@/lib/academy-location";
 import { auth } from "@/lib/auth";
-import {
-  buildWhatsAppHref,
-  formatWhatsAppForDisplay,
-  getSocialLinksSettings,
-} from "@/lib/social-links";
+import { Source_Serif_4 } from "next/font/google";
+
+const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
 export const metadata: Metadata = {
   title: "Contact Us",
@@ -22,92 +16,54 @@ export default async function ContactPage({
   searchParams: Promise<{ submitted?: string }>;
 }) {
   const params = await searchParams;
-  const [session, social] = await Promise.all([auth(), getSocialLinksSettings()]);
-  const whatsappDisplay = formatWhatsAppForDisplay(social.whatsappNumber);
-  const whatsappHref = buildWhatsAppHref(social.whatsappNumber, social.whatsappDefaultMessage);
+  const [session] = await Promise.all([auth()]);
 
   return (
     <>
-      <Section>
-        <PageHeader
-          title="Contact Us"
-          description="Send us your question and we will reply by email. You can also reach us using the details below."
-        />
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#003527] via-teal-900 to-[#002117] px-4 py-24 sm:px-6 lg:px-8">
+        <div className="pattern-islamic absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none" />
+        <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-[#cca72f]/0 via-[#cca72f] to-[#cca72f]/0 opacity-50"></div>
+        <div className="mx-auto max-w-4xl text-center">
+          <div className="motion-safe:animate-fade-up">
+            <h1 className={`${sourceSerif.className} text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl`}>
+              Send a Message
+            </h1>
+            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-[#cca72f]"></div>
+            <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">
+              We would love to hear from you. Please fill out the form below and our team will get back to you within 2-3 business days.
+            </p>
+          </div>
+        </div>
+      </section>
 
-        {params.submitted === "1" && (
-          <p className="mx-auto mt-6 max-w-xl rounded-lg bg-info-bg px-4 py-3 text-center text-sm text-info-text">
-            Thank you. Your message has been received. We aim to respond within 2–3 business days.
-          </p>
-        )}
+      {/* Form Section */}
+      <section className="relative bg-surface py-20 sm:py-24">
+        <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
+          
+          {params.submitted === "1" && (
+            <div className="motion-safe:animate-fade-up mb-8 rounded-xl border border-[#cca72f]/30 bg-gold/5 p-6 text-center">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gold/20 text-gold">
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 className={`${sourceSerif.className} text-xl font-semibold text-primary`}>Message Sent Successfully</h3>
+              <p className="mt-2 text-muted">
+                Thank you. Your message has been received. We aim to respond within 2–3 business days.
+              </p>
+            </div>
+          )}
 
-        <div className="mx-auto mt-8 grid max-w-5xl gap-8 lg:grid-cols-5">
-          <div className="lg:col-span-3">
+          <div className="motion-safe:animate-fade-up" style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
             <ContactForm
               defaultName={session?.user?.name ?? ""}
               defaultEmail={session?.user?.email ?? ""}
               isLoggedIn={Boolean(session?.user)}
             />
           </div>
-
-          <aside className="space-y-6 lg:col-span-2">
-            <div className="card-elevated p-5">
-              <h2 className="text-sm font-bold uppercase tracking-wide text-gold">Academy contact</h2>
-              <ul className="mt-4 space-y-3 text-sm text-muted">
-                {social.contactEmail && (
-                  <li>
-                    <span className="block font-medium text-foreground">Email</span>
-                    <a href={`mailto:${social.contactEmail}`} className="break-all hover:text-gold">
-                      {social.contactEmail}
-                    </a>
-                  </li>
-                )}
-                {social.whatsappNumber && (
-                  <li>
-                    <span className="block font-medium text-foreground">Phone / WhatsApp</span>
-                    <a
-                      href={whatsappHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="hover:text-gold"
-                    >
-                      {whatsappDisplay}
-                    </a>
-                  </li>
-                )}
-                <li>
-                  <span className="block font-medium text-foreground">Location</span>
-                  <a
-                    href={ACADEMY_LOCATION.mapsUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-start gap-1.5 font-medium text-[#1a73e8] underline decoration-[#1a73e8]/50 underline-offset-2 hover:text-[#1557b0] hover:decoration-[#1557b0]"
-                  >
-                    {ACADEMY_LOCATION.label}
-                  </a>
-                </li>
-              </ul>
-            </div>
-
-            <div className="overflow-hidden rounded-lg border border-border">
-              <iframe
-                title={`${ACADEMY_LOCATION.name} on Google Maps`}
-                src={getAcademyLocationEmbedUrl()}
-                className="h-56 w-full border-0"
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                allowFullScreen
-              />
-            </div>
-
-            <p className="text-sm text-muted">
-              Prefer to read about us first?{" "}
-              <Link href="/about" className="font-medium text-primary hover:underline">
-                About Us
-              </Link>
-            </p>
-          </aside>
         </div>
-      </Section>
+      </section>
     </>
   );
 }

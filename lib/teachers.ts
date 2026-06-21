@@ -1,7 +1,7 @@
 import type { Teacher as PrismaTeacher } from "@prisma/client";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
-import { buildSearchOr } from "@/lib/text-search";
+import { andWhere, buildSearchOr } from "@/lib/text-search";
 import { withDbErrorHandling } from "@/lib/db-error";
 
 function allTeachersWhere(searchQuery?: string) {
@@ -14,8 +14,11 @@ export type Teacher = PrismaTeacher;
 export async function getPublishedTeachersPaginated(
   page: number,
   pageSize: number,
+  searchQuery?: string,
 ): Promise<PaginatedResult<Teacher>> {
-  const where = { published: true };
+  const baseWhere = { published: true };
+  const searchWhere = searchQuery ? buildSearchOr(["name", "specialization", "bio"], [], searchQuery) : undefined;
+  const where = andWhere(baseWhere, searchWhere) || baseWhere;
   const totalCount = await withDbErrorHandling(() => prisma.teacher.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.teacher.findMany({

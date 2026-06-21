@@ -3,7 +3,7 @@ import { BLOG_PUBLIC_WHERE } from "@/lib/blog-approval";
 import { resolveHomepageFeaturedUpdate } from "@/lib/homepage-featured";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
-import { buildSearchOr } from "@/lib/text-search";
+import { andWhere, buildSearchOr } from "@/lib/text-search";
 import { withDbErrorHandling } from "@/lib/db-error";
 
 function adminBlogPostsWhere(searchQuery?: string) {
@@ -86,11 +86,14 @@ const blogPostPublicInclude = {
 export async function getPublishedBlogPostsPaginated(
   page: number,
   pageSize: number,
+  searchQuery?: string,
 ): Promise<PaginatedResult<BlogPostWithImages>> {
-  const totalCount = await withDbErrorHandling(() => prisma.blogPost.count({ where: BLOG_PUBLIC_WHERE }), "Database operation failed");
+  const searchWhere = searchQuery ? buildSearchOr(["title", "excerpt", "body", "category"], [{ relation: "createdBy", fields: ["name"] }], searchQuery) : undefined;
+  const where = andWhere(BLOG_PUBLIC_WHERE, searchWhere) || BLOG_PUBLIC_WHERE;
+  const totalCount = await withDbErrorHandling(() => prisma.blogPost.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.blogPost.findMany({
-      where: BLOG_PUBLIC_WHERE,
+      where,
       orderBy: { createdAt: "desc" },
       include: blogPostPublicInclude,
       ...paginationArgs(safePage, pageSize),

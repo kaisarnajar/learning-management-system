@@ -78,8 +78,11 @@ export async function getAnsweredFatwasPaginated(
   page: number,
   pageSize: number,
   category?: string,
+  searchQuery?: string,
 ): Promise<PaginatedResult<FatwaQuestion>> {
-  const where = answeredFatwasWhere(category);
+  const baseWhere = answeredFatwasWhere(category);
+  const searchWhere = fatwaSearchWhere(searchQuery);
+  const where = andWhere(baseWhere, searchWhere) || baseWhere;
   const totalCount = await withDbErrorHandling(() => prisma.fatwaQuestion.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.fatwaQuestion.findMany({

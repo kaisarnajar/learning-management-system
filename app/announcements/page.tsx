@@ -3,7 +3,9 @@ import { SiteAnnouncementCard } from "@/components/announcements/SiteAnnouncemen
 import { PageHeader } from "@/components/site/PageHeader";
 import { Section } from "@/components/site/Section";
 import { Pagination } from "@/components/shared/Pagination";
+import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
+import { parseSearchQuery } from "@/lib/text-search";
 import { getPublishedSiteAnnouncementsPaginated } from "@/lib/site-announcements";
 
 export const metadata: Metadata = {
@@ -15,15 +17,17 @@ export const metadata: Metadata = {
 export default async function AnnouncementsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; q?: string }>;
 }) {
   const params = await searchParams;
   const { page: requestedPage, pageSize } = parsePaginationParams(params, {
     pageSize: GRID_PAGE_SIZE,
   });
+  const q = parseSearchQuery(params.q);
   const { items: announcements, totalCount } = await getPublishedSiteAnnouncementsPaginated(
     requestedPage,
     pageSize,
+    q,
   );
   const page = clampPage(requestedPage, totalCount, pageSize);
 
@@ -31,8 +35,12 @@ export default async function AnnouncementsPage({
     <Section>
       <PageHeader
         title="Announcements"
-        description="Events, visits, and important news from the academy. Check back for programs at local masajid and special sessions."
+        description="Stay updated with the latest events, programs, and notices from the academy."
       />
+
+      <div className="mt-6 mb-8 max-w-md">
+        <ListSearchForm action="/announcements" query={q} placeholder="Search announcements..." />
+      </div>
 
       {totalCount === 0 ? (
         <p className="mt-12 rounded-lg border border-dashed border-border bg-surface px-6 py-16 text-center text-muted">

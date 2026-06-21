@@ -5,8 +5,10 @@ import { FatwaCategoryFilter } from "@/components/fatwa/FatwaCategoryFilter";
 import { PageHeader } from "@/components/site/PageHeader";
 import { Section } from "@/components/site/Section";
 import { Pagination } from "@/components/shared/Pagination";
+import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { getAnsweredFatwasPaginated, isFatwaCategory } from "@/lib/fatwa";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
+import { parseSearchQuery } from "@/lib/text-search";
 
 export const metadata: Metadata = {
   title: "Fatwa Section",
@@ -17,7 +19,7 @@ export const metadata: Metadata = {
 export default async function FatwaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; page?: string }>;
+  searchParams: Promise<{ category?: string; page?: string; q?: string }>;
 }) {
   const params = await searchParams;
   const category =
@@ -25,10 +27,12 @@ export default async function FatwaPage({
   const { page: requestedPage, pageSize } = parsePaginationParams(params, {
     pageSize: GRID_PAGE_SIZE,
   });
+  const q = parseSearchQuery(params.q);
   const { items: fatwas, totalCount } = await getAnsweredFatwasPaginated(
     requestedPage,
     pageSize,
     category,
+    q,
   );
   const page = clampPage(requestedPage, totalCount, pageSize);
 
@@ -46,6 +50,10 @@ export default async function FatwaPage({
         >
           Ask a question
         </Link>
+      </div>
+
+      <div className="mt-8 mx-auto max-w-md">
+        <ListSearchForm action="/fatwa" query={q} placeholder="Search answered fatwas..." />
       </div>
 
       <div className="mt-10">

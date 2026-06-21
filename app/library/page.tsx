@@ -4,9 +4,11 @@ import { LibraryCategoryFilter } from "@/components/library/LibraryCategoryFilte
 import { PageHeader } from "@/components/site/PageHeader";
 import { Section } from "@/components/site/Section";
 import { Pagination } from "@/components/shared/Pagination";
+import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { isLibraryTopic } from "@/lib/library-options";
 import { getPublishedLibraryItemsPaginated } from "@/lib/library";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
+import { parseSearchQuery } from "@/lib/text-search";
 
 export const metadata: Metadata = {
   title: "Library",
@@ -16,7 +18,7 @@ export const metadata: Metadata = {
 export default async function LibraryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; page?: string }>;
+  searchParams: Promise<{ category?: string; page?: string; q?: string }>;
 }) {
   const params = await searchParams;
   const category =
@@ -24,10 +26,12 @@ export default async function LibraryPage({
   const { page: requestedPage, pageSize } = parsePaginationParams(params, {
     pageSize: GRID_PAGE_SIZE,
   });
+  const q = parseSearchQuery(params.q);
   const { items: libraryItems, totalCount } = await getPublishedLibraryItemsPaginated(
     requestedPage,
     pageSize,
     category,
+    q,
   );
   const page = clampPage(requestedPage, totalCount, pageSize);
 
@@ -37,6 +41,10 @@ export default async function LibraryPage({
         title="Digital Library"
         description="A curated collection of Islamic books and resources for students. PDF downloads will be available in a future update."
       />
+
+      <div className="mt-8 mx-auto max-w-md">
+        <ListSearchForm action="/library" query={q} placeholder="Search books and resources..." />
+      </div>
 
       <div className="mt-10">
         <LibraryCategoryFilter activeCategory={category} />

@@ -3,7 +3,7 @@ import { isLibraryTopic } from "@/lib/library-options";
 import { resolveHomepageFeaturedUpdate } from "@/lib/homepage-featured";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
-import { buildSearchOr } from "@/lib/text-search";
+import { andWhere, buildSearchOr } from "@/lib/text-search";
 import { withDbErrorHandling } from "@/lib/db-error";
 
 function allLibraryItemsWhere(searchQuery?: string) {
@@ -26,8 +26,11 @@ export async function getPublishedLibraryItemsPaginated(
   page: number,
   pageSize: number,
   topic?: string,
+  searchQuery?: string,
 ): Promise<PaginatedResult<LibraryItem>> {
-  const where = publishedLibraryWhere(topic);
+  const baseWhere = publishedLibraryWhere(topic);
+  const searchWhere = allLibraryItemsWhere(searchQuery);
+  const where = andWhere(baseWhere, searchWhere) || baseWhere;
   const totalCount = await withDbErrorHandling(() => prisma.libraryItem.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.libraryItem.findMany({

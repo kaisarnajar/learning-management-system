@@ -5,8 +5,10 @@ import { CartCount } from "@/components/bookstore/CartCount";
 import { PageHeader } from "@/components/site/PageHeader";
 import { Section } from "@/components/site/Section";
 import { Pagination } from "@/components/shared/Pagination";
+import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { getPublishedBooksPaginated } from "@/lib/bookstore";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
+import { parseSearchQuery } from "@/lib/text-search";
 
 export const metadata: Metadata = {
   title: "Bookstore",
@@ -17,16 +19,18 @@ export const metadata: Metadata = {
 export default async function BookstorePage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; q?: string }>;
 }) {
   const params = await searchParams;
   const { page: requestedPage, pageSize } = parsePaginationParams(params, {
     pageSize: GRID_PAGE_SIZE,
   });
+  const q = parseSearchQuery(params.q);
 
   const { items: books, totalCount } = await getPublishedBooksPaginated(
     requestedPage,
     pageSize,
+    q,
   );
   const page = clampPage(requestedPage, totalCount, pageSize);
 
@@ -37,7 +41,11 @@ export default async function BookstorePage({
         description="Browse our collection of physical Islamic books. Add to cart and submit your order — we'll confirm once payment is verified."
       />
 
-      <div className="mx-auto mt-10 max-w-7xl">
+      <div className="mx-auto mt-6 mb-4 max-w-md">
+        <ListSearchForm action="/bookstore" query={q} placeholder="Search books by title or author..." />
+      </div>
+
+      <div className="mx-auto mt-6 max-w-7xl">
         {totalCount === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface py-20 text-center">
             <svg

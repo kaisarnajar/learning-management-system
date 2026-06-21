@@ -1,7 +1,7 @@
 import type { SiteAnnouncement } from "@prisma/client";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
-import { buildSearchOr } from "@/lib/text-search";
+import { andWhere, buildSearchOr } from "@/lib/text-search";
 import { withDbErrorHandling } from "@/lib/db-error";
 
 function siteAnnouncementAdminWhere(searchQuery?: string) {
@@ -31,8 +31,11 @@ const siteAnnouncementPublicInclude = {
 export async function getPublishedSiteAnnouncementsPaginated(
   page: number,
   pageSize: number,
+  searchQuery?: string,
 ): Promise<PaginatedResult<SiteAnnouncementPublic>> {
-  const where = { published: true };
+  const baseWhere = { published: true };
+  const searchWhere = searchQuery ? buildSearchOr(["title", "location", "body"], [], searchQuery) : undefined;
+  const where = andWhere(baseWhere, searchWhere) || baseWhere;
   const totalCount = await withDbErrorHandling(() => prisma.siteAnnouncement.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.siteAnnouncement.findMany({

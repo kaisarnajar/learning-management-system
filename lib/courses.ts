@@ -2,7 +2,7 @@ import type { Course as PrismaCourse, CourseStatus, Teacher } from "@prisma/clie
 import { isCoursePubliclyVisible } from "@/lib/course-status";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
-import { buildSearchOr } from "@/lib/text-search";
+import { andWhere, buildSearchOr } from "@/lib/text-search";
 import { withDbErrorHandling } from "@/lib/db-error";
 
 function allCoursesWhere(searchQuery?: string) {
@@ -36,8 +36,11 @@ export function formatPrice(paise: number): string {
 export async function getPublicCoursesPaginated(
   page: number,
   pageSize: number,
+  searchQuery?: string,
 ): Promise<PaginatedResult<CourseWithTeacher>> {
-  const where = { status: { not: "DRAFT" as const } };
+  const baseWhere = { status: { not: "DRAFT" as const } };
+  const searchWhere = searchQuery ? buildSearchOr(["title", "description", "category", "level"], [{ relation: "teacher", fields: ["name"] }], searchQuery) : undefined;
+  const where = andWhere(baseWhere, searchWhere) || baseWhere;
   const totalCount = await withDbErrorHandling(() => prisma.course.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.course.findMany({

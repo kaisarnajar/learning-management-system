@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminStudentReviewEditForm } from "@/components/admin/AdminStudentReviewEditForm";
+import { ActionToast } from "@/components/shared/ToastProvider";
 import {
   HOMEPAGE_FEATURED_REVIEWS_MAX,
   getFeaturedHomepageReviewCount,
@@ -37,9 +38,7 @@ export default async function AdminReviewEditPage({
       </h1>
       <p className="mt-1 text-sm text-muted">{review.user.name ?? review.user.email}</p>
 
-      {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
-      )}
+      <ActionToast trigger={query.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
 
       <div className="mt-8">
         <AdminStudentReviewEditForm

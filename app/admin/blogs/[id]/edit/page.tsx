@@ -4,6 +4,8 @@ import { updateBlogPost } from "@/app/admin/blogs/actions";
 import { BlogPostForm } from "@/components/admin/BlogPostForm";
 import { isBlogPendingTeacherApproval } from "@/lib/blog-approval";
 import { getBlogPostForAdmin, getFeaturedHomepageBlogCount } from "@/lib/blogs";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function EditBlogPostPage({
   params,
@@ -33,12 +35,8 @@ export default async function EditBlogPostPage({
         {contentReadOnly ? "Review blog post" : "Edit blog post"}
       </h1>
 
-      {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
-      )}
-      {query.posted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Blog post created.</p>
-      )}
+      <ActionToast trigger={query.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
+      <ActionToast trigger={query.posted === "1"} paramName="posted" message="Blog post created." variant="info" />
 
       <div className="mt-8">
         <BlogPostForm

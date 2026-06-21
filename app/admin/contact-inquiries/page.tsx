@@ -6,6 +6,8 @@ import { Pagination } from "@/components/shared/Pagination";
 import { getAllContactInquiriesPaginated } from "@/lib/contact-inquiries";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 function filterHref(filter: "pending" | "replied" | undefined, q?: string) {
   const params = new URLSearchParams();
@@ -73,20 +75,9 @@ export default async function AdminContactInquiriesPage({
         </nav>
       </div>
 
-      {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Reply saved.
-          {params.email === "failed"
-            ? " The notification email could not be sent — check SMTP settings in your environment."
-            : params.email === "skipped"
-              ? " SMTP is not configured, so no email was sent."
-              : " The visitor has been notified by email."}
-        </p>
-      )}
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message={`Reply saved.${params.email === "failed" ? " The notification email could not be sent — check SMTP settings in your environment." : params.email === "skipped" ? " SMTP is not configured, so no email was sent." : " The visitor has been notified by email."}`} variant="info" />
 
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Inquiry deleted.</p>
-      )}
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Inquiry deleted." variant="info" />
 
       {params.error === "notfound" && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Inquiry not found.</p>

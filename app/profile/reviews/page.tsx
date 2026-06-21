@@ -17,6 +17,8 @@ import {
   reviewStatusLabel,
 } from "@/lib/student-reviews";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function ProfileReviewsPage({
   searchParams,
@@ -64,19 +66,9 @@ export default async function ProfileReviewsPage({
         delete your own reviews anytime from Your submissions below.
       </p>
 
-      {params.submitted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Thank you! Your review was submitted for admin approval.
-        </p>
-      )}
-      {params.resubmitted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Your review was resubmitted for approval.
-        </p>
-      )}
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Review deleted.</p>
-      )}
+      <ActionToast trigger={params.submitted === "1"} paramName="submitted" message="Thank you! Your review was submitted for admin approval." variant="info" />
+      <ActionToast trigger={params.resubmitted === "1"} paramName="resubmitted" message="Your review was resubmitted for approval." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Review deleted." variant="info" />
       {params.error === "locked" && (
         <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
           This review can no longer be edited.

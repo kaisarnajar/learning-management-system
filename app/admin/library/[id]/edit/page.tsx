@@ -4,6 +4,8 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { LibraryForm } from "@/components/admin/LibraryForm";
 import { deleteLibraryItem, updateLibraryItem } from "@/app/admin/library/actions";
 import { getFeaturedHomepageLibraryCount, getLibraryItemById } from "@/lib/library";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function EditLibraryPage({
   params,
@@ -31,12 +33,8 @@ export default async function EditLibraryPage({
       </Link>
       <h1 className="mt-4 font-serif text-2xl font-bold text-primary">Edit library item</h1>
 
-      {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
-      )}
-      {query.created === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Item created.</p>
-      )}
+      <ActionToast trigger={query.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
+      <ActionToast trigger={query.created === "1"} paramName="created" message="Item created." variant="info" />
       {query.saveError && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{query.saveError}</p>
       )}

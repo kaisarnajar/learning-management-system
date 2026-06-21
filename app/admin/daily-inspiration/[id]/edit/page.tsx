@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { updateDailyInspiration } from "@/app/admin/daily-inspiration/actions";
 import { DailyInspirationForm } from "@/components/admin/DailyInspirationForm";
 import { getDailyInspirationForAdmin } from "@/lib/daily-inspiration";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function EditDailyInspirationPage({
   params,
@@ -26,9 +28,7 @@ export default async function EditDailyInspirationPage({
       </Link>
       <h1 className="mt-4 font-serif text-2xl font-bold text-primary">Edit verse or hadith</h1>
 
-      {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
-      )}
+      <ActionToast trigger={query.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
 
       <div className="mt-8">
         <DailyInspirationForm

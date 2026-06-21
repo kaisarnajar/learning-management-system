@@ -12,6 +12,8 @@ import {
 import { enrollmentStatusLabel, getUserEnrollmentsPaginated } from "@/lib/enrollments";
 import { getPendingEnrollmentFeeSubmissionMap } from "@/lib/monthly-payments";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function ProfileCoursesPage({
   searchParams,
@@ -61,11 +63,7 @@ export default async function ProfileCoursesPage({
         )}
       </div>
 
-      {params.declined === "1" && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
-          Your previous payment was declined. Use the payment link below to submit again.
-        </p>
-      )}
+      <ActionToast trigger={params.declined === "1"} paramName="declined" message="Your previous payment was declined. Use the payment link below to submit again." variant="error" />
 
       {totalCount === 0 ? (
         <div className="mt-6 rounded-lg border border-border bg-surface p-6 text-center">

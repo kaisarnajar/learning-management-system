@@ -6,6 +6,8 @@ import { Pagination } from "@/components/shared/Pagination";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { getStudentUsersPaginated } from "@/lib/students";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function AdminStudentsPage({
   searchParams,
@@ -28,11 +30,7 @@ export default async function AdminStudentsPage({
         </p>
       </div>
 
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Student account deleted.
-        </p>
-      )}
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Student account deleted." variant="info" />
 
       <div className="mt-6">
         <ListSearchForm

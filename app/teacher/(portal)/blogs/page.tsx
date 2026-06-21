@@ -11,6 +11,8 @@ import {
 } from "@/lib/blog-approval";
 import { getTeacherBlogPostsPaginated } from "@/lib/blogs";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function TeacherBlogsPage({
   searchParams,
@@ -50,19 +52,9 @@ export default async function TeacherBlogsPage({
         </Link>
       </div>
 
-      {params.submitted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Your blog post was submitted for admin approval.
-        </p>
-      )}
-      {params.resubmitted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Your changes were resubmitted for admin approval.
-        </p>
-      )}
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Blog post deleted.</p>
-      )}
+      <ActionToast trigger={params.submitted === "1"} paramName="submitted" message="Your blog post was submitted for admin approval." variant="info" />
+      <ActionToast trigger={params.resubmitted === "1"} paramName="resubmitted" message="Your changes were resubmitted for admin approval." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Blog post deleted." variant="info" />
       {params.error === "notfound" && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Blog post not found.</p>
       )}

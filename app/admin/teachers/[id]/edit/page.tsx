@@ -4,6 +4,8 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { TeacherForm } from "@/components/admin/TeacherForm";
 import { deleteTeacher, updateTeacher } from "@/app/admin/teachers/actions";
 import { getTeacherById } from "@/lib/teachers";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function EditTeacherPage({
   params,
@@ -28,12 +30,8 @@ export default async function EditTeacherPage({
       </Link>
       <h1 className="mt-4 font-serif text-2xl font-bold text-primary">Edit teacher</h1>
 
-      {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
-      )}
-      {query.created === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Teacher created.</p>
-      )}
+      <ActionToast trigger={query.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
+      <ActionToast trigger={query.created === "1"} paramName="created" message="Teacher created." variant="info" />
 
       <div className="mt-8">
         <TeacherForm

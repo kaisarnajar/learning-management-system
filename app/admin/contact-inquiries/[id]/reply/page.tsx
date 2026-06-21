@@ -4,6 +4,8 @@ import { deleteContactInquiryForm, replyToContactInquiry } from "@/app/admin/con
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { ReplyContactInquiryForm } from "@/components/admin/ReplyContactInquiryForm";
 import { getContactInquiryById } from "@/lib/contact-inquiries";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function AdminContactInquiryReplyPage({
   params,
@@ -33,16 +35,7 @@ export default async function AdminContactInquiryReplyPage({
         From {inquiry.name} · {inquiry.email}
       </p>
 
-      {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Reply saved.
-          {query.email === "failed"
-            ? " The notification email could not be sent — check SMTP settings in your environment."
-            : query.email === "skipped"
-              ? " SMTP is not configured, so no email was sent."
-              : " The visitor has been notified by email."}
-        </p>
-      )}
+      <ActionToast trigger={query.saved === "1"} paramName="saved" message={`Reply saved.${query.email === "failed" ? " The notification email could not be sent — check SMTP settings in your environment." : query.email === "skipped" ? " SMTP is not configured, so no email was sent." : " The visitor has been notified by email."}`} variant="info" />
 
       {query.error && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">

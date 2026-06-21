@@ -10,6 +10,8 @@ import {
 } from "@/lib/bookstore";
 import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export const metadata: Metadata = {
   title: "Book Orders — Admin",
@@ -85,21 +87,9 @@ export default async function AdminBookOrdersPage({
         </Link>
       </div>
 
-      {params.confirmed === "1" && (
-        <p className="mt-4 rounded-md bg-success-bg px-4 py-3 text-sm text-success-text">
-          Order approved. The student has been notified.
-        </p>
-      )}
-      {params.declined === "1" && (
-        <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
-          Order declined. The student has been notified.
-        </p>
-      )}
-      {params.shipped === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Order marked as shipped. The student has been notified.
-        </p>
-      )}
+      <ActionToast trigger={params.confirmed === "1"} paramName="confirmed" message="Order approved. The student has been notified." variant="success" />
+      <ActionToast trigger={params.declined === "1"} paramName="declined" message="Order declined. The student has been notified." variant="warning" />
+      <ActionToast trigger={params.shipped === "1"} paramName="shipped" message="Order marked as shipped. The student has been notified." variant="info" />
       {params.refunded === "1" && (
         <p className="mt-4 rounded-md bg-surface-muted-hover px-4 py-3 text-sm text-muted">
           Order refunded. The student has been notified.

@@ -10,6 +10,8 @@ import {
 } from "@/lib/announcements";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
 import { getTeacherEnrollmentInCourse } from "@/lib/teacher-portal";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function TeacherStudentAnnouncementsPage({
   params,
@@ -57,17 +59,9 @@ export default async function TeacherStudentAnnouncementsPage({
         </Link>
       </div>
 
-      {query.posted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Message sent to {studentName}.
-        </p>
-      )}
-      {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Message updated.</p>
-      )}
-      {query.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Message deleted.</p>
-      )}
+      <ActionToast trigger={query.posted === "1"} paramName="posted" message="Message sent to {studentName}." variant="info" />
+      <ActionToast trigger={query.saved === "1"} paramName="saved" message="Message updated." variant="info" />
+      <ActionToast trigger={query.deleted === "1"} paramName="deleted" message="Message deleted." variant="info" />
       {query.error === "notfound" && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">That message could not be found.</p>
       )}

@@ -6,6 +6,8 @@ import { Pagination } from "@/components/shared/Pagination";
 import { getAllFatwaQuestionsPaginated } from "@/lib/fatwa";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 function filterHref(filter: "pending" | "answered" | undefined, q?: string) {
   const params = new URLSearchParams();
@@ -73,17 +75,9 @@ export default async function AdminFatwaPage({
         </nav>
       </div>
 
-      {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Answer saved and notification sent (or logged if SMTP is not configured).
-        </p>
-      )}
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Answer saved and notification sent (or logged if SMTP is not configured)." variant="info" />
 
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Question deleted.
-        </p>
-      )}
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Question deleted." variant="info" />
 
       <div className="mt-6">
         <ListSearchForm

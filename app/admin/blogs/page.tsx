@@ -8,6 +8,8 @@ import { getAllBlogPostsForAdminPaginated, isBlogPubliclyVisible } from "@/lib/b
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
 import type { BlogPost } from "@prisma/client";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 function statusBadge(post: Pick<BlogPost, "approvalStatus" | "published">) {
   return {
@@ -48,15 +50,9 @@ export default async function AdminBlogsPage({
         </Link>
       </div>
 
-      {params.posted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Blog post created.</p>
-      )}
-      {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Blog post updated.</p>
-      )}
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Blog post deleted.</p>
-      )}
+      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Blog post created." variant="info" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Blog post updated." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Blog post deleted." variant="info" />
       {params.error === "notfound" && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Blog post not found.</p>
       )}

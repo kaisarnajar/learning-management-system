@@ -11,6 +11,8 @@ import {
 } from "@/lib/monthly-payments";
 import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 type TabType = "enrollment_pending" | "enrollment_approved" | "monthly_pending" | "monthly_approved";
 
@@ -71,21 +73,9 @@ export default async function AdminPaymentApprovalsPage({
         are managed under Enrollments.
       </p>
       
-      {params.confirmed === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Payment approved and recorded.
-        </p>
-      )}
-      {params.declined === "1" && (
-        <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
-          Payment declined. The student has been notified and can resubmit.
-        </p>
-      )}
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Payment record successfully deleted.
-        </p>
-      )}
+      <ActionToast trigger={params.confirmed === "1"} paramName="confirmed" message="Payment approved and recorded." variant="info" />
+      <ActionToast trigger={params.declined === "1"} paramName="declined" message="Payment declined. The student has been notified and can resubmit." variant="warning" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Payment record successfully deleted." variant="info" />
 
       <nav className="mt-8 flex flex-wrap gap-2" aria-label="Payment approval type">
         {tabs.map((item) => {

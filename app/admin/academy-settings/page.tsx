@@ -2,6 +2,8 @@ import { AcademySettingsForm } from "@/components/admin/AcademySettingsForm";
 import { requireAdmin } from "@/lib/auth-actions";
 import { getAcademySettings } from "@/lib/academy-settings";
 import { updateAcademySettings } from "./actions";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function AdminAcademySettingsPage({
   searchParams,
@@ -19,11 +21,7 @@ export default async function AdminAcademySettingsPage({
         Core academy details used on official documents, payment receipts, and invoices.
       </p>
 
-      {params.saved === "1" ? (
-        <p className="mt-4 rounded-md bg-success-bg px-4 py-3 text-sm text-success-text">
-          Academy settings saved.
-        </p>
-      ) : null}
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Academy settings saved." variant="success" />
       {params.error ? (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{params.error}</p>
       ) : null}

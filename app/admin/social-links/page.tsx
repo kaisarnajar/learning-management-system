@@ -2,6 +2,8 @@ import { SocialLinksForm } from "@/components/admin/SocialLinksForm";
 import { requireAdmin } from "@/lib/auth-actions";
 import { getSocialLinksSettings } from "@/lib/social-links";
 import { updateSocialLinksSettings } from "./actions";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function AdminSocialLinksPage({
   searchParams,
@@ -20,11 +22,7 @@ export default async function AdminSocialLinksPage({
         #contact, About Us, top bar, and floating chat button).
       </p>
 
-      {params.saved === "1" ? (
-        <p className="mt-4 rounded-md bg-success-bg px-4 py-3 text-sm text-success-text">
-          Social links saved.
-        </p>
-      ) : null}
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Social links saved." variant="success" />
       {params.error ? (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{params.error}</p>
       ) : null}

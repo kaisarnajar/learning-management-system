@@ -10,6 +10,8 @@ import { Pagination } from "@/components/shared/Pagination";
 import { getAllBooksPaginated } from "@/lib/bookstore";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export const metadata: Metadata = {
   title: "Bookstore — Admin",
@@ -47,15 +49,9 @@ export default async function AdminBookstorePage({
         </Link>
       </div>
 
-      {params.created === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Book created.</p>
-      )}
-      {params.updated === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
-      )}
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Book deleted.</p>
-      )}
+      <ActionToast trigger={params.created === "1"} paramName="created" message="Book created." variant="info" />
+      <ActionToast trigger={params.updated === "1"} paramName="updated" message="Changes saved." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Book deleted." variant="info" />
 
       <div className="mt-6">
         <ListSearchForm

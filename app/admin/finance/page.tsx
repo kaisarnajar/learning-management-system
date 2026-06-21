@@ -20,6 +20,8 @@ import { getIncomeRecordsPaginated, getIncomeTotal } from "@/lib/finance-income"
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { getStudentUsers } from "@/lib/students";
 import { getAllTeachers } from "@/lib/teachers";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function AdminFinancePage({
   searchParams,
@@ -79,16 +81,8 @@ export default async function AdminFinancePage({
         Track student fee income and academy expenses. Summary totals use the selected date range.
       </p>
 
-      {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Expense recorded.
-        </p>
-      )}
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Expense deleted.
-        </p>
-      )}
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Expense recorded." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Expense deleted." variant="info" />
       {params.error && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
           {decodeURIComponent(params.error)}

@@ -10,6 +10,8 @@ import {
   getPendingStudentReviewsForAdminPaginated,
 } from "@/lib/student-reviews";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 type TabType = "pending" | "approved";
 
@@ -72,27 +74,11 @@ export default async function AdminReviewApprovalsPage({
         delete a review — manage all approved reviews below.
       </p>
 
-      {params.approved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Review updated.</p>
-      )}
-      {params.rejected === "1" && (
-        <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
-          Review rejected. The student can edit and resubmit.
-        </p>
-      )}
-      {params.unfeatured === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Review removed from the homepage.
-        </p>
-      )}
-      {params.featured === "1" && (
-        <p className="mt-4 rounded-md bg-success-bg px-4 py-3 text-sm text-success-text">
-          Review added to the homepage.
-        </p>
-      )}
-      {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
-      )}
+      <ActionToast trigger={params.approved === "1"} paramName="approved" message="Review updated." variant="info" />
+      <ActionToast trigger={params.rejected === "1"} paramName="rejected" message="Review rejected. The student can edit and resubmit." variant="warning" />
+      <ActionToast trigger={params.unfeatured === "1"} paramName="unfeatured" message="Review removed from the homepage." variant="info" />
+      <ActionToast trigger={params.featured === "1"} paramName="featured" message="Review added to the homepage." variant="success" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
 
       <nav className="mt-8 flex flex-wrap gap-2" aria-label="Review type">
         {tabs.map((item) => {

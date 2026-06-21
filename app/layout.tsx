@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import { CartProvider } from "@/components/bookstore/CartProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
+import { ToastProvider } from "@/components/shared/ToastProvider";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
 import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
@@ -34,13 +35,15 @@ export default function RootLayout({
     <html lang="en" className={`${poppins.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col overflow-x-hidden font-sans" suppressHydrationWarning>
         <SessionProvider>
-          <CartProvider>
-            <Header />
-            <main className="flex-1">{children}</main>
-            <Footer />
-            <WhatsAppButton />
-            <AnalyticsTracker />
-          </CartProvider>
+          <ToastProvider>
+            <CartProvider>
+              <Header />
+              <main className="flex-1">{children}</main>
+              <Footer />
+              <WhatsAppButton />
+              <AnalyticsTracker />
+            </CartProvider>
+          </ToastProvider>
         </SessionProvider>
       </body>
     </html>

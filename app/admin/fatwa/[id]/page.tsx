@@ -4,6 +4,8 @@ import { AnswerFatwaForm } from "@/components/admin/AnswerFatwaForm";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { answerFatwaQuestion, deleteFatwaQuestionForm } from "@/app/admin/fatwa/actions";
 import { getFeaturedHomepageFatwaCount, getFatwaQuestionById } from "@/lib/fatwa";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function AdminFatwaDetailPage({
   params,
@@ -34,16 +36,7 @@ export default async function AdminFatwaDetailPage({
       </h1>
       <p className="mt-1 text-sm text-muted">{question.title}</p>
 
-      {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Answer published.
-          {query.email === "failed"
-            ? " The notification email could not be sent — check SMTP settings in your environment."
-            : query.email === "skipped"
-              ? " SMTP is not configured, so no email was sent."
-              : " The asker has been notified by email."}
-        </p>
-      )}
+      <ActionToast trigger={query.saved === "1"} paramName="saved" message={`Answer published.${query.email === "failed" ? " The notification email could not be sent — check SMTP settings in your environment." : query.email === "skipped" ? " SMTP is not configured, so no email was sent." : " The asker has been notified by email."}`} variant="info" />
 
       {query.error && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">

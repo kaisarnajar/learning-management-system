@@ -8,6 +8,8 @@ import {
 } from "@/lib/monthly-payment-status";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { getPaymentRecordsForUserPaginated, getPaymentSubmissionsForUser } from "@/lib/payments";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function ProfilePaymentsPage({
   searchParams,
@@ -38,16 +40,8 @@ export default async function ProfilePaymentsPage({
         Approved monthly fees and your submitted payments awaiting verification.
       </p>
 
-      {params.submitted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Payment submitted. The academy will verify it shortly.
-        </p>
-      )}
-      {params.declined === "1" && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
-          Your previous payment was declined. You can submit again from My Courses.
-        </p>
-      )}
+      <ActionToast trigger={params.submitted === "1"} paramName="submitted" message="Payment submitted. The academy will verify it shortly." variant="info" />
+      <ActionToast trigger={params.declined === "1"} paramName="declined" message="Your previous payment was declined. You can submit again from My Courses." variant="error" />
 
       <section className="mt-8">
         <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">Awaiting approval</h3>

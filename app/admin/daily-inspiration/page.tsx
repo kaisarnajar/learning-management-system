@@ -10,6 +10,8 @@ import {
 } from "@/lib/daily-inspiration";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function AdminDailyInspirationPage({
   searchParams,
@@ -42,15 +44,9 @@ export default async function AdminDailyInspirationPage({
         </Link>
       </div>
 
-      {params.posted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Entry created.</p>
-      )}
-      {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Entry updated.</p>
-      )}
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Entry deleted.</p>
-      )}
+      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Entry created." variant="info" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Entry updated." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Entry deleted." variant="info" />
       {params.error === "notfound" && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Entry not found.</p>
       )}

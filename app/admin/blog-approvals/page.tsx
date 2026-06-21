@@ -7,6 +7,8 @@ import { Pagination } from "@/components/shared/Pagination";
 import { getPendingBlogPostsForAdminPaginated } from "@/lib/blog-approval";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function AdminBlogApprovalsPage({
   searchParams,
@@ -31,19 +33,9 @@ export default async function AdminBlogApprovalsPage({
         published directly from Blogs.
       </p>
 
-      {params.approved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">
-          Blog post approved and published.
-        </p>
-      )}
-      {params.rejected === "1" && (
-        <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">
-          Blog post rejected. The teacher can edit and resubmit.
-        </p>
-      )}
-      {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
-      )}
+      <ActionToast trigger={params.approved === "1"} paramName="approved" message="Blog post approved and published." variant="info" />
+      <ActionToast trigger={params.rejected === "1"} paramName="rejected" message="Blog post rejected. The teacher can edit and resubmit." variant="warning" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
 
       <div className="mt-6">
         <ListSearchForm

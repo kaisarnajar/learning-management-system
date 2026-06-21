@@ -9,6 +9,8 @@ import { getAllCoursesPaginated } from "@/lib/courses";
 import { getEnrollmentCountsByCourse } from "@/lib/enrollments";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function AdminCoursesPage({
   searchParams,
@@ -39,13 +41,9 @@ export default async function AdminCoursesPage({
         </Link>
       </div>
 
-      {params.created === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Course created.</p>
-      )}
+      <ActionToast trigger={params.created === "1"} paramName="created" message="Course created." variant="info" />
 
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Course deleted.</p>
-      )}
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Course deleted." variant="info" />
       {params.deleteError && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
           {decodeURIComponent(params.deleteError)}

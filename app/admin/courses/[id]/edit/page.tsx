@@ -4,6 +4,8 @@ import { CourseForm } from "@/components/admin/CourseForm";
 import { updateCourse } from "@/app/admin/courses/actions";
 import { getCourseById, getFeaturedHomepageCourseCount } from "@/lib/courses";
 import { getAllTeachers } from "@/lib/teachers";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function EditCoursePage({
   params,
@@ -31,12 +33,8 @@ export default async function EditCoursePage({
       </Link>
       <h1 className="mt-4 font-serif text-2xl font-bold text-primary">Edit course</h1>
 
-      {query.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
-      )}
-      {query.created === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Course created.</p>
-      )}
+      <ActionToast trigger={query.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
+      <ActionToast trigger={query.created === "1"} paramName="created" message="Course created." variant="info" />
 
       {query.saveError && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{query.saveError}</p>

@@ -7,6 +7,8 @@ import { Pagination } from "@/components/shared/Pagination";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { getAllTeachersPaginated } from "@/lib/teachers";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 export default async function AdminTeachersPage({
   searchParams,
@@ -36,17 +38,11 @@ export default async function AdminTeachersPage({
         </Link>
       </div>
 
-      {params.created === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Teacher created.</p>
-      )}
+      <ActionToast trigger={params.created === "1"} paramName="created" message="Teacher created." variant="info" />
 
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Teacher deleted.</p>
-      )}
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Teacher deleted." variant="info" />
 
-      {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
-      )}
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
 
       <div className="mt-6">
         <ListSearchForm

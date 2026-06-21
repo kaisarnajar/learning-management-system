@@ -10,6 +10,8 @@ import {
   HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX,
 } from "@/lib/site-announcements";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
+
 
 function statusBadge(published: boolean, showOnHomepage: boolean) {
   if (!published) return { label: "Draft", className: "bg-surface-muted-hover text-muted" };
@@ -51,15 +53,9 @@ export default async function AdminAnnouncementsPage({
         </Link>
       </div>
 
-      {params.posted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Announcement created.</p>
-      )}
-      {params.saved === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Announcement updated.</p>
-      )}
-      {params.deleted === "1" && (
-        <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Announcement deleted.</p>
-      )}
+      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Announcement created." variant="info" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Announcement updated." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Announcement deleted." variant="info" />
       {params.error === "notfound" && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Announcement not found.</p>
       )}

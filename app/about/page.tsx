@@ -50,7 +50,8 @@ export default async function AboutPage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="pattern-islamic relative overflow-hidden bg-gradient-to-br from-[#003527] to-[#064e3b] px-4 py-24 sm:px-6 lg:px-8">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#003527] via-teal-900 to-[#002117] px-4 py-24 sm:px-6 lg:px-8">
+        <div className="pattern-islamic absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none" />
         <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-[#cca72f]/0 via-[#cca72f] to-[#cca72f]/0 opacity-50"></div>
         <div className="mx-auto max-w-4xl text-center">
           <div className="motion-safe:animate-fade-up">
@@ -78,8 +79,9 @@ export default async function AboutPage() {
       </section>
 
       {/* The Academy */}
-      <section className="pattern-islamic relative bg-accent-muted/30 py-20 sm:py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <section className="relative bg-accent-muted/30 py-20 sm:py-24">
+        <div className="pattern-islamic absolute inset-0 opacity-[0.03] pointer-events-none" />
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="text-center motion-safe:animate-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
             <SplitSectionTitle muted="Darse Quran" accent="Academy" />
             <p className="mx-auto mt-6 max-w-3xl text-lg text-muted">
@@ -152,8 +154,9 @@ export default async function AboutPage() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="pattern-islamic relative border-t border-border bg-accent-muted/10 py-20 sm:py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+      <section id="contact" className="relative border-t border-border bg-accent-muted/10 py-20 sm:py-24">
+        <div className="pattern-islamic absolute inset-0 opacity-[0.03] pointer-events-none" />
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="text-center motion-safe:animate-fade-up">
             <SplitSectionTitle muted="Get In" accent="Touch" />
             <p className="mt-4 text-lg text-muted">

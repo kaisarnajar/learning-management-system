@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { ConfirmationModal } from "./ConfirmationModal";
+import { useToast } from "@/components/shared/ToastProvider";
+import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 export function DeleteActionButton({
   action,
@@ -21,6 +23,7 @@ export function DeleteActionButton({
   onSuccessRedirect?: string;
 }) {
   const router = useRouter();
+  const { addToast } = useToast();
   
   const defaultClass = "rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60";
   const buttonClass = className || defaultClass;
@@ -33,7 +36,7 @@ export function DeleteActionButton({
         if (warningMessage) {
            e.stopPropagation();
            e.preventDefault();
-           window.alert(warningMessage);
+           addToast(warningMessage, "warning");
            return;
         }
       }}
@@ -55,14 +58,20 @@ export function DeleteActionButton({
       actionLabel="Delete"
       variant="destructive"
       onConfirm={async () => {
-        const result = await action();
-        if (result && typeof result === "object" && 'error' in result && result.error) {
-           window.alert(result.error);
-           return;
-        }
-        if (onSuccessRedirect) {
-           router.push(onSuccessRedirect);
-           router.refresh();
+        try {
+          const result = await action();
+          if (result && typeof result === "object" && 'error' in result && result.error) {
+             addToast(result.error as string, "error");
+             return;
+          }
+          if (onSuccessRedirect) {
+             router.push(onSuccessRedirect);
+          }
+        } catch (error) {
+          if (isRedirectError(error)) {
+             throw error;
+          }
+          addToast("An unexpected error occurred during deletion.", "error");
         }
       }}
     />

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { approveEnrollmentRequest, rejectEnrollmentRequest } from "@/app/admin/enrollments/actions";
 import type { PendingEnrollmentWithUser } from "@/lib/enrollments";
+import { useToast } from "@/components/shared/ToastProvider";
 
 export function EnrollmentRequestsTable({
   enrollments,
@@ -18,6 +19,7 @@ export function EnrollmentRequestsTable({
   showApprove: boolean;
   showReject?: boolean;
 }) {
+  const { addToast } = useToast();
   if (enrollments.length === 0) {
     return <p className="px-4 py-8 text-center text-sm text-muted">{emptyMessage}</p>;
   }
@@ -59,21 +61,21 @@ export function EnrollmentRequestsTable({
                     actionLabel="Approve" 
                     variant="primary" 
                     onConfirm={async () => { 
-                      const result = await approveEnrollmentRequest(enrollment.id, enrollment.courseId); 
-                      if (result?.error) window.alert(result.error); 
+                      const result = await approveEnrollmentRequest(enrollment.id, enrollment.courseId, window.location.pathname); 
+                      if (result?.error) addToast(result.error, "error"); 
                     }} 
-                    trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>} 
+                    trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light transition-colors">Approve</button>} 
                   />
                 )}
                 {showReject && (
                   <ConfirmationModal 
                     title="Reject Enrollment" 
-                    description="Reject this student enrollment and notify them?" 
+                    description="Reject this enrollment request?" 
                     actionLabel="Reject" 
                     variant="destructive" 
                     onConfirm={async () => { 
-                      const result = await rejectEnrollmentRequest(enrollment.id, enrollment.courseId); 
-                      if (result?.error) window.alert(result.error); 
+                      const result = await rejectEnrollmentRequest(enrollment.id, enrollment.courseId, window.location.pathname); 
+                      if (result?.error) addToast(result.error, "error"); 
                     }} 
                     trigger={<button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Reject</button>} 
                   />

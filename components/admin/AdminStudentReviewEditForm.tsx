@@ -12,6 +12,7 @@ import { HOMEPAGE_FEATURED_REVIEWS_MAX } from "@/lib/student-reviews";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import type { StudentReviewStatus } from "@prisma/client";
+import { useToast } from "@/components/shared/ToastProvider";
 
 type AdminStudentReviewEditFormProps = {
   review: {
@@ -36,6 +37,7 @@ export function AdminStudentReviewEditForm({
 }: AdminStudentReviewEditFormProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { addToast } = useToast();
   const isPending = review.status === "PENDING";
   const isCurrentlyFeatured = review.featuredOnHomepage;
   const canFeatureThisReview = isCurrentlyFeatured || canFeature;
@@ -56,12 +58,13 @@ export function AdminStudentReviewEditForm({
         }
         const result = await saveApprovedReviewHomepageSetting(review.id, formData);
         if (result?.error) {
-          window.alert(result.error);
+          addToast(result.error, "error");
+        } else {
+          addToast("Homepage settings saved.", "success");
         }
       } catch (error) {
-        if (!isRedirectError(error)) {
-          window.alert("Could not save changes. Please try again.");
-        }
+        if (isRedirectError(error)) throw error;
+        addToast("An unexpected error occurred.", "error");
       }
     });
   }

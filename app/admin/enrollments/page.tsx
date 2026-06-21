@@ -11,6 +11,7 @@ import {
 } from "@/lib/enrollments";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
+import { ActionToast } from "@/components/shared/ToastProvider";
 
 type TabType = "free_requests" | "paid_awaiting";
 
@@ -96,6 +97,9 @@ export default async function AdminEnrollmentsPage({
           );
         })}
       </nav>
+
+      <ActionToast trigger={params.approved === "1"} paramName="approved" message="Enrollment approved." variant="success" />
+      <ActionToast trigger={params.rejected === "1"} paramName="rejected" message="Enrollment rejected." variant="warning" />
 
       <div className="mt-6">
         <ListSearchForm

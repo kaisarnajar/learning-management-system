@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { generateReceipt } from "@/app/actions/receipts";
 import { useRouter } from "next/navigation";
 import { ActionButton } from "@/components/shared/ActionButton";
+import { useToast } from "@/components/shared/ToastProvider";
 
 interface ReceiptActionButtonsProps {
   paymentRecordId: string;
@@ -34,6 +35,8 @@ export function ReceiptActionButtons({
     }
   }, [isOpen]);
 
+  const { addToast } = useToast();
+
   const handleGenerate = async (includeGst: boolean) => {
     if (includeGst) setIsPendingGst(true);
     else setIsPendingNoGst(true);
@@ -41,10 +44,12 @@ export function ReceiptActionButtons({
     try {
       await generateReceipt(paymentRecordId, includeGst);
       setIsOpen(false);
+      addToast("Receipt generated successfully.", "success");
       router.refresh();
-    } catch (e) {
+    } catch (e: unknown) {
       console.error(e);
-      alert("Failed to generate receipt");
+      const msg = e instanceof Error ? e.message : "Failed to generate receipt";
+      addToast(msg, "error");
     } finally {
       if (includeGst) setIsPendingGst(false);
       else setIsPendingNoGst(false);

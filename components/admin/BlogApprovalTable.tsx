@@ -4,12 +4,14 @@ import Link from "next/link";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { approveBlogPost, rejectBlogPost } from "@/app/admin/blog-approvals/actions";
 import type { BlogPostWithImages } from "@/lib/blogs";
+import { useToast } from "@/components/shared/ToastProvider";
 
 export function BlogApprovalTable({
   pendingPosts,
 }: {
   pendingPosts: BlogPostWithImages[];
 }) {
+  const { addToast } = useToast();
   return (
     <table className="w-full min-w-[880px] text-left text-sm">
       <thead className="border-b border-border bg-background/50 text-muted">
@@ -57,7 +59,7 @@ export function BlogApprovalTable({
                   variant="primary" 
                   onConfirm={async () => { 
                     const result = await approveBlogPost(post.id); 
-                    if (result?.error) window.alert(result.error); 
+                    if (result?.error) addToast(result.error, "error"); 
                   }} 
                   trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>} 
                 />
@@ -68,7 +70,7 @@ export function BlogApprovalTable({
                   variant="destructive" 
                   onConfirm={async () => { 
                     const result = await rejectBlogPost(post.id); 
-                    if (result?.error) window.alert(result.error); 
+                    if (result?.error) addToast(result.error, "error"); 
                   }} 
                   trigger={<button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Reject</button>} 
                 />

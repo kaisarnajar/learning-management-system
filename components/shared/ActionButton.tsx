@@ -4,6 +4,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
+import { useToast } from "@/components/shared/ToastProvider";
+
 export type ActionButtonVariant = "primary" | "destructive" | "secondary";
 
 export function getReturnToUrl(pathname: string, searchParams: URLSearchParams) {
@@ -31,6 +33,7 @@ export function ActionButton({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { addToast } = useToast();
   const [hidden, setHidden] = useState(false);
   const [pending, startTransition] = useTransition();
 
@@ -44,7 +47,7 @@ export function ActionButton({
         const returnTo = getReturnToUrl(pathname, searchParams);
         const result = await action(returnTo);
         if (result?.error) {
-          window.alert(result.error);
+          addToast(result.error, "error");
           return;
         }
         if (hideOnSuccess) {
@@ -57,7 +60,7 @@ export function ActionButton({
           }
           return;
         }
-        window.alert("An unexpected error occurred. Please try again.");
+        addToast("An unexpected error occurred. Please try again.", "error");
       }
     });
   }

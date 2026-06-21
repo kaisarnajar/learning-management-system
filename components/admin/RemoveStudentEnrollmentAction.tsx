@@ -2,6 +2,7 @@
 
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
+import { useToast } from "@/components/shared/ToastProvider";
 
 export function RemoveStudentEnrollmentAction({
   studentNameOrEmail,
@@ -12,6 +13,7 @@ export function RemoveStudentEnrollmentAction({
   enrollmentId: string;
   courseId: string;
 }) {
+  const { addToast } = useToast();
   return (
     <ConfirmationModal 
       title="Remove Enrollment" 
@@ -20,7 +22,8 @@ export function RemoveStudentEnrollmentAction({
       variant="destructive" 
       onConfirm={async () => { 
         const result = await removeEnrollmentFromCourse(enrollmentId, courseId); 
-        if (result?.error) window.alert(result.error); 
+        if (result?.error) addToast(result.error, "error"); 
+        else addToast("Enrollment removed successfully.", "success");
       }} 
       trigger={<button type="button" className="text-sm font-medium text-destructive-text hover:underline">Remove</button>} 
     />

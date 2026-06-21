@@ -216,5 +216,5 @@ export async function deleteApprovedPayment(
     }), "Database operation failed");
 
   revalidatePaymentPaths(submission.userId, submission.courseId);
-  redirect(paymentReturnUrl(returnTo, "deleted" as any));
+  redirect(paymentReturnUrl(returnTo, "deleted"));
 }

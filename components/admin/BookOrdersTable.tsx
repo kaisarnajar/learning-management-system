@@ -6,6 +6,7 @@ import type { BookOrderWithItems } from "@/lib/bookstore";
 import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrderRefunded, deleteBookOrder } from "@/app/admin/bookstore/orders/actions";
 import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
+import { useToast } from "@/components/shared/ToastProvider";
 
 export function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
@@ -46,6 +47,7 @@ export function ScreenshotPreview({ path }: { path: string }) {
 }
 
 function OrderActions({ order }: { order: BookOrderWithItems }) {
+  const { addToast } = useToast();
   if (order.status === "PENDING_VERIFICATION") {
      return (
         <td className="whitespace-nowrap px-4 py-4 align-top">
@@ -56,8 +58,8 @@ function OrderActions({ order }: { order: BookOrderWithItems }) {
                actionLabel="Approve"
                variant="primary"
                onConfirm={async () => {
-                 const result = await approveBookOrder(order.id);
-                 if (result?.error) window.alert(result.error);
+                 const result = await approveBookOrder(order.id, window.location.pathname + window.location.search);
+                 if (result?.error) addToast(result.error, "error");
                }}
                trigger={
                   <button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>
@@ -69,8 +71,8 @@ function OrderActions({ order }: { order: BookOrderWithItems }) {
                actionLabel="Decline"
                variant="destructive"
                onConfirm={async () => {
-                 const result = await declineBookOrder(order.id);
-                 if (result?.error) window.alert(result.error);
+                 const result = await declineBookOrder(order.id, window.location.pathname + window.location.search);
+                 if (result?.error) addToast(result.error, "error");
                }}
                trigger={
                   <button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Decline</button>
@@ -91,8 +93,8 @@ function OrderActions({ order }: { order: BookOrderWithItems }) {
                actionLabel="Mark as Shipped"
                variant="primary"
                onConfirm={async () => {
-                 const result = await markBookOrderShipped(order.id);
-                 if (result?.error) window.alert(result.error);
+                 const result = await markBookOrderShipped(order.id, window.location.pathname + window.location.search);
+                 if (result?.error) addToast(result.error, "error");
                }}
                trigger={
                   <button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light transition-colors">Mark as Shipped</button>
@@ -103,8 +105,8 @@ function OrderActions({ order }: { order: BookOrderWithItems }) {
                description="Are you sure you want to refund this order? The student will be notified."
                actionLabel="Refund"
                onConfirm={async () => {
-                 const result = await markBookOrderRefunded(order.id);
-                 if (result?.error) window.alert(result.error);
+                 const result = await markBookOrderRefunded(order.id, window.location.pathname + window.location.search);
+                 if (result?.error) addToast(result.error, "error");
                }}
                trigger={
                   <button type="button" className="rounded-md border border-border bg-surface-muted px-3 py-1.5 text-xs font-semibold text-muted hover:bg-surface-muted-hover transition-colors">Refund</button>
@@ -128,7 +130,7 @@ function OrderActions({ order }: { order: BookOrderWithItems }) {
            variant="destructive"
            onConfirm={async () => {
              const result = await deleteBookOrder(order.id);
-             if (result?.error) window.alert(result.error);
+             if (result?.error) addToast(result.error, "error");
            }}
            trigger={
               <button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">

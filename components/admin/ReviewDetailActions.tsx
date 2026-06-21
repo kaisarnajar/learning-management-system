@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { approveStudentReview, rejectStudentReview } from "@/app/admin/review-approvals/actions";
+import { useToast } from "@/components/shared/ToastProvider";
 
 export function ReviewDetailActions({
   reviewId,
@@ -11,6 +12,7 @@ export function ReviewDetailActions({
   reviewId: string;
   isPending: boolean;
 }) {
+  const { addToast } = useToast();
   return (
     <div className="flex flex-wrap items-center gap-2">
       <Link
@@ -28,7 +30,7 @@ export function ReviewDetailActions({
             variant="primary"
             onConfirm={async () => {
               const result = await approveStudentReview(reviewId, false, "/admin/review-approvals");
-              if (result?.error) window.alert(result.error);
+              if (result?.error) addToast(result.error, "error");
             }}
             trigger={
               <button
@@ -46,7 +48,7 @@ export function ReviewDetailActions({
             variant="destructive"
             onConfirm={async () => {
               const result = await rejectStudentReview(reviewId, "/admin/review-approvals");
-              if (result?.error) window.alert(result.error);
+              if (result?.error) addToast(result.error, "error");
             }}
             trigger={
               <button

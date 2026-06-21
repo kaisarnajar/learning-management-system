@@ -3,8 +3,10 @@
 import Link from "next/link";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { approveBlogPost, rejectBlogPost } from "@/app/admin/blog-approvals/actions";
+import { useToast } from "@/components/shared/ToastProvider";
 
 export function BlogApprovalActions({ postId }: { postId: string }) {
+  const { addToast } = useToast();
   return (
     <div className="flex flex-wrap items-center gap-2">
       <ConfirmationModal 
@@ -14,7 +16,7 @@ export function BlogApprovalActions({ postId }: { postId: string }) {
         variant="primary" 
         onConfirm={async () => { 
           const result = await approveBlogPost(postId, "/admin/blog-approvals"); 
-          if (result?.error) window.alert(result.error); 
+          if (result?.error) addToast(result.error, "error"); 
         }} 
         trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>} 
       />
@@ -25,7 +27,7 @@ export function BlogApprovalActions({ postId }: { postId: string }) {
         variant="destructive" 
         onConfirm={async () => { 
           const result = await rejectBlogPost(postId, "/admin/blog-approvals"); 
-          if (result?.error) window.alert(result.error); 
+          if (result?.error) addToast(result.error, "error"); 
         }} 
         trigger={<button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Reject</button>} 
       />

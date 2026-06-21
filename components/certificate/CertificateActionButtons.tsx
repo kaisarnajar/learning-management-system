@@ -5,6 +5,7 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ActionButton } from "@/components/shared/ActionButton";
 import { generateCertificate } from "@/app/actions/certificates";
+import { useToast } from "@/components/shared/ToastProvider";
 
 interface CertificateActionButtonsProps {
   enrollmentId: string;
@@ -36,14 +37,18 @@ export function CertificateActionButtons({
     }
   }, [isOpen]);
 
+  const { addToast } = useToast();
+
   const handleGenerate = async () => {
     try {
       await generateCertificate(enrollmentId, type, grade);
       setIsOpen(false);
+      addToast("Certificate generated successfully.", "success");
       router.refresh();
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error(e);
-      alert(e?.message || "Failed to generate certificate");
+      const msg = e instanceof Error ? e.message : "Failed to generate certificate";
+      addToast(msg, "error");
     }
   };
 

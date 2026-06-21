@@ -10,6 +10,7 @@ import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons"
 import { formatPrice } from "@/lib/courses";
 import type { CoursePaymentSubmissionWithUser } from "@/lib/monthly-payments";
 import { MONTHLY_PAYMENT_APPROVED } from "@/lib/monthly-payment-status";
+import { useToast } from "@/components/shared/ToastProvider";
 
 type PaymentApprovalsTableProps = {
   submissions: CoursePaymentSubmissionWithUser[];
@@ -24,6 +25,7 @@ export function PaymentApprovalsTable({
 }: PaymentApprovalsTableProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { addToast } = useToast();
   const returnTo = getReturnToUrl(pathname, searchParams);
 
   if (submissions.length === 0) {
@@ -105,52 +107,47 @@ export function PaymentApprovalsTable({
             </td>
             <td className="whitespace-nowrap px-4 py-3">
               <div className="flex items-center justify-end gap-2">
-                {submission.status === MONTHLY_PAYMENT_APPROVED ? (
+                {submission.status === MONTHLY_PAYMENT_APPROVED && (
+                  <ReceiptActionButtons
+                     paymentRecordId={submission.id}
+                     receiptGeneratedAt={submission.receiptGeneratedAt}
+                     isAdmin
+                     label="View Receipt"
+                  />
+                )}
+                {submission.status !== MONTHLY_PAYMENT_APPROVED && (
                   <>
-                    {submission.paymentRecordId && (
-                      <ReceiptActionButtons 
-                        paymentRecordId={submission.paymentRecordId}
-                        receiptGeneratedAt={submission.paymentRecord?.receiptGeneratedAt ?? null}
-                        isAdmin={true}
-                        label="View Receipt" 
-                      />
-                    )}
-                    <DeleteActionButton action={deleteApprovedPayment.bind(null, submission.id, returnTo)} itemName="payment" />
-                  </>
-                ) : (
-                  <>
-                    <ConfirmationModal
-                      title="Approve Payment"
-                      description="Approve this payment and record it on the student's account?"
-                      actionLabel="Approve"
-                      variant="primary"
-                      onConfirm={async () => {
-                         const result = await confirmMonthlyPayment(submission.id, returnTo);
-                         if (result?.error) { window.alert(result.error); }
-                      }}
-                      trigger={
-                        <button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">
-                          Approve
-                        </button>
-                      }
+                    <ConfirmationModal 
+                      title="Confirm Payment" 
+                      description="Approve this payment and notify the student?" 
+                      actionLabel="Confirm" 
+                      variant="primary" 
+                      onConfirm={async () => { 
+                        const result = await confirmMonthlyPayment(submission.id, returnTo); 
+                        if (result?.error) addToast(result.error, "error"); 
+                      }} 
+                      trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light transition-colors">Confirm</button>} 
                     />
-                    <ConfirmationModal
-                      title="Decline Payment"
-                      description="Decline this payment? The student will be notified."
-                      actionLabel="Decline"
-                      variant="destructive"
-                      onConfirm={async () => {
-                         const result = await declineMonthlyPayment(submission.id, returnTo);
-                         if (result?.error) { window.alert(result.error); }
-                      }}
-                      trigger={
-                        <button type="button" className="ml-2 rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">
-                          Decline
-                        </button>
-                      }
+                    <ConfirmationModal 
+                      title="Decline Payment" 
+                      description="Decline this payment and ask the student to resubmit?" 
+                      actionLabel="Decline" 
+                      variant="destructive" 
+                      onConfirm={async () => { 
+                        const result = await declineMonthlyPayment(submission.id, returnTo); 
+                        if (result?.error) addToast(result.error, "error"); 
+                      }} 
+                      trigger={<button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Decline</button>} 
                     />
                   </>
                 )}
+                <DeleteActionButton
+                  action={async () => {
+                     const result = await deleteApprovedPayment(submission.id, returnTo);
+                     if (result?.error) addToast(result.error, "error");
+                  }}
+                  itemName="payment"
+                />
               </div>
             </td>
           </tr>

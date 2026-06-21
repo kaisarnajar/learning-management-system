@@ -26,10 +26,22 @@ function revalidateOrderPaths(userId: string) {
     revalidatePath(p, "layout");
   }
   revalidatePath(`/admin/students/${userId}`, "page");
+  revalidatePath(`/admin/students/${userId}`, "page");
+}
+
+function orderReturnUrl(returnTo: string | undefined, event: string): string {
+  const fallback = `/admin/bookstore/orders?${event}=1`;
+  if (!returnTo?.startsWith("/admin")) return fallback;
+  const [pathname, query = ""] = returnTo.split("?");
+  const params = new URLSearchParams(query);
+  params.set(event, "1");
+  const qs = params.toString();
+  return qs ? `${pathname}?${qs}` : fallback;
 }
 
 export async function approveBookOrder(
   orderId: string,
+  returnTo?: string,
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
@@ -41,7 +53,7 @@ export async function approveBookOrder(
   if (!order) return { error: "Order not found." };
 
   if (order.status === "APPROVED") {
-    redirect("/admin/bookstore/orders?confirmed=1");
+    redirect(orderReturnUrl(returnTo, "confirmed"));
   }
 
   if (order.status !== "PENDING_VERIFICATION") {
@@ -71,11 +83,12 @@ export async function approveBookOrder(
   });
 
   revalidateOrderPaths(order.userId);
-  redirect("/admin/bookstore/orders?confirmed=1");
+  redirect(orderReturnUrl(returnTo, "confirmed"));
 }
 
 export async function declineBookOrder(
   orderId: string,
+  returnTo?: string,
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
@@ -101,11 +114,12 @@ export async function declineBookOrder(
   });
 
   revalidateOrderPaths(order.userId);
-  redirect("/admin/bookstore/orders?declined=1");
+  redirect(orderReturnUrl(returnTo, "declined"));
 }
 
 export async function markBookOrderShipped(
   orderId: string,
+  returnTo?: string,
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
@@ -130,11 +144,12 @@ export async function markBookOrderShipped(
   });
 
   revalidateOrderPaths(order.userId);
-  redirect("/admin/bookstore/orders?shipped=1");
+  redirect(orderReturnUrl(returnTo, "shipped"));
 }
 
 export async function markBookOrderRefunded(
   orderId: string,
+  returnTo?: string,
 ): Promise<{ error?: string }> {
   await requireAdmin();
 
@@ -159,7 +174,7 @@ export async function markBookOrderRefunded(
   });
 
   revalidateOrderPaths(order.userId);
-  redirect("/admin/bookstore/orders?refunded=1");
+  redirect(orderReturnUrl(returnTo, "refunded"));
 }
 
 export async function deleteBookOrder(

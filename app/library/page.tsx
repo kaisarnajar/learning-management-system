@@ -49,7 +49,7 @@ export default async function LibraryPage({
             </h1>
             <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-[#cca72f]"></div>
             <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">
-              A curated collection of Islamic books and resources for students. PDF downloads will be available in a future update.
+              A curated collection of Islamic books and materials for students. PDF downloads will be available in a future update.
             </p>
           </div>
         </div>
@@ -62,7 +62,7 @@ export default async function LibraryPage({
           {/* Search Form */}
           <div className="motion-safe:animate-fade-up mx-auto mb-10 max-w-2xl">
             <div className="card-elevated rounded-xl bg-surface p-4 shadow-md sm:p-5">
-              <ListSearchForm action="/library" query={q} placeholder="Search books and resources..." />
+              <ListSearchForm action="/library" query={q} placeholder="Search books and materials..." />
             </div>
           </div>
 
@@ -74,7 +74,7 @@ export default async function LibraryPage({
             {totalCount === 0 ? (
               <p className="col-span-full py-12 text-center text-muted motion-safe:animate-fade-up">
                 {category
-                  ? `No resources in “${category}” yet.`
+                  ? `No materials in “${category}” yet.`
                   : "No library items available yet."}
               </p>
             ) : (

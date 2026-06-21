@@ -21,7 +21,7 @@ const quickLinks = [
   { href: "/about", label: "About Us" },
   { href: "/courses", label: "Courses" },
   { href: "/announcements", label: "Announcements" },
-  { href: "/library", label: "Resources" },
+  { href: "/library", label: "Library" },
   { href: "/fatwa", label: "Fatwa" },
   { href: "/teachers", label: "Teachers" },
 ];

@@ -21,7 +21,7 @@ export async function FeaturedResources() {
               Books and study materials from the academy digital library.
             </p>
           </div>
-          <TrackedLink href="/library" eventName="View All Resources" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
+          <TrackedLink href="/library" eventName="View Library" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
             View all
           </TrackedLink>
         </div>

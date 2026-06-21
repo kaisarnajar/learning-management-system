@@ -65,7 +65,7 @@ const features = [
     ),
   },
   {
-    title: "Fatwa & Resources",
+    title: "Fatwa & Library",
     description:
       "Ask scholars through our Fatwa section and explore the digital library for ongoing study.",
     icon: (

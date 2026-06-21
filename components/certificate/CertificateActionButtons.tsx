@@ -59,7 +59,7 @@ export function CertificateActionButtons({
   if (certificateGeneratedAt) {
     return (
       <Link
-        href={`/api/certificate/${enrollmentId}`}
+        href={`/api/certificate/${enrollmentId}?inline=1`}
         target="_blank"
         className={btnClass}
       >

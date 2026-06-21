@@ -57,7 +57,7 @@ export async function replyToContactInquiry(id: string, formData: FormData) {
   redirect(`/admin/contact-inquiries?${savedParams.toString()}`);
 }
 
-export async function deleteContactInquiryById(id: string): Promise<{ error?: string }> {
+export async function deleteContactInquiryById(id: string): Promise<{ error?: string; success?: string }> {
   await requireAdmin();
 
   const inquiry = await withDbErrorHandling(() => prisma.contactInquiry.findUnique({ where: { id } }), "Database operation failed");
@@ -72,7 +72,7 @@ export async function deleteContactInquiryById(id: string): Promise<{ error?: st
   revalidatePath(`/admin/contact-inquiries/${id}/reply`);
   revalidatePath("/admin");
 
-  return {};
+  return { success: "Contact inquiry successfully deleted." };
 }
 
 export async function deleteContactInquiryForm(id: string) {

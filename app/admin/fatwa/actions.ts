@@ -72,7 +72,7 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
   redirect(`/admin/fatwa/${id}?${savedParams.toString()}`);
 }
 
-export async function deleteFatwaQuestion(id: string): Promise<{ error?: string }> {
+export async function deleteFatwaQuestion(id: string): Promise<{ error?: string; success?: string }> {
   await requireAdmin();
 
   const existing = await withDbErrorHandling(() => prisma.fatwaQuestion.findUnique({ where: { id } }), "Database operation failed");
@@ -88,7 +88,7 @@ export async function deleteFatwaQuestion(id: string): Promise<{ error?: string 
   revalidatePath("/admin/fatwa");
   revalidatePath(`/admin/fatwa/${id}`);
 
-  return {};
+  return { success: "Fatwa successfully deleted." };
 }
 
 export async function deleteFatwaQuestionForm(id: string) {

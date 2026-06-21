@@ -20,7 +20,7 @@ function revalidateStudentPaths(courseIds: string[] = []) {
   }
 }
 
-export async function deleteStudentUser(id: string): Promise<{ error?: string }> {
+export async function deleteStudentUser(id: string): Promise<{ error?: string; success?: string }> {
   await requireAdmin();
 
   const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { id } }), "Database operation failed");
@@ -43,7 +43,7 @@ export async function deleteStudentUser(id: string): Promise<{ error?: string }>
 
   revalidateStudentPaths(courseIds);
 
-  return {};
+  return { success: "Student successfully deleted." };
 }
 
 export async function deleteStudentUserForm(id: string) {

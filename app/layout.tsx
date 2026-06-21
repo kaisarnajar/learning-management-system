@@ -4,7 +4,6 @@ import { CartProvider } from "@/components/bookstore/CartProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
-import { TopBar } from "@/components/site/TopBar";
 import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
 import { WhatsAppButton } from "@/components/site/WhatsAppButton";
 import "./globals.css";
@@ -36,7 +35,6 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col overflow-x-hidden font-sans" suppressHydrationWarning>
         <SessionProvider>
           <CartProvider>
-            <TopBar />
             <Header />
             <main className="flex-1">{children}</main>
             <Footer />

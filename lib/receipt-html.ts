@@ -9,12 +9,12 @@ export function renderReceiptToHtml(data: ReceiptData): string {
     .join('');
 
   const stampHtml = authority.stampUrl
-    ? `<img src="${authority.stampUrl}" alt="Official Stamp" class="h-16 mb-[-20px] opacity-50 absolute process-white-bg" />`
+    ? `<img src="${authority.stampUrl}" alt="Official Stamp" class="w-24 absolute z-10 opacity-90 process-white-bg mix-blend-multiply" style="top: 50%; left: 50%; transform: translate(-50%, -50%);" />`
     : '';
 
   const signatureHtml = authority.signatureUrl
-    ? `<img src="${authority.signatureUrl}" alt="Authorized Signature" class="h-16 object-contain mb-2 relative z-10 process-white-bg" />`
-    : `<div class="h-16 mb-2"></div>`;
+    ? `<img src="${authority.signatureUrl}" alt="Authorized Signature" class="max-h-[100px] max-w-[200px] object-contain relative z-20 translate-y-2 process-white-bg" />`
+    : `<div class="h-[100px] w-full"></div>`;
 
   return `
     <div class="max-w-4xl mx-auto bg-white p-10 shadow-lg print:shadow-none print:p-0 text-slate-800 font-sans">
@@ -116,9 +116,11 @@ export function renderReceiptToHtml(data: ReceiptData): string {
           </ul>
         </div>
         <div class="w-2/5 text-center flex flex-col items-center relative">
-          ${stampHtml}
-          ${signatureHtml}
-          <div class="w-full border-t border-slate-300 pt-2 relative z-10">
+          <div class="relative flex justify-center items-center h-[120px] w-full">
+            ${stampHtml}
+            ${signatureHtml}
+          </div>
+          <div class="w-full border-t border-slate-300 pt-2 relative z-30">
             <p class="font-bold text-sm text-slate-800">${authority.name}</p>
             <p class="text-xs text-slate-500">${authority.designation}</p>
           </div>

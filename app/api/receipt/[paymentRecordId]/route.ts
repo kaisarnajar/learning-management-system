@@ -62,17 +62,21 @@ export async function GET(
   // 2. Read Images and convert to Base64 to guarantee rendering inside Puppeteer
   let base64Logo = "";
   let base64Signature = "";
+  let base64Stamp = "";
   try {
     const logoPath = path.join(process.cwd(), "public", "assets", "logo.png");
     const sigPath = path.join(process.cwd(), "public", "assets", "signature.png");
+    const stampPath = path.join(process.cwd(), "public", "assets", "stamp.png");
     
-    const [logoBytes, sigBytes] = await Promise.all([
+    const [logoBytes, sigBytes, stampBytes] = await Promise.all([
       fs.readFile(logoPath).catch(() => null),
       fs.readFile(sigPath).catch(() => null),
+      fs.readFile(stampPath).catch(() => null),
     ]);
     
     if (logoBytes) base64Logo = `data:image/png;base64,${logoBytes.toString('base64')}`;
     if (sigBytes) base64Signature = `data:image/png;base64,${sigBytes.toString('base64')}`;
+    if (stampBytes) base64Stamp = `data:image/png;base64,${stampBytes.toString('base64')}`;
   } catch (e) {
     console.error("Could not load images:", e);
   }
@@ -110,6 +114,7 @@ export async function GET(
       name: AUTHORITY_SIGNATURE.name,
       designation: AUTHORITY_SIGNATURE.designation,
       signatureUrl: base64Signature, // Use injected Base64
+      stampUrl: base64Stamp,
     },
     termsAndConditions: [...INVOICE_TERMS],
   };

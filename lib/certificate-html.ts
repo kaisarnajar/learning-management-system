@@ -5,6 +5,7 @@ export function renderCertificateToHtml(data: {
   issueDate: string;
   signatureUrl: string;
   sealUrl: string;
+  stampUrl?: string;
   academyName: string;
   academyEmail: string;
   academyPhone: string;
@@ -129,15 +130,18 @@ export function renderCertificateToHtml(data: {
     <!-- Signature Area -->
     <div class="relative flex flex-col items-center w-64">
       
-      <div class="relative flex justify-center items-end h-[100px] w-full">
+      <div class="relative flex justify-center items-center h-[120px] w-full">
+        <!-- Stamp as background layer -->
+        <img
+          src="${data.stampUrl || data.sealUrl}"
+          class="w-28 absolute z-10 opacity-90 process-white-bg mix-blend-multiply"
+          style="top: 50%; left: 50%; transform: translate(-50%, -50%);"
+        />
+        <!-- Signature as foreground layer -->
         <img
           id="signature-image"
           src="${data.signatureUrl}"
-          class="max-h-[140px] max-w-[240px] object-contain relative z-20 translate-y-4 process-white-bg"
-        />
-        <img
-          src="${data.sealUrl}"
-          class="w-24 absolute left-[-40px] bottom-[-10px] opacity-80 z-10 process-white-bg"
+          class="max-h-[140px] max-w-[240px] object-contain relative z-20 translate-y-2 process-white-bg"
         />
       </div>
 

@@ -11,39 +11,58 @@ import {
 } from "@/lib/student-reviews";
 import { parseSearchQuery } from "@/lib/text-search";
 
+type TabType = "pending" | "approved";
+
+function tabHref(type: TabType) {
+  const params = new URLSearchParams();
+  if (type !== "pending") params.set("type", type);
+  const qs = params.toString();
+  return qs ? `/admin/review-approvals?${qs}` : "/admin/review-approvals";
+}
+
 export default async function AdminReviewApprovalsPage({
   searchParams,
 }: {
   searchParams: Promise<{
+    type?: string;
     approved?: string;
     rejected?: string;
     unfeatured?: string;
     featured?: string;
     saved?: string;
     page?: string;
-    approvedPage?: string;
     q?: string;
   }>;
 }) {
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
-  const { page: pendingPage, pageSize } = parsePaginationParams(params);
-  const { page: approvedPage, pageSize: approvedPageSize } = parsePaginationParams(params, {
-    pageParam: "approvedPage",
-  });
+  
+  const validTypes: TabType[] = ["pending", "approved"];
+  const type: TabType = validTypes.includes(params.type as TabType) ? (params.type as TabType) : "pending";
 
-  const [pendingPaginated, approvedPaginated, featuredCount] = await Promise.all([
-    getPendingStudentReviewsForAdminPaginated(pendingPage, pageSize, q),
-    getApprovedStudentReviewsForAdminPaginated(approvedPage, approvedPageSize, q),
+  const { page: requestedPage, pageSize } = parsePaginationParams(params);
+
+  // We only fetch full paginated data for the active tab, and just count/minimal data for inactive ones.
+  const [pendingResult, approvedResult, featuredCount] = await Promise.all([
+    type === "pending"
+      ? getPendingStudentReviewsForAdminPaginated(requestedPage, pageSize, q)
+      : getPendingStudentReviewsForAdminPaginated(1, 1, q), // minimal for count
+    type === "approved"
+      ? getApprovedStudentReviewsForAdminPaginated(requestedPage, pageSize, q)
+      : getApprovedStudentReviewsForAdminPaginated(1, 1, q), // minimal for count
     getFeaturedHomepageReviewCount(),
   ]);
 
-  const pendingReviews = pendingPaginated.items;
-  const approvedReviews = approvedPaginated.items;
-  const pendingTotalCount = pendingPaginated.totalCount;
-  const approvedTotalCount = approvedPaginated.totalCount;
-  const safePendingPage = clampPage(pendingPage, pendingTotalCount, pageSize);
-  const safeApprovedPage = clampPage(approvedPage, approvedTotalCount, approvedPageSize);
+  const pendingTotalCount = pendingResult.totalCount;
+  const approvedTotalCount = approvedResult.totalCount;
+
+  const activeResult = type === "pending" ? pendingResult : approvedResult;
+  const safePage = clampPage(requestedPage, activeResult.totalCount, pageSize);
+
+  const tabs = [
+    { label: "Pending Approvals", value: "pending" as TabType, count: pendingTotalCount, showBadge: true },
+    { label: "Approved Reviews", value: "approved" as TabType, count: approvedTotalCount, showBadge: true },
+  ];
 
   return (
     <div>
@@ -75,71 +94,91 @@ export default async function AdminReviewApprovalsPage({
         <p className="mt-4 rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">Changes saved.</p>
       )}
 
+      <nav className="mt-8 flex flex-wrap gap-2" aria-label="Review type">
+        {tabs.map((item) => {
+          const active = type === item.value;
+          const href = tabHref(item.value);
+          return (
+            <Link
+              key={item.value}
+              href={href}
+              className={`inline-flex min-h-10 items-center justify-center rounded-full px-4 text-sm font-medium transition-colors ${
+                active
+                  ? "bg-primary text-white"
+                  : "bg-surface text-foreground hover:bg-background/80 border border-border"
+              }`}
+              aria-current={active ? "page" : undefined}
+            >
+              {item.label}
+              {item.showBadge && item.count > 0 && (
+                <span
+                  className={`ml-2 inline-flex h-5 items-center justify-center rounded-full px-2 text-xs font-semibold ${
+                    active ? "bg-white/20 text-white" : "bg-warning-bg text-warning-text"
+                  }`}
+                >
+                  {item.count}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
       <div className="mt-6">
         <ListSearchForm
           action="/admin/review-approvals"
           query={q}
           placeholder="Search by name, email, course, or review text"
-          preserveParams={{ approvedPage: params.approvedPage }}
-          totalCount={q ? pendingTotalCount + approvedTotalCount : undefined}
+          preserveParams={{ type: params.type }}
+          totalCount={q ? activeResult.totalCount : undefined}
         />
       </div>
 
       <section className="mt-8">
-        <h2 className="font-serif text-lg font-semibold text-foreground">
-          Pending approval
-          {pendingTotalCount > 0 && (
-            <span className="ml-2 inline-flex rounded-full bg-warning-bg px-2.5 py-0.5 text-xs font-semibold text-warning-text">
-              {pendingTotalCount}
-            </span>
-          )}
-        </h2>
-        <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-          <ReviewTable
-            reviews={pendingReviews}
-            pendingActions
-            emptyMessage={
-              q
-                ? "No pending reviews match your search."
-                : "No student reviews awaiting approval."
-            }
-          />
-        </div>
+        {type === "pending" ? (
+          <>
+            <p className="text-sm text-muted">
+              Student reviews awaiting your approval before they can be featured.
+            </p>
+            <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
+              <ReviewTable
+                reviews={activeResult.items}
+                pendingActions
+                emptyMessage={
+                  q
+                    ? "No pending reviews match your search."
+                    : "No student reviews awaiting approval."
+                }
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <p className="text-sm text-muted">
+                Every approved review stays here. Use Edit to add or remove homepage visibility.
+              </p>
+              <div className="shrink-0 text-sm font-medium text-foreground bg-surface border border-border px-3 py-1.5 rounded-md">
+                {featuredCount} / {HOMEPAGE_FEATURED_REVIEWS_MAX} featured on homepage
+              </div>
+            </div>
+            
+            <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
+              <ReviewTable
+                reviews={activeResult.items}
+                showHomepage
+                emptyMessage={q ? "No approved reviews match your search." : "No approved reviews yet."}
+              />
+            </div>
+          </>
+        )}
 
         <Pagination
           basePath="/admin/review-approvals"
           params={params}
-          page={safePendingPage}
-          totalCount={pendingTotalCount}
+          page={safePage}
+          totalCount={activeResult.totalCount}
           pageSize={pageSize}
-        />
-      </section>
-
-      <section className="mt-10">
-        <h2 className="font-serif text-lg font-semibold text-foreground">
-          All reviews
-          <span className="ml-2 text-sm font-normal text-muted">
-            ({approvedTotalCount} approved · {featuredCount}/{HOMEPAGE_FEATURED_REVIEWS_MAX} on homepage)
-          </span>
-        </h2>
-        <p className="mt-1 text-sm text-muted">
-          Every approved review stays here. Use Edit to add or remove homepage visibility.
-        </p>
-        <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-          <ReviewTable
-            reviews={approvedReviews}
-            showHomepage
-            emptyMessage={q ? "No approved reviews match your search." : "No approved reviews yet."}
-          />
-        </div>
-
-        <Pagination
-          basePath="/admin/review-approvals"
-          params={params}
-          page={safeApprovedPage}
-          totalCount={approvedTotalCount}
-          pageSize={approvedPageSize}
-          pageParam="approvedPage"
         />
       </section>
     </div>

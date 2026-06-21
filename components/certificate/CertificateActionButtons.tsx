@@ -47,7 +47,9 @@ export function CertificateActionButtons({
     }
   };
 
-  const btnClass = "inline-flex min-h-9 items-center justify-center rounded-md border border-primary bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors disabled:opacity-60";
+  const btnClass = isAdmin
+    ? "inline-flex min-h-9 items-center justify-center rounded-md border border-primary bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors disabled:opacity-60"
+    : "mt-4 flex w-full min-h-11 items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-light transition-colors disabled:opacity-60";
 
   if (certificateGeneratedAt) {
     return (

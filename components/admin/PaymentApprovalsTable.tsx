@@ -107,10 +107,10 @@ export function PaymentApprovalsTable({
             </td>
             <td className="whitespace-nowrap px-4 py-3">
               <div className="flex items-center justify-end gap-2">
-                {submission.status === MONTHLY_PAYMENT_APPROVED && (
+                {submission.status === MONTHLY_PAYMENT_APPROVED && submission.paymentRecordId && (
                   <ReceiptActionButtons
-                     paymentRecordId={submission.id}
-                     receiptGeneratedAt={submission.receiptGeneratedAt}
+                     paymentRecordId={submission.paymentRecordId}
+                     receiptGeneratedAt={submission.paymentRecord?.receiptGeneratedAt || null}
                      isAdmin
                      label="View Receipt"
                   />

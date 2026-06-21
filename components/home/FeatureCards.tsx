@@ -1,3 +1,8 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
+
 const features = [
   {
     title: "After Isha Salah",
@@ -92,14 +97,52 @@ const features = [
 ];
 
 export function FeatureCards() {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="pattern-islamic relative pb-16 pt-4">
+    <section ref={sectionRef} className="pattern-islamic relative pb-16 pt-10">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        
+        <div className="mb-12 text-center">
+          <SplitSectionTitle muted="Our" accent="Excellence" />
+          <h2 className="mt-4 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            Elevating Islamic Education
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted">
+            We blend centuries of sacred tradition with modern educational excellence to provide a structured path for seekers of knowledge.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
-          {features.map((feature) => (
+          {features.map((feature, index) => (
             <article
               key={feature.title}
-              className="feature-card card-elevated flex flex-col items-center p-8 text-center"
+              className={`feature-card card-elevated flex flex-col items-center p-8 text-center opacity-0 ${
+                isVisible ? "motion-safe:animate-fade-up" : ""
+              }`}
+              style={{
+                animationDelay: isVisible ? `${index * 150}ms` : "0ms",
+                animationFillMode: "forwards"
+              }}
             >
               <span className="text-gold">{feature.icon}</span>
               <h3 className="mt-4 text-lg font-bold uppercase tracking-wide text-foreground">

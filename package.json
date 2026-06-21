@@ -9,12 +9,10 @@
     "start": "next start",
     "lint": "eslint",
     "knip": "knip --include files,dependencies",
-    "generate:countries": "node scripts/generate-countries.mjs",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev --skip-seed",
     "db:push": "prisma db push",
-    "db:seed:demo": "tsx prisma/seed-demo.ts",
-    "optimize-logo": "node scripts/optimize-logo.mjs"
+    "db:seed:demo": "tsx prisma/seed-demo.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed-demo.ts"

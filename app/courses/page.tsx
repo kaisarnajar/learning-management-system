@@ -66,8 +66,8 @@ export default async function CoursesPage({
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           
           {/* Search Form */}
-          <div className="motion-safe:animate-fade-up relative z-10 mx-auto -mt-20 mb-16 max-w-2xl sm:-mt-24">
-            <div className="card-elevated rounded-2xl bg-surface p-4 shadow-2xl ring-1 ring-border sm:p-5">
+          <div className="motion-safe:animate-fade-up mx-auto mb-12 max-w-2xl">
+            <div className="card-elevated rounded-xl bg-surface p-4 shadow-md sm:p-5">
               <ListSearchForm action="/courses" query={q} placeholder="Search courses by title, category, or teacher..." />
             </div>
           </div>

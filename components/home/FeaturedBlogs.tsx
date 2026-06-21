@@ -20,7 +20,7 @@ export async function FeaturedBlogs() {
               Articles and reflections from our teachers and scholars.
             </p>
           </div>
-          <TrackedLink href="/blogs" eventName="View All Blogs" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
+          <TrackedLink href="/blog" eventName="View All Blogs" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
             View all
           </TrackedLink>
         </div>

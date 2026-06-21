@@ -16,7 +16,7 @@ export async function FeaturedResources() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-end">
           <div className="text-center sm:text-left">
-            <SplitSectionTitle muted="Featured" accent="Resources" />
+            <SplitSectionTitle muted="Study" accent="Materials" />
             <p className="mt-3 max-w-xl text-sm text-muted sm:text-base">
               Books and study materials from the academy digital library.
             </p>

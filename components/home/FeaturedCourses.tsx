@@ -18,7 +18,7 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-end">
           <div className="text-center sm:text-left">
-            <SplitSectionTitle muted="Featured" accent="Courses" />
+            <SplitSectionTitle muted="Our" accent="Courses" />
             <p className="mt-3 max-w-xl text-sm text-muted sm:text-base">
               Explore our core curriculum designed for deep understanding and spiritual growth.
             </p>

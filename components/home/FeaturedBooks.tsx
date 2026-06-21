@@ -15,7 +15,7 @@ export async function FeaturedBooks() {
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-end">
           <div className="text-center sm:text-left">
-            <SplitSectionTitle muted="Featured" accent="Books" />
+            <SplitSectionTitle muted="Recommended" accent="Books" />
             <p className="mt-3 max-w-xl text-sm text-muted sm:text-base">
               Recommended titles available in the academy bookstore.
             </p>

@@ -98,7 +98,7 @@ export async function Footer() {
       <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
           <div>
-            <SiteLogo href="/" className="h-14 sm:h-16" />
+            <SiteLogo href="/" className="h-14 sm:h-16 mix-blend-multiply" />
             <p className="mt-4 text-sm leading-relaxed text-muted">
               Dedicated to authentic Islamic education—Quran, Arabic, and Islamic studies for all
               ages, taught online by qualified scholars.

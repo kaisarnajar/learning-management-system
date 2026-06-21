@@ -60,14 +60,26 @@ export function renderReceiptToHtml(data: ReceiptData): string {
           <p class="text-slate-600 text-sm mt-1">Phone: ${student.phone}</p>
         </div>
 
-        <div class="bg-slate-50 border-l-4 border-[#1a4d2e] p-5 flex flex-col justify-center items-start">
-          <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Payment Status</h3>
-          <div class="inline-block border-4 border-red-500 text-red-500 text-xl font-bold px-4 py-1 rounded -rotate-6 tracking-widest opacity-80 mb-3">
-            SUCCESSFUL
+        <div class="bg-slate-50 border-l-4 border-[#1a4d2e] p-5 flex flex-col justify-center items-start relative overflow-hidden">
+          <div class="relative z-10">
+            <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-6">Payment Status</h3>
+            <p class="text-sm text-slate-600 font-medium">
+              Payment Method: <span class="font-bold text-slate-800">${payment.method}</span>
+            </p>
           </div>
-          <p class="text-sm text-slate-600">
-            Payment Method: <span class="font-semibold">${payment.method}</span>
-          </p>
+          
+          <div class="absolute right-4 top-1/2 -translate-y-1/2 opacity-70">
+            <div class="relative flex items-center justify-center w-28 h-28 rounded-full border-[3px] border-red-600">
+              <div class="absolute inset-1 rounded-full border border-red-600 border-dashed"></div>
+              <div class="absolute inset-2 rounded-full border border-red-600/20"></div>
+              
+              <div class="text-center font-bold text-red-600 flex flex-col items-center justify-center z-10">
+                <span class="text-[7px] uppercase tracking-[0.15em] leading-tight mb-0.5">Darse Quran<br/>Academy</span>
+                <span class="w-8 border-t-[1.5px] border-red-600 my-[3px]"></span>
+                <span class="text-[9px] uppercase tracking-wider leading-tight">Payment<br/>Successful</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

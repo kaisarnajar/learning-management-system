@@ -41,8 +41,8 @@ export function HomeHero() {
         </div>
 
         {/* Right Side Glass Card */}
-        <div className="relative w-full max-w-md shrink-0">
-          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-md">
+        <div className="relative w-full max-w-md shrink-0 motion-safe:animate-float">
+          <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-8 shadow-2xl shadow-[#95d3ba]/20 backdrop-blur-md">
             {/* Inner subtle glow */}
             <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
             

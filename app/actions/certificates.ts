@@ -27,7 +27,13 @@ export async function generateCertificate(enrollmentId: string, certificateType:
   }
 
   if (certificateType === "COMPLETION") {
-    if (certificateGrade == null || certificateGrade < 0 || certificateGrade > 10) {
+    if (
+      certificateGrade === undefined ||
+      certificateGrade === null ||
+      Number.isNaN(certificateGrade) ||
+      certificateGrade < 0 ||
+      certificateGrade > 10
+    ) {
       throw new Error("A valid grade between 0 and 10 is required for a Certificate of Completion.");
     }
   }

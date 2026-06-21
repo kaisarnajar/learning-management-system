@@ -149,7 +149,7 @@ export async function updateCourse(id: string, formData: FormData) {
   revalidatePath(`/admin/courses/${id}/students`);
   revalidatePath("/admin/enrollments");
   revalidatePath("/profile/courses");
-  redirect(`/admin/courses/${id}/edit?saved=1`);
+  redirect(`/admin/courses?saved=1`);
 }
 
 export async function deleteCourse(id: string) {
@@ -165,17 +165,22 @@ export async function deleteCourse(id: string) {
   }
 
   try {
-    const enrollmentCount = await prisma.enrollment.count({
-      where: { courseId: id },
+    const activeStudentCount = await prisma.enrollment.count({
+      where: { courseId: id, status: { in: ["active", "completed"] } },
     });
 
-    if (enrollmentCount > 0) {
+    if (activeStudentCount > 0) {
       redirect(
         `/admin/courses?deleteError=${encodeURIComponent(
-          `This course can't be deleted because ${enrollmentCount} student${enrollmentCount === 1 ? "" : "s"} ${enrollmentCount === 1 ? "is" : "are"} enrolled.`,
+          `This course can't be deleted because ${activeStudentCount} student${activeStudentCount === 1 ? "" : "s"} ${activeStudentCount === 1 ? "is" : "are"} enrolled.`,
         )}`,
       );
     }
+
+    // Delete any inactive/pending/rejected enrollments to prevent orphans, since no DB-level FK exists
+    await prisma.enrollment.deleteMany({
+      where: { courseId: id },
+    });
 
     await prisma.course.delete({ where: { id } });
   } catch (error) {

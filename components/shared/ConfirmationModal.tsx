@@ -69,8 +69,8 @@ export function ConfirmationModal({
         ref={dialogRef}
         className="backdrop:bg-black/50 backdrop:backdrop-blur-sm fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-md p-6 bg-surface rounded-xl shadow-xl border border-border open:animate-in open:fade-in-90 open:zoom-in-95 m-0 overflow-hidden text-left"
       >
-        <h3 className="text-lg font-semibold text-foreground break-words">{title}</h3>
-        <p className="mt-2 text-sm text-muted break-words whitespace-pre-wrap">{description}</p>
+        <h3 className="text-lg font-semibold text-foreground break-all">{title}</h3>
+        <p className="mt-2 text-sm text-muted break-all whitespace-pre-wrap">{description}</p>
         
         <div className="mt-6 flex justify-end gap-3">
           <button

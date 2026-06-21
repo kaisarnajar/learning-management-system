@@ -25,7 +25,7 @@ export function CertificateActionButtons({
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [type, setType] = useState<"APPRECIATION" | "COMPLETION">("APPRECIATION");
-  const [grade, setGrade] = useState<number>(10);
+  const [grade, setGrade] = useState<number | "">("");
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -41,14 +41,19 @@ export function CertificateActionButtons({
 
   const handleGenerate = async () => {
     try {
-      await generateCertificate(enrollmentId, type, grade);
+      if (type === "COMPLETION" && (grade === "" || isNaN(grade as number))) {
+        return { error: "Grade is required for a Certificate of Completion." };
+      }
+      const result = await generateCertificate(enrollmentId, type, grade as number);
+      if (result && 'error' in result && result.error) {
+         return { error: result.error as string };
+      }
       setIsOpen(false);
       addToast("Certificate generated successfully.", "success");
       router.refresh();
     } catch (e: unknown) {
       console.error(e);
-      const msg = e instanceof Error ? e.message : "Failed to generate certificate";
-      addToast(msg, "error");
+      return { error: e instanceof Error ? e.message : "Failed to generate certificate" };
     }
   };
 
@@ -112,7 +117,7 @@ export function CertificateActionButtons({
                 min={0}
                 max={10}
                 value={grade}
-                onChange={(e) => setGrade(Number(e.target.value))}
+                onChange={(e) => setGrade(e.target.value === "" ? "" : Number(e.target.value))}
                 className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>

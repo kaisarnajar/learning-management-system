@@ -15,7 +15,7 @@ import { ActionToast } from "@/components/shared/ToastProvider";
 export default async function AdminCoursesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ deleted?: string; created?: string; deleteError?: string; page?: string; q?: string }>;
+  searchParams: Promise<{ deleted?: string; created?: string; saved?: string; deleteError?: string; page?: string; q?: string }>;
 }) {
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
@@ -41,9 +41,10 @@ export default async function AdminCoursesPage({
         </Link>
       </div>
 
-      <ActionToast trigger={params.created === "1"} paramName="created" message="Course created." variant="info" />
-
-      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Course deleted." variant="info" />
+      <ActionToast trigger={params.created === "1"} paramName="created" message="Course created successfully." variant="success" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Course updated successfully." variant="success" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Course deleted successfully." variant="success" />
+      
       {params.deleteError && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
           {decodeURIComponent(params.deleteError)}

@@ -93,7 +93,7 @@ export async function Footer() {
   const socialLinks = getConfiguredSocialNetworkLinks(settings);
 
   return (
-    <footer className="mt-auto relative bg-surface border-t border-border overflow-hidden text-foreground">
+    <footer className="mt-auto relative bg-accent-muted/30 border-t border-border overflow-hidden text-foreground">
       {/* Top Gold Accent Line */}
       <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-[#cca72f]/0 via-[#cca72f] to-[#cca72f]/0 opacity-50"></div>
 
@@ -201,7 +201,7 @@ export async function Footer() {
       </div>
 
       {/* Sub-footer / Credits */}
-      <div className="relative z-10 border-t border-border bg-accent-muted/20 px-4 py-8 text-xs text-muted sm:px-6">
+      <div className="relative z-10 border-t border-border bg-accent-muted/50 px-4 py-8 text-xs text-muted sm:px-6">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 sm:flex-row sm:items-start">
           <p className="text-center sm:text-left mt-2">
             © {new Date().getFullYear()} Darse Quran Academy. All rights reserved.

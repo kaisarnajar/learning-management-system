@@ -20,7 +20,7 @@ export async function FeaturedBooks() {
               Recommended titles available in the academy bookstore.
             </p>
           </div>
-          <TrackedLink href="/bookstore" eventName="View All Books" pageName="/" className="btn-gold-outline inline-flex shrink-0 px-6 py-2.5 text-sm">
+          <TrackedLink href="/bookstore" eventName="View All Books" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
             View all
           </TrackedLink>
         </div>

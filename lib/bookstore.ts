@@ -33,6 +33,8 @@ export type BookOrderWithItems = {
   upiTransactionId: string | null;
   paymentScreenshotPath: string | null;
   deliveryAddress: string | null;
+  deliveryPinCode: string | null;
+  deliveryPhoneNumber: string | null;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;

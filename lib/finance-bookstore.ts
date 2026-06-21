@@ -38,6 +38,8 @@ export type BookOrderFinanceRecord = {
   customerName: string;
   customerEmail: string;
   deliveryAddress: string;
+  deliveryPinCode: string | null;
+  deliveryPhoneNumber: string | null;
   status: string;
   totalAmountPaise: number;
   profitContributionPaise: number;
@@ -231,6 +233,8 @@ export async function getBookOrderFinancePaginated(
       customerName: order.user?.name || "Unknown",
       customerEmail: order.user?.email || "No email",
       deliveryAddress: order.deliveryAddress,
+      deliveryPinCode: order.deliveryPinCode,
+      deliveryPhoneNumber: order.deliveryPhoneNumber,
       status: order.status,
       totalAmountPaise: order.totalAmountInrPaise,
       profitContributionPaise,

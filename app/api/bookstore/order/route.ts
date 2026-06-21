@@ -37,6 +37,8 @@ export async function POST(req: NextRequest) {
     paymentMethod: formData.get("paymentMethod"),
     upiTransactionId: formData.get("upiTransactionId"),
     deliveryAddress: formData.get("deliveryAddress"),
+    deliveryPinCode: formData.get("deliveryPinCode"),
+    deliveryPhoneNumber: formData.get("deliveryPhoneNumber"),
     notes: formData.get("notes") || undefined,
   });
 
@@ -107,6 +109,8 @@ export async function POST(req: NextRequest) {
         upiTransactionId: body.upiTransactionId.trim() || null,
         paymentScreenshotPath,
         deliveryAddress: body.deliveryAddress,
+        deliveryPinCode: body.deliveryPinCode,
+        deliveryPhoneNumber: body.deliveryPhoneNumber,
         notes: body.notes?.trim() || null,
         status: "PENDING_VERIFICATION",
         items: {

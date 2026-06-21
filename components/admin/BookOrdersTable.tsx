@@ -161,7 +161,15 @@ export function BaseOrderRow({
       </td>
       <td className="px-4 py-4 align-top max-w-[200px]">
         {order.deliveryAddress && order.deliveryAddress !== "No address provided" ? (
-          <p className="whitespace-pre-wrap text-sm text-muted">{order.deliveryAddress}</p>
+          <div className="space-y-1">
+            <p className="whitespace-pre-wrap text-sm text-muted">{order.deliveryAddress}</p>
+            {order.deliveryPinCode && (
+              <p className="text-sm text-muted"><span className="font-medium text-foreground">PIN:</span> {order.deliveryPinCode}</p>
+            )}
+            {order.deliveryPhoneNumber && (
+              <p className="text-sm text-muted"><span className="font-medium text-foreground">Phone:</span> {order.deliveryPhoneNumber}</p>
+            )}
+          </div>
         ) : (
           <p className="text-sm text-muted italic">No address provided</p>
         )}

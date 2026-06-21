@@ -14,7 +14,7 @@ export function renderCertificateToHtml(data: {
 }) {
   const isCompletion = data.certificateType === "COMPLETION";
   const title = isCompletion ? "Certificate of Completion" : "Certificate of Appreciation";
-  const gradeText = (isCompletion && data.certificateGrade != null) ? `, and has obtained ${data.certificateGrade}/10` : "";
+  const gradeText = (isCompletion && data.certificateGrade != null) ? `, and has obtained <strong class="text-[#0f3d2e]">${data.certificateGrade}/10 Grade</strong>` : "";
 
   return `
 <div

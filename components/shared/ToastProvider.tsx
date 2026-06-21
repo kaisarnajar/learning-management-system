@@ -115,9 +115,11 @@ export function ActionToast({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const hasFired = React.useRef(false);
 
   useEffect(() => {
-    if (trigger) {
+    if (trigger && !hasFired.current) {
+      hasFired.current = true;
       addToast(message, variant);
 
       // Clean up the URL if a paramName is provided
@@ -127,6 +129,8 @@ export function ActionToast({
         const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
         router.replace(newUrl, { scroll: false });
       }
+    } else if (!trigger) {
+      hasFired.current = false;
     }
   }, [trigger, paramName, message, variant, addToast, pathname, router, searchParams]);
 

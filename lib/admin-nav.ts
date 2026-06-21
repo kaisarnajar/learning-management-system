@@ -31,6 +31,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     links: [
       { href: "/admin/courses", label: "Courses" },
       { href: "/admin/enrollments", label: "Enrollments" },
+      { href: "/admin/certificates", label: "Certificates" },
       { href: "/admin/announcements", label: "Announcements" },
       { href: "/admin/review-approvals", label: "Review approvals" },
     ],

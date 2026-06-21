@@ -73,6 +73,7 @@ export default async function AdminDashboardPage() {
     pendingBlogCount,
     pendingReviewCount,
     pendingPaymentCount,
+    certificateCount,
   ] = await Promise.all([
     withDbErrorHandling(() => prisma.siteAnnouncement.count(), "Database operation failed"),
     withDbErrorHandling(() => prisma.blogPost.count(), "Database operation failed"),
@@ -90,6 +91,7 @@ export default async function AdminDashboardPage() {
     getPendingBlogApprovalCount(),
     getPendingStudentReviewCount(),
     getPendingPaymentCount(),
+    withDbErrorHandling(() => prisma.enrollment.count({ where: { certificateGeneratedAt: { not: null } } }), "Database operation failed"),
   ]);
 
   const countByHref = new Map<string, { count: number; highlight?: boolean }>([
@@ -97,6 +99,7 @@ export default async function AdminDashboardPage() {
     ["/admin/blogs", { count: blogCount }],
     ["/admin/daily-inspiration", { count: dailyInspirationCount }],
     ["/admin/courses", { count: courseCount }],
+    ["/admin/certificates", { count: certificateCount }],
     [
       "/admin/enrollments",
       {

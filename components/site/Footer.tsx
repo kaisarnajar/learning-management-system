@@ -1,4 +1,3 @@
-
 import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { SiteLogo } from "@/components/site/SiteLogo";
 import {
@@ -45,7 +44,7 @@ type FooterCreditBlockProps = {
 };
 
 const footerIconLinkClassName =
-  "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white/80 transition-colors hover:border-gold hover:text-gold";
+  "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white/80 transition-colors hover:border-[#cca72f] hover:text-[#cca72f]";
 
 function FooterCreditBlock({
   title,
@@ -59,7 +58,7 @@ function FooterCreditBlock({
   return (
     <div className="text-center sm:text-right">
       <p className="font-medium text-white/90">{title}</p>
-      <p className="mt-1 text-white/80">{name}</p>
+      <p className="mt-1 text-[#cca72f] font-medium">{name}</p>
       <div className="mt-3 flex items-center justify-center gap-2 sm:justify-end">
         <a href={emailHref} className={footerIconLinkClassName} aria-label={`Email ${email}`}>
           <EmailIcon className="h-4 w-4" />
@@ -94,26 +93,36 @@ export async function Footer() {
   const socialLinks = getConfiguredSocialNetworkLinks(settings);
 
   return (
-    <footer className="mt-auto border-t border-border bg-accent-muted/30">
-      <div className="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-        <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 lg:grid-cols-3">
+    <footer className="mt-auto relative bg-gradient-to-br from-[#003527] via-teal-900 to-[#002117] overflow-hidden text-white/80">
+      {/* Pattern Overlay */}
+      <div className="pattern-islamic absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none" />
+      
+      {/* Top Gold Accent Line */}
+      <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-[#cca72f]/0 via-[#cca72f] to-[#cca72f]/0 opacity-50"></div>
+
+      <div className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-6">
+        <div className="grid grid-cols-1 gap-12 sm:grid-cols-2 lg:grid-cols-3">
+          
+          {/* Brand Column */}
           <div>
-            <SiteLogo href="/" className="h-14 sm:h-16 mix-blend-multiply" />
-            <p className="mt-4 text-sm leading-relaxed text-muted">
+            <SiteLogo href="/" className="h-14 sm:h-16 brightness-0 invert" />
+            <p className="mt-6 text-sm leading-relaxed text-white/70">
               Dedicated to authentic Islamic education—Quran, Arabic, and Islamic studies for all
               ages, taught online by qualified scholars.
             </p>
           </div>
+
+          {/* Quick Links Column */}
           <div>
-            <p className="text-sm font-bold uppercase tracking-wide text-foreground">Quick Links</p>
-            <ul className="mt-4 space-y-2">
+            <p className="text-sm font-bold uppercase tracking-widest text-[#cca72f]">Quick Links</p>
+            <ul className="mt-6 space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.href + link.label}>
                   <TrackedLink
                     href={link.href}
                     eventName={`Footer: ${link.label}`}
                     pageName="/"
-                    className="text-sm text-muted transition-colors hover:text-gold"
+                    className="text-sm text-white/70 transition-colors hover:text-[#cca72f]"
                   >
                     {link.label}
                   </TrackedLink>
@@ -121,11 +130,18 @@ export async function Footer() {
               ))}
             </ul>
           </div>
+
+          {/* Contact Column */}
           <div id="contact">
-            <p className="text-sm font-bold uppercase tracking-wide text-foreground">Contact</p>
-            <ul className="mt-4 space-y-2 text-sm text-muted">
+            <p className="text-sm font-bold uppercase tracking-widest text-[#cca72f]">Contact</p>
+            <ul className="mt-6 space-y-4 text-sm text-white/70">
               <li>
-                <TrackedLink href="/contact" eventName="Footer: Send us a message" pageName="/" className="font-medium text-foreground hover:text-gold">
+                <TrackedLink 
+                  href="/contact" 
+                  eventName="Footer: Send us a message" 
+                  pageName="/" 
+                  className="inline-block rounded-full border border-white/20 px-5 py-2 font-medium text-white transition-colors hover:border-[#cca72f] hover:text-[#cca72f]"
+                >
                   Send us a message
                 </TrackedLink>
               </li>
@@ -133,10 +149,12 @@ export async function Footer() {
                 <li>
                   <a
                     href={`mailto:${settings.contactEmail}`}
-                    className="inline-flex items-center gap-2 hover:text-gold"
+                    className="inline-flex items-center gap-3 hover:text-[#cca72f] transition-colors"
                     aria-label={`Email ${settings.contactEmail}`}
                   >
-                    <EmailIcon className="h-4 w-4" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
+                      <EmailIcon className="h-4 w-4" />
+                    </div>
                     <span>{settings.contactEmail}</span>
                   </a>
                 </li>
@@ -147,25 +165,31 @@ export async function Footer() {
                     href={whatsappHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 hover:text-gold"
+                    className="inline-flex items-center gap-3 hover:text-[#cca72f] transition-colors"
                     aria-label={`WhatsApp ${whatsappDisplay}`}
                   >
-                    <WhatsAppIcon className="h-4 w-4" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10">
+                      <WhatsAppIcon className="h-4 w-4" />
+                    </div>
                     <span>{whatsappDisplay}</span>
                   </a>
                 </li>
               )}
-              <li>Online — serving students worldwide</li>
+              <li className="flex items-center gap-3 pt-2">
+                <div className="h-px w-8 bg-white/20"></div>
+                <span className="text-white/60 text-xs uppercase tracking-wider">Serving students worldwide</span>
+              </li>
             </ul>
+
             {socialLinks.length > 0 && (
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-8 flex flex-wrap gap-2">
                 {socialLinks.map((link) => (
                   <a
                     key={link.label}
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-medium text-foreground transition-colors hover:border-gold hover:text-gold"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/5 px-3 py-1.5 text-xs font-medium text-white transition-all hover:border-[#cca72f] hover:bg-[#cca72f]/10 hover:text-[#cca72f]"
                   >
                     {link.label === "Facebook" && <FacebookIcon className="h-3.5 w-3.5" />}
                     {link.label === "Instagram" && <InstagramIcon className="h-3.5 w-3.5" />}
@@ -178,12 +202,14 @@ export async function Footer() {
           </div>
         </div>
       </div>
-      <div className="border-t border-white/10 bg-[#1a1a1a] px-4 py-5 text-xs text-white/70 sm:px-6">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-6 sm:flex-row sm:items-start">
-          <p className="text-center sm:text-left">
+
+      {/* Sub-footer / Credits */}
+      <div className="relative z-10 border-t border-white/10 bg-black/40 px-4 py-8 text-xs text-white/50 sm:px-6">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 sm:flex-row sm:items-start">
+          <p className="text-center sm:text-left mt-2">
             © {new Date().getFullYear()} Darse Quran Academy. All rights reserved.
           </p>
-          <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-start sm:gap-10 lg:gap-16">
+          <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-start sm:gap-12 lg:gap-16">
             <FooterCreditBlock
               title="Developed & Maintained by"
               name="Kaisar Ahmad Najar"

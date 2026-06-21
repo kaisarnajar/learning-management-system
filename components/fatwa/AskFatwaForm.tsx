@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useActionState } from "react";
+import { useCallback, useEffect, useActionState, useRef } from "react";
 import { useToast } from "@/components/shared/ToastProvider";
 import { submitFatwaQuestion, type SubmitFatwaState } from "@/app/fatwa/actions";
 import { FATWA_CATEGORIES } from "@/lib/fatwa";
@@ -55,11 +55,13 @@ export function AskFatwaForm({
     validate,
   });
 
+  const prevSuccessRef = useRef<string | undefined>(undefined);
+
   useEffect(() => {
-    if (state.success) {
+    if (state.success && state.success !== prevSuccessRef.current) {
       addToast(state.success, "success");
       reset();
-      state.success = undefined; // clear it so it doesn't trigger again
+      prevSuccessRef.current = state.success;
     }
   }, [state.success, addToast, reset]);
 

@@ -136,8 +136,8 @@ export function CourseEnrollButton({
       }
 
       if (data.status === 400 && data.alreadyEnrolled) {
-        if (data.redirectUrl) {
-          window.location.href = data.redirectUrl;
+        if ('redirectUrl' in data && (data as any).redirectUrl) {
+          window.location.href = (data as any).redirectUrl as string;
           return;
         }
         setError(data.error || "You already have an enrollment request for this course.");

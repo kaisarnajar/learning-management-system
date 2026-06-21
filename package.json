@@ -43,7 +43,6 @@
     "eslint-config-next": "16.2.6",
     "knip": "^6.16.1",
     "prisma": "^6.19.3",
-    "sharp": "^0.34.5",
     "tailwindcss": "^4",
     "tsx": "^4.22.0",
     "typescript": "^5"

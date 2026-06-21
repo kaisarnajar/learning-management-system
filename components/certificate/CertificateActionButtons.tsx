@@ -37,7 +37,7 @@ export function CertificateActionButtons({
     }
   }, [isOpen]);
 
-  const { addToast } = useToast();
+
 
   const handleGenerate = async () => {
     if (type === "COMPLETION" && (grade === "" || isNaN(grade as number))) {

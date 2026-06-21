@@ -45,25 +45,36 @@ export function LearnAccordion() {
                 >
                   <span className="font-semibold text-foreground">{item.title}</span>
                   <span
-                    className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-gold text-gold transition-transform ${isOpen ? "rotate-45" : ""}`}
+                    className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 border-gold text-gold text-lg overflow-hidden"
                     aria-hidden
                   >
-                    +
+                    <span className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${isOpen ? "rotate-90 scale-50 opacity-0" : "rotate-0 scale-100 opacity-100"}`}>
+                      +
+                    </span>
+                    <span className={`absolute inset-0 flex items-center justify-center transition-all duration-300 ${isOpen ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-50 opacity-0"}`}>
+                      −
+                    </span>
                   </span>
                 </button>
-                {isOpen && (
-                  <>
-                    <p className="pb-4 text-sm leading-relaxed text-muted">{item.body}</p>
-                    <TrackedLink
-                      href="/courses"
-                      eventName="View Courses"
-                      pageName="/"
-                      className="mt-4 inline-flex items-center text-sm font-semibold text-gold hover:underline"
-                    >
-                      Start learning →
-                    </TrackedLink>
-                  </>
-                )}
+                <div
+                  className={`grid transition-all duration-300 ease-in-out ${
+                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="pb-4">
+                      <p className="text-sm leading-relaxed text-muted">{item.body}</p>
+                      <TrackedLink
+                        href="/courses"
+                        eventName="View Courses"
+                        pageName="/"
+                        className="mt-4 inline-flex items-center text-sm font-semibold text-gold hover:underline"
+                      >
+                        Start learning →
+                      </TrackedLink>
+                    </div>
+                  </div>
+                </div>
               </li>
             );
           })}

@@ -2,6 +2,11 @@
 
 import Link from "next/link";
 import { AdminCertificateEntry } from "@/lib/certificates-admin";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteCertificate } from "@/app/actions/certificates";
+import { useToast } from "@/components/shared/ToastProvider";
+import { usePathname, useSearchParams } from "next/navigation";
+import { getReturnToUrl } from "@/components/shared/ActionButton";
 
 type AdminCertificatesTableProps = {
   certificates: AdminCertificateEntry[];
@@ -12,6 +17,11 @@ export function AdminCertificatesTable({
   certificates,
   emptyMessage,
 }: AdminCertificatesTableProps) {
+  const { addToast } = useToast();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const returnTo = getReturnToUrl(pathname, searchParams);
+
   if (certificates.length === 0) {
     return (
       <p className="px-4 py-8 text-center text-sm text-muted">{emptyMessage}</p>
@@ -61,13 +71,28 @@ export function AdminCertificatesTable({
                 })}
               </td>
               <td className="px-4 py-3 text-right">
-                <Link
-                  href={`/api/certificate/${cert.id}`}
-                  target="_blank"
-                  className="inline-flex min-h-8 items-center justify-center rounded-md border border-primary bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
-                >
-                  View Certificate
-                </Link>
+                <div className="flex items-center justify-end gap-2">
+                  <Link
+                    href={`/api/certificate/${cert.id}`}
+                    target="_blank"
+                    className="inline-flex min-h-8 items-center justify-center rounded-md border border-primary bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    View
+                  </Link>
+                  <DeleteActionButton
+                    action={async () => {
+                      const result = await deleteCertificate(cert.id);
+                      if (result?.error) {
+                        addToast(result.error, "error");
+                        return result;
+                      }
+                      addToast("Certificate deleted successfully.", "success");
+                    }}
+                    title="Delete"
+                    itemName="certificate"
+                    onSuccessRedirect={returnTo}
+                  />
+                </div>
               </td>
             </tr>
           ))}

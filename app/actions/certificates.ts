@@ -52,3 +52,36 @@ export async function generateCertificate(enrollmentId: string, certificateType:
 
   return { success: true, certificateNumber };
 }
+
+export async function deleteCertificate(enrollmentId: string) {
+  const session = await auth();
+  const isAdmin = isAdminSession(session);
+
+  if (!isAdmin) {
+    return { error: "Unauthorized: Only admins can delete certificates." };
+  }
+
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { id: enrollmentId },
+  });
+
+  if (!enrollment) {
+    return { error: "Enrollment not found." };
+  }
+
+  if (!enrollment.certificateGeneratedAt) {
+    return { error: "Certificate has not been generated." };
+  }
+
+  await prisma.enrollment.update({
+    where: { id: enrollmentId },
+    data: {
+      certificateGeneratedAt: null,
+      certificateNumber: null,
+      certificateType: null,
+      certificateGrade: null,
+    },
+  });
+
+  return { success: true };
+}

@@ -10,14 +10,8 @@ export const metadata: Metadata = {
   description: "Submit your Islamic question to Darse Quran Academy scholars.",
 };
 
-export default async function FatwaAskPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ submitted?: string }>;
-}) {
-  const params = await searchParams;
+export default async function FatwaAskPage() {
   const session = await auth();
-  const submitted = params.submitted === "1";
 
   return (
     <Section>
@@ -31,12 +25,6 @@ export default async function FatwaAskPage({
           ← Browse answered questions
         </Link>
       </p>
-
-      {submitted && (
-        <p className="mx-auto mt-6 max-w-xl rounded-lg bg-info-bg px-4 py-3 text-center text-sm text-info-text">
-          Thank you. Your question has been received. We will email you when a scholar publishes an answer.
-        </p>
-      )}
 
       <div className="mx-auto mt-8 max-w-xl">
         <AskFatwaForm

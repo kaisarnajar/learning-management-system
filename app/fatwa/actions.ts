@@ -8,6 +8,7 @@ import { fatwaQuestionSchema } from "@/lib/validations";
 
 export type SubmitFatwaState = {
   error?: string;
+  success?: string;
 };
 
 export async function submitFatwaQuestion(
@@ -43,5 +44,5 @@ export async function submitFatwaQuestion(
   });
 
   revalidatePath("/admin/fatwa");
-  redirect("/fatwa/ask?submitted=1");
+  return { success: "Thank you. Your question has been received. We will email you when a scholar publishes an answer." };
 }

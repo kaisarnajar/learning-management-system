@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback } from "react";
-import { useActionState } from "react";
+import { useCallback, useEffect, useActionState } from "react";
+import { useToast } from "@/components/shared/ToastProvider";
 import { submitFatwaQuestion, type SubmitFatwaState } from "@/app/fatwa/actions";
 import { FATWA_CATEGORIES } from "@/lib/fatwa";
 import { labelClassName } from "@/lib/form";
@@ -36,12 +36,14 @@ export function AskFatwaForm({
 }: AskFatwaFormProps) {
   const [state, formAction, pending] = useActionState(submitFatwaQuestion, initialState);
 
+  const { addToast } = useToast();
+
   const validate = useCallback(
     (values: AskFatwaFormValues) => validateAskFatwaForm(values),
     [],
   );
 
-  const { values, updateField, markTouched, showError, errors, isValid } = useZodForm({
+  const { values, setValues, updateField, markTouched, showError, errors, isValid } = useZodForm({
     initialValues: {
       category: "",
       title: "",
@@ -52,6 +54,20 @@ export function AskFatwaForm({
     fields: ASK_FATWA_FIELDS,
     validate,
   });
+
+  useEffect(() => {
+    if (state.success) {
+      addToast(state.success, "success");
+      setValues({
+        category: "",
+        title: "",
+        question: "",
+        askerName: defaultName,
+        askerEmail: defaultEmail,
+      });
+      state.success = undefined; // clear it so it doesn't trigger again
+    }
+  }, [state.success, addToast, setValues, defaultName, defaultEmail]);
 
   return (
     <form

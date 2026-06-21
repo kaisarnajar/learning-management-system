@@ -14,13 +14,7 @@ export function HomeHero() {
         
         {/* Left Side Content */}
         <div className="min-w-0 max-w-2xl shrink-0">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="h-[2px] w-8 bg-[#cca72f]"></div>
-            <span className="text-sm font-semibold uppercase tracking-wider text-[#cca72f]">
-              Tradition Meets Technology
-            </span>
-          </div>
-          
+
           <h1 className={`${sourceSerif.className} text-4xl font-bold leading-tight text-white sm:text-5xl md:text-6xl`}>
             Master the Quran and <br className="hidden sm:block" />
             <span className="text-[#95d3ba]">Islamic Sciences</span> <br className="hidden sm:block" />

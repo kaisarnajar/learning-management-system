@@ -4,6 +4,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
 import { useRouter } from "next/navigation";
+import { submitBookOrder } from "@/app/actions/bookstore";
 
 type CheckoutItem = {
   bookId: string;
@@ -76,14 +77,9 @@ export function BookCheckoutClient({
         formData.append("screenshot", screenshot);
       }
 
-      const res = await fetch("/api/bookstore/order", {
-        method: "POST",
-        body: formData,
-      });
+      const data = await submitBookOrder(formData);
 
-      const data = await res.json();
-
-      if (!res.ok) {
+      if (data.error) {
         setError(data.error || "Could not submit order. Please try again.");
         setLoading(false);
         return;

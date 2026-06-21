@@ -50,6 +50,9 @@ export function ActionButton({
           addToast(result.error, "error");
           return;
         }
+        if (result?.success) {
+          addToast(result.success, "success");
+        }
         if (hideOnSuccess) {
           setHidden(true);
         }
@@ -58,7 +61,7 @@ export function ActionButton({
           if (hideOnSuccess) {
             setHidden(true);
           }
-          return;
+          throw error;
         }
         addToast("An unexpected error occurred. Please try again.", "error");
       }

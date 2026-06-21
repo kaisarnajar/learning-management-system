@@ -4,6 +4,7 @@ import type { CourseStatus } from "@prisma/client";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
+import { submitCheckout } from "@/app/actions/checkout";
 import { trackButtonClick } from "@/lib/analytics-client";
 import { getCourseEnrollmentClosedMessage } from "@/lib/course-status";
 import {
@@ -122,25 +123,19 @@ export function CourseEnrollButton({
     trackButtonClick("Enroll Now", `/courses/${courseId}`);
 
     try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId }),
-      });
+      const data = await submitCheckout(courseId);
 
-      const data = await res.json();
-
-      if (res.status === 401) {
+      if (data.status === 401) {
         window.location.href = `/login?callbackUrl=${encodeURIComponent(`/courses`)}`;
         return;
       }
 
-      if (res.status === 403 && data.profileIncomplete) {
+      if (data.status === 403 && data.profileIncomplete) {
         window.location.href = data.redirectUrl ?? PROFILE_COMPLETE_REDIRECT;
         return;
       }
 
-      if (res.status === 400 && data.alreadyEnrolled) {
+      if (data.status === 400 && data.alreadyEnrolled) {
         if (data.redirectUrl) {
           window.location.href = data.redirectUrl;
           return;
@@ -150,7 +145,7 @@ export function CourseEnrollButton({
         return;
       }
 
-      if (!res.ok) {
+      if (data.error) {
         setError(data.error || "Could not submit enrollment request.");
         setLoading(false);
         return;

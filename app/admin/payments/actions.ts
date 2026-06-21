@@ -84,7 +84,13 @@ export async function confirmMonthlyPayment(
     }
   }
 
-  const record = await withDbErrorHandling(() => prisma.paymentRecord.create({
+  const course = await getCourseById(submission.courseId);
+  if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT && !course) {
+    return { error: "Course not found." };
+  }
+
+  await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
+    const record = await tx.paymentRecord.create({
       data: {
         userId: submission.userId,
         courseId: submission.courseId,
@@ -93,33 +99,28 @@ export async function confirmMonthlyPayment(
         paymentType: submission.paymentType,
         description: submission.label,
       },
-    }), "Database operation failed");
+    });
 
-  await withDbErrorHandling(() => prisma.coursePaymentSubmission.update({
+    await tx.coursePaymentSubmission.update({
       where: { id: submissionId },
       data: {
         status: MONTHLY_PAYMENT_APPROVED,
         paymentRecordId: record.id,
       },
-    }), "Database operation failed");
+    });
 
-  if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT) {
-    const course = await getCourseById(submission.courseId);
-    if (!course) {
-      return { error: "Course not found." };
+    if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT && course) {
+      await tx.enrollment.updateMany({
+        where: {
+          userId: submission.userId,
+          courseId: submission.courseId,
+          status: AWAITING_ENROLLMENT_FEE,
+        },
+        data: { status: getRosterEnrollmentStatusForCourse(course.status) },
+      });
     }
+  }), "Database operation failed");
 
-    await withDbErrorHandling(() => prisma.enrollment.updateMany({
-          where: {
-            userId: submission.userId,
-            courseId: submission.courseId,
-            status: AWAITING_ENROLLMENT_FEE,
-          },
-          data: { status: getRosterEnrollmentStatusForCourse(course.status) },
-        }), "Database operation failed");
-  }
-
-  const course = await getCourseById(submission.courseId);
   if (course) {
     await notifyPaymentApproved({
       userId: submission.userId,

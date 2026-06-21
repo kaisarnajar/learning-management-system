@@ -40,21 +40,16 @@ export function CertificateActionButtons({
   const { addToast } = useToast();
 
   const handleGenerate = async () => {
-    try {
-      if (type === "COMPLETION" && (grade === "" || isNaN(grade as number))) {
-        return { error: "Grade is required for a Certificate of Completion." };
-      }
-      const result = await generateCertificate(enrollmentId, type, grade as number);
-      if (result && 'error' in result && result.error) {
-         return { error: result.error as string };
-      }
-      setIsOpen(false);
-      addToast("Certificate generated successfully.", "success");
-      router.refresh();
-    } catch (e: unknown) {
-      console.error(e);
-      return { error: e instanceof Error ? e.message : "Failed to generate certificate" };
+    if (type === "COMPLETION" && (grade === "" || isNaN(grade as number))) {
+      return { error: "Grade is required for a Certificate of Completion." };
     }
+    const result = await generateCertificate(enrollmentId, type, grade as number);
+    if (result && 'error' in result && result.error) {
+       return { error: result.error as string };
+    }
+    setIsOpen(false);
+    router.refresh();
+    return { success: result.success as string };
   };
 
   const btnClass = isAdmin

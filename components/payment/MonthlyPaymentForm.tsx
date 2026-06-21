@@ -3,6 +3,7 @@
 import { getPaymentYearOptions } from "@/lib/monthly-payments";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { submitMonthlyPayment } from "@/app/actions/payments";
 
 type PaymentMethod = "upi" | "bank";
 
@@ -61,14 +62,9 @@ export function MonthlyPaymentForm({
         formData.append("screenshot", screenshot);
       }
 
-      const res = await fetch("/api/monthly-payment/confirm", {
-        method: "POST",
-        body: formData,
-      });
+      const data = await submitMonthlyPayment(formData);
 
-      const data = await res.json();
-
-      if (!res.ok) {
+      if (data.error) {
         setError(data.error || "Could not submit payment.");
         setLoading(false);
         return;

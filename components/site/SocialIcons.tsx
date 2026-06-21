@@ -1,4 +1,4 @@
-type SocialNetworkLinkLabel = "Facebook" | "Instagram" | "YouTube";
+
 
 type IconProps = { className?: string };
 
@@ -55,13 +55,3 @@ export function LinkedInIcon({ className = "h-4 w-4" }: IconProps) {
   );
 }
 
-export function socialIconForLabel(label: SocialNetworkLinkLabel) {
-  switch (label) {
-    case "Facebook":
-      return FacebookIcon;
-    case "Instagram":
-      return InstagramIcon;
-    case "YouTube":
-      return YouTubeIcon;
-  }
-}

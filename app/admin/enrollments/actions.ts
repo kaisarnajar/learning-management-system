@@ -207,5 +207,5 @@ export async function removeEnrollmentFromCourse(enrollmentId: string, courseId:
   revalidateEnrollmentPaths(courseId);
   revalidatePath(`/admin/students/${enrollment.userId}`);
 
-  return { success: true };
+  return { success: "Enrollment removed successfully." };
 }

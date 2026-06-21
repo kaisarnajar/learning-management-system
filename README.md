@@ -49,7 +49,7 @@ Darse Quran Academy is a comprehensive educational platform designed to manage c
 
 ## Technology Stack
 
-- **Framework:** Next.js 16 (App Router)
+- **Framework:** Next.js 16 (App Router with Server Actions)
 - **UI/Styling:** React 19, Tailwind CSS 4
 - **Database:** PostgreSQL
 - **ORM:** Prisma 6
@@ -138,7 +138,7 @@ Deploy to a Platform as a Service (PaaS) like **Railway**, **Render**, or a trad
 ## Project Structure
 
 ```
-app/          Next.js App Router — public pages, profile, admin, teacher, API routes
+app/          Next.js App Router — public pages, profile, admin, teacher, API routes, Server Actions
 components/   UI components (site, home, admin, teacher, profile, auth)
 content/      Seed data and static copy
 lib/          Core business logic (Auth, Prisma, emails, payments, receipts, validations)

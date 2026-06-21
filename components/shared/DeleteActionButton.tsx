@@ -64,6 +64,9 @@ export function DeleteActionButton({
              addToast(result.error as string, "error");
              return;
           }
+          if (result && typeof result === "object" && 'success' in result && result.success) {
+             addToast(result.success as string, "success");
+          }
           if (onSuccessRedirect) {
              router.push(onSuccessRedirect);
           }

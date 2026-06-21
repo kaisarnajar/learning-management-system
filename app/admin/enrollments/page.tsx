@@ -25,7 +25,7 @@ function tabHref(type: TabType) {
 export default async function AdminEnrollmentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ type?: string; page?: string; q?: string }>;
+  searchParams: Promise<{ type?: string; page?: string; q?: string; approved?: string; rejected?: string; }>;
 }) {
   const params = await searchParams;
   const q = parseSearchQuery(params.q);

@@ -60,13 +60,14 @@ export async function approveBookOrder(
     return { error: "Only pending orders can be approved." };
   }
 
-  await withDbErrorHandling(() => prisma.bookOrder.update({
+  await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
+    await tx.bookOrder.update({
       where: { id: orderId },
       data: { status: "APPROVED" },
-    }), "Database operation failed");
+    });
 
-  // Create a payment record for finance tracking
-  await withDbErrorHandling(() => prisma.paymentRecord.create({
+    // Create a payment record for finance tracking
+    await tx.paymentRecord.create({
       data: {
         userId: order.userId,
         amountInrPaise: order.totalAmountInrPaise,
@@ -74,7 +75,8 @@ export async function approveBookOrder(
         paymentType: "book_purchase",
         description: `Book order #${orderId.slice(-6).toUpperCase()}`,
       },
-    }), "Database operation failed");
+    });
+  }), "Database operation failed");
 
   await notifyBookOrderApproved({
     userId: order.userId,

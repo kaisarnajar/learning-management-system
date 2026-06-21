@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { submitEnrollmentPayment } from "@/app/actions/payments";
 
 type PaymentMethod = "upi" | "bank";
 
@@ -31,14 +32,9 @@ export function EnrollmentPaymentForm({ courseId }: EnrollmentPaymentFormProps) 
         formData.append("screenshot", screenshot);
       }
 
-      const res = await fetch("/api/enrollment-payment/confirm", {
-        method: "POST",
-        body: formData,
-      });
+      const data = await submitEnrollmentPayment(formData);
 
-      const data = await res.json();
-
-      if (!res.ok) {
+      if (data.error) {
         setError(data.error || "Could not submit payment.");
         setLoading(false);
         return;

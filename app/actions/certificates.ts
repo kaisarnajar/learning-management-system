@@ -10,7 +10,7 @@ export async function generateCertificate(enrollmentId: string, certificateType:
   const isAdmin = isAdminSession(session);
 
   if (!isAdmin) {
-    throw new Error("Unauthorized: Only admins can generate certificates.");
+    return { error: "Unauthorized: Only admins can generate certificates." };
   }
 
   const enrollment = await prisma.enrollment.findUnique({
@@ -19,11 +19,11 @@ export async function generateCertificate(enrollmentId: string, certificateType:
   });
 
   if (!enrollment) {
-    throw new Error("Enrollment not found.");
+    return { error: "Enrollment not found." };
   }
 
   if (enrollment.certificateGeneratedAt) {
-    throw new Error("Certificate has already been generated.");
+    return { error: "Certificate has already been generated." };
   }
 
   if (certificateType === "COMPLETION") {
@@ -34,7 +34,7 @@ export async function generateCertificate(enrollmentId: string, certificateType:
       certificateGrade < 0 ||
       certificateGrade > 10
     ) {
-      throw new Error("A valid grade between 0 and 10 is required for a Certificate of Completion.");
+      return { error: "A valid grade between 0 and 10 is required for a Certificate of Completion." };
     }
   }
 
@@ -50,7 +50,7 @@ export async function generateCertificate(enrollmentId: string, certificateType:
     },
   });
 
-  return { success: true, certificateNumber };
+  return { success: "Certificate generated successfully.", certificateNumber };
 }
 
 export async function deleteCertificate(enrollmentId: string) {
@@ -83,5 +83,5 @@ export async function deleteCertificate(enrollmentId: string) {
     },
   });
 
-  return { success: true };
+  return { success: "Certificate deleted successfully." };
 }

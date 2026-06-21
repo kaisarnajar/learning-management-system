@@ -16,8 +16,16 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
   return (
     <section className="bg-surface py-16 sm:py-20">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <div className="text-center">
-          <SplitSectionTitle muted="Featured" accent="Courses" />
+        <div className="flex flex-col items-center justify-between gap-4 sm:flex-row sm:items-end">
+          <div className="text-center sm:text-left">
+            <SplitSectionTitle muted="Featured" accent="Courses" />
+            <p className="mt-3 max-w-xl text-sm text-muted sm:text-base">
+              Explore our core curriculum designed for deep understanding and spiritual growth.
+            </p>
+          </div>
+          <TrackedLink href="/courses" eventName="View All Courses" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
+            View all
+          </TrackedLink>
         </div>
         <ul className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => {
@@ -59,11 +67,7 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
         {courses.length === 0 && (
           <p className="mt-8 text-center text-muted">New courses will be announced soon.</p>
         )}
-        <div className="mt-10 text-center">
-          <TrackedLink href="/courses" eventName="View All Courses" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
-            View All Courses
-          </TrackedLink>
-        </div>
+
       </div>
     </section>
   );

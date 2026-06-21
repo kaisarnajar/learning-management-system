@@ -1,4 +1,5 @@
 import { ReceiptData } from '@/types/receipt';
+import { PROCESS_IMAGE_SCRIPT } from "./html-scripts";
 
 export function renderReceiptToHtml(data: ReceiptData): string {
   const { academy, student, payment, authority, termsAndConditions } = data;
@@ -128,47 +129,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
       </div>
     </div>
     <script>
-      window.addEventListener('load', () => {
-        const imgs = document.querySelectorAll('.process-white-bg');
-        
-        imgs.forEach((img) => {
-          if (!img.src || img.src.length < 100) return;
-
-          const processImage = () => {
-            try {
-              const canvas = document.createElement('canvas');
-              canvas.width = img.naturalWidth || img.width || 400;
-              canvas.height = img.naturalHeight || img.height || 200;
-              const ctx = canvas.getContext('2d');
-              
-              ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-              const data = imageData.data;
-              
-              for (let i = 0; i < data.length; i += 4) {
-                const r = data[i];
-                const g = data[i+1];
-                const b = data[i+2];
-                // Remove white/light pixels
-                if (r > 200 && g > 200 && b > 200) {
-                  data[i+3] = 0; // Transparent
-                }
-              }
-              
-              ctx.putImageData(imageData, 0, 0);
-              img.src = canvas.toDataURL('image/png');
-            } catch (e) {
-              console.error("Canvas processing failed", e);
-            }
-          };
-
-          if (img.complete) {
-            processImage();
-          } else {
-            img.onload = processImage;
-          }
-        });
-      });
+      ${PROCESS_IMAGE_SCRIPT}
     </script>
   `;
 }

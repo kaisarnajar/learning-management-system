@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import puppeteer from "puppeteer";
-import crypto from "crypto";
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { getCourseById } from "@/lib/courses";
@@ -177,7 +176,7 @@ export async function GET(
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="${filename}"`,
+        'Content-Disposition': `${inline ? "inline" : "attachment"}; filename="${filename}"`,
         "Cache-Control": "private, no-cache",
       },
     });

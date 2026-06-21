@@ -38,7 +38,7 @@ import {
   demoStudentUserId,
   demoTeacherUserId,
 } from "./seed-helpers";
-import { writeDemoPdfFile, writeDemoPngFile } from "./seed-demo-assets";
+import { writeDemoPngFile } from "./seed-demo-assets";
 
 type CourseSeedMeta = {
   monthlyFeeInrPaise: number;

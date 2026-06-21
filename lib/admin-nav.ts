@@ -52,6 +52,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     title: "Payments & Finance",
     links: [
       { href: "/admin/payments", label: "Payments" },
+      { href: "/admin/receipts", label: "Payment Receipts" },
       { href: "/admin/finance", label: "Finance" },
       { href: "/admin/record-expense", label: "Record expense" },
       { href: "/admin/payment-settings", label: "Payment details" },

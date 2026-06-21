@@ -50,3 +50,38 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
 
   return { success: true, invoiceNumber };
 }
+
+export async function deleteReceipt(paymentRecordId: string) {
+  const session = await auth();
+  const isAdmin = isAdminSession(session);
+
+  if (!isAdmin) {
+    return { error: "Unauthorized: Only admins can delete receipts." };
+  }
+
+  const record = await prisma.paymentRecord.findUnique({
+    where: { id: paymentRecordId },
+  });
+
+  if (!record) {
+    return { error: "Payment record not found." };
+  }
+
+  if (!record.receiptGeneratedAt) {
+    return { error: "Receipt has not been generated." };
+  }
+
+  await prisma.paymentRecord.update({
+    where: { id: paymentRecordId },
+    data: {
+      receiptGeneratedAt: null,
+      invoiceNumber: null,
+      receiptIncludesGst: null,
+      receiptFeeAmountPaise: null,
+      receiptGstAmountPaise: null,
+      receiptEmailSentAt: null,
+    },
+  });
+
+  return { success: true };
+}

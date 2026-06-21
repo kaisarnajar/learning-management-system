@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { RemoveStudentEnrollmentAction } from "@/components/admin/RemoveStudentEnrollmentAction";
 import { RecordStudentPaymentForm } from "@/components/admin/RecordStudentPaymentForm";
-import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
+
 import { Pagination } from "@/components/shared/Pagination";
 import { deleteStudentUserForm } from "@/app/admin/students/actions";
 import { formatPrice, getAllCourses } from "@/lib/courses";

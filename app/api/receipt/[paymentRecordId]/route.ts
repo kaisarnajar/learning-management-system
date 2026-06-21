@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import puppeteer from "puppeteer";
-import crypto from "crypto";
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { getCourseById } from "@/lib/courses";

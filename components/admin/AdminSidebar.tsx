@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ADMIN_NAV_GROUPS, ADMIN_NAV_LINKS } from "@/lib/admin-nav";
 
 const allLinks = [
@@ -17,24 +17,17 @@ export function AdminSidebar() {
     .filter((l) => pathname === l.href || pathname.startsWith(`${l.href}/`))
     .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    // Automatically expand the group containing the active path
-    setExpandedGroups((prev) => {
-      const newExpanded = { ...prev };
-      let changed = false;
-      for (const group of ADMIN_NAV_GROUPS) {
-        if (group.links.some((l) => l.href === activePath)) {
-          if (!newExpanded[group.title]) {
-            newExpanded[group.title] = true;
-            changed = true;
-          }
-        }
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
+    const initialExpanded: Record<string, boolean> = {};
+    for (const group of ADMIN_NAV_GROUPS) {
+      if (group.links.some((link) => link.href === pathname)) {
+        initialExpanded[group.title] = true;
+      } else {
+        initialExpanded[group.title] = false;
       }
-      return changed ? newExpanded : prev;
-    });
-  }, [activePath]);
+    }
+    return initialExpanded;
+  });
 
   const toggleGroup = (title: string) => {
     setExpandedGroups((prev) => ({

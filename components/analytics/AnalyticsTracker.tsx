@@ -19,7 +19,7 @@ export function AnalyticsTracker() {
       const lastTrackedUrl = sessionStorage.getItem("lastTrackedUrl");
       if (lastTrackedUrl === url) return;
       sessionStorage.setItem("lastTrackedUrl", url);
-    } catch (e) {
+    } catch {
       // Ignore sessionStorage errors (e.g., in incognito or iframe)
     }
 

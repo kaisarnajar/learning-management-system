@@ -43,7 +43,7 @@ export function AskFatwaForm({
     [],
   );
 
-  const { values, setValues, updateField, markTouched, showError, errors, isValid } = useZodForm({
+  const { values, reset, updateField, markTouched, showError, errors, isValid } = useZodForm({
     initialValues: {
       category: "",
       title: "",
@@ -58,16 +58,10 @@ export function AskFatwaForm({
   useEffect(() => {
     if (state.success) {
       addToast(state.success, "success");
-      setValues({
-        category: "",
-        title: "",
-        question: "",
-        askerName: defaultName,
-        askerEmail: defaultEmail,
-      });
+      reset();
       state.success = undefined; // clear it so it doesn't trigger again
     }
-  }, [state.success, addToast, setValues, defaultName, defaultEmail]);
+  }, [state.success, addToast, reset]);
 
   return (
     <form

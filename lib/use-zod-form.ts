@@ -51,6 +51,11 @@ export function useZodForm<T extends Record<string, unknown>>({
     return Boolean(touched[field] && errors[field]);
   }
 
+  function reset() {
+    setValues(initialValues);
+    setTouched({});
+  }
+
   return {
     values,
     setValues,
@@ -59,5 +64,6 @@ export function useZodForm<T extends Record<string, unknown>>({
     updateField,
     markTouched,
     showError,
+    reset,
   };
 }

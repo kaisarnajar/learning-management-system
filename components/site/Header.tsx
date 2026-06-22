@@ -126,8 +126,8 @@ function HeaderContent({ pathname }: { pathname: string }) {
               );
             })}
             <li className="mt-2 border-t border-border pt-2">
-              <div className="px-3" onClick={() => setMenuOpen(false)} role="presentation">
-                <AuthNav mobile />
+              <div className="px-3" role="presentation">
+                <AuthNav mobile onLinkClick={() => setMenuOpen(false)} />
               </div>
             </li>
           </ul>

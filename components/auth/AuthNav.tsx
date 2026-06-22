@@ -5,7 +5,7 @@ import { useSession } from "next-auth/react";
 import { SignOutButton } from "@/components/auth/SignOutButton";
 import { TrackedLink } from "@/components/analytics/TrackedLink";
 
-export function AuthNav({ mobile = false }: { mobile?: boolean }) {
+export function AuthNav({ mobile = false, onLinkClick }: { mobile?: boolean; onLinkClick?: () => void }) {
   const { data: session, status } = useSession();
 
   const linkClass = mobile
@@ -24,21 +24,21 @@ export function AuthNav({ mobile = false }: { mobile?: boolean }) {
     return (
       <div className={mobile ? "flex flex-col" : "flex items-center gap-0.5"}>
         {session.user.role === "ADMIN" && (
-          <TrackedLink href="/admin" eventName="Admin" pageName="auth-nav" className={linkClass}>
+          <TrackedLink href="/admin" eventName="Admin" pageName="auth-nav" className={linkClass} onClick={onLinkClick}>
             Admin
           </TrackedLink>
         )}
         {session.user.role === "DEVELOPER" && (
-          <TrackedLink href="/admin" eventName="Developer" pageName="auth-nav" className={linkClass}>
+          <TrackedLink href="/admin" eventName="Developer" pageName="auth-nav" className={linkClass} onClick={onLinkClick}>
             Developer
           </TrackedLink>
         )}
         {session.user.role === "TEACHER" && (
-          <TrackedLink href="/teacher" eventName="Teacher Portal" pageName="auth-nav" className={linkClass}>
+          <TrackedLink href="/teacher" eventName="Teacher Portal" pageName="auth-nav" className={linkClass} onClick={onLinkClick}>
             {mobile ? "Teacher portal" : "Teacher"}
           </TrackedLink>
         )}
-        <TrackedLink href="/profile" eventName="Profile" pageName="/" className={linkClass}>
+        <TrackedLink href="/profile" eventName="Profile" pageName="/" className={linkClass} onClick={onLinkClick}>
           {mobile ? "My Profile" : "Profile"}
         </TrackedLink>
         <SignOutButton className={`${linkClass} ${mobile ? "w-full text-left" : ""}`}>
@@ -50,7 +50,7 @@ export function AuthNav({ mobile = false }: { mobile?: boolean }) {
 
   return (
     <div className={mobile ? "flex flex-col gap-1" : "flex items-center gap-1"}>
-      <TrackedLink href="/login" eventName="Login" pageName="/" className={linkClass}>
+      <TrackedLink href="/login" eventName="Login" pageName="/" className={linkClass} onClick={onLinkClick}>
         Sign In
       </TrackedLink>
       <TrackedLink
@@ -62,6 +62,7 @@ export function AuthNav({ mobile = false }: { mobile?: boolean }) {
             ? "flex min-h-11 items-center rounded-full bg-primary px-3 text-base font-medium text-white"
             : "whitespace-nowrap rounded-full bg-primary px-2 py-2 text-[0.6875rem] font-semibold text-white transition-colors hover:bg-primary-light 2xl:px-3 2xl:text-sm"
         }
+        onClick={onLinkClick}
       >
         Register
       </TrackedLink>

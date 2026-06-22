@@ -62,7 +62,9 @@ export default async function BlogPage({
           </div>
 
           {totalCount === 0 ? (
-            <p className="motion-safe:animate-fade-up mt-10 text-center text-muted py-12">No blog posts published yet. Check back soon.</p>
+            <p className="motion-safe:animate-fade-up mt-10 text-center text-muted py-12">
+              {q ? "No blogs found matching your search." : "No blog posts published yet. Check back soon."}
+            </p>
           ) : (
             <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {posts.map((post, index) => {

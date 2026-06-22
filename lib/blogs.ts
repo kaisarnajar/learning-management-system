@@ -88,7 +88,7 @@ export async function getPublishedBlogPostsPaginated(
   pageSize: number,
   searchQuery?: string,
 ): Promise<PaginatedResult<BlogPostWithImages>> {
-  const searchWhere = searchQuery ? buildSearchOr(["title", "excerpt", "body", "category"], [{ relation: "createdBy", fields: ["name"] }], searchQuery) : undefined;
+  const searchWhere = searchQuery ? buildSearchOr(["title", "excerpt", "body"], [{ relation: "createdBy", fields: ["name"] }], searchQuery) : undefined;
   const where = andWhere(BLOG_PUBLIC_WHERE, searchWhere) || BLOG_PUBLIC_WHERE;
   const totalCount = await withDbErrorHandling(() => prisma.blogPost.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);

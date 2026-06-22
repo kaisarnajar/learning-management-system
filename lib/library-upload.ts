@@ -1,5 +1,5 @@
-import { mkdir, writeFile, unlink } from "fs/promises";
-import path from "path";
+import { r2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from "@/lib/s3";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const MAX_IMAGE_BYTES = 2 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -31,26 +31,45 @@ export async function saveLibraryImage(libraryItemId: string, file: File): Promi
           : "jpg";
 
   const filename = `${libraryItemId}-${Date.now()}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads", "library");
-  await mkdir(dir, { recursive: true });
+  const key = `uploads/library/${filename}`;
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, filename), buffer);
 
-  return `/uploads/library/${filename}`;
+  await r2Client.send(
+    new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: file.type,
+    })
+  );
+
+  return `${R2_PUBLIC_URL}/${key}`;
 }
 
 export async function deleteLibraryImage(imagePath: string): Promise<void> {
-  if (!imagePath || !imagePath.startsWith("/uploads/library/")) return;
-  
+  if (!imagePath) return;
+
+  let key = imagePath;
+  if (key.startsWith(R2_PUBLIC_URL)) {
+    key = key.slice(R2_PUBLIC_URL.length);
+  }
+  if (key.startsWith('/')) {
+    key = key.slice(1);
+  }
+
+  if (!key.startsWith("uploads/library/")) {
+    return;
+  }
+
   try {
-    const filename = path.basename(imagePath);
-    const fullPath = path.join(process.cwd(), "public", "uploads", "library", filename);
-    await unlink(fullPath);
+    await r2Client.send(
+      new DeleteObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: key,
+      })
+    );
   } catch (error) {
-    // Ignore error if file doesn't exist
-    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
-      console.error("Failed to delete library image:", error);
-    }
+    console.error("Failed to delete library image from R2:", error);
   }
 }

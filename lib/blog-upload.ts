@@ -1,6 +1,6 @@
-import { mkdir, unlink, writeFile } from "fs/promises";
-import path from "path";
 import { MAX_BLOG_IMAGE_BYTES } from "@/lib/blog-limits";
+import { r2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from "@/lib/s3";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 export { MAX_BLOG_IMAGES, MAX_BLOG_IMAGE_BYTES } from "@/lib/blog-limits";
 
@@ -37,25 +37,46 @@ export function getBlogImageFiles(formData: FormData): File[] {
 export async function saveBlogImage(blogPostId: string, file: File): Promise<string> {
   const ext = EXT_BY_TYPE[file.type] ?? "jpg";
   const storedName = `${blogPostId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads", "blogs");
-  await mkdir(dir, { recursive: true });
+  const key = `uploads/blogs/${storedName}`;
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, storedName), buffer);
 
-  return `/uploads/blogs/${storedName}`;
+  await r2Client.send(
+    new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: file.type,
+    })
+  );
+
+  return `${R2_PUBLIC_URL}/${key}`;
 }
 
 export async function deleteBlogImageFile(imagePath: string | null | undefined) {
-  if (!imagePath || !imagePath.startsWith("/uploads/blogs/")) {
+  if (!imagePath) return;
+  
+  // If the path contains the R2 public URL, strip it to get the key
+  let key = imagePath;
+  if (key.startsWith(R2_PUBLIC_URL)) {
+    key = key.slice(R2_PUBLIC_URL.length);
+  }
+  if (key.startsWith('/')) {
+    key = key.slice(1);
+  }
+
+  if (!key.startsWith("uploads/blogs/")) {
     return;
   }
 
-  const filePath = path.join(process.cwd(), "public", imagePath);
   try {
-    await unlink(filePath);
+    await r2Client.send(
+      new DeleteObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: key,
+      })
+    );
   } catch (error) {
-    console.error("Caught error:", error);
-
-    }
+    console.error("Failed to delete blog image from R2:", error);
+  }
 }

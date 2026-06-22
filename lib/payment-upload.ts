@@ -1,5 +1,5 @@
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { r2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from "@/lib/s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 const MAX_SCREENSHOT_BYTES = 2 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -34,11 +34,18 @@ export async function savePaymentScreenshot(
           : "jpg";
 
   const filename = `${enrollmentId}-${Date.now()}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads", "payments");
-  await mkdir(dir, { recursive: true });
+  const key = `uploads/payments/${filename}`;
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, filename), buffer);
 
-  return `/uploads/payments/${filename}`;
+  await r2Client.send(
+    new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: file.type,
+    })
+  );
+
+  return `${R2_PUBLIC_URL}/${key}`;
 }

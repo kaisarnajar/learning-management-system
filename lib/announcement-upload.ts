@@ -1,6 +1,6 @@
 import { isAnnouncementAttachmentTooLarge } from "@/lib/announcements";
-import { mkdir, unlink, writeFile } from "fs/promises";
-import path from "path";
+import { r2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from "@/lib/s3";
+import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 const ALLOWED_TYPES = new Set([
   "application/pdf",
@@ -51,28 +51,48 @@ export async function saveAnnouncementAttachment(
 ): Promise<{ attachmentPath: string; attachmentName: string }> {
   const ext = EXT_BY_TYPE[file.type] ?? "bin";
   const storedName = `${announcementId}-${Date.now()}.${ext}`;
-  const dir = path.join(process.cwd(), "public", "uploads", "announcements");
-  await mkdir(dir, { recursive: true });
+  const key = `uploads/announcements/${storedName}`;
 
   const buffer = Buffer.from(await file.arrayBuffer());
-  await writeFile(path.join(dir, storedName), buffer);
+
+  await r2Client.send(
+    new PutObjectCommand({
+      Bucket: R2_BUCKET_NAME,
+      Key: key,
+      Body: buffer,
+      ContentType: file.type,
+    })
+  );
 
   return {
-    attachmentPath: `/uploads/announcements/${storedName}`,
+    attachmentPath: `${R2_PUBLIC_URL}/${key}`,
     attachmentName: sanitizeFilename(file.name),
   };
 }
 
 export async function deleteAnnouncementAttachment(attachmentPath: string | null | undefined) {
-  if (!attachmentPath || !attachmentPath.startsWith("/uploads/announcements/")) {
+  if (!attachmentPath) return;
+
+  let key = attachmentPath;
+  if (key.startsWith(R2_PUBLIC_URL)) {
+    key = key.slice(R2_PUBLIC_URL.length);
+  }
+  if (key.startsWith('/')) {
+    key = key.slice(1);
+  }
+
+  if (!key.startsWith("uploads/announcements/")) {
     return;
   }
 
-  const filePath = path.join(process.cwd(), "public", attachmentPath);
   try {
-    await unlink(filePath);
+    await r2Client.send(
+      new DeleteObjectCommand({
+        Bucket: R2_BUCKET_NAME,
+        Key: key,
+      })
+    );
   } catch (error) {
-    console.error("Caught error:", error);
-
-    }
+    console.error("Failed to delete announcement attachment from R2:", error);
+  }
 }

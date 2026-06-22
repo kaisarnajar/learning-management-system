@@ -155,9 +155,8 @@ export async function GET(
     if (process.env.VERCEL) {
       browser = await puppeteerCore.launch({
         args: chromium.args,
-        defaultViewport: chromium.defaultViewport,
         executablePath: await chromium.executablePath(),
-        headless: chromium.headless,
+        headless: true,
       });
     } else {
       browser = await puppeteer.launch({

@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
 import { trackButtonClick } from "@/lib/analytics-client";
 import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";
+import { ActionToast } from "@/components/shared/ToastProvider";
 
 type OrderItem = {
   id: string;
@@ -95,16 +96,6 @@ export function CartPageClient({
 }) {
   const { items, totalCount, updateQuantity, removeItem } = useCart();
   const [selected, setSelected] = useState<Set<string>>(new Set(items.map((i) => i.bookId)));
-  const [showSuccess, setShowSuccess] = useState(submitted);
-
-  useEffect(() => {
-    if (submitted) {
-      // Remove ?submitted=1 from the URL without triggering a page reload
-      const url = new URL(window.location.href);
-      url.searchParams.delete("submitted");
-      window.history.replaceState({}, "", url.toString());
-    }
-  }, [submitted]);
 
   const selectedItems = items.filter((i) => selected.has(i.bookId));
   const selectedTotal = selectedItems.reduce(
@@ -131,29 +122,14 @@ export function CartPageClient({
 
   return (
     <div className="space-y-8">
+      <ActionToast trigger={submitted} paramName="submitted" message="Order submitted successfully." variant="success" />
+
       <div>
         <h2 className="font-serif text-lg font-semibold text-foreground">My Cart</h2>
         <p className="mt-1 text-sm text-muted">
           Select the books you want to buy, then proceed to checkout.
         </p>
       </div>
-
-      {showSuccess && (
-        <div className="relative rounded-lg border border-emerald-200 border-l-4 border-l-emerald-500 bg-success-bg px-4 py-4 pr-10 text-sm text-success-text">
-          <p className="font-semibold">Order submitted successfully!</p>
-          <p className="mt-1">The academy will verify your payment and dispatch your books shortly.</p>
-          <button 
-            type="button" 
-            onClick={() => setShowSuccess(false)}
-            className="absolute top-4 right-4 text-success-text hover:text-success-text transition-colors"
-            aria-label="Dismiss message"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-      )}
 
       {totalCount === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface py-16 text-center">

@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
 import { useRouter } from "next/navigation";
 import { submitBookOrder } from "@/app/actions/bookstore";
+import { useToast } from "@/components/shared/ToastProvider";
 
 type CheckoutItem = {
   bookId: string;
@@ -38,28 +39,28 @@ export function BookCheckoutClient({
   const [error, setError] = useState("");
   const { removeItem } = useCart();
   const router = useRouter();
+  const { addToast } = useToast();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
 
     if (!transactionId.trim()) {
-      setError("Please enter the transaction / UTR reference.");
+      addToast("Please enter the transaction / UTR reference.", "error");
       return;
     }
 
     if (deliveryAddress.trim().length < 10) {
-      setError("Please enter a complete delivery address (minimum 10 characters).");
+      addToast("Please enter a complete delivery address (minimum 10 characters).", "error");
       return;
     }
 
     if (!/^[0-9]{5,10}$/.test(deliveryPinCode.trim())) {
-      setError("Please enter a valid pin code.");
+      addToast("Please enter a valid pin code.", "error");
       return;
     }
 
     if (!/^[0-9+\-\s()]{10,20}$/.test(deliveryPhoneNumber.trim())) {
-      setError("Please enter a valid phone number.");
+      addToast("Please enter a valid phone number.", "error");
       return;
     }
 
@@ -80,7 +81,7 @@ export function BookCheckoutClient({
       const data = await submitBookOrder(formData);
 
       if (data.error) {
-        setError(data.error || "Could not submit order. Please try again.");
+        addToast(data.error || "Could not submit order. Please try again.", "error");
         setLoading(false);
         return;
       }
@@ -91,7 +92,7 @@ export function BookCheckoutClient({
       }
       router.push(data.redirectUrl || "/profile/cart?submitted=1");
     } catch {
-      setError("Something went wrong. Please try again.");
+      addToast("Something went wrong. Please try again.", "error");
       setLoading(false);
     }
   }
@@ -250,11 +251,7 @@ export function BookCheckoutClient({
               </div>
             </div>
 
-            {error && (
-              <p className="rounded-lg bg-destructive-bg px-3 py-2 text-sm text-destructive-text" role="alert">
-                {error}
-              </p>
-            )}
+            {/* No inline error banner. Errors are shown via toast. */}
 
             <button
               type="submit"

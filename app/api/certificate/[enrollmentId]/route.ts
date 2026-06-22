@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import puppeteer from "puppeteer";
 import puppeteerCore from "puppeteer-core";
-import chromium from "@sparticuz/chromium";
+import chromium from "@sparticuz/chromium-min";
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { getCourseById } from "@/lib/courses";
@@ -155,7 +155,9 @@ export async function GET(
     if (process.env.VERCEL) {
       browser = await puppeteerCore.launch({
         args: chromium.args,
-        executablePath: await chromium.executablePath(),
+        executablePath: await chromium.executablePath(
+          "https://github.com/Sparticuz/chromium/releases/download/v133.0.0/chromium-v133.0.0-pack.tar"
+        ),
         headless: true,
       });
     } else {

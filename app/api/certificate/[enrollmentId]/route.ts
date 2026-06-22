@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import puppeteer from "puppeteer";
+import puppeteerCore from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { getCourseById } from "@/lib/courses";
@@ -149,10 +151,20 @@ export async function GET(
   `;
 
   try {
-    const browser = await puppeteer.launch({
-      headless: true,
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    let browser;
+    if (process.env.VERCEL) {
+      browser = await puppeteerCore.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath(),
+        headless: chromium.headless,
+      });
+    } else {
+      browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      });
+    }
 
     const page = await browser.newPage();
     
@@ -180,10 +192,10 @@ export async function GET(
         "Cache-Control": "private, no-cache",
       },
     });
-  } catch (error) {
-    console.error('PDF Generation Error:', error);
+  } catch (error: any) {
+    console.error('PDF Generation Error:', error?.stack || error);
     return NextResponse.json(
-      { error: 'Failed to generate PDF' },
+      { error: 'Failed to generate PDF', details: error?.message || String(error) },
       { status: 500 }
     );
   }

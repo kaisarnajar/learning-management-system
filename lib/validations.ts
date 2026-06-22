@@ -392,6 +392,6 @@ export const bookstoreCheckoutSchema = z.object({
   upiTransactionId: z.string().trim().min(1, "Transaction / UTR reference is required."),
   deliveryAddress: z.string().trim().min(10, "Delivery address must be at least 10 characters long."),
   deliveryPinCode: z.string().trim().regex(/^[0-9]{5,10}$/, "Valid pin code is required."),
-  deliveryPhoneNumber: z.string().trim().regex(/^[0-9+\-\s()]{10,20}$/, "Valid phone number is required."),
+  deliveryPhoneNumber: z.string().trim().regex(/^[0-9]{10,15}$/, "Valid phone number (10-15 digits) is required."),
   notes: z.string().trim().optional(),
 });

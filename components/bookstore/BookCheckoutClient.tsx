@@ -59,8 +59,8 @@ export function BookCheckoutClient({
       return;
     }
 
-    if (!/^[0-9+\-\s()]{10,20}$/.test(deliveryPhoneNumber.trim())) {
-      addToast("Please enter a valid phone number.", "error");
+    if (!/^[0-9]{10,15}$/.test(deliveryPhoneNumber.trim())) {
+      addToast("Please enter a valid phone number (10-15 digits).", "error");
       return;
     }
 
@@ -245,7 +245,7 @@ export function BookCheckoutClient({
                   required
                   placeholder="e.g. 9876543210"
                   value={deliveryPhoneNumber}
-                  onChange={(e) => setDeliveryPhoneNumber(e.target.value.replace(/[^0-9+\-\s()]/g, ""))}
+                  onChange={(e) => setDeliveryPhoneNumber(e.target.value.replace(/[^0-9]/g, ""))}
                   className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
                 />
               </div>

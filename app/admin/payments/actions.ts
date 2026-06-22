@@ -16,6 +16,7 @@ import { prisma } from "@/lib/prisma";
 import { getCourseById } from "@/lib/courses";
 import { notifyPaymentApproved, revalidateNotificationPaths } from "@/lib/notifications";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { getAppBaseUrl } from "@/lib/password-reset";
 
 function revalidatePaymentPaths(userId: string, courseId?: string | null) {
   const paths = [
@@ -170,7 +171,7 @@ export async function declineMonthlyPayment(
       },
     }), "Database operation failed");
 
-  const base = process.env.AUTH_URL || "http://localhost:3000";
+  const base = getAppBaseUrl();
   const paymentUrl =
     submission.paymentType === PAYMENT_TYPE_ENROLLMENT
       ? `${base.replace(/\/$/, "")}/profile/courses/${submission.courseId}/enrollment-pay`

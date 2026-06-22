@@ -4,6 +4,7 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/paginatio
 import { prisma } from "@/lib/prisma";
 import { andWhere, buildSearchOr } from "@/lib/text-search";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { getAppBaseUrl } from "@/lib/password-reset";
 
 function fatwaSearchWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -131,7 +132,7 @@ export async function getFatwaQuestionById(id: string): Promise<FatwaQuestion | 
 }
 
 export function getFatwaPublicUrl(id: string): string {
-  const base = process.env.AUTH_URL || "http://localhost:3000";
+  const base = getAppBaseUrl();
   return `${base.replace(/\/$/, "")}/fatwa/${id}`;
 }
 

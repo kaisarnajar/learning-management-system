@@ -7,7 +7,16 @@ const RESET_TOKEN_BYTES = 32;
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 export function getAppBaseUrl(): string {
-  return process.env.AUTH_URL?.trim() || "http://localhost:3000";
+  const authUrl = process.env.AUTH_URL?.trim();
+  if (authUrl) return authUrl;
+
+  const prodUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL || process.env.NEXT_PUBLIC_VERCEL_PROJECT_PRODUCTION_URL;
+  if (prodUrl) return `https://${prodUrl}`;
+
+  const vercelUrl = process.env.VERCEL_URL || process.env.NEXT_PUBLIC_VERCEL_URL;
+  if (vercelUrl) return `https://${vercelUrl}`;
+
+  return "http://localhost:3000";
 }
 
 export function hashResetToken(token: string): string {

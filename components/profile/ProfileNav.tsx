@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { CartCount } from "@/components/bookstore/CartCount";
+import { useEffect, useRef, useState } from "react";
 
 const links = [
   { href: "/profile", label: "Profile", exact: true },
@@ -15,12 +16,35 @@ const links = [
 
 export function ProfileNav({ unreadCount = 0 }: { unreadCount?: number }) {
   const pathname = usePathname();
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(true);
+
+  const checkScroll = () => {
+    if (scrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      // Use a 1px threshold to account for subpixel rounding issues
+      setCanScrollRight(Math.ceil(scrollLeft + clientWidth) < scrollWidth - 1);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    window.addEventListener("resize", checkScroll);
+    return () => window.removeEventListener("resize", checkScroll);
+  }, []);
 
   return (
     <div className="relative w-full">
+      {canScrollLeft && (
+        <div className="pointer-events-none absolute bottom-0 left-0 top-0 z-10 w-12 rounded-l-2xl bg-gradient-to-r from-surface/90 to-transparent sm:hidden" />
+      )}
+      
       <nav
-        className="flex w-full snap-x snap-mandatory items-center gap-1.5 overflow-x-auto rounded-2xl border border-border/40 bg-surface/40 p-2 backdrop-blur-xl shadow-sm sm:gap-2"
-        style={{ scrollbarWidth: "none" }} // Hide scrollbar
+        ref={scrollRef}
+        onScroll={checkScroll}
+        className="flex w-full snap-x snap-mandatory items-center gap-1.5 overflow-x-auto rounded-2xl border border-border/40 bg-surface/40 p-2 shadow-sm backdrop-blur-xl sm:gap-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         aria-label="Profile sections"
       >
         {links.map((link) => {
@@ -31,8 +55,8 @@ export function ProfileNav({ unreadCount = 0 }: { unreadCount?: number }) {
               href={link.href}
               className={`relative flex shrink-0 snap-start items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-300 ease-out ${
                 active
-                  ? "bg-primary text-white shadow-md shadow-primary/25 scale-[1.02]"
-                  : "text-foreground/70 hover:bg-surface-hover hover:text-foreground hover:scale-[1.02]"
+                  ? "scale-[1.02] bg-primary text-white shadow-md shadow-primary/25"
+                  : "text-foreground/70 hover:scale-[1.02] hover:bg-surface-hover hover:text-foreground"
               }`}
             >
               {link.label}
@@ -56,6 +80,10 @@ export function ProfileNav({ unreadCount = 0 }: { unreadCount?: number }) {
           );
         })}
       </nav>
+
+      {canScrollRight && (
+        <div className="pointer-events-none absolute bottom-0 right-0 top-0 z-10 w-12 rounded-r-2xl bg-gradient-to-l from-surface/90 to-transparent sm:hidden" />
+      )}
     </div>
   );
 }

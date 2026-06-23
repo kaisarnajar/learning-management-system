@@ -25,7 +25,7 @@ const quickLinks = [
   { href: "/teachers", label: "Teachers" },
 ];
 
-const DEVELOPER_WHATSAPP_NUMBER = "919622966911";
+const DEVELOPER_WHATSAPP_NUMBER = "917006025120";
 const developerWhatsAppHref = buildWhatsAppHref(DEVELOPER_WHATSAPP_NUMBER);
 const developerWhatsAppDisplay = formatWhatsAppForDisplay(DEVELOPER_WHATSAPP_NUMBER);
 
@@ -210,8 +210,8 @@ export async function Footer() {
             <FooterCreditBlock
               title="Developed & Maintained by"
               name="Kaisar Ahmad Najar"
-              email="kaisarnajar11114@gmail.com"
-              emailHref="mailto:kaisarnajar11114@gmail.com"
+              email="darsequraann@gmail.com"
+              emailHref="mailto:darsequraann@gmail.com"
               whatsappHref={developerWhatsAppHref}
               whatsappLabel={developerWhatsAppDisplay}
               linkedInHref="https://www.linkedin.com/in/kaisarnajar/"

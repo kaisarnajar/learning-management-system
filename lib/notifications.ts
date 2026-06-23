@@ -217,6 +217,22 @@ export async function notifyPaymentApproved(params: {
     sourceId: params.sourceId,
   });
   revalidateNotificationPaths(params.userId);
+
+  Promise.resolve().then(async () => {
+    try {
+      const user = await getUserEmailData(params.userId);
+      if (user) {
+        await sendPaymentApprovedEmail({
+          to: user.email,
+          studentName: user.name,
+          courseTitle: params.courseTitle,
+          paymentUrl: toAbsoluteUrl("/profile/payments")
+        });
+      }
+    } catch (err) {
+      console.error("[notifyPaymentApproved] Email send error:", err);
+    }
+  });
 }
 
 export async function notifyEnrollmentApproved(params: {
@@ -234,6 +250,22 @@ export async function notifyEnrollmentApproved(params: {
     sourceId: params.enrollmentId,
   });
   revalidateNotificationPaths(params.userId);
+
+  Promise.resolve().then(async () => {
+    try {
+      const user = await getUserEmailData(params.userId);
+      if (user) {
+        await sendEnrollmentApprovedEmail({
+          to: user.email,
+          studentName: user.name,
+          courseTitle: params.courseTitle,
+          courseUrl: toAbsoluteUrl("/profile/courses")
+        });
+      }
+    } catch (err) {
+      console.error("[notifyEnrollmentApproved] Email send error:", err);
+    }
+  });
 }
 
 export async function notifyEnrollmentRejected(params: {
@@ -251,6 +283,22 @@ export async function notifyEnrollmentRejected(params: {
     sourceId: params.enrollmentId,
   });
   revalidateNotificationPaths(params.userId);
+
+  Promise.resolve().then(async () => {
+    try {
+      const user = await getUserEmailData(params.userId);
+      if (user) {
+        await sendEnrollmentRejectedEmail({
+          to: user.email,
+          studentName: user.name,
+          courseTitle: params.courseTitle,
+          courseUrl: toAbsoluteUrl("/profile/courses")
+        });
+      }
+    } catch (err) {
+      console.error("[notifyEnrollmentRejected] Email send error:", err);
+    }
+  });
 }
 
 export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
@@ -273,6 +321,26 @@ export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
   for (const userId of userIds) {
     revalidateNotificationPaths(userId);
   }
+
+  Promise.resolve().then(async () => {
+    try {
+      for (const userId of userIds) {
+        const user = await getUserEmailData(userId);
+        if (user) {
+          await sendCourseAnnouncementEmail({
+            to: user.email,
+            studentName: user.name,
+            courseTitle: params.courseTitle,
+            announcementTitle: params.title,
+            announcementBody: params.body,
+            announcementUrl: toAbsoluteUrl(`/profile/courses/${params.courseId}/announcements`)
+          });
+        }
+      }
+    } catch (err) {
+      console.error("[notifyEnrolledStudentsOfCourseAnnouncement] Email send error:", err);
+    }
+  });
 }
 
 export async function notifyStudentOfPersonalMessage(params: {
@@ -294,6 +362,25 @@ export async function notifyStudentOfPersonalMessage(params: {
     sourceId: params.announcementId,
   });
   revalidateNotificationPaths(params.userId);
+
+  Promise.resolve().then(async () => {
+    try {
+      const user = await getUserEmailData(params.userId);
+      if (user) {
+        await sendPersonalMessageEmail({
+          to: user.email,
+          studentName: user.name,
+          teacherName: params.teacherName,
+          courseTitle: params.courseTitle,
+          messageTitle: params.title || "New Message",
+          messageBody: params.body,
+          messageUrl: toAbsoluteUrl(`/profile/courses/${params.courseId}/announcements`)
+        });
+      }
+    } catch (err) {
+      console.error("[notifyStudentOfPersonalMessage] Email send error:", err);
+    }
+  });
 }
 
 export async function notifyAllStudentsOfSiteAnnouncement(params: {
@@ -313,6 +400,25 @@ export async function notifyAllStudentsOfSiteAnnouncement(params: {
 
   revalidatePath("/profile/notifications", "page");
   revalidatePath("/profile", "layout");
+
+  Promise.resolve().then(async () => {
+    try {
+      for (const userId of userIds) {
+        const user = await getUserEmailData(userId);
+        if (user) {
+          await sendSiteAnnouncementEmail({
+            to: user.email,
+            studentName: user.name,
+            announcementTitle: params.title,
+            announcementBody: params.body,
+            announcementUrl: toAbsoluteUrl(`/announcements/${params.announcementId}`)
+          });
+        }
+      }
+    } catch (err) {
+      console.error("[notifyAllStudentsOfSiteAnnouncement] Email send error:", err);
+    }
+  });
 }
 
 export async function getNotificationsForUserPaginated(
@@ -394,6 +500,22 @@ export async function notifyBookOrderApproved(params: {
     sourceId: params.orderId,
   });
   revalidateNotificationPaths(params.userId);
+
+  Promise.resolve().then(async () => {
+    try {
+      const user = await getUserEmailData(params.userId);
+      if (user) {
+        await sendBookOrderApprovedEmail({
+          to: user.email,
+          studentName: user.name,
+          orderUrl: toAbsoluteUrl("/profile/cart"),
+          totalAmountStr: amountStr
+        });
+      }
+    } catch (err) {
+      console.error("[notifyBookOrderApproved] Email send error:", err);
+    }
+  });
 }
 
 export async function notifyBookOrderDeclined(params: {
@@ -410,6 +532,21 @@ export async function notifyBookOrderDeclined(params: {
     sourceId: params.orderId,
   });
   revalidateNotificationPaths(params.userId);
+
+  Promise.resolve().then(async () => {
+    try {
+      const user = await getUserEmailData(params.userId);
+      if (user) {
+        await sendBookOrderDeclinedEmail({
+          to: user.email,
+          studentName: user.name,
+          orderUrl: toAbsoluteUrl("/profile/cart")
+        });
+      }
+    } catch (err) {
+      console.error("[notifyBookOrderDeclined] Email send error:", err);
+    }
+  });
 }
 
 export async function notifyBookOrderShipped(params: {
@@ -461,5 +598,20 @@ export async function notifyBookOrderRefunded(params: {
     sourceId: params.orderId,
   });
   revalidateNotificationPaths(params.userId);
+
+  Promise.resolve().then(async () => {
+    try {
+      const user = await getUserEmailData(params.userId);
+      if (user) {
+        await sendBookOrderRefundedEmail({
+          to: user.email,
+          studentName: user.name,
+          orderUrl: toAbsoluteUrl("/profile/cart")
+        });
+      }
+    } catch (err) {
+      console.error("[notifyBookOrderRefunded] Email send error:", err);
+    }
+  });
 }
 

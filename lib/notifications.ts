@@ -9,6 +9,35 @@ import {
 import { prisma } from "@/lib/prisma";
 import { withDbErrorHandling } from "@/lib/db-error";
 
+import { getAppBaseUrl } from "@/lib/password-reset";
+import {
+  sendPaymentApprovedEmail,
+  sendEnrollmentApprovedEmail,
+  sendEnrollmentRejectedEmail,
+  sendCourseAnnouncementEmail,
+  sendPersonalMessageEmail,
+  sendSiteAnnouncementEmail,
+  sendBookOrderApprovedEmail,
+  sendBookOrderDeclinedEmail,
+  sendBookOrderShippedEmail,
+  sendBookOrderRefundedEmail
+} from "@/lib/email";
+
+async function getUserEmailData(userId: string): Promise<{ email: string; name: string } | null> {
+  const user = await withDbErrorHandling(() => prisma.user.findUnique({
+    where: { id: userId },
+    select: { email: true, name: true }
+  }), "Database operation failed");
+  return user ? { email: user.email, name: user.name || "" } : null;
+}
+
+function toAbsoluteUrl(href: string): string {
+  if (href.startsWith("http")) return href;
+  const base = getAppBaseUrl().replace(/\/$/, "");
+  return `${base}${href.startsWith("/") ? "" : "/"}${href}`;
+}
+
+
 export type CreateStudentNotificationInput = {
   userId: string;
   type: StudentNotificationType;

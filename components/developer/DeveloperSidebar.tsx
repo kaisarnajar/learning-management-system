@@ -46,7 +46,7 @@ export function DeveloperSidebar() {
   };
 
   return (
-    <aside className="border-b border-border bg-surface md:w-56 md:border-b-0 md:border-r overflow-y-auto">
+    <aside className="border-b border-border bg-surface md:w-56 md:shrink-0 md:border-b-0 md:border-r overflow-y-auto">
       <div className="p-4">
         <p className="font-serif text-lg font-bold text-primary">Developer Panel</p>
         <p className="text-xs text-muted">Darse Quran Academy</p>

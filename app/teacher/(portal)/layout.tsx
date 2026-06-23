@@ -15,7 +15,7 @@ export default async function TeacherPortalLayout({ children }: { children: Reac
   return (
     <div className="min-h-[calc(100vh-4rem)] md:flex">
       <TeacherSidebar teacherName={teacher.name} />
-      <div className="flex-1 bg-background/40 p-4 sm:p-6 lg:p-8">{children}</div>
+      <main className="flex-1 min-w-0 bg-background/40 p-4 sm:p-6 lg:p-8">{children}</main>
     </div>
   );
 }

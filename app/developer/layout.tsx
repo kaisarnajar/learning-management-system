@@ -15,7 +15,7 @@ export default async function DeveloperLayout({ children }: { children: React.Re
   return (
     <div className="min-h-[calc(100vh-4rem)] md:flex">
       <DeveloperSidebar />
-      <div className="flex-1 p-4 sm:p-6 lg:p-8">{children}</div>
+      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">{children}</main>
     </div>
   );
 }

@@ -12,7 +12,7 @@ export function TeacherSidebar({ teacherName }: { teacherName: string }) {
   const pathname = usePathname();
 
   return (
-    <aside className="border-b border-border bg-surface md:w-56 md:border-b-0 md:border-r">
+    <aside className="border-b border-border bg-surface md:w-56 md:shrink-0 md:border-b-0 md:border-r">
       <div className="p-4">
         <p className="font-serif text-lg font-bold text-primary">Teacher portal</p>
         <p className="mt-1 text-sm font-medium text-foreground">{teacherName}</p>

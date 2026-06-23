@@ -540,8 +540,8 @@ export async function sendBookOrderDeclinedEmail(params: NotificationEmailBasePa
   return deliverMail({ to, subject, text, html });
 }
 
-export async function sendBookOrderShippedEmail(params: NotificationEmailBaseParams & { orderUrl: string }) {
-  const { to, studentName, orderUrl } = params;
+export async function sendBookOrderShippedEmail(params: NotificationEmailBaseParams & { orderUrl: string; courierServiceName: string; trackingId: string }) {
+  const { to, studentName, orderUrl, courierServiceName, trackingId } = params;
   const displayName = studentName || "Student";
   const subject = "Your book order has shipped!";
   
@@ -550,16 +550,25 @@ export async function sendBookOrderShippedEmail(params: NotificationEmailBasePar
     "",
     "Good news! Your book order has been shipped and is on its way to you.",
     "",
+    "Shipment Details:",
+    `- Courier: ${courierServiceName}`,
+    `- Tracking ID: ${trackingId}`,
+    "",
     "View your order details here:",
     orderUrl,
     "",
     "Darse Quran Academy",
-  ].join("\n");
+  ].join("\\n");
 
   const html = [
     '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
     `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
     "<p>Good news! Your book order has been shipped and is on its way to you.</p>",
+    '<div style="margin: 20px 0; padding: 16px; border-left: 4px solid #16a34a; background: #f0fdf4;">',
+    '<h3 style="margin-top: 0; color: #166534;">Shipment Details</h3>',
+    `<p style="margin: 0;"><strong>Courier:</strong> ${escapeHtml(courierServiceName)}</p>`,
+    `<p style="margin: 0;"><strong>Tracking ID:</strong> ${escapeHtml(trackingId)}</p>`,
+    '</div>',
     '<p style="margin: 28px 0;">',
     `<a href="${orderUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">View Order</a>`,
     "</p>",

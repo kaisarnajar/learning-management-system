@@ -415,17 +415,36 @@ export async function notifyBookOrderDeclined(params: {
 export async function notifyBookOrderShipped(params: {
   userId: string;
   orderId: string;
+  courierServiceName: string;
+  trackingId: string;
 }) {
   await createStudentNotification({
     userId: params.userId,
     type: "BOOK_ORDER_SHIPPED",
     title: "Book order shipped",
-    body: "Your book order has been shipped and is on its way!",
+    body: `Your book order has been shipped via ${params.courierServiceName}. Tracking ID: ${params.trackingId}`,
     href: "/profile/cart",
     sourceType: "BookOrder",
     sourceId: params.orderId,
   });
   revalidateNotificationPaths(params.userId);
+
+  Promise.resolve().then(async () => {
+    try {
+      const user = await getUserEmailData(params.userId);
+      if (user) {
+        await sendBookOrderShippedEmail({
+          to: user.email,
+          studentName: user.name,
+          orderUrl: toAbsoluteUrl("/profile/cart"),
+          courierServiceName: params.courierServiceName,
+          trackingId: params.trackingId
+        });
+      }
+    } catch (err) {
+      console.error("[notifyBookOrderShipped] Email send error:", err);
+    }
+  });
 }
 
 export async function notifyBookOrderRefunded(params: {

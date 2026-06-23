@@ -46,6 +46,111 @@ export function ScreenshotPreview({ path }: { path: string }) {
   );
 }
 
+
+export function MarkShippedModal({ orderId }: { orderId: string }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isPending, setIsPending] = useState(false);
+  const [courier, setCourier] = useState("");
+  const [tracking, setTracking] = useState("");
+  const { addToast } = useToast();
+
+  const handleConfirm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!courier.trim() || !tracking.trim()) {
+      addToast("Both Courier Service Name and Tracking ID are required.", "error");
+      return;
+    }
+    
+    setIsPending(true);
+    try {
+      const result = await markBookOrderShipped(
+        orderId, 
+        courier, 
+        tracking, 
+        window.location.pathname + window.location.search
+      );
+      if (result?.error) {
+        addToast(result.error, "error");
+      } else {
+        setIsOpen(false);
+      }
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  return (
+    <>
+      <button 
+        type="button" 
+        onClick={() => setIsOpen(true)}
+        className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light transition-colors"
+      >
+        Mark as Shipped
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => !isPending && setIsOpen(false)} />
+          <div className="relative w-full max-w-md rounded-xl bg-surface p-6 shadow-xl border border-border">
+            <h3 className="text-lg font-semibold text-foreground">Mark as Shipped</h3>
+            <p className="mt-2 text-sm text-muted">Enter shipment details to notify the student.</p>
+            
+            <form onSubmit={handleConfirm} className="mt-4 space-y-4">
+              <div>
+                <label htmlFor="courier" className="block text-sm font-medium text-foreground">
+                  Courier Service Name <span className="text-destructive-text">*</span>
+                </label>
+                <input
+                  id="courier"
+                  type="text"
+                  required
+                  value={courier}
+                  onChange={(e) => setCourier(e.target.value)}
+                  disabled={isPending}
+                  className="mt-1 block w-full rounded-md border border-input-border bg-input-bg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                  placeholder="e.g. DTDC, India Post"
+                />
+              </div>
+              <div>
+                <label htmlFor="tracking" className="block text-sm font-medium text-foreground">
+                  Tracking ID <span className="text-destructive-text">*</span>
+                </label>
+                <input
+                  id="tracking"
+                  type="text"
+                  required
+                  value={tracking}
+                  onChange={(e) => setTracking(e.target.value)}
+                  disabled={isPending}
+                  className="mt-1 block w-full rounded-md border border-input-border bg-input-bg px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                  placeholder="e.g. 1Z9999999999999999"
+                />
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  disabled={isPending}
+                  onClick={() => setIsOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-muted rounded-md transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending || !courier.trim() || !tracking.trim()}
+                  className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-light transition-colors disabled:opacity-50"
+                >
+                  {isPending ? "Saving..." : "Confirm Shipment"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
 function OrderActions({ order }: { order: BookOrderWithItems }) {
   const { addToast } = useToast();
   if (order.status === "PENDING_VERIFICATION") {
@@ -87,19 +192,7 @@ function OrderActions({ order }: { order: BookOrderWithItems }) {
      return (
         <td className="whitespace-nowrap px-4 py-4 align-top">
           <div className="flex items-center justify-end gap-2">
-            <ConfirmationModal
-               title="Mark as Shipped"
-               description="Mark this book order as shipped and notify the student?"
-               actionLabel="Mark as Shipped"
-               variant="primary"
-               onConfirm={async () => {
-                 const result = await markBookOrderShipped(order.id, window.location.pathname + window.location.search);
-                 if (result?.error) addToast(result.error, "error");
-               }}
-               trigger={
-                  <button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light transition-colors">Mark as Shipped</button>
-               }
-            />
+            <MarkShippedModal orderId={order.id} />
             <ConfirmationModal
                title="Refund Order"
                description="Are you sure you want to refund this order? The student will be notified."
@@ -201,6 +294,14 @@ export function BaseOrderRow({
             <ScreenshotPreview path={order.paymentScreenshotPath} />
           </div>
         )}
+      
+      {order.status === "SHIPPED" && order.courierServiceName && (
+        <div className="mt-3 border-t border-border pt-2">
+          <p className="text-xs font-medium text-foreground">Shipment Details</p>
+          <p className="text-xs text-muted">Courier: {order.courierServiceName}</p>
+          <p className="text-xs text-muted">Tracking ID: {order.trackingId}</p>
+        </div>
+      )}
       </td>
       <OrderActions order={order} />
     </tr>

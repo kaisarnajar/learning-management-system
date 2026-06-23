@@ -36,6 +36,8 @@ export type BookOrderWithItems = {
   deliveryPinCode: string | null;
   deliveryPhoneNumber: string | null;
   notes: string | null;
+  courierServiceName: string | null;
+  trackingId: string | null;
   createdAt: Date;
   updatedAt: Date;
   user: { name: string | null; email: string };

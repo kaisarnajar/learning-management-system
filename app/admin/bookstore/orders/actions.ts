@@ -121,9 +121,15 @@ export async function declineBookOrder(
 
 export async function markBookOrderShipped(
   orderId: string,
+  courierServiceName: string,
+  trackingId: string,
   returnTo?: string,
 ): Promise<{ error?: string }> {
   await requireAdmin();
+
+  if (!courierServiceName?.trim() || !trackingId?.trim()) {
+    return { error: "Courier Service Name and Tracking ID are required." };
+  }
 
   const order = await withDbErrorHandling(() => prisma.bookOrder.findUnique({
       where: { id: orderId },
@@ -137,12 +143,18 @@ export async function markBookOrderShipped(
 
   await withDbErrorHandling(() => prisma.bookOrder.update({
       where: { id: orderId },
-      data: { status: "SHIPPED" },
+      data: { 
+        status: "SHIPPED",
+        courierServiceName: courierServiceName.trim(),
+        trackingId: trackingId.trim()
+      },
     }), "Database operation failed");
 
   await notifyBookOrderShipped({
     userId: order.userId,
     orderId: order.id,
+    courierServiceName: courierServiceName.trim(),
+    trackingId: trackingId.trim()
   });
 
   revalidateOrderPaths(order.userId);

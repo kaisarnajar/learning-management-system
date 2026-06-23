@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { updateBlogPost } from "@/app/admin/blogs/actions";
 import { BlogPostForm } from "@/components/admin/BlogPostForm";
-import { isBlogPendingTeacherApproval } from "@/lib/blog-approval";
+import { isTeacherSubmittedBlog } from "@/lib/blog-approval";
 import { getBlogPostForAdmin, getFeaturedHomepageBlogCount } from "@/lib/blogs";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
@@ -20,7 +20,7 @@ export default async function EditBlogPostPage({
 
   if (!post) notFound();
 
-  const contentReadOnly = isBlogPendingTeacherApproval(post);
+  const contentReadOnly = isTeacherSubmittedBlog(post);
   const action = updateBlogPost.bind(null, id);
 
   return (

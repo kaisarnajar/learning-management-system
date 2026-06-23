@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-actions";
 import { deleteBlogImageFile } from "@/lib/blog-upload";
 import { addImagesToPost, getRemoveImageIds, parseBlogForm, removeBlogImages } from "@/lib/blog-mutations";
-import { isBlogPendingTeacherApproval } from "@/lib/blog-approval";
+import { isTeacherSubmittedBlog } from "@/lib/blog-approval";
 import { resolveBlogFeaturedUpdate } from "@/lib/blogs";
 import { prisma } from "@/lib/prisma";
 import { withDbErrorHandling } from "@/lib/db-error";
@@ -88,14 +88,14 @@ export async function updateBlogPost(id: string, formData: FormData) {
 
   const existing = await withDbErrorHandling(() => prisma.blogPost.findUnique({
       where: { id },
-      include: { images: true },
+      include: { images: true, createdBy: { select: { email: true } } },
     }), "Database operation failed");
 
   if (!existing) {
     redirect(adminListPath("?error=notfound"));
   }
 
-  const contentLocked = isBlogPendingTeacherApproval(existing);
+  const contentLocked = isTeacherSubmittedBlog(existing);
 
   if (!contentLocked) {
     const removeIds = getRemoveImageIds(formData);

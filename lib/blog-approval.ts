@@ -1,4 +1,5 @@
 import type { BlogApprovalStatus, BlogPost } from "@prisma/client";
+import { isAdminEmail } from "@/lib/admin";
 import { clampPage, paginationArgs } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { andWhere, buildSearchOr } from "@/lib/text-search";
@@ -52,9 +53,10 @@ export function canTeacherDeleteBlogPost(post: Pick<BlogPost, "createdById">, us
   return post.createdById === userId;
 }
 
-/** Teacher submissions awaiting admin review — content is read-only for admins. */
-export function isBlogPendingTeacherApproval(post: Pick<BlogPost, "approvalStatus">) {
-  return post.approvalStatus === "PENDING";
+/** Teacher submissions — content is read-only for admins. */
+export function isTeacherSubmittedBlog(post: { createdBy?: { email?: string | null } | null }) {
+  if (!post.createdBy?.email) return false;
+  return !isAdminEmail(post.createdBy.email);
 }
 
 export async function getPendingBlogApprovalCount() {

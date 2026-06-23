@@ -1,5 +1,5 @@
-import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
+import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import type { Course, CourseStatus, Teacher } from "@prisma/client";
 import { useCallback } from "react";

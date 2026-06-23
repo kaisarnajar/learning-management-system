@@ -1,5 +1,5 @@
-import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
+import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";

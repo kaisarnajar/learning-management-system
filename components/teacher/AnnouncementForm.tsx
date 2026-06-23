@@ -1,5 +1,5 @@
-import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
+import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import type { AnnouncementCategory, CourseAnnouncement } from "@prisma/client";
 import Link from "next/link";

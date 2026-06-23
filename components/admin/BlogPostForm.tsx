@@ -1,5 +1,5 @@
-import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
+import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import type { BlogImage } from "@prisma/client";
 import Image from "next/image";

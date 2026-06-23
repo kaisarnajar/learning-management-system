@@ -1,5 +1,5 @@
-import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
+import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import Image from "next/image";
 import { useCallback, useRef, useState } from "react";

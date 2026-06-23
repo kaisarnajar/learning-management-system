@@ -1,5 +1,5 @@
-import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
+import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import { useCallback, useEffect, useActionState, useRef } from "react";
 import { useToast } from "@/components/shared/ToastProvider";

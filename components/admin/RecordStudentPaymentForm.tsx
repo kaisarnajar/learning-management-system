@@ -1,5 +1,5 @@
-import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
+import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import { useActionState } from "react";
 import { recordStudentPayment, type RecordPaymentState } from "@/app/admin/students/payment-actions";

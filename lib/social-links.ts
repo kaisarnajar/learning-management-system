@@ -14,7 +14,7 @@ export type SocialLinksSettingsData = {
 
 function defaultSettings(): SocialLinksSettingsData {
   return {
-    contactEmail: "info@darsequranacademy.org",
+    contactEmail: "darsequraann@gmail.com",
     whatsappNumber: "919622966911",
     whatsappDefaultMessage:
       "Assalamu Alaikum, I would like to know more about Darse Quran Academy.",

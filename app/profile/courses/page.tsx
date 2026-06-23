@@ -113,12 +113,18 @@ export default async function ProfileCoursesPage({
                 )}
 
                 {isActive && enrollment.status === "active" && (
-                  <Link
-                    href={`/profile/courses/${course.id}/pay`}
-                    className="mt-4 flex min-h-11 items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-light"
-                  >
-                    Pay monthly fee
-                  </Link>
+                  course.monthlyFeeInrPaise > 0 ? (
+                    <Link
+                      href={`/profile/courses/${course.id}/pay`}
+                      className="mt-4 flex min-h-11 items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-light"
+                    >
+                      Pay monthly fee
+                    </Link>
+                  ) : (
+                    <span className="mt-4 flex min-h-11 items-center justify-center rounded-full bg-surface-muted px-4 py-3 text-sm font-medium text-muted cursor-not-allowed">
+                      No monthly fee required
+                    </span>
+                  )
                 )}
 
                 <Link

@@ -148,7 +148,7 @@ export async function updateBlogPost(id: string, formData: FormData) {
   if (contentLocked) {
     redirect("/admin/blog-approvals?saved=1");
   }
-  redirect(adminListPath(`/${id}/edit?saved=1`));
+  redirect(adminListPath("?saved=1"));
 }
 
 export async function deleteBlogPost(id: string) {

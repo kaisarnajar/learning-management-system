@@ -210,8 +210,8 @@ export async function Footer() {
             <FooterCreditBlock
               title="Developed & Maintained by"
               name="Kaisar Ahmad Najar"
-              email="darsequraann@gmail.com"
-              emailHref="mailto:darsequraann@gmail.com"
+              email="kaisarnajar11114@gmail.com"
+              emailHref="mailto:kaisarnajar11114@gmail.com"
               whatsappHref={developerWhatsAppHref}
               whatsappLabel={developerWhatsAppDisplay}
               linkedInHref="https://www.linkedin.com/in/kaisarnajar/"

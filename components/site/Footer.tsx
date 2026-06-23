@@ -25,7 +25,7 @@ const quickLinks = [
   { href: "/teachers", label: "Teachers" },
 ];
 
-const DEVELOPER_WHATSAPP_NUMBER = "917006025120";
+const DEVELOPER_WHATSAPP_NUMBER = "919622966911";
 const developerWhatsAppHref = buildWhatsAppHref(DEVELOPER_WHATSAPP_NUMBER);
 const developerWhatsAppDisplay = formatWhatsAppForDisplay(DEVELOPER_WHATSAPP_NUMBER);
 

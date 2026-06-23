@@ -444,7 +444,7 @@ model Expense {
 model SocialLinksSettings {
   id                     String   @id @default("default")
   contactEmail           String   @default("info@darsequranacademy.org")
-  whatsappNumber         String   @default("917006025120")
+  whatsappNumber         String   @default("919622966911")
   whatsappDefaultMessage String   @default("Assalamu Alaikum, I would like to know more about Darse Quran Academy.")
   facebookUrl            String   @default("https://facebook.com")
   instagramUrl           String   @default("https://instagram.com")

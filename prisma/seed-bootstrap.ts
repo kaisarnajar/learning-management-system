@@ -145,8 +145,8 @@ export async function seedBootstrap(prisma: PrismaClient) {
     where: { id: SOCIAL_LINKS_SETTINGS_ID },
     create: {
       id: SOCIAL_LINKS_SETTINGS_ID,
-      contactEmail: "info@darsequranacademy.org",
-      whatsappNumber: "917006025120",
+      contactEmail: "darsequraann@gmail.com",
+      whatsappNumber: "919622966911",
       whatsappDefaultMessage:
         "Assalamu Alaikum, I would like to know more about Darse Quran Academy.",
       facebookUrl: "https://facebook.com",
@@ -154,8 +154,8 @@ export async function seedBootstrap(prisma: PrismaClient) {
       youtubeUrl: "https://youtube.com",
     },
     update: {
-      contactEmail: "info@darsequranacademy.org",
-      whatsappNumber: "917006025120",
+      contactEmail: "darsequraann@gmail.com",
+      whatsappNumber: "919622966911",
       whatsappDefaultMessage:
         "Assalamu Alaikum, I would like to know more about Darse Quran Academy.",
       facebookUrl: "https://facebook.com",

@@ -81,7 +81,7 @@ export function SocialLinksForm({ settings, action }: SocialLinksFormProps) {
         <h2 className="font-serif text-lg font-semibold text-foreground">WhatsApp</h2>
         <p className="text-sm text-muted">
           Used for the floating chat button, footer contact, and About page. Enter digits only with
-          country code (e.g. 917006025120).
+          country code (e.g. 919622966911).
         </p>
         <div>
           <label htmlFor="whatsappNumber" className={labelClassName}>
@@ -103,7 +103,7 @@ export function SocialLinksForm({ settings, action }: SocialLinksFormProps) {
             }
             onBlur={() => markTouched("whatsappNumber")}
             aria-invalid={showError("whatsappNumber") || undefined}
-            placeholder="917006025120"
+            placeholder="919622966911"
             className={formFieldInputClass(showError("whatsappNumber"))}
           />
           {values.whatsappNumber && !showError("whatsappNumber") && (

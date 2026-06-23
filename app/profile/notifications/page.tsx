@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 import Link from "next/link";
 import { NotificationList } from "@/components/profile/NotificationList";
 import { Pagination } from "@/components/shared/Pagination";
@@ -36,12 +37,12 @@ export default async function ProfileNotificationsPage({
         </div>
         {unreadCount > 0 && (
           <form action={markAllNotificationsReadAction}>
-            <button
+            <SubmitButton
               type="submit"
               className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent-muted/50"
             >
               Mark all as read
-            </button>
+            </SubmitButton>
           </form>
         )}
       </div>

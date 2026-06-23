@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import { useCallback, useEffect, useActionState, useRef } from "react";
@@ -218,13 +219,13 @@ export function AskFatwaForm({
         </>
       )}
 
-      <button
+      <SubmitButton
         type="submit"
         disabled={!isValid || pending}
         className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? "Submitting…" : "Submit question"}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

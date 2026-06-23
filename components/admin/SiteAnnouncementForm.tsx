@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import type { SiteAnnouncement } from "@prisma/client";
@@ -201,13 +202,13 @@ export function SiteAnnouncementForm({
         </label>
       </div>
 
-      <button
+      <SubmitButton
         type="submit"
         disabled={!isValid}
         className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-8"
       >
         {submitLabel}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

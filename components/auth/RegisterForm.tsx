@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import Link from "next/link";
@@ -21,6 +22,7 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError("");
     setLoading(true);
 
@@ -135,13 +137,13 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
             <p className="mt-1 text-xs text-muted">At least 8 characters</p>
           </div>
 
-          <button
+          <SubmitButton isSubmitting={loading}
             type="submit"
             disabled={loading}
             className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-light disabled:opacity-60"
           >
             {loading ? "Creating account…" : "Register with Email"}
-          </button>
+          </SubmitButton>
         </form>
       </div>
 

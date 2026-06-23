@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import Image from "next/image";
@@ -44,6 +45,7 @@ export function BookCheckoutClient({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
+    if (loading) return;
     if (!transactionId.trim()) {
       addToast("Please enter the transaction / UTR reference.", "error");
       return;
@@ -253,13 +255,13 @@ export function BookCheckoutClient({
 
             {/* No inline error banner. Errors are shown via toast. */}
 
-            <button
+            <SubmitButton isSubmitting={loading}
               type="submit"
               disabled={loading}
               className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-light disabled:opacity-60 transition-colors"
             >
               {loading ? "Submitting…" : "Submit Order for Approval"}
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </div>

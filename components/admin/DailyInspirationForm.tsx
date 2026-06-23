@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import type { DailyInspirationKind } from "@prisma/client";
@@ -164,13 +165,13 @@ export function DailyInspirationForm({ action, submitLabel, item, error }: Daily
         Publish on homepage (latest published entry is shown)
       </label>
 
-      <button
+      <SubmitButton
         type="submit"
         disabled={!isValid}
         className="rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitLabel}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

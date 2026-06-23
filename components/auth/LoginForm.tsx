@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import Link from "next/link";
@@ -23,6 +24,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     trackButtonClick("Sign In", "/login");
     setError("");
     setLoading(true);
@@ -139,13 +141,13 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
             />
           </div>
 
-          <button
+          <SubmitButton isSubmitting={loading}
             type="submit"
             disabled={loading}
             className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-light disabled:opacity-60"
           >
             {loading ? "Signing in…" : "Sign in with Email"}
-          </button>
+          </SubmitButton>
         </form>
       </div>
 

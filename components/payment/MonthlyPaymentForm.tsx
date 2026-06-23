@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import { getPaymentYearOptions } from "@/lib/monthly-payments";
@@ -48,6 +49,7 @@ export function MonthlyPaymentForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError("");
     setLoading(true);
 
@@ -180,13 +182,13 @@ export function MonthlyPaymentForm({
         </p>
       )}
 
-      <button
+      <SubmitButton isSubmitting={loading}
         type="submit"
         disabled={loading}
         className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-light disabled:opacity-60"
       >
         {loading ? "Submitting…" : "Submit monthly fee for verification"}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

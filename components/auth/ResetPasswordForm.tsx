@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import Link from "next/link";
@@ -34,6 +35,7 @@ export function ResetPasswordForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError("");
     setLoading(true);
 
@@ -112,13 +114,13 @@ export function ResetPasswordForm() {
           />
         </div>
 
-        <button
+        <SubmitButton isSubmitting={loading}
           type="submit"
           disabled={loading}
           className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-light disabled:opacity-60"
         >
           {loading ? "Saving…" : "Reset password"}
-        </button>
+        </SubmitButton>
       </form>
 
       <p className="mt-6 text-center text-sm text-muted">

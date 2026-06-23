@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -20,6 +21,7 @@ export function EnrollmentPaymentForm({ courseId }: EnrollmentPaymentFormProps) 
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
     setError("");
     setLoading(true);
 
@@ -111,13 +113,13 @@ export function EnrollmentPaymentForm({ courseId }: EnrollmentPaymentFormProps) 
         </p>
       )}
 
-      <button
+      <SubmitButton isSubmitting={loading}
         type="submit"
         disabled={loading}
         className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-light disabled:opacity-60"
       >
         {loading ? "Submitting…" : "Submit enrollment fee for verification"}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 import type { FatwaQuestion } from "@prisma/client";
 import { HOMEPAGE_FEATURED_FATWA_MAX } from "@/lib/fatwa";
 import { inputClassName, labelClassName } from "@/lib/form";
@@ -56,12 +57,12 @@ export function AnswerFatwaForm({ question, featuredCount, action }: AnswerFatwa
         </span>
       </label>
 
-      <button
+      <SubmitButton
         type="submit"
         className="min-h-11 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
       >
         {isAnswered ? "Update answer" : "Publish answer"}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

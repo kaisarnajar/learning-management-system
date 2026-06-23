@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import type { Occupation } from "@prisma/client";
@@ -392,13 +393,13 @@ export function ProfileForm({
             Cancel
           </button>
         )}
-        <button
+        <SubmitButton
           type="submit"
           disabled={!isValid || pending}
           className="min-h-11 rounded-full bg-primary px-8 py-2.5 text-sm font-semibold text-white hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? "Saving…" : "Save profile"}
-        </button>
+        </SubmitButton>
       </div>
     </form>
   );

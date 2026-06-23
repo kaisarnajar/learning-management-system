@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import type { LibraryItem } from "@prisma/client";
@@ -288,13 +289,13 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
           ID: <code className="rounded bg-background px-1">{item.id}</code>
         </p>
       )}
-      <button
+      <SubmitButton
         type="submit"
         disabled={!isValid}
         className="min-h-11 rounded-md bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitLabel}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import { useActionState, useState } from "react";
@@ -120,13 +121,13 @@ export function RecordExpenseForm({ teachers }: RecordExpenseFormProps) {
         </div>
       </div>
 
-      <button
+      <SubmitButton
         type="submit"
         disabled={pending}
         className="min-h-11 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light disabled:opacity-60"
       >
         {pending ? "Saving…" : "Record expense"}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import Image from "next/image";
@@ -65,6 +66,7 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (loading) return;
     setServerError("");
 
     if (!isValid) return;
@@ -318,13 +320,14 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
         </p>
       )}
 
-      <button
+      <SubmitButton
         type="submit"
         disabled={loading || !isValid}
+        isSubmitting={loading}
         className="min-h-11 rounded-full bg-primary px-8 py-2.5 text-sm font-semibold text-white hover:bg-primary-light disabled:opacity-60 transition-colors"
       >
         {loading ? "Saving…" : submitLabel}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

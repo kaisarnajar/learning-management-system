@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import { useCallback } from "react";
@@ -141,13 +142,13 @@ export function StudentReviewForm({
         homepage (up to six student reviews are shown at a time).
       </p>
 
-      <button
+      <SubmitButton
         type="submit"
         disabled={!isValid}
         className="min-h-11 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitLabel ?? (review ? "Resubmit for approval" : "Submit review")}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

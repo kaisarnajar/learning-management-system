@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import { useCallback } from "react";
@@ -218,13 +219,13 @@ export function PaymentSettingsForm({ settings, action }: PaymentSettingsFormPro
         </div>
       </section>
 
-      <button
+      <SubmitButton
         type="submit"
         disabled={!isValid}
         className="min-h-11 rounded-md bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
       >
         Save payment details
-      </button>
+      </SubmitButton>
     </form>
   );
 }

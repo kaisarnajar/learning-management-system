@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 type ReplyContactInquiryFormProps = {
   inquiry: {
     name: string;
@@ -42,12 +43,12 @@ export function ReplyContactInquiryForm({ inquiry, action }: ReplyContactInquiry
         </p>
       </div>
 
-      <button
+      <SubmitButton
         type="submit"
         className="min-h-11 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-light"
       >
         {isReplied ? "Update reply & resend email" : "Send reply"}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

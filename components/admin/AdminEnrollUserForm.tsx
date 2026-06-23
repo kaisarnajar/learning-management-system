@@ -1,3 +1,4 @@
+import { SubmitButton } from "@/components/shared/SubmitButton";
 "use client";
 
 import { useActionState, useState } from "react";
@@ -121,13 +122,13 @@ export function AdminEnrollUserForm({ courses }: AdminEnrollUserFormProps) {
         </select>
       </div>
 
-      <button
+      <SubmitButton
         type="submit"
         disabled={pending || !canSubmit}
         className="min-h-11 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? "Saving…" : "Add enrollment"}
-      </button>
+      </SubmitButton>
     </form>
   );
 }

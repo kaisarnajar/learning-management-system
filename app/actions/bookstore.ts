@@ -8,6 +8,7 @@ import { bookstoreCheckoutSchema } from "@/lib/validations";
 export async function submitBookOrder(formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) return { error: "Unauthorised. Please log in.", status: 401 };
+  if (!session.user.emailVerified) return { error: "Please verify your email to place a book order.", status: 403 };
 
   const userId = session.user.id;
   const rawItems = formData.get("items");

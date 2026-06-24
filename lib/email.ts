@@ -608,3 +608,52 @@ export async function sendBookOrderRefundedEmail(params: NotificationEmailBasePa
 
   return deliverMail({ to, subject, text, html });
 }
+
+export type VerificationEmailParams = {
+  to: string;
+  verificationUrl: string;
+};
+
+export async function sendVerificationEmail(params: VerificationEmailParams): Promise<EmailSendResult> {
+  const { to, verificationUrl } = params;
+
+  const subject = "Verify your email address — Darse Quran Academy";
+  const text = [
+    "Assalamu Alaikum,",
+    "",
+    "Thank you for registering at Darse Quran Academy.",
+    "",
+    "Please verify your email address by clicking the link below:",
+    verificationUrl,
+    "",
+    "This link will expire in 24 hours.",
+    "",
+    "If you did not create an account, you can safely ignore this email.",
+    "",
+    "Darse Quran Academy",
+  ].join("\n");
+
+  const html = [
+    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
+    "<p>Assalamu Alaikum,</p>",
+    "<p>Thank you for registering at Darse Quran Academy.</p>",
+    "<p>Please verify your email address by clicking the button below:</p>",
+    '<p style="margin: 28px 0;">',
+    `<a href="${verificationUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">`,
+    "Verify Email",
+    "</a></p>",
+    `<p style="font-size: 14px; color: #57534e;">Or copy this link: <a href="${verificationUrl}">${escapeHtml(verificationUrl)}</a></p>`,
+    "<p>This link will expire in 24 hours.</p>",
+    "<p>If you did not create an account, you can safely ignore this email.</p>",
+    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
+    "</div>",
+  ].join("");
+
+  return deliverMail({
+    to,
+    subject,
+    text,
+    html,
+    preview: verificationUrl,
+  });
+}

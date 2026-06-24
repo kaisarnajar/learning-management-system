@@ -2,6 +2,9 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { generateVerificationToken } from "@/lib/tokens";
+import { sendVerificationEmail } from "@/lib/email";
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -34,6 +37,11 @@ export async function POST(request: Request) {
         password: hashedPassword,
       },
     });
+
+    const verificationToken = await generateVerificationToken(email);
+    const origin = new URL(request.url).origin;
+    const verificationUrl = `${origin}/verify-email?token=${verificationToken.token}`;
+    await sendVerificationEmail({ to: email, verificationUrl });
 
     return NextResponse.json({ success: true, role: "USER" });
   } catch (error) {

@@ -102,9 +102,11 @@ function PastOrderCard({ order }: { order: PastOrder }) {
 export function CartPageClient({
   submitted,
   orders,
+  emailVerified,
 }: {
   submitted: boolean;
   orders: PastOrder[];
+  emailVerified: boolean;
 }) {
   const { items, totalCount, updateQuantity, removeItem } = useCart();
   const [selected, setSelected] = useState<Set<string>>(new Set(items.map((i) => i.bookId)));
@@ -249,28 +251,34 @@ export function CartPageClient({
                 Total: <span className="text-primary">{formatPrice(selectedTotal)}</span>
               </p>
             </div>
-            <Link
-              href={
-                selectedItems.length > 0
-                  ? `/profile/cart/checkout?books=${encodeURIComponent(
-                      JSON.stringify(selectedItems.map((i) => ({ bookId: i.bookId, quantity: i.quantity }))),
-                    )}`
-                  : "#"
-              }
-              onClick={() => {
-                if (selectedItems.length > 0) {
-                  trackButtonClick("Checkout", "/cart");
+            {!emailVerified ? (
+              <div className="mt-4 flex min-h-11 items-center justify-center rounded-full border border-warning-text/30 bg-warning-bg px-6 text-sm font-semibold text-warning-text text-center">
+                Verify your email to checkout
+              </div>
+            ) : (
+              <Link
+                href={
+                  selectedItems.length > 0
+                    ? `/profile/cart/checkout?books=${encodeURIComponent(
+                        JSON.stringify(selectedItems.map((i) => ({ bookId: i.bookId, quantity: i.quantity }))),
+                      )}`
+                    : "#"
                 }
-              }}
-              aria-disabled={selectedItems.length === 0}
-              className={`mt-4 flex min-h-11 items-center justify-center rounded-full px-6 text-sm font-semibold text-white transition-colors ${
-                selectedItems.length > 0
-                  ? "bg-primary hover:bg-primary-light"
-                  : "cursor-not-allowed bg-border text-muted"
-              }`}
-            >
-              Buy Selected ({selectedItems.length})
-            </Link>
+                onClick={() => {
+                  if (selectedItems.length > 0) {
+                    trackButtonClick("Checkout", "/cart");
+                  }
+                }}
+                aria-disabled={selectedItems.length === 0}
+                className={`mt-4 flex min-h-11 items-center justify-center rounded-full px-6 text-sm font-semibold text-white transition-colors ${
+                  selectedItems.length > 0
+                    ? "bg-primary hover:bg-primary-light"
+                    : "cursor-not-allowed bg-border"
+                }`}
+              >
+                Proceed to Checkout ({selectedItems.length} {selectedItems.length === 1 ? "item" : "items"})
+              </Link>
+            )}
           </div>
         </div>
       )}

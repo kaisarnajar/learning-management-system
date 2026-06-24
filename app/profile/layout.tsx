@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ProfileNav } from "@/components/profile/ProfileNav";
 import { PageHeader } from "@/components/site/PageHeader";
 import { Section } from "@/components/site/Section";
+import { VerificationBanner } from "@/components/auth/VerificationBanner";
 import { requireUser } from "@/lib/auth-actions";
 import { getUnreadNotificationCount } from "@/lib/notifications";
 import { getUserProfile } from "@/lib/profile";
@@ -39,6 +40,7 @@ export default async function ProfileLayout({ children }: { children: React.Reac
     <Section>
       <PageHeader title="My Profile" description={description} />
       <div className="mx-auto mt-8 max-w-5xl space-y-8">
+        {!session.user.emailVerified && <VerificationBanner />}
         <ProfileNav unreadCount={unreadCount} />
         <div>{children}</div>
       </div>

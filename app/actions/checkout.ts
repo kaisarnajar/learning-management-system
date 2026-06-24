@@ -18,6 +18,9 @@ export async function submitCheckout(courseId: string) {
   if (!session?.user?.id) {
     return { error: "Please sign in to enroll.", status: 401 };
   }
+  if (!session.user.emailVerified) {
+    return { error: "Please verify your email to enroll.", status: 403 };
+  }
 
   if (typeof courseId !== "string") {
     return { error: "Invalid course.", status: 400 };

@@ -20,6 +20,7 @@ import { AWAITING_ENROLLMENT_FEE } from "@/lib/enrollment-status";
 export async function submitMonthlyPayment(formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) return { error: "Please sign in.", status: 401 };
+  if (!session.user.emailVerified) return { error: "Please verify your email to submit payments.", status: 403 };
   if (!(await isUpiConfigured())) return { error: "Online payments are not configured yet. Please contact the academy.", status: 503 };
 
   try {
@@ -93,6 +94,7 @@ export async function submitMonthlyPayment(formData: FormData) {
 export async function submitEnrollmentPayment(formData: FormData) {
   const session = await auth();
   if (!session?.user?.id) return { error: "Please sign in.", status: 401 };
+  if (!session.user.emailVerified) return { error: "Please verify your email to submit payments.", status: 403 };
   if (!(await isUpiConfigured())) return { error: "Online payments are not configured yet. Please contact the academy.", status: 503 };
 
   try {

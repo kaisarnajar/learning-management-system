@@ -186,6 +186,17 @@ export function CourseEnrollButton({
     );
   }
 
+  if (!session?.user?.emailVerified) {
+    return (
+      <Link
+        href="/profile"
+        className="mt-4 flex min-h-11 w-full items-center justify-center rounded-full border border-warning-text/30 bg-warning-bg px-4 py-3 text-sm font-medium text-warning-text transition-colors hover:bg-warning-bg"
+      >
+        Verify your email to enroll
+      </Link>
+    );
+  }
+
   return (
     <div className="mt-4">
       {error && (

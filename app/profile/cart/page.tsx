@@ -18,5 +18,5 @@ export default async function CartPage({
 
   const orders = await getBookOrdersForUser(session.user.id);
 
-  return <CartPageClient submitted={params.submitted === "1"} orders={orders} />;
+  return <CartPageClient submitted={params.submitted === "1"} orders={orders} emailVerified={!!session.user.emailVerified} />;
 }

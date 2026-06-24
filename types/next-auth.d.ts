@@ -6,6 +6,7 @@ declare module "next-auth" {
       id: string;
       role?: "USER" | "ADMIN" | "TEACHER" | "DEVELOPER";
       teacherId?: string;
+      emailVerified?: Date | null;
     } & DefaultSession["user"];
   }
 }
@@ -15,5 +16,6 @@ declare module "next-auth/jwt" {
     id?: string;
     role?: "USER" | "ADMIN" | "TEACHER" | "DEVELOPER";
     teacherId?: string;
+    emailVerified?: string | null;
   }
 }

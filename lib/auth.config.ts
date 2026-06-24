@@ -38,6 +38,11 @@ export const authConfig = {
         if (token.teacherId) {
           session.user.teacherId = token.teacherId as string;
         }
+        if (token.emailVerified) {
+          session.user.emailVerified = new Date(token.emailVerified as string);
+        } else {
+          session.user.emailVerified = null;
+        }
       }
       return session;
     },

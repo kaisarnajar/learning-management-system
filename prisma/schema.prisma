@@ -237,20 +237,33 @@ model CourseAnnouncement {
 }
 
 model SiteAnnouncement {
-  id             String   @id @default(cuid())
+  id             String                  @id @default(cuid())
   title          String
   body           String
   eventDate      String?
   location       String?
-  showOnHomepage Boolean  @default(false)
-  published      Boolean  @default(true)
+  showOnHomepage Boolean                 @default(false)
+  published      Boolean                 @default(true)
   createdById    String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  createdBy      User?    @relation("SiteAnnouncementAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+  createdBy      User?                   @relation("SiteAnnouncementAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  images         SiteAnnouncementImage[]
 
   @@index([published, showOnHomepage])
   @@index([published, createdAt])
+}
+
+model SiteAnnouncementImage {
+  id                 String           @id @default(cuid())
+  siteAnnouncementId String
+  imagePath          String
+  caption            String?
+  sortOrder          Int              @default(0)
+  createdAt          DateTime         @default(now())
+  siteAnnouncement   SiteAnnouncement @relation(fields: [siteAnnouncementId], references: [id], onDelete: Cascade)
+
+  @@index([siteAnnouncementId, sortOrder])
 }
 
 model BlogPost {

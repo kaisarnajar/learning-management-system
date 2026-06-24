@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Section } from "@/components/site/Section";
 import { formatSiteAnnouncementDate, getSiteAnnouncementById } from "@/lib/site-announcements";
@@ -50,6 +51,29 @@ export default async function AnnouncementDetailPage({ params }: PageProps) {
         <div className="mt-8 whitespace-pre-wrap text-base leading-relaxed text-foreground">
           {announcement.body}
         </div>
+
+        {announcement.images && announcement.images.length > 0 && (
+          <div className="mt-12 space-y-8">
+            {announcement.images.map((img) => (
+              <figure key={img.id} className="mx-auto max-w-2xl">
+                <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-background shadow-sm">
+                  <Image
+                    src={img.imagePath}
+                    alt={img.caption ?? announcement.title}
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 768px) 100vw, 768px"
+                  />
+                </div>
+                {img.caption && (
+                  <figcaption className="mt-3 text-center text-sm text-muted">
+                    {img.caption}
+                  </figcaption>
+                )}
+              </figure>
+            ))}
+          </div>
+        )}
       </article>
     </Section>
   );

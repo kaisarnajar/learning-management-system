@@ -14,6 +14,7 @@ export const HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX = 4;
 
 export type SiteAnnouncementPublic = SiteAnnouncement & {
   createdBy: { name: string | null } | null;
+  images: { id: string; imagePath: string; caption: string | null }[];
 };
 
 export function formatSiteAnnouncementDate(date: Date): string {
@@ -26,6 +27,7 @@ export function formatSiteAnnouncementDate(date: Date): string {
 
 const siteAnnouncementPublicInclude = {
   createdBy: { select: { name: true } },
+  images: { select: { id: true, imagePath: true, caption: true }, orderBy: { sortOrder: 'asc' as const } },
 } as const;
 
 export async function getPublishedSiteAnnouncementsPaginated(
@@ -56,6 +58,7 @@ export async function getHomepageSiteAnnouncements(
       take: limit,
       include: {
         createdBy: { select: { name: true } },
+        images: { select: { id: true, imagePath: true, caption: true }, orderBy: { sortOrder: 'asc' } },
       },
     }), "Database operation failed");
 }
@@ -114,6 +117,7 @@ export async function getSiteAnnouncementById(id: string) {
       where: { id, published: true },
       include: {
         createdBy: { select: { name: true } },
+        images: { select: { id: true, imagePath: true, caption: true }, orderBy: { sortOrder: 'asc' } },
       },
     }), "Database operation failed");
 }
@@ -131,6 +135,7 @@ export async function getAllSiteAnnouncementsForAdminPaginated(
       orderBy: { createdAt: "desc" },
       include: {
         createdBy: { select: { name: true, email: true } },
+        images: { select: { id: true, imagePath: true, caption: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } },
       },
       ...paginationArgs(safePage, pageSize),
     }), "Database operation failed");
@@ -142,6 +147,7 @@ export async function getSiteAnnouncementForAdmin(id: string) {
       where: { id },
       include: {
         createdBy: { select: { name: true, email: true } },
+        images: { select: { id: true, imagePath: true, caption: true, sortOrder: true }, orderBy: { sortOrder: 'asc' } },
       },
     }), "Database operation failed");
 }

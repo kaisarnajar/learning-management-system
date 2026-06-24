@@ -10,6 +10,12 @@ import { notifyAllStudentsOfSiteAnnouncement } from "@/lib/notifications";
 import { enforceHomepageAnnouncementLimit, resolveAnnouncementFeaturedUpdate } from "@/lib/site-announcements";
 import { siteAnnouncementSchema } from "@/lib/validations";
 import { withDbErrorHandling } from "@/lib/db-error";
+import {
+  addImagesToAnnouncement,
+  getRemoveAnnouncementImageIds,
+  removeAnnouncementImages,
+} from "@/lib/site-announcement-mutations";
+import { deleteAnnouncementImageFile } from "@/lib/site-announcement-upload";
 
 function adminListPath(query = "") {
   return `/admin/announcements${query}`;
@@ -85,6 +91,12 @@ export async function createSiteAnnouncement(formData: FormData) {
       },
     });
 
+    const imageResult = await addImagesToAnnouncement(announcement.id, formData, 0);
+    if (imageResult.error) {
+      await prisma.siteAnnouncement.delete({ where: { id: announcement.id } });
+      redirect(`${adminListPath("/new")}?error=${encodeURIComponent(imageResult.error)}`);
+    }
+
     if (parsed.data.published) {
       await notifyAllStudentsOfSiteAnnouncement({
         announcementId: announcement.id,
@@ -112,7 +124,10 @@ export async function updateSiteAnnouncement(id: string, formData: FormData) {
 
   let existing;
   try {
-    existing = await prisma.siteAnnouncement.findUnique({ where: { id } });
+    existing = await prisma.siteAnnouncement.findUnique({
+      where: { id },
+      include: { images: true },
+    });
   } catch (error) {
     if (isRedirectError(error)) { throw error; }
     console.error("Database error fetching site announcement:", error);
@@ -120,6 +135,17 @@ export async function updateSiteAnnouncement(id: string, formData: FormData) {
   }
   if (!existing) {
     redirect(`${adminListPath()}?error=notfound`);
+  }
+
+  const removeIds = getRemoveAnnouncementImageIds(formData);
+  await removeAnnouncementImages(removeIds, id);
+
+  const remainingCount =
+    existing.images.length - existing.images.filter((img) => removeIds.includes(img.id)).length;
+
+  const imageResult = await addImagesToAnnouncement(id, formData, remainingCount);
+  if (imageResult.error) {
+    redirect(`${adminListPath(`/${id}/edit`)}?error=${encodeURIComponent(imageResult.error)}`);
   }
 
   const featured = await resolveAnnouncementFeaturedUpdate({
@@ -200,12 +226,18 @@ export async function toggleSiteAnnouncementHomepage(id: string) {
 export async function deleteSiteAnnouncement(id: string) {
   await requireAdmin();
 
-  const existing = await withDbErrorHandling(() => prisma.siteAnnouncement.findUnique({ where: { id } }), "Database operation failed");
+  const existing = await withDbErrorHandling(
+    () => prisma.siteAnnouncement.findUnique({ where: { id }, include: { images: true } }),
+    "Database operation failed"
+  );
   if (!existing) {
     redirect(`${adminListPath()}?error=notfound`);
   }
 
   try {
+    for (const img of existing.images) {
+      await deleteAnnouncementImageFile(img.imagePath);
+    }
     await prisma.siteAnnouncement.delete({ where: { id } });
   } catch (error) {
     if (isRedirectError(error)) { throw error; }

@@ -2,7 +2,8 @@
 import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import type { SiteAnnouncement } from "@prisma/client";
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
+import Image from "next/image";
 import { DateInputField } from "@/components/form/DateInputField";
 import {
   type SiteAnnouncementFormValues,
@@ -12,12 +13,15 @@ import { getFormDateInputValue } from "@/lib/form-date";
 import { labelClassName } from "@/lib/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
 import { HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX } from "@/lib/site-announcements";
+import { MAX_ANNOUNCEMENT_IMAGES } from "@/lib/site-announcement-upload";
 import { useZodForm } from "@/lib/use-zod-form";
 
 type SiteAnnouncementFormProps = {
   action: (formData: FormData) => Promise<void>;
   submitLabel: string;
-  announcement?: SiteAnnouncement;
+  announcement?: SiteAnnouncement & {
+    images?: { id: string; imagePath: string; caption: string | null; sortOrder: number }[];
+  };
   featuredCount: number;
   error?: string;
 };
@@ -42,6 +46,17 @@ export function SiteAnnouncementForm({
   const featuredSlotsFull = featuredCount >= HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX;
   const canFeatureThisAnnouncement = isCurrentlyFeatured || !featuredSlotsFull;
   const displayedFeaturedCount = Math.min(featuredCount, HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX);
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [hasFiles, setHasFiles] = useState(false);
+  const slotsLeft = MAX_ANNOUNCEMENT_IMAGES - (announcement?.images?.length ?? 0);
+
+  const handleClearFiles = () => {
+    if (fileRef.current) {
+      fileRef.current.value = "";
+    }
+    setHasFiles(false);
+  };
 
   const validate = useCallback(
     (values: SiteAnnouncementFormValues) => validateSiteAnnouncementForm(values),
@@ -149,6 +164,72 @@ export function SiteAnnouncementForm({
             {errors.body}
           </p>
         )}
+      </div>
+
+      {announcement && announcement.images && announcement.images.length > 0 && (
+        <div>
+          <p className={labelClassName}>Screenshots & photos</p>
+          <ul className="mt-2 space-y-4">
+            {announcement.images.map((img) => (
+              <li
+                key={img.id}
+                className="overflow-hidden rounded-lg border border-border bg-background/50"
+              >
+                <div className="relative aspect-video max-h-48 w-full bg-background">
+                  <Image
+                    src={img.imagePath}
+                    alt={img.caption ?? ""}
+                    fill
+                    className="object-contain"
+                    sizes="(max-width: 672px) 100vw, 672px"
+                  />
+                </div>
+                <label className="flex items-center gap-2 px-4 py-3 text-sm text-foreground">
+                  <input
+                    type="checkbox"
+                    name="removeImage"
+                    value={img.id}
+                    className="rounded border-border"
+                  />
+                  Remove this image
+                </label>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div>
+        <div className="flex items-center justify-between">
+          <label htmlFor="images" className={labelClassName}>
+            {announcement ? "Add more images" : "Screenshots & photos (optional)"}
+          </label>
+          {hasFiles && (
+            <button
+              type="button"
+              onClick={handleClearFiles}
+              className="text-xs font-medium text-destructive-text hover:underline"
+            >
+              Clear selection
+            </button>
+          )}
+        </div>
+        <input
+          ref={fileRef}
+          id="images"
+          name="images"
+          type="file"
+          multiple
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={(e) => setHasFiles((e.target.files?.length ?? 0) > 0)}
+          className="mt-1 block w-full text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-primary"
+        />
+        <p className="mt-1.5 text-xs text-muted">
+          JPEG, PNG, WebP, or GIF — up to 5 MB each.{" "}
+          {announcement
+            ? `You can add ${slotsLeft} more image${slotsLeft === 1 ? "" : "s"} (max ${MAX_ANNOUNCEMENT_IMAGES} total).`
+            : `Up to ${MAX_ANNOUNCEMENT_IMAGES} images per announcement.`}
+        </p>
       </div>
 
       <div className="space-y-3 rounded-lg border border-border bg-background/40 px-4 py-4">

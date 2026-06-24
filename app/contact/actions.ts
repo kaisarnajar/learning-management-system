@@ -35,7 +35,7 @@ export async function submitContactInquiry(
       userId: session?.user?.id ?? null,
       name,
       email,
-      phone: normalizeContactPhone(parsed.data.phone),
+      phone: normalizeContactPhone(parsed.data.phone ?? ""),
       message: parsed.data.message,
     },
   });

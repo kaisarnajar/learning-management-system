@@ -119,13 +119,12 @@ export function ContactForm({ defaultName = "", defaultEmail = "", isLoggedIn = 
 
       <div>
         <label htmlFor="phone" className={labelClassName}>
-          Phone / WhatsApp <span className="text-destructive-text">*</span>
+          Phone / WhatsApp <span className="font-normal text-muted">(optional)</span>
         </label>
         <input
           id="phone"
           name="phone"
           type="tel"
-          required
           inputMode="tel"
           value={values.phone}
           onChange={(e) => updateField("phone", e.target.value)}

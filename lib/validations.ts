@@ -321,9 +321,11 @@ export const contactInquirySchema = z.object({
   phone: z
     .string()
     .trim()
-    .min(7, "Enter a valid phone number.")
     .max(20, "Phone number is too long.")
+    .optional()
+    .or(z.literal(""))
     .refine((value) => {
+      if (!value) return true;
       const digits = value.replace(/\D/g, "");
       return digits.length >= 7 && digits.length <= 15;
     }, "Enter a valid phone number with 7 to 15 digits."),

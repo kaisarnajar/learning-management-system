@@ -17,7 +17,7 @@ export function renderCertificateToHtml(data: {
 }) {
   const isCompletion = data.certificateType === "COMPLETION";
   const title = isCompletion ? "Certificate of Completion" : "Certificate of Appreciation";
-  const gradeText = (isCompletion && data.certificateGrade != null) ? `, and has obtained <strong class="text-[#0f3d2e]">${data.certificateGrade}/10 Grade</strong>` : "";
+  const gradeText = (isCompletion && data.certificateGrade != null) ? ` and has obtained a Grade of <strong class="text-[#0f3d2e]">${data.certificateGrade}/10</strong>` : "";
 
   return `
 <div
@@ -72,12 +72,12 @@ export function renderCertificateToHtml(data: {
   <!-- Body -->
   <div class="px-16 mt-4 text-center relative z-10 flex flex-col items-center justify-center">
     
-    <p class="text-lg text-gray-700">
+    <p class="text-[20px] text-gray-700">
       This certificate is proudly presented to
     </p>
 
     <h3
-      class="text-[40px] font-bold mt-2 text-[#0f3d2e] leading-tight max-w-[900px] mx-auto"
+      class="text-[44px] font-bold mt-2 text-[#0f3d2e] leading-tight max-w-[900px] mx-auto"
       style="font-family: 'Georgia', 'Cormorant Garamond', serif;"
     >
       ${data.studentName}
@@ -85,19 +85,19 @@ export function renderCertificateToHtml(data: {
 
     <div class="w-80 h-[2px] bg-[#d4af37] mx-auto my-3"></div>
 
-    <p class="text-[20px] text-gray-700 leading-snug max-w-[950px] mx-auto">
+    <p class="text-[22px] text-gray-700 leading-snug max-w-[950px] mx-auto">
       residing at
       <strong>${data.address}</strong>,
-      in recognition and appreciation of their dedication,
-      commitment, and sincere participation in Quranic learning
+      in recognition of their commitment, diligence,
+      and outstanding efforts in pursuing Islamic education
       at ${data.academyName}.
     </p>
 
-    <p class="text-[20px] text-gray-700 leading-snug max-w-[950px] mx-auto mt-3">
-      The student has shown admirable effort, discipline,
-      and enthusiasm in the study of
-      <strong>${data.courseName}</strong>${gradeText},
-      reflecting excellent character and devotion
+    <p class="text-[22px] text-gray-700 leading-snug max-w-[950px] mx-auto mt-3">
+      The student has demonstrated admirable effort, discipline,
+      and enthusiasm throughout the successful completion of the
+      <strong>${data.courseName}</strong> course${gradeText},
+      reflecting excellent character, academic achievement, and devotion
       to Islamic learning.
     </p>
   </div>

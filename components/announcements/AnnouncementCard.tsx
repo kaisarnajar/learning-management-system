@@ -41,7 +41,7 @@ export function AnnouncementCard({
         {edited && <span className="text-xs text-muted">Edited</span>}
       </div>
       <h3 className="mt-3 font-serif text-lg font-semibold text-foreground">{title}</h3>
-      <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{body}</p>
+      <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground line-clamp-4">{body}</p>
       {attachmentPath && attachmentName && (
         <AnnouncementAttachment attachmentPath={attachmentPath} attachmentName={attachmentName} />
       )}

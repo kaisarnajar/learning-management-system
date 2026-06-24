@@ -33,12 +33,12 @@ export function BlogPostCard({ post }: BlogPostCardProps) {
           </TrackedLink>
         </h2>
         <p className="mt-1 text-xs text-muted">By {authorName}</p>
-        <p className="mt-2 flex-1 text-sm leading-relaxed text-muted">{summary}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted">{summary}</p>
         <TrackedLink
           href={`/blog/${post.id}`}
           eventName="Read Article"
           pageName="/blog"
-          className="mt-4 text-sm font-semibold text-primary hover:underline"
+          className="mt-auto pt-4 text-sm font-semibold text-primary hover:underline"
         >
           Read more →
         </TrackedLink>

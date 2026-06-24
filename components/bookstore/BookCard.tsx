@@ -12,7 +12,7 @@ function formatPrice(paise: number): string {
 
 export function BookCard({ book }: { book: BookWithDetails }) {
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-md">
+    <article className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-md">
       <TrackedLink
         href={`/bookstore/${book.id}`}
         eventName="View Book"
@@ -70,7 +70,7 @@ export function BookCard({ book }: { book: BookWithDetails }) {
           )}
         </div>
 
-        <div className="mt-2 space-y-2">
+        <div className="mt-auto pt-4 space-y-2">
           <TrackedLink
             href={`/bookstore/${book.id}`}
             eventName="View Book"

@@ -24,20 +24,22 @@ export function SiteAnnouncementCard({ announcement, compact = false }: SiteAnno
         >
           {announcement.title}
         </h3>
-        <p className={`mt-3 flex-1 text-muted ${compact ? "line-clamp-3 text-sm" : "line-clamp-4 text-sm leading-relaxed"}`}>
+        <p className={`mt-3 text-muted ${compact ? "line-clamp-3 text-sm" : "line-clamp-4 text-sm leading-relaxed"}`}>
           {announcement.body}
         </p>
-        <p className="mt-4 text-xs text-muted">
-          Posted {formatSiteAnnouncementDate(announcement.createdAt)}
-        </p>
-        <TrackedLink
-          href={`/announcements/${announcement.id}`}
-          eventName="Read Announcement"
-          pageName="/announcements"
-          className="mt-4 inline-flex text-sm font-semibold text-primary hover:underline"
-        >
-          Read more
-        </TrackedLink>
+        <div className="mt-auto pt-4">
+          <p className="text-xs text-muted">
+            Posted {formatSiteAnnouncementDate(announcement.createdAt)}
+          </p>
+          <TrackedLink
+            href={`/announcements/${announcement.id}`}
+            eventName="Read Announcement"
+            pageName="/announcements"
+            className="mt-4 inline-flex text-sm font-semibold text-primary hover:underline"
+          >
+            Read more
+          </TrackedLink>
+        </div>
       </div>
     </article>
   );

@@ -34,7 +34,7 @@ export function TeacherCard({ teacher }: TeacherCardProps) {
       <h3 className="mt-4 text-base font-semibold text-foreground sm:text-lg">{teacher.name}</h3>
       <p className="mt-1 text-sm font-medium text-gold">{teacher.specialization}</p>
       <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted">{teacher.bio}</p>
-      <span className="mt-4 text-xs font-semibold uppercase tracking-wide text-gold">View profile →</span>
+      <span className="mt-auto pt-4 text-xs font-semibold uppercase tracking-wide text-gold">View profile →</span>
     </TrackedLink>
   );
 }

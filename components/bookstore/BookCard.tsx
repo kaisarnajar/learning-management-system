@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
 import { AddToCartButton } from "@/components/bookstore/AddToCartButton";
 import type { BookWithDetails } from "@/lib/bookstore";
@@ -12,7 +13,12 @@ function formatPrice(paise: number): string {
 export function BookCard({ book }: { book: BookWithDetails }) {
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-sm transition-shadow hover:shadow-md">
-      <div className="relative aspect-[4/5] w-full overflow-hidden bg-accent-muted/30">
+      <TrackedLink
+        href={`/bookstore/${book.id}`}
+        eventName="View Book"
+        pageName="/bookstore"
+        className="relative block aspect-[4/5] w-full overflow-hidden bg-accent-muted/30"
+      >
         {book.imagePath ? (
           <Image
             src={book.imagePath}
@@ -44,12 +50,14 @@ export function BookCard({ book }: { book: BookWithDetails }) {
         <div className="absolute right-2 top-2">
           <BookStatusBadge status={book.status} />
         </div>
-      </div>
+      </TrackedLink>
 
       <div className="flex flex-1 flex-col gap-3 p-3.5">
         <div className="flex-1">
           <h2 className="font-serif text-base font-semibold leading-tight text-foreground line-clamp-2">
-            {book.title}
+            <TrackedLink href={`/bookstore/${book.id}`} eventName="View Book" pageName="/bookstore" className="hover:text-gold">
+              {book.title}
+            </TrackedLink>
           </h2>
           <p className="mt-0.5 text-xs text-muted">{book.author}</p>
           <p className="mt-1.5 text-xs text-muted line-clamp-2">{book.description}</p>
@@ -62,15 +70,25 @@ export function BookCard({ book }: { book: BookWithDetails }) {
           )}
         </div>
 
-        <AddToCartButton
-          bookId={book.id}
-          title={book.title}
-          author={book.author}
-          priceInrPaise={book.priceInrPaise}
-          mrpInrPaise={book.mrpInrPaise}
-          imagePath={book.imagePath}
-          status={book.status}
-        />
+        <div className="mt-2 space-y-2">
+          <TrackedLink
+            href={`/bookstore/${book.id}`}
+            eventName="View Book"
+            pageName="/bookstore"
+            className="btn-gold-outline inline-flex w-full items-center justify-center py-2.5 text-xs"
+          >
+            Book Details
+          </TrackedLink>
+          <AddToCartButton
+            bookId={book.id}
+            title={book.title}
+            author={book.author}
+            priceInrPaise={book.priceInrPaise}
+            mrpInrPaise={book.mrpInrPaise}
+            imagePath={book.imagePath}
+            status={book.status}
+          />
+        </div>
       </div>
     </article>
   );

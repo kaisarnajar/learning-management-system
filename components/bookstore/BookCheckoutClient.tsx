@@ -13,6 +13,7 @@ type CheckoutItem = {
   title: string;
   author: string;
   priceInrPaise: number;
+  mrpInrPaise?: number;
   imagePath: string | null;
   quantity: number;
 };
@@ -125,7 +126,12 @@ export function BookCheckoutClient({
                     <p className="text-xs text-muted">{item.author}</p>
                     <p className="mt-0.5 text-xs text-muted">Qty: {item.quantity}</p>
                   </div>
-                  <p className="font-semibold text-foreground">{formatPrice(item.priceInrPaise * item.quantity)}</p>
+                  <div className="text-right">
+                    <p className="font-semibold text-foreground">{formatPrice(item.priceInrPaise * item.quantity)}</p>
+                    {item.mrpInrPaise && item.mrpInrPaise > item.priceInrPaise && (
+                      <p className="text-xs text-muted line-through">{formatPrice(item.mrpInrPaise * item.quantity)}</p>
+                    )}
+                  </div>
                 </div>
               ))}
               <div className="flex items-center justify-between p-4 bg-background/50">

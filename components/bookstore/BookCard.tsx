@@ -55,8 +55,11 @@ export function BookCard({ book }: { book: BookWithDetails }) {
           <p className="mt-1.5 text-xs text-muted line-clamp-2">{book.description}</p>
         </div>
 
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex items-baseline gap-2">
           <span className="text-base font-bold text-primary">{formatPrice(book.priceInrPaise)}</span>
+          {book.mrpInrPaise > book.priceInrPaise && (
+            <span className="text-sm text-muted line-through">{formatPrice(book.mrpInrPaise)}</span>
+          )}
         </div>
 
         <AddToCartButton
@@ -64,6 +67,7 @@ export function BookCard({ book }: { book: BookWithDetails }) {
           title={book.title}
           author={book.author}
           priceInrPaise={book.priceInrPaise}
+          mrpInrPaise={book.mrpInrPaise}
           imagePath={book.imagePath}
           status={book.status}
         />

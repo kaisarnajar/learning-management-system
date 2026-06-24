@@ -39,13 +39,14 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
       author: book?.author ?? "",
       description: book?.description ?? "",
       priceInr: book ? String(book.priceInrPaise / 100) : "",
+      mrpInr: book && book.mrpInrPaise > 0 ? String(book.mrpInrPaise / 100) : "",
       purchasePriceInr: book ? String(book.purchasePriceInrPaise / 100) : "",
       inventoryPurchased: book ? String(book.inventoryPurchased) : "",
       status: (book?.status as BookFormValues["status"]) ?? "AVAILABLE",
       published: book?.published ?? true,
       featuredOnHomepage: book?.featuredOnHomepage ?? false,
     },
-    fields: ["title", "author", "description", "priceInr", "purchasePriceInr", "inventoryPurchased", "status", "published", "featuredOnHomepage"],
+    fields: ["title", "author", "description", "priceInr", "mrpInr", "purchasePriceInr", "inventoryPurchased", "status", "published", "featuredOnHomepage"],
     validate,
   });
 

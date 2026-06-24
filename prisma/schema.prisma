@@ -94,34 +94,34 @@ enum BookOrderStatus {
 }
 
 model User {
-  id            String       @id @default(cuid())
-  name          String?
-  email         String       @unique
-  fatherName    String?
-  dateOfBirth   DateTime?
-  occupation    Occupation?
-  address       String?
-  whatsapp      String?
-  emailVerified DateTime?
-  image         String?
-  password      String?
-  accounts      Account[]
-  sessions      Session[]
+  id                       String                    @id @default(cuid())
+  name                     String?
+  email                    String                    @unique
+  fatherName               String?
+  dateOfBirth              DateTime?
+  occupation               Occupation?
+  address                  String?
+  whatsapp                 String?
+  emailVerified            DateTime?
+  image                    String?
+  password                 String?
+  accounts                 Account[]
+  sessions                 Session[]
   enrollments              Enrollment[]
   paymentRecords           PaymentRecord[]
   coursePaymentSubmissions CoursePaymentSubmission[]
-  fatwaQuestions     FatwaQuestion[]
-  fatwaAnswers       FatwaQuestion[] @relation("FatwaAnsweredBy")
-  contactInquiries   ContactInquiry[]
-  contactReplies     ContactInquiry[] @relation("ContactInquiryRepliedBy")
-  siteAnnouncements  SiteAnnouncement[] @relation("SiteAnnouncementAuthor")
-  blogPosts          BlogPost[]         @relation("BlogPostAuthor")
-  dailyInspirations  DailyInspiration[] @relation("DailyInspirationAuthor")
-  studentReviews       StudentReview[]
-  studentNotifications StudentNotification[]
-  bookOrders           BookOrder[]
-  createdAt            DateTime        @default(now())
-  updatedAt            DateTime        @updatedAt
+  fatwaQuestions           FatwaQuestion[]
+  fatwaAnswers             FatwaQuestion[]           @relation("FatwaAnsweredBy")
+  contactInquiries         ContactInquiry[]
+  contactReplies           ContactInquiry[]          @relation("ContactInquiryRepliedBy")
+  siteAnnouncements        SiteAnnouncement[]        @relation("SiteAnnouncementAuthor")
+  blogPosts                BlogPost[]                @relation("BlogPostAuthor")
+  dailyInspirations        DailyInspiration[]        @relation("DailyInspirationAuthor")
+  studentReviews           StudentReview[]
+  studentNotifications     StudentNotification[]
+  bookOrders               BookOrder[]
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
 }
 
 model Account {
@@ -136,7 +136,7 @@ model Account {
   scope             String?
   id_token          String?
   session_state     String?
-  user              User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([provider, providerAccountId])
   @@index([userId])
@@ -159,7 +159,9 @@ model VerificationToken {
   @@id([identifier, token])
 }
 
-/** One-time tokens for email password reset (hashed at rest). */
+/**
+ * One-time tokens for email password reset (hashed at rest).
+ */
 model PasswordResetToken {
   id        String   @id @default(cuid())
   email     String
@@ -171,40 +173,40 @@ model PasswordResetToken {
 }
 
 model Course {
-  id            String   @id
-  title         String
-  description   String
-  startDate     String
-  duration      String
-  level         String
-  category      String
-  priceInrPaise       Int
-  monthlyFeeInrPaise  Int
-  teacherId           String?
-  status              CourseStatus @default(PUBLISHED)
-  featuredOnHomepage  Boolean      @default(false)
-  featuredAt          DateTime?
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-  teacher         Teacher?              @relation(fields: [teacherId], references: [id], onDelete: SetNull)
-  paymentRecords  PaymentRecord[]
-  announcements   CourseAnnouncement[]
+  id                 String               @id
+  title              String
+  description        String
+  startDate          String
+  duration           String
+  level              String
+  category           String
+  priceInrPaise      Int
+  monthlyFeeInrPaise Int
+  teacherId          String?
+  status             CourseStatus         @default(PUBLISHED)
+  featuredOnHomepage Boolean              @default(false)
+  featuredAt         DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  teacher            Teacher?             @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  paymentRecords     PaymentRecord[]
+  announcements      CourseAnnouncement[]
 
   @@index([featuredOnHomepage, featuredAt])
   @@index([teacherId])
 }
 
 model Teacher {
-  id             String   @id
+  id             String               @id
   name           String
-  email          String?  @unique
+  email          String?              @unique
   specialization String
   bio            String
   initials       String
   imageUrl       String?
-  published      Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  published      Boolean              @default(true)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
   courses        Course[]
   announcements  CourseAnnouncement[]
   expenses       Expense[]
@@ -252,19 +254,19 @@ model SiteAnnouncement {
 }
 
 model BlogPost {
-  id             String             @id @default(cuid())
-  title          String
-  excerpt        String?
-  body           String
-  published      Boolean            @default(false)
-  approvalStatus BlogApprovalStatus @default(APPROVED)
+  id                 String             @id @default(cuid())
+  title              String
+  excerpt            String?
+  body               String
+  published          Boolean            @default(false)
+  approvalStatus     BlogApprovalStatus @default(APPROVED)
   featuredOnHomepage Boolean            @default(false)
   featuredAt         DateTime?
-  createdById    String?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  createdBy      User?              @relation("BlogPostAuthor", fields: [createdById], references: [id], onDelete: SetNull)
-  images         BlogImage[]
+  createdById        String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  createdBy          User?              @relation("BlogPostAuthor", fields: [createdById], references: [id], onDelete: SetNull)
+  images             BlogImage[]
 
   @@index([published, approvalStatus, createdAt])
   @@index([approvalStatus, createdAt])
@@ -299,18 +301,18 @@ model DailyInspiration {
 }
 
 model StudentReview {
-  id                 String               @id @default(cuid())
+  id                 String              @id @default(cuid())
   userId             String
   quote              String
   course             String?
   location           String?
-  rating             Int                  @default(5)
-  status             StudentReviewStatus  @default(PENDING)
-  featuredOnHomepage Boolean              @default(false)
+  rating             Int                 @default(5)
+  status             StudentReviewStatus @default(PENDING)
+  featuredOnHomepage Boolean             @default(false)
   featuredAt         DateTime?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  user               User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
   @@index([featuredOnHomepage, featuredAt])
@@ -318,60 +320,60 @@ model StudentReview {
 }
 
 model LibraryItem {
-  id        String   @id
-  title     String
-  author    String
-  topic     String
-  level     String
-  language  String
-  pdfUrl              String?
-  imagePath           String?
-  published           Boolean  @default(true)
-  featuredOnHomepage  Boolean  @default(false)
-  featuredAt          DateTime?
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  id                 String    @id
+  title              String
+  author             String
+  topic              String
+  level              String
+  language           String
+  pdfUrl             String?
+  imagePath          String?
+  published          Boolean   @default(true)
+  featuredOnHomepage Boolean   @default(false)
+  featuredAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
 
   @@index([featuredOnHomepage, featuredAt])
 }
 
 model Enrollment {
-  id               String   @id @default(cuid())
-  userId           String
-  courseId         String
-  status           String   @default("pending_approval")
-  certificateNumber String? @unique
+  id                     String               @id @default(cuid())
+  userId                 String
+  courseId               String
+  status                 String               @default("pending_approval")
+  certificateNumber      String?              @unique
   certificateGeneratedAt DateTime?
   certificateType        String?
   certificateGrade       Int?
-  completedAt               DateTime?
-  certificateEmailSentAt    DateTime?
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  announcements    CourseAnnouncement[]
+  completedAt            DateTime?
+  certificateEmailSentAt DateTime?
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  user                   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  announcements          CourseAnnouncement[]
 
   @@unique([userId, courseId])
   @@index([courseId])
 }
 
 model FatwaQuestion {
-  id           String    @id @default(cuid())
-  userId       String?
-  askerName    String
-  askerEmail   String
-  category     String
-  title        String
-  question     String
-  answer               String?
-  answeredAt           DateTime?
-  answeredById         String?
-  featuredOnHomepage   Boolean   @default(false)
-  featuredAt           DateTime?
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-  user         User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  answeredBy   User?     @relation("FatwaAnsweredBy", fields: [answeredById], references: [id], onDelete: SetNull)
+  id                 String    @id @default(cuid())
+  userId             String?
+  askerName          String
+  askerEmail         String
+  category           String
+  title              String
+  question           String
+  answer             String?
+  answeredAt         DateTime?
+  answeredById       String?
+  featuredOnHomepage Boolean   @default(false)
+  featuredAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  user               User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  answeredBy         User?     @relation("FatwaAnsweredBy", fields: [answeredById], references: [id], onDelete: SetNull)
 
   @@index([category])
   @@index([answeredAt])
@@ -398,24 +400,24 @@ model ContactInquiry {
 }
 
 model PaymentRecord {
-  id                   String   @id @default(cuid())
-  userId               String
-  courseId             String?
-  amountInrPaise       Int
-  paidAt               DateTime
-  paymentType          String?
-  invoiceNumber        String?  @unique
-  description          String?
-  receiptEmailSentAt   DateTime?
-  receiptGeneratedAt   DateTime?
-  receiptIncludesGst   Boolean?
+  id                    String                   @id @default(cuid())
+  userId                String
+  courseId              String?
+  amountInrPaise        Int
+  paidAt                DateTime
+  paymentType           String?
+  invoiceNumber         String?                  @unique
+  description           String?
+  receiptEmailSentAt    DateTime?
+  receiptGeneratedAt    DateTime?
+  receiptIncludesGst    Boolean?
   receiptFeeAmountPaise Int?
   receiptGstAmountPaise Int?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
-  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course         Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
-  submission     CoursePaymentSubmission?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  user                  User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course                Course?                  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  submission            CoursePaymentSubmission?
 
   @@index([userId])
   @@index([paidAt])
@@ -423,7 +425,9 @@ model PaymentRecord {
   @@index([paymentType])
 }
 
-/** Academy operational expenses (salaries, hosting, etc.). */
+/**
+ * Academy operational expenses (salaries, hosting, etc.).
+ */
 model Expense {
   id             String   @id @default(cuid())
   category       String
@@ -440,7 +444,9 @@ model Expense {
   @@index([teacherId])
 }
 
-/** Social and WhatsApp links (single row, id = "default"). Editable in admin. */
+/**
+ * Social and WhatsApp links (single row, id = "default"). Editable in admin.
+ */
 model SocialLinksSettings {
   id                     String   @id @default("default")
   contactEmail           String   @default("info@darsequranacademy.org")
@@ -452,7 +458,9 @@ model SocialLinksSettings {
   updatedAt              DateTime @updatedAt
 }
 
-/** Core academy info (single row, id = "default"). Editable in admin. */
+/**
+ * Core academy info (single row, id = "default"). Editable in admin.
+ */
 model AcademySettings {
   id             String   @id @default("default")
   academyName    String   @default("Darse Quran Academy")
@@ -461,7 +469,9 @@ model AcademySettings {
   updatedAt      DateTime @updatedAt
 }
 
-/** Academy UPI and bank details (single row, id = "default"). Editable in admin. */
+/**
+ * Academy UPI and bank details (single row, id = "default"). Editable in admin.
+ */
 model PaymentSettings {
   id                String   @id @default("default")
   upiId             String   @default("")
@@ -474,23 +484,25 @@ model PaymentSettings {
   updatedAt         DateTime @updatedAt
 }
 
-/** Student-submitted monthly or enrollment course fees awaiting admin approval. */
+/**
+ * Student-submitted monthly or enrollment course fees awaiting admin approval.
+ */
 model CoursePaymentSubmission {
-  id                    String    @id @default(cuid())
+  id                    String         @id @default(cuid())
   userId                String
   courseId              String
-  paymentType           String    @default("monthly")
+  paymentType           String         @default("monthly")
   label                 String
   amountInrPaise        Int
-  status                String    @default("pending_verification")
+  status                String         @default("pending_verification")
   paymentMethod         String?
   upiTransactionId      String?
   paymentScreenshotPath String?
-  paymentReference      String?   @unique
-  paymentRecordId       String?   @unique
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paymentReference      String?        @unique
+  paymentRecordId       String?        @unique
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   paymentRecord         PaymentRecord? @relation(fields: [paymentRecordId], references: [id], onDelete: SetNull)
 
   @@index([userId])
@@ -517,29 +529,34 @@ model StudentNotification {
   @@index([userId, createdAt])
 }
 
-/** Physical books available for purchase in the bookstore. */
+/**
+ * Physical books available for purchase in the bookstore.
+ */
 model Book {
-  id          String     @id @default(cuid())
-  title       String
-  author      String
-  description String
-  priceInrPaise Int
-  purchasePriceInrPaise Int @default(0)
-  inventoryPurchased Int @default(0)
-  status      BookStatus @default(AVAILABLE)
-  imagePath   String?
-  published   Boolean    @default(true)
-  featuredOnHomepage Boolean @default(false)
-  featuredAt  DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  orderItems  BookOrderItem[]
+  id                    String          @id @default(cuid())
+  title                 String
+  author                String
+  description           String
+  priceInrPaise         Int
+  mrpInrPaise           Int             @default(0)
+  purchasePriceInrPaise Int             @default(0)
+  inventoryPurchased    Int             @default(0)
+  status                BookStatus      @default(AVAILABLE)
+  imagePath             String?
+  published             Boolean         @default(true)
+  featuredOnHomepage    Boolean         @default(false)
+  featuredAt            DateTime?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  orderItems            BookOrderItem[]
 
   @@index([status])
   @@index([published, status])
 }
 
-/** A user's book purchase order submitted for admin approval. */
+/**
+ * A user's book purchase order submitted for admin approval.
+ */
 model BookOrder {
   id                    String          @id @default(cuid())
   userId                String
@@ -564,16 +581,18 @@ model BookOrder {
   @@index([createdAt])
 }
 
-/** Line items in a book order. */
+/**
+ * Line items in a book order.
+ */
 model BookOrderItem {
-  id                   String    @id @default(cuid())
-  orderId              String
-  bookId               String
-  quantity             Int       @default(1)
+  id                      String    @id @default(cuid())
+  orderId                 String
+  bookId                  String
+  quantity                Int       @default(1)
   priceAtPurchaseInrPaise Int
-  createdAt            DateTime  @default(now())
-  order                BookOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  book                 Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  createdAt               DateTime  @default(now())
+  order                   BookOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  book                    Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
   @@index([bookId])
@@ -586,12 +605,12 @@ enum AnalyticsEventType {
 }
 
 model AnalyticsEvent {
-  id         String             @id @default(cuid())
-  type       AnalyticsEventType
-  page       String
-  eventName  String?
-  userId     String?
-  createdAt  DateTime           @default(now())
+  id        String             @id @default(cuid())
+  type      AnalyticsEventType
+  page      String
+  eventName String?
+  userId    String?
+  createdAt DateTime           @default(now())
 
   @@index([type])
   @@index([page])

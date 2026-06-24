@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Book" ADD COLUMN     "mrpInrPaise" INTEGER NOT NULL DEFAULT 0;

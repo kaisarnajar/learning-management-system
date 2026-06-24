@@ -9,6 +9,7 @@ type AddToCartButtonProps = {
   title: string;
   author: string;
   priceInrPaise: number;
+  mrpInrPaise?: number;
   imagePath: string | null;
   status: BookStatus;
 };
@@ -18,6 +19,7 @@ export function AddToCartButton({
   title,
   author,
   priceInrPaise,
+  mrpInrPaise = 0,
   imagePath,
   status,
 }: AddToCartButtonProps) {
@@ -56,7 +58,7 @@ export function AddToCartButton({
       type="button"
       onClick={() => {
         trackButtonClick("Add to Cart", `/bookstore/${bookId}`);
-        addItem({ bookId, title, author, priceInrPaise, imagePath });
+        addItem({ bookId, title, author, priceInrPaise, mrpInrPaise, imagePath });
       }}
       className="w-full rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-light transition-colors"
     >

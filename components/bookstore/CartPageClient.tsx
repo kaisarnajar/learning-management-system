@@ -198,7 +198,12 @@ export function CartPageClient({
                   <div className="flex-1 min-w-0">
                     <p className="font-medium text-foreground line-clamp-1">{item.title}</p>
                     <p className="text-sm text-muted">{item.author}</p>
-                    <p className="mt-1 font-semibold text-primary">{formatPrice(item.priceInrPaise)}</p>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <p className="font-semibold text-primary">{formatPrice(item.priceInrPaise)}</p>
+                      {item.mrpInrPaise > item.priceInrPaise && (
+                        <p className="text-sm text-muted line-through">{formatPrice(item.mrpInrPaise)}</p>
+                      )}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <button

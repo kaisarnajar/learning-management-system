@@ -250,6 +250,7 @@ export type BookFormValues = {
   author: string;
   description: string;
   priceInr: string;
+  mrpInr?: string;
   purchasePriceInr: string;
   inventoryPurchased: string;
   status: "AVAILABLE" | "OUT_OF_STOCK" | "COMING_SOON";
@@ -264,6 +265,7 @@ export function validateBookForm(values: BookFormValues): FormValidationResult {
       author: values.author,
       description: values.description,
       priceInr: values.priceInr,
+      mrpInr: values.mrpInr,
       purchasePriceInr: values.purchasePriceInr,
       inventoryPurchased: values.inventoryPurchased,
       status: values.status,

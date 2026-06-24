@@ -14,6 +14,7 @@ type CartItem = {
   title: string;
   author: string;
   priceInrPaise: number;
+  mrpInrPaise: number;
   imagePath: string | null;
   quantity: number;
 };
@@ -22,7 +23,7 @@ type CartContextValue = {
   items: CartItem[];
   totalCount: number;
   totalAmount: number;
-  addItem: (item: Omit<CartItem, "quantity">) => void;
+  addItem: (item: Omit<CartItem, "quantity"> & { mrpInrPaise?: number }) => void;
   removeItem: (bookId: string) => void;
   updateQuantity: (bookId: string, quantity: number) => void;
   clearCart: () => void;

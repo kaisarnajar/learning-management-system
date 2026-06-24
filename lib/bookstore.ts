@@ -13,6 +13,7 @@ export type BookWithDetails = {
   author: string;
   description: string;
   priceInrPaise: number;
+  mrpInrPaise: number;
   purchasePriceInrPaise: number;
   inventoryPurchased: number;
   status: BookStatus;

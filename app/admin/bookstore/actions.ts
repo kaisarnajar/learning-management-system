@@ -15,6 +15,7 @@ function parseBookForm(formData: FormData) {
     author: formData.get("author"),
     description: formData.get("description"),
     priceInr: formData.get("priceInr"),
+    mrpInr: formData.get("mrpInr"),
     purchasePriceInr: formData.get("purchasePriceInr"),
     inventoryPurchased: formData.get("inventoryPurchased"),
     status: formData.get("status"),
@@ -45,6 +46,7 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
   }
 
   const priceInrPaise = Math.round(parseFloat(parsed.data.priceInr) * 100);
+  const mrpInrPaise = parsed.data.mrpInr ? Math.round(parseFloat(parsed.data.mrpInr) * 100) : 0;
   const purchasePriceInrPaise = Math.round(parseFloat(parsed.data.purchasePriceInr) * 100);
   const inventoryPurchased = parseInt(parsed.data.inventoryPurchased, 10);
 
@@ -68,6 +70,7 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
         author: parsed.data.author,
         description: parsed.data.description,
         priceInrPaise,
+        mrpInrPaise,
         purchasePriceInrPaise,
         inventoryPurchased,
         status: parsed.data.status,
@@ -108,6 +111,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
   }
 
   const priceInrPaise = Math.round(parseFloat(parsed.data.priceInr) * 100);
+  const mrpInrPaise = parsed.data.mrpInr ? Math.round(parseFloat(parsed.data.mrpInr) * 100) : 0;
   const purchasePriceInrPaise = Math.round(parseFloat(parsed.data.purchasePriceInr) * 100);
   const inventoryPurchased = parseInt(parsed.data.inventoryPurchased, 10);
 
@@ -140,6 +144,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
         author: parsed.data.author,
         description: parsed.data.description,
         priceInrPaise,
+        mrpInrPaise,
         purchasePriceInrPaise,
         inventoryPurchased,
         status: parsed.data.status,

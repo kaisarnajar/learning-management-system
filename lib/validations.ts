@@ -360,6 +360,15 @@ export const bookSchema = z.object({
       const n = parseFloat(v);
       return !isNaN(n) && n >= 0;
     }, "Price must be a non-negative number."),
+  mrpInr: z
+    .string()
+    .trim()
+    .optional()
+    .refine((v) => {
+      if (!v || v === "") return true;
+      const n = parseFloat(v);
+      return !isNaN(n) && n >= 0;
+    }, "MRP must be a non-negative number."),
   purchasePriceInr: z
     .string()
     .trim()

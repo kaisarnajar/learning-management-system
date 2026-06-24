@@ -56,6 +56,7 @@ export default async function CartCheckoutPage({
         title: book.title,
         author: book.author,
         priceInrPaise: book.priceInrPaise,
+        mrpInrPaise: book.mrpInrPaise,
         imagePath: book.imagePath,
         quantity: selected.quantity,
       };
@@ -65,6 +66,7 @@ export default async function CartCheckoutPage({
     title: string;
     author: string;
     priceInrPaise: number;
+    mrpInrPaise: number;
     imagePath: string | null;
     quantity: number;
   }[];

@@ -13,7 +13,7 @@ function fatwaSearchWhere(searchQuery?: string) {
 
 export const HOMEPAGE_FEATURED_FATWA_MAX = 4;
 
-export const FATWA_CATEGORIES = [
+export const BASE_CATEGORIES = [
   "Islam",
   "Quran",
   "Hadith",
@@ -23,8 +23,9 @@ export const FATWA_CATEGORIES = [
   "Arabic Language",
   "Atheism",
   "Fatwa",
-  "Other",
 ] as const;
+
+export const FATWA_CATEGORIES = [...BASE_CATEGORIES, "Other"] as const;
 export type FatwaCategory = (typeof FATWA_CATEGORIES)[number];
 
 export function isFatwaCategory(value: string): value is FatwaCategory {

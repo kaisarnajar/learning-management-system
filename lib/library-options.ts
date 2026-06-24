@@ -1,9 +1,9 @@
-import { FATWA_CATEGORIES } from "@/lib/fatwa";
+import { BASE_CATEGORIES } from "@/lib/fatwa";
 
 export const LIBRARY_LANGUAGES = ["English", "Urdu", "Arabic", "Other"] as const;
 
 /** Browse and admin topic categories for digital library resources. */
-export const LIBRARY_TOPICS = [...FATWA_CATEGORIES, "Qiraat"] as const;
+export const LIBRARY_TOPICS = [...BASE_CATEGORIES, "Qiraat", "Other"] as const;
 
 export type LibraryLanguage = (typeof LIBRARY_LANGUAGES)[number];
 export type LibraryTopic = (typeof LIBRARY_TOPICS)[number];

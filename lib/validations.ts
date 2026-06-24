@@ -21,7 +21,7 @@ export const courseStatusEnum = z.enum([
   "ON_HOLD",
 ]);
 
-export const courseCategoryEnum = z.enum(COURSE_CATEGORIES);
+export const courseCategoryEnum = z.string().trim().min(2, "Category is required.").max(100, "Category is too long.");
 
 export const courseSchema = z.object({
   title: z.string().min(3, "Title is required"),
@@ -51,8 +51,8 @@ export const teacherAdminSchema = z.object({
   published: z.coerce.boolean(),
 });
 
-export const libraryLanguageEnum = z.enum(LIBRARY_LANGUAGES);
-export const libraryTopicEnum = z.enum(LIBRARY_TOPICS);
+export const libraryLanguageEnum = z.string().trim().min(2, "Language is required.").max(100, "Language is too long.");
+export const libraryTopicEnum = z.string().trim().min(2, "Topic is required.").max(100, "Topic is too long.");
 
 export const libraryItemSchema = z.object({
   title: z.string().min(2, "Title is required"),
@@ -68,7 +68,7 @@ export const libraryItemSchema = z.object({
   published: z.coerce.boolean(),
 });
 
-export const fatwaCategoryEnum = z.enum(FATWA_CATEGORIES, { message: "Select a topic." });
+export const fatwaCategoryEnum = z.string().trim().min(2, "Select a topic.").max(100, "Topic is too long.");
 
 export const fatwaQuestionSchema = z.object({
   category: fatwaCategoryEnum,
@@ -295,7 +295,7 @@ export const paymentRecordSchema = z.object({
   description: z.string().trim().max(500).optional(),
 });
 
-const expenseCategoryEnum = z.enum(EXPENSE_CATEGORIES);
+const expenseCategoryEnum = z.string().trim().min(2, "Category is required.").max(100, "Category is too long.");
 
 export const expenseSchema = z
   .object({

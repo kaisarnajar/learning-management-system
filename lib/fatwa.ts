@@ -31,6 +31,18 @@ export function isFatwaCategory(value: string): value is FatwaCategory {
   return FATWA_CATEGORIES.includes(value as FatwaCategory);
 }
 
+export const FATWA_CATEGORY_OPTIONS = FATWA_CATEGORIES.map((category) => ({
+  value: category,
+  label: category,
+}));
+
+export function getFatwaCategoryOptions(current?: string | null) {
+  if (!current || isFatwaCategory(current)) {
+    return FATWA_CATEGORY_OPTIONS;
+  }
+  return [{ value: current, label: current }, ...FATWA_CATEGORY_OPTIONS];
+}
+
 export function isFatwaAnswered(fatwa: Pick<FatwaQuestion, "answer">): boolean {
   return fatwa.answer != null && fatwa.answer.trim().length > 0;
 }
@@ -71,7 +83,7 @@ export async function resolveFatwaFeaturedUpdate(options: {
 function answeredFatwasWhere(category?: string) {
   return {
     answer: { not: null },
-    ...(category && isFatwaCategory(category) ? { category } : {}),
+    ...(category ? { category } : {}),
   };
 }
 

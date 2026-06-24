@@ -4,7 +4,7 @@ import { FatwaCard } from "@/components/fatwa/FatwaCard";
 import { FatwaCategoryFilter } from "@/components/fatwa/FatwaCategoryFilter";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
-import { getAnsweredFatwasPaginated, isFatwaCategory } from "@/lib/fatwa";
+import { getAnsweredFatwasPaginated } from "@/lib/fatwa";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
 import { Source_Serif_4 } from "next/font/google";
@@ -23,8 +23,7 @@ export default async function FatwaPage({
   searchParams: Promise<{ category?: string; page?: string; q?: string }>;
 }) {
   const params = await searchParams;
-  const category =
-    params.category && isFatwaCategory(params.category) ? params.category : undefined;
+  const category = params.category ? params.category : undefined;
   const { page: requestedPage, pageSize } = parsePaginationParams(params, {
     pageSize: GRID_PAGE_SIZE,
   });

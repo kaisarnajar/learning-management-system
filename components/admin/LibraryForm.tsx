@@ -67,6 +67,22 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
     validate,
   });
 
+  const [topicSelect, setTopicSelect] = useState(() => {
+    const val = item?.topic ?? "";
+    const isStandard = topicOptions.some((opt) => opt.value === val);
+    if (val && !isStandard) return "Other";
+    return val;
+  });
+  const isCustomTopic = topicSelect === "Other";
+
+  const [languageSelect, setLanguageSelect] = useState(() => {
+    const val = item?.language ?? "";
+    const isStandard = languageOptions.some((opt) => opt.value === val);
+    if (val && !isStandard) return "Other";
+    return val;
+  });
+  const isCustomLanguage = languageSelect === "Other";
+
   return (
     <form action={action} className="mx-auto max-w-2xl space-y-5">
       <div>
@@ -134,32 +150,58 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
             </p>
           )}
         </div>
-        <div>
-          <label htmlFor="topic" className={labelClassName}>
-            Topic
-          </label>
-          <select
-            id="topic"
-            name="topic"
-            required
-            value={values.topic}
-            onChange={(e) => {
-              updateField("topic", e.target.value);
-              markTouched("topic");
-            }}
-            onBlur={() => markTouched("topic")}
-            aria-invalid={showError("topic") || undefined}
-            className={formFieldInputClass(showError("topic"))}
-          >
-            <option value="" disabled>
-              Select…
-            </option>
-            {topicOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="topicSelect" className={labelClassName}>
+              Topic
+            </label>
+            <select
+              id="topicSelect"
+              name={isCustomTopic ? "topicSelect" : "topic"}
+              required
+              value={topicSelect}
+              onChange={(e) => {
+                const val = e.target.value;
+                setTopicSelect(val);
+                if (val !== "Other") {
+                  updateField("topic", val);
+                  markTouched("topic");
+                } else {
+                  updateField("topic", "");
+                }
+              }}
+              aria-invalid={(showError("topic") && !isCustomTopic) || undefined}
+              className={formFieldInputClass(showError("topic") && !isCustomTopic)}
+            >
+              <option value="" disabled>
+                Select…
               </option>
-            ))}
-          </select>
+              {topicOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {isCustomTopic && (
+            <div>
+              <label htmlFor="customTopic" className={labelClassName}>
+                Specify Topic <span className="text-destructive-text">*</span>
+              </label>
+              <input
+                id="customTopic"
+                name="topic"
+                type="text"
+                required
+                value={values.topic}
+                onChange={(e) => updateField("topic", e.target.value)}
+                onBlur={() => markTouched("topic")}
+                aria-invalid={showError("topic") || undefined}
+                placeholder="Enter custom topic"
+                className={formFieldInputClass(showError("topic"))}
+              />
+            </div>
+          )}
           {showError("topic") && (
             <p className={formErrorTextClassName} role="alert">
               {errors.topic}
@@ -186,32 +228,58 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
             <option value="Advanced">Advanced</option>
           </select>
         </div>
-        <div>
-          <label htmlFor="language" className={labelClassName}>
-            Language
-          </label>
-          <select
-            id="language"
-            name="language"
-            required
-            value={values.language}
-            onChange={(e) => {
-              updateField("language", e.target.value);
-              markTouched("language");
-            }}
-            onBlur={() => markTouched("language")}
-            aria-invalid={showError("language") || undefined}
-            className={formFieldInputClass(showError("language"))}
-          >
-            <option value="" disabled>
-              Select…
-            </option>
-            {languageOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="languageSelect" className={labelClassName}>
+              Language
+            </label>
+            <select
+              id="languageSelect"
+              name={isCustomLanguage ? "languageSelect" : "language"}
+              required
+              value={languageSelect}
+              onChange={(e) => {
+                const val = e.target.value;
+                setLanguageSelect(val);
+                if (val !== "Other") {
+                  updateField("language", val);
+                  markTouched("language");
+                } else {
+                  updateField("language", "");
+                }
+              }}
+              aria-invalid={(showError("language") && !isCustomLanguage) || undefined}
+              className={formFieldInputClass(showError("language") && !isCustomLanguage)}
+            >
+              <option value="" disabled>
+                Select…
               </option>
-            ))}
-          </select>
+              {languageOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {isCustomLanguage && (
+            <div>
+              <label htmlFor="customLanguage" className={labelClassName}>
+                Specify Language <span className="text-destructive-text">*</span>
+              </label>
+              <input
+                id="customLanguage"
+                name="language"
+                type="text"
+                required
+                value={values.language}
+                onChange={(e) => updateField("language", e.target.value)}
+                onBlur={() => markTouched("language")}
+                aria-invalid={showError("language") || undefined}
+                placeholder="Enter custom language"
+                className={formFieldInputClass(showError("language"))}
+              />
+            </div>
+          )}
           {showError("language") && (
             <p className={formErrorTextClassName} role="alert">
               {errors.language}

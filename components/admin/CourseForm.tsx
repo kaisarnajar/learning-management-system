@@ -2,7 +2,7 @@
 import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import type { Course, CourseStatus, Teacher } from "@prisma/client";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { DateInputField } from "@/components/form/DateInputField";
 import {
   type CourseFormValues,
@@ -69,6 +69,14 @@ export function CourseForm({ course, teachers, featuredCount, action, submitLabe
   });
 
   const startDateError = showError("startDate") ? errors.startDate : undefined;
+
+  const [categorySelect, setCategorySelect] = useState(() => {
+    const val = course?.category ?? "";
+    const isStandard = categoryOptions.some((opt) => opt.value === val);
+    if (val && !isStandard) return "Other";
+    return val;
+  });
+  const isCustomCategory = categorySelect === "Other";
 
   function updateStatus(status: string) {
     updateField("status", status as CourseStatus);
@@ -156,21 +164,25 @@ export function CourseForm({ course, teachers, featuredCount, action, submitLabe
           )}
         </div>
         <div>
-          <label htmlFor="category" className={labelClassName}>
+          <label htmlFor="categorySelect" className={labelClassName}>
             Category
           </label>
           <select
-            id="category"
-            name="category"
+            id="categorySelect"
+            name={isCustomCategory ? "categorySelect" : "category"}
             required
-            value={values.category}
+            value={categorySelect}
             onChange={(e) => {
-              updateField("category", e.target.value);
-              markTouched("category");
+              const val = e.target.value;
+              setCategorySelect(val);
+              if (val !== "Other") {
+                updateField("category", val);
+                markTouched("category");
+              } else {
+                updateField("category", "");
+              }
             }}
-            onBlur={() => markTouched("category")}
-            aria-invalid={showError("category") || undefined}
-            className={formFieldInputClass(showError("category"))}
+            className={formFieldInputClass(showError("category") && !isCustomCategory)}
           >
             <option value="" disabled>
               Select a category
@@ -181,6 +193,25 @@ export function CourseForm({ course, teachers, featuredCount, action, submitLabe
               </option>
             ))}
           </select>
+          {isCustomCategory && (
+            <div className="mt-4">
+              <label htmlFor="customCategory" className={labelClassName}>
+                Specify Category <span className="text-destructive-text">*</span>
+              </label>
+              <input
+                id="customCategory"
+                name="category"
+                type="text"
+                required
+                value={values.category}
+                onChange={(e) => updateField("category", e.target.value)}
+                onBlur={() => markTouched("category")}
+                aria-invalid={showError("category") || undefined}
+                placeholder="Enter custom category"
+                className={formFieldInputClass(showError("category"))}
+              />
+            </div>
+          )}
           {showError("category") && (
             <p className={formErrorTextClassName} role="alert">
               {errors.category}

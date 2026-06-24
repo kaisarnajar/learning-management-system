@@ -33,6 +33,18 @@ export function isExpenseCategory(value: string): value is ExpenseCategory {
   return (EXPENSE_CATEGORIES as readonly string[]).includes(value);
 }
 
-export function isTeacherExpenseFilterRelevant(category: ExpenseCategory | undefined): boolean {
+export function isTeacherExpenseFilterRelevant(category: string | undefined): boolean {
   return category === EXPENSE_CATEGORY_TEACHER_SALARY;
+}
+
+export const EXPENSE_CATEGORY_OPTIONS = EXPENSE_CATEGORIES.map((category) => ({
+  value: category,
+  label: expenseCategoryLabel(category),
+}));
+
+export function getExpenseCategoryOptions(current?: string | null) {
+  if (!current || isExpenseCategory(current)) {
+    return EXPENSE_CATEGORY_OPTIONS;
+  }
+  return [{ value: current, label: current }, ...EXPENSE_CATEGORY_OPTIONS];
 }

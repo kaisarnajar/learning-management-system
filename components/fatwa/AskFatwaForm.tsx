@@ -1,10 +1,10 @@
 "use client";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 
-import { useCallback, useEffect, useActionState, useRef } from "react";
+import { useCallback, useEffect, useActionState, useRef, useState } from "react";
 import { useToast } from "@/components/shared/ToastProvider";
 import { submitFatwaQuestion, type SubmitFatwaState } from "@/app/fatwa/actions";
-import { FATWA_CATEGORIES } from "@/lib/fatwa";
+import { getFatwaCategoryOptions } from "@/lib/fatwa";
 import { labelClassName } from "@/lib/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
 import {
@@ -56,6 +56,15 @@ export function AskFatwaForm({
     validate,
   });
 
+  const categoryOptions = getFatwaCategoryOptions(values.category);
+  const [categorySelect, setCategorySelect] = useState(() => {
+    const val = values.category ?? "";
+    const isStandard = categoryOptions.some((opt) => opt.value === val);
+    if (val && !isStandard) return "Other";
+    return val;
+  });
+  const isCustomCategory = categorySelect === "Other";
+
   const prevSuccessRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
@@ -82,29 +91,58 @@ export function AskFatwaForm({
         </p>
       )}
 
-      <div>
-        <label htmlFor="category" className={labelClassName}>
-          Category <span className="text-destructive-text">*</span>
-        </label>
-        <select
-          id="category"
-          name="category"
-          required
-          value={values.category}
-          onChange={(e) => updateField("category", e.target.value)}
-          onBlur={() => markTouched("category")}
-          aria-invalid={showError("category") || undefined}
-          className={formFieldInputClass(showError("category"))}
-        >
-          <option value="" disabled>
-            Select a topic
-          </option>
-          {FATWA_CATEGORIES.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat}
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="categorySelect" className={labelClassName}>
+            Category <span className="text-destructive-text">*</span>
+          </label>
+          <select
+            id="categorySelect"
+            name={isCustomCategory ? "categorySelect" : "category"}
+            required
+            value={categorySelect}
+            onChange={(e) => {
+              const val = e.target.value;
+              setCategorySelect(val);
+              if (val !== "Other") {
+                updateField("category", val);
+                markTouched("category");
+              } else {
+                updateField("category", "");
+              }
+            }}
+            aria-invalid={(showError("category") && !isCustomCategory) || undefined}
+            className={formFieldInputClass(showError("category") && !isCustomCategory)}
+          >
+            <option value="" disabled>
+              Select a topic
             </option>
-          ))}
-        </select>
+            {categoryOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        {isCustomCategory && (
+          <div>
+            <label htmlFor="customCategory" className={labelClassName}>
+              Specify Category <span className="text-destructive-text">*</span>
+            </label>
+            <input
+              id="customCategory"
+              name="category"
+              type="text"
+              required
+              value={values.category}
+              onChange={(e) => updateField("category", e.target.value)}
+              onBlur={() => markTouched("category")}
+              aria-invalid={showError("category") || undefined}
+              placeholder="Enter custom category"
+              className={formFieldInputClass(showError("category"))}
+            />
+          </div>
+        )}
         {showError("category") && (
           <p className={formErrorTextClassName} role="alert">
             {errors.category}

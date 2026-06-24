@@ -4,8 +4,7 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import { useActionState, useState } from "react";
 import { recordExpense, type RecordExpenseState } from "@/app/admin/record-expense/actions";
 import {
-  EXPENSE_CATEGORIES,
-  expenseCategoryLabel,
+  EXPENSE_CATEGORY_OPTIONS,
   EXPENSE_CATEGORY_TEACHER_SALARY,
 } from "@/lib/expense-categories";
 import { inputClassName, labelClassName } from "@/lib/form";
@@ -18,7 +17,8 @@ const initialState: RecordExpenseState = {};
 
 export function RecordExpenseForm({ teachers }: RecordExpenseFormProps) {
   const [state, formAction, pending] = useActionState(recordExpense, initialState);
-  const [category, setCategory] = useState<string>(EXPENSE_CATEGORIES[0]);
+  const [category, setCategory] = useState<string>(EXPENSE_CATEGORY_OPTIONS[0].value);
+  const isCustomCategory = category === "other";
   const today = new Date().toISOString().slice(0, 10);
 
   const showTeacherField = category === EXPENSE_CATEGORY_TEACHER_SALARY;
@@ -32,24 +32,41 @@ export function RecordExpenseForm({ teachers }: RecordExpenseFormProps) {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="expense-category-input" className={labelClassName}>
-            Category
-          </label>
-          <select
-            id="expense-category-input"
-            name="category"
-            required
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            className={inputClassName}
-          >
-            {EXPENSE_CATEGORIES.map((item) => (
-              <option key={item} value={item}>
-                {expenseCategoryLabel(item)}
-              </option>
-            ))}
-          </select>
+        <div className="space-y-4">
+          <div>
+            <label htmlFor="expense-category-input" className={labelClassName}>
+              Category
+            </label>
+            <select
+              id="expense-category-input"
+              name={isCustomCategory ? "categorySelect" : "category"}
+              required
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              className={inputClassName}
+            >
+              {EXPENSE_CATEGORY_OPTIONS.map((item) => (
+                <option key={item.value} value={item.value}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {isCustomCategory && (
+            <div>
+              <label htmlFor="customCategory" className={labelClassName}>
+                Specify Category <span className="text-destructive-text">*</span>
+              </label>
+              <input
+                id="customCategory"
+                name="category"
+                type="text"
+                required
+                placeholder="Enter custom category"
+                className={inputClassName}
+              />
+            </div>
+          )}
         </div>
 
         {showTeacherField && (

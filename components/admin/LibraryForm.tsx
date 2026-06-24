@@ -51,6 +51,13 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
     }
   }
 
+  function handleClearFile() {
+    setImagePreview(null);
+    if (fileRef.current) {
+      fileRef.current.value = "";
+    }
+  }
+
   const validate = useCallback((values: LibraryFormValues) => validateLibraryForm(values), []);
 
   const { values, updateField, markTouched, showError, errors, isValid } = useZodForm({
@@ -90,14 +97,23 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
           Cover image <span className="font-normal text-muted">(optional, max 2 MB)</span>
         </label>
         {imagePreview && (
-          <div className="mt-2 h-40 w-32 overflow-hidden rounded-lg border border-border">
-            <Image
-              src={imagePreview}
-              alt="Cover preview"
-              width={128}
-              height={160}
-              className="h-full w-full object-cover"
-            />
+          <div className="mt-2 flex items-start gap-4">
+            <div className="h-40 w-32 shrink-0 overflow-hidden rounded-lg border border-border">
+              <Image
+                src={imagePreview}
+                alt="Cover preview"
+                width={128}
+                height={160}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleClearFile}
+              className="text-sm font-medium text-destructive-text hover:underline"
+            >
+              Clear
+            </button>
           </div>
         )}
         <input
@@ -107,6 +123,11 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
           accept="image/jpeg,image/png,image/webp,image/gif"
           onChange={handleImageChange}
           className="mt-2 w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-primary-light"
+        />
+        <input
+          type="hidden"
+          name="removeImage"
+          value={!imagePreview && (item as any)?.imagePath ? "true" : "false"}
         />
       </div>
       <div>

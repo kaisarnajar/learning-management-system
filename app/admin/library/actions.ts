@@ -102,9 +102,16 @@ export async function updateLibraryItem(id: string, formData: FormData) {
     redirect(`/admin/library/${id}/edit?saveError=${encodeURIComponent(featured.error)}`);
   }
 
-  let imagePath: string | undefined;
+  const removeImage = formData.get("removeImage") === "true";
+  let imagePath: string | undefined | null;
+
   if (imageFile && imageFile.size > 0) {
     imagePath = await saveLibraryImage(id, imageFile);
+  } else if (removeImage) {
+    if (existing.imagePath) {
+      await deleteLibraryImage(existing.imagePath);
+    }
+    imagePath = null;
   }
 
   await withDbErrorHandling(() => prisma.libraryItem.update({
@@ -112,7 +119,7 @@ export async function updateLibraryItem(id: string, formData: FormData) {
       data: {
         ...parsed.data,
         ...featured,
-        ...(imagePath ? { imagePath } : {}),
+        ...(imagePath !== undefined ? { imagePath } : {}),
       },
     }), "Database operation failed");
 

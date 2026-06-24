@@ -3,7 +3,7 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import type { BlogImage } from "@prisma/client";
 import Image from "next/image";
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   type BlogPostFormValues,
   validateBlogPostForm,
@@ -67,6 +67,16 @@ export function BlogPostForm({
     fields: BLOG_FIELDS,
     validate,
   });
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [hasFiles, setHasFiles] = useState(false);
+
+  function handleClearFiles() {
+    if (fileRef.current) {
+      fileRef.current.value = "";
+      setHasFiles(false);
+    }
+  }
 
   return (
     <form action={action} encType="multipart/form-data" className="mx-auto max-w-2xl space-y-5">
@@ -196,15 +206,28 @@ export function BlogPostForm({
 
       {!contentReadOnly && (
         <div>
-          <label htmlFor="images" className={labelClassName}>
-            {post ? "Add more images" : "Screenshots & photos (optional)"}
-          </label>
+          <div className="flex items-center justify-between">
+            <label htmlFor="images" className={labelClassName}>
+              {post ? "Add more images" : "Screenshots & photos (optional)"}
+            </label>
+            {hasFiles && (
+              <button
+                type="button"
+                onClick={handleClearFiles}
+                className="text-xs font-medium text-destructive-text hover:underline"
+              >
+                Clear selection
+              </button>
+            )}
+          </div>
           <input
+            ref={fileRef}
             id="images"
             name="images"
             type="file"
             multiple
             accept="image/jpeg,image/png,image/webp,image/gif"
+            onChange={(e) => setHasFiles((e.target.files?.length ?? 0) > 0)}
             className="mt-1 block w-full text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-primary"
           />
           <p className="mt-1.5 text-xs text-muted">

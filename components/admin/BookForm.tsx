@@ -65,6 +65,13 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
     }
   }
 
+  function handleClearFile() {
+    setImagePreview(null);
+    if (fileRef.current) {
+      fileRef.current.value = "";
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (loading) return;
@@ -105,14 +112,23 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
           Book cover image <span className="font-normal text-muted">(optional, max 2 MB)</span>
         </label>
         {imagePreview && (
-          <div className="mt-2 h-40 w-32 overflow-hidden rounded-lg border border-border">
-            <Image
-              src={imagePreview}
-              alt="Book cover preview"
-              width={128}
-              height={160}
-              className="h-full w-full object-cover"
-            />
+          <div className="mt-2 flex items-start gap-4">
+            <div className="h-40 w-32 shrink-0 overflow-hidden rounded-lg border border-border">
+              <Image
+                src={imagePreview}
+                alt="Book cover preview"
+                width={128}
+                height={160}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={handleClearFile}
+              className="text-sm font-medium text-destructive-text hover:underline"
+            >
+              Clear
+            </button>
           </div>
         )}
         <input
@@ -122,6 +138,11 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
           accept="image/jpeg,image/png,image/webp,image/gif"
           onChange={handleImageChange}
           className="mt-2 w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-primary-light"
+        />
+        <input
+          type="hidden"
+          name="removeImage"
+          value={!imagePreview && book?.imagePath ? "true" : "false"}
         />
       </div>
 

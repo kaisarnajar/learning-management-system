@@ -2,7 +2,7 @@
 import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
 import { useRouter } from "next/navigation";
 import { submitBookOrder } from "@/app/actions/bookstore";
@@ -39,9 +39,17 @@ export function BookCheckoutClient({
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
   const { removeItem } = useCart();
   const router = useRouter();
   const { addToast } = useToast();
+
+  function handleClearScreenshot() {
+    setScreenshot(null);
+    if (fileRef.current) {
+      fileRef.current.value = "";
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -197,10 +205,22 @@ export function BookCheckoutClient({
 
             {/* Screenshot */}
             <div>
-              <label htmlFor="checkout-screenshot" className="block text-sm font-medium text-foreground">
-                Payment screenshot <span className="font-normal text-muted">(optional)</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="checkout-screenshot" className="block text-sm font-medium text-foreground">
+                  Payment screenshot <span className="font-normal text-muted">(optional)</span>
+                </label>
+                {screenshot && (
+                  <button
+                    type="button"
+                    onClick={handleClearScreenshot}
+                    className="text-xs font-medium text-destructive-text hover:underline"
+                  >
+                    Clear selection
+                  </button>
+                )}
+              </div>
               <input
+                ref={fileRef}
                 id="checkout-screenshot"
                 type="file"
                 accept="image/jpeg,image/png,image/webp,image/gif"

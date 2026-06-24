@@ -3,7 +3,7 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import type { AnnouncementCategory, CourseAnnouncement } from "@prisma/client";
 import Link from "next/link";
-import { useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
 import {
   type CourseAnnouncementFormValues,
   validateCourseAnnouncementForm,
@@ -51,6 +51,16 @@ export function AnnouncementForm({
     fields: ANNOUNCEMENT_FIELDS,
     validate,
   });
+
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [hasFile, setHasFile] = useState(false);
+
+  function handleClearFile() {
+    if (fileRef.current) {
+      fileRef.current.value = "";
+      setHasFile(false);
+    }
+  }
 
   return (
     <form action={action} encType="multipart/form-data" className="mx-auto max-w-2xl space-y-5">
@@ -137,9 +147,20 @@ export function AnnouncementForm({
       </div>
 
       <div>
-        <label htmlFor="attachment" className={labelClassName}>
-          Material (optional)
-        </label>
+        <div className="flex items-center justify-between">
+          <label htmlFor="attachment" className={labelClassName}>
+            Material (optional)
+          </label>
+          {hasFile && (
+            <button
+              type="button"
+              onClick={handleClearFile}
+              className="text-xs font-medium text-destructive-text hover:underline"
+            >
+              Clear selection
+            </button>
+          )}
+        </div>
         {hasAttachment && (
           <div className="mb-3 rounded-lg border border-border bg-background/50 px-4 py-3">
             <p className="text-xs text-muted">Current file</p>
@@ -158,10 +179,12 @@ export function AnnouncementForm({
           </div>
         )}
         <input
+          ref={fileRef}
           id="attachment"
           name="attachment"
           type="file"
           accept=".pdf,.doc,.docx,image/jpeg,image/png,image/webp,image/gif"
+          onChange={(e) => setHasFile((e.target.files?.length ?? 0) > 0)}
           className="mt-1 block w-full text-sm text-foreground file:mr-4 file:rounded-full file:border-0 file:bg-primary/10 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-primary hover:file:bg-primary/20"
         />
         <p className="mt-1.5 text-xs text-muted">

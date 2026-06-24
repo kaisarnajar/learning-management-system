@@ -132,9 +132,14 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
   }
 
   try {
-    let imagePath: string | undefined;
+    const removeImage = formData.get("removeImage") === "true";
+    let imagePath: string | undefined | null;
+
     if (imageFile && imageFile.size > 0) {
       imagePath = await saveBookImage(bookId, imageFile);
+    } else if (removeImage) {
+      await deleteBookImage(bookId);
+      imagePath = null;
     }
 
     await prisma.book.update({
@@ -150,7 +155,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
         status: parsed.data.status,
         published: parsed.data.published,
         ...featured,
-        ...(imagePath ? { imagePath } : {}),
+        ...(imagePath !== undefined ? { imagePath } : {}),
       },
     });
   } catch (error) {

@@ -2,7 +2,7 @@
 import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { submitEnrollmentPayment } from "@/app/actions/payments";
 
 type PaymentMethod = "upi" | "bank";
@@ -18,6 +18,14 @@ export function EnrollmentPaymentForm({ courseId }: EnrollmentPaymentFormProps) 
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  function handleClearScreenshot() {
+    setScreenshot(null);
+    if (fileRef.current) {
+      fileRef.current.value = "";
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -95,10 +103,22 @@ export function EnrollmentPaymentForm({ courseId }: EnrollmentPaymentFormProps) 
       </div>
 
       <div>
-        <label htmlFor="screenshot" className="block text-sm font-medium text-foreground">
-          Payment screenshot <span className="font-normal text-muted">(optional)</span>
-        </label>
+        <div className="flex items-center justify-between">
+          <label htmlFor="screenshot" className="block text-sm font-medium text-foreground">
+            Payment screenshot <span className="font-normal text-muted">(optional)</span>
+          </label>
+          {screenshot && (
+            <button
+              type="button"
+              onClick={handleClearScreenshot}
+              className="text-xs font-medium text-destructive-text hover:underline"
+            >
+              Clear selection
+            </button>
+          )}
+        </div>
         <input
+          ref={fileRef}
           id="screenshot"
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif"

@@ -46,7 +46,7 @@ export function renderCertificateToHtml(data: {
   </div>
 
   <!-- Header -->
-  <div class="pt-6 text-center relative z-10">
+  <div class="pt-14 text-center relative z-10">
     
     <img
       src="${data.sealUrl}"

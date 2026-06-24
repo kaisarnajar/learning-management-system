@@ -106,7 +106,12 @@ export async function getTeacherEnrollmentInCourse(
   return { course, enrollment };
 }
 
-export function teacherDashboardStats(courses: TeacherCourse[]) {
+export async function getTeacherDashboardStats(teacherId: string) {
+  const courses = await withDbErrorHandling(() => prisma.course.findMany({
+      where: { teacherId },
+      select: { id: true, status: true },
+    }), "Database operation failed");
+
   const byStatus = courses.reduce(
     (acc, course) => {
       acc[course.status] = (acc[course.status] ?? 0) + 1;
@@ -115,9 +120,16 @@ export function teacherDashboardStats(courses: TeacherCourse[]) {
     {} as Partial<Record<CourseStatus, number>>,
   );
 
+  const courseIds = courses.map((c) => c.id);
+  const uniqueStudents = await withDbErrorHandling(() => prisma.enrollment.findMany({
+      where: { courseId: { in: courseIds } },
+      distinct: ['userId'],
+      select: { userId: true },
+    }), "Database operation failed");
+
   return {
     totalCourses: courses.length,
-    totalStudents: courses.reduce((sum, c) => sum + c.studentCount, 0),
+    totalStudents: uniqueStudents.length,
     byStatus,
   };
 }

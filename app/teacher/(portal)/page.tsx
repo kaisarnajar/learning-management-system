@@ -6,7 +6,7 @@ import { CourseCategoryIcon } from "@/components/courses/CourseCategoryIcon";
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
 import { getCourseBannerClass } from "@/lib/course-display";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { getCoursesForTeacher, getCoursesForTeacherPaginated, teacherDashboardStats } from "@/lib/teacher-portal";
+import { getCoursesForTeacherPaginated, getTeacherDashboardStats } from "@/lib/teacher-portal";
 
 export default async function TeacherDashboardPage({
   searchParams,
@@ -19,12 +19,11 @@ export default async function TeacherDashboardPage({
     pageSize: GRID_PAGE_SIZE,
   });
 
-  const [{ items: courses, totalCount }, allCourses] = await Promise.all([
+  const [{ items: courses, totalCount }, stats] = await Promise.all([
     getCoursesForTeacherPaginated(teacher.id, requestedPage, pageSize),
-    getCoursesForTeacher(teacher.id),
+    getTeacherDashboardStats(teacher.id),
   ]);
   const page = clampPage(requestedPage, totalCount, pageSize);
-  const stats = teacherDashboardStats(allCourses);
 
   return (
     <div>

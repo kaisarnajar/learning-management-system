@@ -183,7 +183,27 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
       </div>
 
       {/* Price & Status */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div>
+          <label htmlFor="book-mrp" className={labelClassName}>
+            MRP (₹) <span className="font-normal text-muted">(Optional)</span>
+          </label>
+          <input
+            id="book-mrp"
+            name="mrpInr"
+            type="number"
+            min="0"
+            step="0.01"
+            value={values.mrpInr || ""}
+            onChange={(e) => updateField("mrpInr", e.target.value)}
+            onBlur={() => markTouched("mrpInr")}
+            aria-invalid={showError("mrpInr") || undefined}
+            placeholder="e.g. 500"
+            className={formFieldInputClass(showError("mrpInr"))}
+          />
+          {showError("mrpInr") && <p className={formErrorTextClassName} role="alert">{errors.mrpInr}</p>}
+        </div>
+
         <div>
           <label htmlFor="book-price" className={labelClassName}>
             Selling Price (₹) <span className="text-destructive-text">*</span>

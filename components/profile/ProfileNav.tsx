@@ -35,6 +35,28 @@ export function ProfileNav({ unreadCount = 0 }: { unreadCount?: number }) {
     return () => window.removeEventListener("resize", checkScroll);
   }, []);
 
+  useEffect(() => {
+    if (scrollRef.current) {
+      const activeTab = scrollRef.current.querySelector('[data-active="true"]') as HTMLElement;
+      if (activeTab) {
+        const container = scrollRef.current;
+        const containerWidth = container.clientWidth;
+        const containerLeft = container.getBoundingClientRect().left;
+        const tabLeft = activeTab.getBoundingClientRect().left;
+        const tabWidth = activeTab.clientWidth;
+        
+        const scrollDiff = tabLeft - containerLeft;
+        const centerOffset = (containerWidth / 2) - (tabWidth / 2);
+        const scrollTarget = container.scrollLeft + scrollDiff - centerOffset;
+        
+        container.scrollTo({
+          left: scrollTarget,
+          behavior: "smooth"
+        });
+      }
+    }
+  }, [pathname]);
+
   return (
     <div className="relative w-full">
       {canScrollLeft && (
@@ -53,6 +75,7 @@ export function ProfileNav({ unreadCount = 0 }: { unreadCount?: number }) {
             <Link
               key={link.href}
               href={link.href}
+              data-active={active}
               className={`relative flex shrink-0 snap-start items-center justify-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-300 ease-out ${
                 active
                   ? "scale-[1.02] bg-primary text-white shadow-md shadow-primary/25"

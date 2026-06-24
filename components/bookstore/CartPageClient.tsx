@@ -21,6 +21,8 @@ type PastOrder = {
   status: string;
   createdAt: Date;
   items: OrderItem[];
+  courierServiceName?: string | null;
+  trackingId?: string | null;
 };
 
 function formatPrice(paise: number): string {
@@ -83,6 +85,16 @@ function PastOrderCard({ order }: { order: PastOrder }) {
           </li>
         ))}
       </ul>
+
+      {order.status === "SHIPPED" && order.courierServiceName && (
+        <div className="mt-3 border-t border-border pt-3">
+          <p className="text-xs font-medium text-foreground">Shipment Details</p>
+          <div className="mt-1 space-y-0.5 text-xs text-muted">
+            <p><span className="font-medium text-foreground">Courier:</span> {order.courierServiceName}</p>
+            <p><span className="font-medium text-foreground">Tracking ID:</span> {order.trackingId}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

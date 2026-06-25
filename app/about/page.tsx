@@ -248,12 +248,7 @@ export default async function AboutPage() {
             </div>
           </div>
 
-          <div className="mt-8 card-elevated p-8 text-center motion-safe:animate-fade-up" style={{ animationDelay: '450ms', animationFillMode: 'both' }}>
-             <h3 className={`${sourceSerif.className} text-xl font-semibold text-primary mb-4`}>Website Development</h3>
-             <p className="text-sm text-muted max-w-3xl mx-auto">
-              The idea of establishing the Darse-Quran website was proposed by Brother Kaisar Ahmad Najar, who developed and maintained the website with remarkable dedication and professionalism. His efforts were generously supported by Brother Barkat Bashir Malik. We pray that Allah Almighty accepts their services and grants them abundant rewards in this world and the Hereafter.
-             </p>
-          </div>
+
         </div>
       </section>
 

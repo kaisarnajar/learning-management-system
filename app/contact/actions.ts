@@ -30,9 +30,21 @@ export async function submitContactInquiry(
   const name = session?.user?.name?.trim() || parsed.data.name;
   const email = session?.user?.email?.toLowerCase().trim() || parsed.data.email;
 
+  // Verify the session user actually exists in the DB before linking via FK.
+  // A stale session cookie can reference a userId that no longer exists,
+  // which would cause a P2003 foreign key constraint violation.
+  let userId: string | null = null;
+  if (session?.user?.id) {
+    const userExists = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true },
+    });
+    userId = userExists?.id ?? null;
+  }
+
   await prisma.contactInquiry.create({
     data: {
-      userId: session?.user?.id ?? null,
+      userId,
       name,
       email,
       phone: normalizeContactPhone(parsed.data.phone ?? ""),

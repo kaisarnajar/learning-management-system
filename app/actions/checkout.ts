@@ -88,21 +88,25 @@ export async function submitCheckout(courseId: string) {
       };
     }
 
-    const status = requiresEnrollmentFee ? AWAITING_ENROLLMENT_FEE : PENDING_ENROLLMENT_APPROVAL;
+    if (requiresEnrollmentFee) {
+      // For paid courses: do NOT create an enrollment yet.
+      // The enrollment is created atomically when the student submits
+      // their payment receipt in submitEnrollmentPayment().
+      return {
+        redirectUrl: `/profile/courses/${courseId}/enrollment-pay`,
+      };
+    }
 
+    // Free course: create enrollment immediately and await admin approval.
     await prisma.enrollment.create({
       data: {
         userId: session.user.id,
         courseId: course.id,
-        status,
+        status: PENDING_ENROLLMENT_APPROVAL,
       },
     });
 
-    return {
-      redirectUrl: requiresEnrollmentFee
-        ? `/profile/courses/${courseId}/enrollment-pay`
-        : "/profile/courses",
-    };
+    return { redirectUrl: "/profile/courses" };
   } catch (error) {
     console.error("Caught error:", error);
     return { error: "Could not submit enrollment request. Please try again.", status: 500 };

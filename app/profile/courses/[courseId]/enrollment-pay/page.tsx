@@ -5,7 +5,6 @@ import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { requireUser } from "@/lib/auth-actions";
 import { getRegistrationFeePaise } from "@/lib/course-pricing";
 import { formatPrice, getCourseById } from "@/lib/courses";
-import { AWAITING_ENROLLMENT_FEE } from "@/lib/enrollment-status";
 import { hasPendingEnrollmentFeeSubmission } from "@/lib/monthly-payments";
 import { prisma } from "@/lib/prisma";
 import { isUpiConfigured } from "@/lib/upi";
@@ -31,7 +30,8 @@ export default async function PayEnrollmentFeePage({
       where: { userId_courseId: { userId: session.user.id, courseId } },
     }), "Database operation failed");
 
-  if (!enrollment || enrollment.status !== AWAITING_ENROLLMENT_FEE) {
+  // Block access if already fully enrolled or completed.
+  if (enrollment?.status === "active" || enrollment?.status === "completed") {
     redirect("/profile/courses");
   }
 

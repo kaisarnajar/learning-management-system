@@ -10,7 +10,6 @@ import {
   PAYMENT_TYPE_MONTHLY,
   PAYMENT_TYPE_ENROLLMENT,
 } from "@/lib/monthly-payment-status";
-import { createCoursePaymentSubmission } from "@/lib/payment-submission";
 import { validatePaymentScreenshot } from "@/lib/payment-upload";
 import { prisma } from "@/lib/prisma";
 import { isUpiConfigured } from "@/lib/upi";
@@ -117,20 +116,24 @@ export async function submitEnrollmentPayment(formData: FormData) {
     const enrollmentFeePaise = getRegistrationFeePaise(course);
     if (enrollmentFeePaise <= 0) return { error: "This course has no enrollment fee.", status: 400 };
 
+    const userId = session.user.id;
+    const courseId = course.id;
+
+    // Check for an existing enrollment.
     const enrollment = await prisma.enrollment.findUnique({
-      where: { userId_courseId: { userId: session.user.id, courseId: course.id } },
+      where: { userId_courseId: { userId, courseId } },
     });
 
-    if (!enrollment || enrollment.status !== AWAITING_ENROLLMENT_FEE) {
-      return { error: "You must request enrollment in this course before paying the enrollment fee.", status: 400 };
+    if (enrollment?.status === "active" || enrollment?.status === "completed") {
+      return { error: "You are already enrolled and approved in this course.", status: 400 };
     }
 
     const label = buildEnrollmentFeeLabel(course.title);
 
     const duplicatePending = await prisma.coursePaymentSubmission.findFirst({
       where: {
-        userId: session.user.id,
-        courseId: course.id,
+        userId,
+        courseId,
         paymentType: PAYMENT_TYPE_ENROLLMENT,
         status: { in: [MONTHLY_PAYMENT_PENDING, MONTHLY_PAYMENT_APPROVED] },
       },
@@ -145,19 +148,56 @@ export async function submitEnrollmentPayment(formData: FormData) {
       };
     }
 
-    const submissionResult = await createCoursePaymentSubmission({
-      userId: session.user.id,
-      courseId: course.id,
-      paymentType: PAYMENT_TYPE_ENROLLMENT,
-      label,
-      amountInrPaise: enrollmentFeePaise,
-      status: MONTHLY_PAYMENT_PENDING,
-      paymentMethod: parsed.data.paymentMethod ?? null,
-      upiTransactionId: parsed.data.upiTransactionId ?? null,
-      screenshotFile,
+    // Check for duplicate UPI transaction ID before the transaction.
+    if (parsed.data.upiTransactionId) {
+      const duplicateUtr = await prisma.coursePaymentSubmission.findFirst({
+        where: { upiTransactionId: parsed.data.upiTransactionId },
+      });
+      if (duplicateUtr) {
+        return { error: "This transaction reference was already used. Contact support if this is a mistake.", status: 400 };
+      }
+    }
+
+    // Atomically upsert the enrollment (to awaiting_enrollment_fee) and create the
+    // payment submission. This ensures no enrollment record exists unless the student
+    // has actually submitted a payment receipt.
+    const created = await prisma.$transaction(async (tx) => {
+      await tx.enrollment.upsert({
+        where: { userId_courseId: { userId, courseId } },
+        create: { userId, courseId, status: AWAITING_ENROLLMENT_FEE },
+        update: { status: AWAITING_ENROLLMENT_FEE },
+      });
+
+      return tx.coursePaymentSubmission.create({
+        data: {
+          userId,
+          courseId,
+          paymentType: PAYMENT_TYPE_ENROLLMENT,
+          label,
+          amountInrPaise: enrollmentFeePaise,
+          status: MONTHLY_PAYMENT_PENDING,
+          paymentMethod: parsed.data.paymentMethod ?? null,
+          upiTransactionId: parsed.data.upiTransactionId ?? null,
+        },
+      });
     });
 
-    if (submissionResult.error) return { error: submissionResult.error, status: 400 };
+    // Set paymentReference to the submission's own ID (done outside transaction to avoid
+    // needing the ID before insert).
+    await prisma.coursePaymentSubmission.update({
+      where: { id: created.id },
+      data: { paymentReference: created.id },
+    });
+
+    // Save screenshot if provided.
+    if (screenshotFile && screenshotFile.size > 0) {
+      const { savePaymentScreenshot } = await import("@/lib/payment-upload");
+      const paymentScreenshotPath = await savePaymentScreenshot(created.id, screenshotFile);
+      await prisma.coursePaymentSubmission.update({
+        where: { id: created.id },
+        data: { paymentScreenshotPath },
+      });
+    }
 
     return { redirectUrl: "/profile/payments?submitted=1" };
   } catch (error) {
@@ -165,3 +205,4 @@ export async function submitEnrollmentPayment(formData: FormData) {
     return { error: "Could not submit payment. Please try again.", status: 500 };
   }
 }
+

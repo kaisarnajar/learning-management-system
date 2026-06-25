@@ -3,7 +3,7 @@ import {
   notificationTypeClass,
   notificationTypeLabel,
 } from "@/lib/notifications";
-import { openNotification } from "@/app/profile/notifications/actions";
+import { viewNotification } from "@/app/profile/notifications/actions";
 
 function formatRelativeTime(date: Date): string {
   const diffMs = Date.now() - date.getTime();
@@ -107,10 +107,10 @@ export function NotificationCard({ notification }: { notification: StudentNotifi
 
   return (
     <li className="h-full">
-      <form action={openNotification.bind(null, notification.id)} className="h-full">
+      <form action={viewNotification.bind(null, notification.id)} className="h-full">
         <button
           type="submit"
-          aria-label={`Open notification: ${notification.title}`}
+          aria-label={`View notification: ${notification.title}`}
           className={`group card-elevated flex h-full w-full flex-col overflow-hidden p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md ${
             unread
               ? "ring-2 ring-primary/15 bg-gradient-to-b from-violet-50/90 to-surface"
@@ -160,7 +160,7 @@ export function NotificationCard({ notification }: { notification: StudentNotifi
               {formatRelativeTime(notification.createdAt)}
             </time>
             <span className="inline-flex items-center gap-0.5 text-xs font-medium text-primary transition-colors group-hover:text-primary-light">
-              Open
+              View Notification
               <svg
                 className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5"
                 viewBox="0 0 24 24"

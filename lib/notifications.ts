@@ -444,6 +444,15 @@ export async function getNotificationsForUserPaginated(
   return { items, totalCount };
 }
 
+export async function getNotificationById(
+  userId: string,
+  notificationId: string,
+): Promise<StudentNotification | null> {
+  return withDbErrorHandling(() => prisma.studentNotification.findFirst({
+      where: { id: notificationId, userId },
+    }), "Database operation failed");
+}
+
 export async function getUnreadNotificationCount(userId: string): Promise<number> {
   return withDbErrorHandling(() => prisma.studentNotification.count({
       where: { userId, readAt: null },

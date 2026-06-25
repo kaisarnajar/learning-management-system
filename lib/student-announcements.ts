@@ -1,11 +1,14 @@
 import { prisma } from "@/lib/prisma";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { PENDING_ENROLLMENT_APPROVAL } from "@/lib/enrollment-status";
 
 export async function getStudentCourseForAnnouncements(userId: string, courseId: string) {
   const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
     }), "Database operation failed");
-  if (!enrollment) return null;
+
+  // No enrollment at all, or enrollment is still pending admin approval — deny access.
+  if (!enrollment || enrollment.status === PENDING_ENROLLMENT_APPROVAL) return null;
 
   const course = await withDbErrorHandling(() => prisma.course.findUnique({
       where: { id: courseId },

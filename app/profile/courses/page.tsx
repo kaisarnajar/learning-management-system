@@ -127,12 +127,14 @@ export default async function ProfileCoursesPage({
                   )
                 )}
 
-                <Link
-                  href={`/profile/courses/${course.id}/announcements`}
-                  className="mt-3 flex min-h-11 items-center justify-center rounded-full border border-border bg-surface px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-accent-muted/30"
-                >
-                  Course announcements
-                </Link>
+                {isActive && (
+                  <Link
+                    href={`/profile/courses/${course.id}/announcements`}
+                    className="mt-3 flex min-h-11 items-center justify-center rounded-full border border-border bg-surface px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-accent-muted/30"
+                  >
+                    Course announcements
+                  </Link>
+                )}
 
                 {canDownloadCertificate(course.status, enrollment.status) && (
                   <CertificateActionButtons 

@@ -3,6 +3,7 @@ import { clampPage, paginationArgs } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { andWhere, buildSearchOr } from "@/lib/text-search";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { PENDING_ENROLLMENT_APPROVAL } from "@/lib/enrollment-status";
 
 function courseAnnouncementWhere(
   courseId: string,
@@ -119,9 +120,10 @@ export async function getAnnouncementsVisibleToStudentPaginated(
 ) {
   const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
-      select: { id: true },
+      select: { id: true, status: true },
     }), "Database operation failed");
-  if (!enrollment) {
+  // No enrollment, or still pending admin approval — deny content access.
+  if (!enrollment || enrollment.status === PENDING_ENROLLMENT_APPROVAL) {
     return {
       courseWide: [],
       personal: [] as Awaited<

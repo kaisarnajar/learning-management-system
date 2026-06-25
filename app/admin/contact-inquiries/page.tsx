@@ -75,7 +75,7 @@ export default async function AdminContactInquiriesPage({
         </nav>
       </div>
 
-      <ActionToast trigger={params.saved === "1"} paramName="saved" message={`Reply saved.${params.email === "failed" ? " The notification email could not be sent — check SMTP settings in your environment." : params.email === "skipped" ? " SMTP is not configured, so no email was sent." : " The visitor has been notified by email."}`} variant="info" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message={`Reply saved.${params.email === "failed" ? " The notification email could not be sent — check SMTP settings in your environment." : params.email === "skipped" ? " SMTP is not configured, so no email was sent." : " The visitor has been notified by email. If they don't see it, ask them to check their Spam/Junk folder."}`} variant="info" />
 
       <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Inquiry deleted." variant="info" />
 

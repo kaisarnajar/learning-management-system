@@ -17,7 +17,7 @@ export function VerificationBanner() {
       const data = await res.json();
       if (res.ok) {
         setStatus("success");
-        setMessage("Verification email sent! Please check your inbox.");
+        setMessage("Verification email sent! Please check your Inbox. If you don't see it, check your Spam/Junk folder as well.");
       } else {
         setStatus("error");
         setMessage(data.error || "Failed to resend verification email.");

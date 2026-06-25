@@ -38,7 +38,7 @@ export function ForgotPasswordForm() {
 
       setMessage(
         data.message ||
-          "If an account with that email exists and uses a password, we sent reset instructions.",
+          "If an account with that email exists and uses a password, we sent reset instructions. Please check your Inbox. If you don't see it, check your Spam/Junk folder as well.",
       );
       setEmail("");
     } catch {

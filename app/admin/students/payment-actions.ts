@@ -76,5 +76,5 @@ export async function recordStudentPayment(
   revalidatePath("/profile/payments");
   revalidatePath("/profile/notifications");
 
-  return { success: "Payment recorded." };
+  return { success: "Payment recorded. The student has been notified by email — if they don't see it, ask them to check their Spam/Junk folder." };
 }

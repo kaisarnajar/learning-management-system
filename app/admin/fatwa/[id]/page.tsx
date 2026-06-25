@@ -36,7 +36,7 @@ export default async function AdminFatwaDetailPage({
       </h1>
       <p className="mt-1 text-sm text-muted">{question.title}</p>
 
-      <ActionToast trigger={query.saved === "1"} paramName="saved" message={`Answer published.${query.email === "failed" ? " The notification email could not be sent — check SMTP settings in your environment." : query.email === "skipped" ? " SMTP is not configured, so no email was sent." : " The asker has been notified by email."}`} variant="info" />
+      <ActionToast trigger={query.saved === "1"} paramName="saved" message={`Answer published.${query.email === "failed" ? " The notification email could not be sent — check SMTP settings in your environment." : query.email === "skipped" ? " SMTP is not configured, so no email was sent." : " The asker has been notified by email. If they don't see it, ask them to check their Spam/Junk folder."}`} variant="info" />
 
       {query.error && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">

@@ -73,8 +73,8 @@ export default async function AdminPaymentApprovalsPage({
         are managed under Enrollments.
       </p>
       
-      <ActionToast trigger={params.confirmed === "1"} paramName="confirmed" message="Payment approved and recorded." variant="info" />
-      <ActionToast trigger={params.declined === "1"} paramName="declined" message="Payment declined. The student has been notified and can resubmit." variant="warning" />
+      <ActionToast trigger={params.confirmed === "1"} paramName="confirmed" message="Payment approved and recorded. The student has been notified by email — if they don't see it, ask them to check their Spam/Junk folder." variant="info" />
+      <ActionToast trigger={params.declined === "1"} paramName="declined" message="Payment declined. The student has been notified by email and can resubmit. If they don't see it, ask them to check their Spam/Junk folder." variant="warning" />
       <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Payment record successfully deleted." variant="info" />
 
       <nav className="mt-8 flex flex-wrap gap-2" aria-label="Payment approval type">

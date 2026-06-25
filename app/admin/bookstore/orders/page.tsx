@@ -87,12 +87,12 @@ export default async function AdminBookOrdersPage({
         </Link>
       </div>
 
-      <ActionToast trigger={params.confirmed === "1"} paramName="confirmed" message="Order approved. The student has been notified." variant="success" />
-      <ActionToast trigger={params.declined === "1"} paramName="declined" message="Order declined. The student has been notified." variant="warning" />
-      <ActionToast trigger={params.shipped === "1"} paramName="shipped" message="Order marked as shipped. The student has been notified." variant="info" />
+      <ActionToast trigger={params.confirmed === "1"} paramName="confirmed" message="Order approved. The student has been notified by email — if they don't see it, ask them to check their Spam/Junk folder." variant="success" />
+      <ActionToast trigger={params.declined === "1"} paramName="declined" message="Order declined. The student has been notified by email — if they don't see it, ask them to check their Spam/Junk folder." variant="warning" />
+      <ActionToast trigger={params.shipped === "1"} paramName="shipped" message="Order marked as shipped. The student has been notified by email — if they don't see it, ask them to check their Spam/Junk folder." variant="info" />
       {params.refunded === "1" && (
         <p className="mt-4 rounded-md bg-surface-muted-hover px-4 py-3 text-sm text-muted">
-          Order refunded. The student has been notified.
+          Order refunded. The student has been notified by email — if they don&apos;t see it, ask them to check their Spam/Junk folder.
         </p>
       )}
 

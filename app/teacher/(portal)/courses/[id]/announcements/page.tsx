@@ -52,7 +52,7 @@ export default async function TeacherCourseAnnouncementsPage({
         </Link>
       </div>
 
-      <ActionToast trigger={query.posted === "1"} paramName="posted" message="Announcement posted successfully." variant="info" />
+      <ActionToast trigger={query.posted === "1"} paramName="posted" message="Announcement posted successfully. Enrolled students have been notified by email — if they don't see it, ask them to check their Spam/Junk folder." variant="info" />
       <ActionToast trigger={query.saved === "1"} paramName="saved" message="Announcement updated." variant="info" />
       <ActionToast trigger={query.deleted === "1"} paramName="deleted" message="Announcement deleted." variant="info" />
       {query.error === "notfound" && (

@@ -5,7 +5,7 @@ import { buildPasswordResetUrl, createPasswordResetToken } from "@/lib/password-
 import { forgotPasswordSchema } from "@/lib/validations";
 
 const GENERIC_SUCCESS =
-  "If an account with that email exists and uses a password, we sent reset instructions.";
+  "If an account with that email exists and uses a password, we sent reset instructions. Please check your Inbox. If you don't see it, check your Spam/Junk folder as well.";
 
 export async function POST(request: Request) {
   try {

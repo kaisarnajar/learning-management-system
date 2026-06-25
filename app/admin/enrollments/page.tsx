@@ -98,8 +98,8 @@ export default async function AdminEnrollmentsPage({
         })}
       </nav>
 
-      <ActionToast trigger={params.approved === "1"} paramName="approved" message="Enrollment approved." variant="success" />
-      <ActionToast trigger={params.rejected === "1"} paramName="rejected" message="Enrollment rejected." variant="warning" />
+      <ActionToast trigger={params.approved === "1"} paramName="approved" message="Enrollment approved. The student has been notified by email — if they don't see it, ask them to check their Spam/Junk folder." variant="success" />
+      <ActionToast trigger={params.rejected === "1"} paramName="rejected" message="Enrollment rejected. The student has been notified by email — if they don't see it, ask them to check their Spam/Junk folder." variant="warning" />
 
       <div className="mt-6">
         <ListSearchForm

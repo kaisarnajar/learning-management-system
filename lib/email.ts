@@ -1,10 +1,19 @@
 import nodemailer from "nodemailer";
+import { randomBytes } from "crypto";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 export type EmailSendResult = {
   sent: boolean;
   skipped?: boolean;
   error?: string;
 };
+
+// ---------------------------------------------------------------------------
+// Configuration helpers
+// ---------------------------------------------------------------------------
 
 function isEmailConfigured(): boolean {
   return Boolean(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS);
@@ -19,13 +28,63 @@ function getSmtpPassword(): string {
   return (process.env.SMTP_PASS ?? "").replace(/\s/g, "");
 }
 
+/**
+ * Returns just the bare email address extracted from EMAIL_FROM / SMTP_USER.
+ * e.g. "Darse Quran Academy <admin@gmail.com>" → "admin@gmail.com"
+ */
+function getSenderEmail(): string {
+  const raw =
+    process.env.EMAIL_FROM?.trim() ||
+    process.env.SMTP_USER?.trim() ||
+    "noreply@darsequranacademy.org";
+  const stripped = stripEnvQuotes(raw);
+  const match = stripped.match(/<([^>]+)>/);
+  return match ? match[1].trim() : stripped;
+}
+
+/**
+ * Returns a "Display Name <email>" formatted From address.
+ * If EMAIL_FROM already contains a display name it is preserved.
+ */
 function getFromAddress(): string {
   const raw =
     process.env.EMAIL_FROM?.trim() ||
     process.env.SMTP_USER?.trim() ||
     "noreply@darsequranacademy.org";
-  return stripEnvQuotes(raw);
+  const stripped = stripEnvQuotes(raw);
+  if (stripped.includes("<")) return stripped; // already has display name
+  return `Darse Quran Academy <${stripped}>`;
 }
+
+/**
+ * Returns the Reply-To address.
+ * Prefers EMAIL_REPLY_TO, then falls back to the sender email.
+ *
+ * IMPORTANT (Gmail personal): with @gmail.com, DKIM is signed by Google for
+ * gmail.com and SPF passes for Gmail servers automatically — no DNS action
+ * required on your part. The "From:" display name can be set to anything via
+ * EMAIL_FROM in your .env. For best deliverability, the SMTP_USER and
+ * EMAIL_FROM address should be the same @gmail.com account.
+ */
+function getReplyTo(): string {
+  const raw = process.env.EMAIL_REPLY_TO?.trim();
+  if (raw) return stripEnvQuotes(raw);
+  return getSenderEmail();
+}
+
+/**
+ * Generates an RFC 2822-compliant Message-ID.
+ * Format: <hex@domain>
+ */
+function generateMessageId(): string {
+  const domain = getSenderEmail().split("@")[1] || "darsequranacademy.org";
+  const unique = randomBytes(16).toString("hex");
+  return `<${unique}@${domain}>`;
+}
+
+// ---------------------------------------------------------------------------
+// SMTP transport
+// ---------------------------------------------------------------------------
 
 function createTransport() {
   const port = Number(process.env.SMTP_PORT || 587);
@@ -42,12 +101,105 @@ function createTransport() {
   });
 }
 
+// ---------------------------------------------------------------------------
+// HTML helpers
+// ---------------------------------------------------------------------------
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+/**
+ * Wraps inner body HTML in a full RFC-compliant email HTML document:
+ * - Proper DOCTYPE, <html>, <head>, <meta charset>, viewport
+ * - Branded header bar
+ * - Content card
+ * - Consistent footer with transactional disclosure
+ * - Hidden preview-text <span> (controls the email client's snippet text)
+ */
+function buildHtmlEmail({
+  previewText,
+  bodyHtml,
+  unsubscribeUrl,
+}: {
+  previewText: string;
+  bodyHtml: string;
+  unsubscribeUrl?: string;
+}): string {
+  const footerExtra = unsubscribeUrl
+    ? `<p style="margin:8px 0 0 0;"><a href="${unsubscribeUrl}" style="color:#9ca3af;text-decoration:underline;font-size:11px;">Manage notification preferences</a></p>`
+    : "";
+
+  return `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:o="urn:schemas-microsoft-com:office:office">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="x-apple-disable-message-reformatting" />
+  <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no" />
+  <title>Darse Quran Academy</title>
+  <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
+</head>
+<body style="margin:0;padding:0;background-color:#f9fafb;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
+  <!--[if mso | IE]><table role="presentation" border="0" cellpadding="0" cellspacing="0"><tr><td><![endif]-->
+  <!-- Hidden preview text — controls snippet shown in inbox list -->
+  <span style="display:none!important;visibility:hidden;opacity:0;color:transparent;height:0;width:0;max-height:0;max-width:0;overflow:hidden;mso-hide:all;font-size:1px;line-height:1px;">${escapeHtml(previewText)}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</span>
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f9fafb;min-width:100%;">
+    <tr>
+      <td align="center" style="padding:32px 16px;">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:580px;width:100%;">
+          <!-- Branded header -->
+          <tr>
+            <td style="background-color:#3730a3;padding:22px 32px;border-radius:8px 8px 0 0;text-align:center;">
+              <p style="margin:0;color:#c7d2fe;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">بسم الله الرحمن الرحيم</p>
+              <h1 style="margin:6px 0 0 0;color:#ffffff;font-size:20px;font-weight:700;letter-spacing:0.3px;">Darse Quran Academy</h1>
+            </td>
+          </tr>
+          <!-- Email body -->
+          <tr>
+            <td style="background-color:#ffffff;padding:32px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb;color:#1c1917;line-height:1.7;font-size:15px;">
+              ${bodyHtml}
+            </td>
+          </tr>
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f3f4f6;padding:18px 32px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;border-top:none;text-align:center;color:#6b7280;font-size:12px;line-height:1.6;">
+              <p style="margin:0 0 4px 0;">This is a transactional notification from <strong style="color:#374151;">Darse Quran Academy</strong>.</p>
+              <p style="margin:0;">Questions? Reply to this email or visit <a href="https://darsequranacademy.org/contact" style="color:#3730a3;text-decoration:none;">darsequranacademy.org</a>.</p>
+              ${footerExtra}
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+  <!--[if mso | IE]></td></tr></table><![endif]-->
+</body>
+</html>`;
+}
+
+// ---------------------------------------------------------------------------
+// Core delivery function
+// ---------------------------------------------------------------------------
+
+type EmailPriority = "high" | "normal";
+
 type DeliverMailParams = {
   to: string;
   subject: string;
   text: string;
   html: string;
+  /** Used for dev/logging fallback only */
   preview?: string;
+  /** "high" adds Importance + X-Priority headers (for security/payment emails) */
+  priority?: EmailPriority;
+  /** Adds List-Unsubscribe headers (for announcement-style emails) */
+  listUnsubscribeUrl?: string;
 };
 
 async function deliverMail({
@@ -56,6 +208,8 @@ async function deliverMail({
   text,
   html,
   preview,
+  priority = "normal",
+  listUnsubscribeUrl,
 }: DeliverMailParams): Promise<EmailSendResult> {
   if (!isEmailConfigured()) {
     console.info("[email] SMTP not configured. Email would be sent to:", to);
@@ -66,14 +220,38 @@ async function deliverMail({
     return { sent: false, skipped: true };
   }
 
+  const messageId = generateMessageId();
+
+  const headers: Record<string, string> = {
+    "Message-ID": messageId,
+    "X-Mailer": "Darse Quran Academy Mailer",
+    "X-Entity-Ref-ID": messageId,
+    "X-Transaction-ID": messageId,
+  };
+
+  // High-priority headers — used for security & payment emails
+  if (priority === "high") {
+    headers["Importance"] = "high";
+    headers["X-Priority"] = "1";
+    headers["X-MSMail-Priority"] = "High";
+  }
+
+  // List-Unsubscribe — required by Gmail & Yahoo for bulk/announcement senders
+  if (listUnsubscribeUrl) {
+    headers["List-Unsubscribe"] = `<${listUnsubscribeUrl}>`;
+    headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+  }
+
   try {
     const transport = createTransport();
     await transport.sendMail({
       from: getFromAddress(),
+      replyTo: getReplyTo(),
       to,
       subject,
       text,
       html,
+      headers,
     });
     return { sent: true };
   } catch (error) {
@@ -83,13 +261,9 @@ async function deliverMail({
   }
 }
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+// ---------------------------------------------------------------------------
+// Email: Fatwa answer notification
+// ---------------------------------------------------------------------------
 
 export type FatwaAnswerEmailParams = {
   to: string;
@@ -97,6 +271,41 @@ export type FatwaAnswerEmailParams = {
   questionTitle: string;
   fatwaUrl: string;
 };
+
+export async function sendFatwaAnswerEmail(params: FatwaAnswerEmailParams): Promise<EmailSendResult> {
+  const { to, askerName, questionTitle, fatwaUrl } = params;
+  const displayName = askerName || "Reader";
+
+  const subject = `Your question has been answered — ${questionTitle}`;
+  const preview = `Assalamu Alaikum ${displayName}, your question "${questionTitle}" has been answered.`;
+
+  const text = [
+    `Assalamu Alaikum ${displayName},`,
+    "",
+    `Your question "${questionTitle}" has been answered on Darse Quran Academy.`,
+    "",
+    "Read the answer here:",
+    fatwaUrl,
+    "",
+    "Darse Quran Academy — Fatwa Section",
+  ].join("\n");
+
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>Your question <strong>&ldquo;${escapeHtml(questionTitle)}&rdquo;</strong> has been answered by our scholars.</p>
+    <p style="margin:28px 0;">
+      <a href="${fatwaUrl}" style="background:#3730a3;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Read the Answer</a>
+    </p>
+    <p style="font-size:13px;color:#6b7280;">Or copy this link: <a href="${fatwaUrl}" style="color:#3730a3;">${escapeHtml(fatwaUrl)}</a></p>`;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, preview: fatwaUrl });
+}
+
+// ---------------------------------------------------------------------------
+// Email: Payment declined
+// ---------------------------------------------------------------------------
 
 export type PaymentDeclinedEmailParams = {
   to: string;
@@ -110,6 +319,8 @@ export async function sendPaymentDeclinedEmail(params: PaymentDeclinedEmailParam
   const displayName = studentName || "Student";
 
   const subject = `Action required: resubmit payment — ${courseTitle}`;
+  const preview = `We could not verify your payment for "${courseTitle}". Please resubmit your payment details.`;
+
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
@@ -125,29 +336,25 @@ export async function sendPaymentDeclinedEmail(params: PaymentDeclinedEmailParam
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    `<p>We could not verify your registration payment for <strong>${escapeHtml(courseTitle)}</strong> at Darse Quran Academy.</p>`,
-    "<p>Please submit your payment details again (UPI reference or bank transfer proof):</p>",
-    '<p style="margin: 28px 0;">',
-    `<a href="${paymentUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">`,
-    "Resubmit payment",
-    "</a></p>",
-    `<p style="font-size: 14px; color: #57534e;">Or copy this link: <a href="${paymentUrl}">${escapeHtml(paymentUrl)}</a></p>`,
-    "<p>Once we verify your payment, your enrollment will be activated.</p>",
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>We could not verify your registration payment for <strong>${escapeHtml(courseTitle)}</strong> at Darse Quran Academy.</p>
+    <p>Please submit your payment details again (UPI reference or bank transfer proof):</p>
+    <p style="margin:28px 0;">
+      <a href="${paymentUrl}" style="background:#b91c1c;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Resubmit Payment</a>
+    </p>
+    <p style="font-size:13px;color:#6b7280;">Or copy this link: <a href="${paymentUrl}" style="color:#3730a3;">${escapeHtml(paymentUrl)}</a></p>
+    <p>Once we verify your payment, your enrollment will be activated.</p>
+    <p style="font-size:13px;color:#6b7280;">If you believe this was a mistake, please reply to this email.</p>`;
 
-  return deliverMail({
-    to,
-    subject,
-    text,
-    html,
-    preview: paymentUrl,
-  });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, preview: paymentUrl, priority: "high" });
 }
+
+// ---------------------------------------------------------------------------
+// Email: Password reset
+// ---------------------------------------------------------------------------
 
 export type PasswordResetEmailParams = {
   to: string;
@@ -158,6 +365,8 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
   const { to, resetUrl } = params;
 
   const subject = "Reset your password — Darse Quran Academy";
+  const preview = "We received a request to reset your password. Click the link inside to choose a new one.";
+
   const text = [
     "Assalamu Alaikum,",
     "",
@@ -171,67 +380,24 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    "<p>Assalamu Alaikum,</p>",
-    "<p>We received a request to reset the password for your Darse Quran Academy account.</p>",
-    "<p>Click the button below to choose a new password. This link expires in one hour.</p>",
-    '<p style="margin: 28px 0;">',
-    `<a href="${resetUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">`,
-    "Reset password",
-    "</a></p>",
-    `<p style="font-size: 14px; color: #57534e;">Or copy this link: <a href="${resetUrl}">${escapeHtml(resetUrl)}</a></p>`,
-    "<p>If you did not request this, you can ignore this email.</p>",
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum,</p>
+    <p>We received a request to reset the password for your <strong>Darse Quran Academy</strong> account.</p>
+    <p>Click the button below to choose a new password. <strong>This link expires in one hour.</strong></p>
+    <p style="margin:28px 0;">
+      <a href="${resetUrl}" style="background:#3730a3;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Reset Password</a>
+    </p>
+    <p style="font-size:13px;color:#6b7280;">Or copy this link: <a href="${resetUrl}" style="color:#3730a3;">${escapeHtml(resetUrl)}</a></p>
+    <p style="font-size:13px;color:#6b7280;">If you did not request a password reset, no action is needed — your account is safe.</p>`;
 
-  return deliverMail({
-    to,
-    subject,
-    text,
-    html,
-    preview: resetUrl,
-  });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, preview: resetUrl, priority: "high" });
 }
 
-export async function sendFatwaAnswerEmail(params: FatwaAnswerEmailParams): Promise<EmailSendResult> {
-  const { to, askerName, questionTitle, fatwaUrl } = params;
-  const displayName = askerName || "Reader";
-
-  const subject = `Your question has been answered — ${questionTitle}`;
-  const text = [
-    `Assalamu Alaikum ${displayName},`,
-    "",
-    `Your question "${questionTitle}" has been answered on Darse Quran Academy.`,
-    "",
-    "Read the answer here:",
-    fatwaUrl,
-    "",
-    "Darse Quran Academy — Fatwa Section",
-  ].join("\n");
-
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    `<p>Your question <strong>${escapeHtml(questionTitle)}</strong> has been answered.</p>`,
-    '<p style="margin: 28px 0;">',
-    `<a href="${fatwaUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">`,
-    "Read the answer",
-    "</a></p>",
-    `<p style="font-size: 14px; color: #57534e;">Or copy this link: <a href="${fatwaUrl}">${escapeHtml(fatwaUrl)}</a></p>`,
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
-
-  return deliverMail({
-    to,
-    subject,
-    text,
-    html,
-    preview: fatwaUrl,
-  });
-}
+// ---------------------------------------------------------------------------
+// Email: Contact inquiry reply
+// ---------------------------------------------------------------------------
 
 export type ContactInquiryReplyEmailParams = {
   to: string;
@@ -247,6 +413,8 @@ export async function sendContactInquiryReplyEmail(
   const displayName = name || "Reader";
 
   const subject = "Reply from Darse Quran Academy";
+  const preview = `Assalamu Alaikum ${displayName}, we have replied to your message.`;
+
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
@@ -260,36 +428,35 @@ export async function sendContactInquiryReplyEmail(
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    "<p>Thank you for contacting Darse Quran Academy. Here is our reply to your message:</p>",
-    `<div style="margin: 20px 0; padding: 16px; border-left: 4px solid #d4a017; background: #fef9e7; white-space: pre-wrap;">${escapeHtml(reply)}</div>`,
-    '<p style="font-size: 14px; color: #57534e; margin-top: 24px;">Your original message:</p>',
-    `<div style="font-size: 14px; color: #57534e; white-space: pre-wrap;">${escapeHtml(originalMessage)}</div>`,
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>Thank you for contacting Darse Quran Academy. Here is our reply to your message:</p>
+    <div style="margin:20px 0;padding:16px 20px;border-left:4px solid #d4a017;background:#fef9e7;white-space:pre-wrap;border-radius:0 6px 6px 0;font-size:14px;">${escapeHtml(reply)}</div>
+    <p style="font-size:13px;color:#6b7280;margin-top:24px;">Your original message:</p>
+    <div style="font-size:13px;color:#6b7280;white-space:pre-wrap;padding:12px 16px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;">${escapeHtml(originalMessage)}</div>`;
 
-  return deliverMail({
-    to,
-    subject,
-    text,
-    html,
-    preview: reply,
-  });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, preview: reply.slice(0, 100) });
 }
+
+// ---------------------------------------------------------------------------
+// Email: Payment approved
+// ---------------------------------------------------------------------------
 
 export type NotificationEmailBaseParams = {
   to: string;
   studentName: string;
 };
 
-export async function sendPaymentApprovedEmail(params: NotificationEmailBaseParams & { courseTitle: string; paymentUrl: string }) {
+export async function sendPaymentApprovedEmail(
+  params: NotificationEmailBaseParams & { courseTitle: string; paymentUrl: string },
+) {
   const { to, studentName, courseTitle, paymentUrl } = params;
   const displayName = studentName || "Student";
   const subject = `Payment approved — ${courseTitle}`;
-  
+  const preview = `Congratulations! Your payment for "${courseTitle}" has been verified.`;
+
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
@@ -302,26 +469,31 @@ export async function sendPaymentApprovedEmail(params: NotificationEmailBasePara
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    `<p>Your payment for <strong>${escapeHtml(courseTitle)}</strong> has been successfully verified.</p>`,
-    '<p style="margin: 28px 0;">',
-    `<a href="${paymentUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">View Payment Details</a>`,
-    "</p>",
-    `<p style="font-size: 14px; color: #57534e;">Or copy this link: <a href="${paymentUrl}">${escapeHtml(paymentUrl)}</a></p>`,
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>Your payment for <strong>${escapeHtml(courseTitle)}</strong> has been <strong style="color:#166534;">successfully verified</strong>. Jazakallah Khair!</p>
+    <p style="margin:28px 0;">
+      <a href="${paymentUrl}" style="background:#166534;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">View Payment & Receipt</a>
+    </p>
+    <p style="font-size:13px;color:#6b7280;">Or copy this link: <a href="${paymentUrl}" style="color:#3730a3;">${escapeHtml(paymentUrl)}</a></p>`;
 
-  return deliverMail({ to, subject, text, html, preview: paymentUrl });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, preview: paymentUrl, priority: "high" });
 }
 
-export async function sendEnrollmentApprovedEmail(params: NotificationEmailBaseParams & { courseTitle: string; courseUrl: string }) {
+// ---------------------------------------------------------------------------
+// Email: Enrollment approved
+// ---------------------------------------------------------------------------
+
+export async function sendEnrollmentApprovedEmail(
+  params: NotificationEmailBaseParams & { courseTitle: string; courseUrl: string },
+) {
   const { to, studentName, courseTitle, courseUrl } = params;
   const displayName = studentName || "Student";
   const subject = `Enrollment approved — ${courseTitle}`;
-  
+  const preview = `Congratulations! Your enrollment in "${courseTitle}" has been approved. You can now access your course.`;
+
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
@@ -335,27 +507,33 @@ export async function sendEnrollmentApprovedEmail(params: NotificationEmailBaseP
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    `<p>Congratulations! Your enrollment request for <strong>${escapeHtml(courseTitle)}</strong> has been approved.</p>`,
-    '<p>You can now access your course directly from your dashboard.</p>',
-    '<p style="margin: 28px 0;">',
-    `<a href="${courseUrl}" style="background: #166534; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">Access Course</a>`,
-    "</p>",
-    `<p style="font-size: 14px; color: #57534e;">Or copy this link: <a href="${courseUrl}">${escapeHtml(courseUrl)}</a></p>`,
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>Congratulations! Your enrollment request for <strong>${escapeHtml(courseTitle)}</strong> has been <strong style="color:#166534;">approved</strong>.</p>
+    <p>You can now access your course directly from your dashboard.</p>
+    <p style="margin:28px 0;">
+      <a href="${courseUrl}" style="background:#166534;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Access Course</a>
+    </p>
+    <p style="font-size:13px;color:#6b7280;">Or copy this link: <a href="${courseUrl}" style="color:#3730a3;">${escapeHtml(courseUrl)}</a></p>
+    <p>We pray this journey is deeply beneficial for you. Jazakallah Khair!</p>`;
 
-  return deliverMail({ to, subject, text, html, preview: courseUrl });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, preview: courseUrl, priority: "high" });
 }
 
-export async function sendEnrollmentRejectedEmail(params: NotificationEmailBaseParams & { courseTitle: string; courseUrl: string }) {
+// ---------------------------------------------------------------------------
+// Email: Enrollment rejected
+// ---------------------------------------------------------------------------
+
+export async function sendEnrollmentRejectedEmail(
+  params: NotificationEmailBaseParams & { courseTitle: string; courseUrl: string },
+) {
   const { to, studentName, courseTitle, courseUrl } = params;
   const displayName = studentName || "Student";
   const subject = `Enrollment update — ${courseTitle}`;
-  
+  const preview = `Your enrollment request for "${courseTitle}" was not approved. Please contact us if you have questions.`;
+
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
@@ -366,23 +544,34 @@ export async function sendEnrollmentRejectedEmail(params: NotificationEmailBaseP
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    `<p>Your enrollment request for <strong>${escapeHtml(courseTitle)}</strong> was not approved by the academy.</p>`,
-    '<p>If you believe this was a mistake or need clarification, please contact our support team.</p>',
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>Your enrollment request for <strong>${escapeHtml(courseTitle)}</strong> was not approved by the academy at this time.</p>
+    <p>If you believe this was a mistake or need clarification, please reply to this email or contact our support team.</p>
+    ${courseUrl ? `<p style="margin:28px 0;"><a href="${courseUrl}" style="background:#3730a3;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Contact Us</a></p>` : ""}`;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
 
   return deliverMail({ to, subject, text, html });
 }
 
-export async function sendCourseAnnouncementEmail(params: NotificationEmailBaseParams & { courseTitle: string; announcementTitle: string; announcementBody: string; announcementUrl: string }) {
+// ---------------------------------------------------------------------------
+// Email: Course announcement
+// ---------------------------------------------------------------------------
+
+export async function sendCourseAnnouncementEmail(
+  params: NotificationEmailBaseParams & {
+    courseTitle: string;
+    announcementTitle: string;
+    announcementBody: string;
+    announcementUrl: string;
+  },
+) {
   const { to, studentName, courseTitle, announcementTitle, announcementBody, announcementUrl } = params;
   const displayName = studentName || "Student";
   const subject = `${courseTitle} — ${announcementTitle}`;
-  
+  const preview = announcementBody.slice(0, 120);
+
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
@@ -396,26 +585,44 @@ export async function sendCourseAnnouncementEmail(params: NotificationEmailBaseP
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    `<p>A new announcement has been posted for <strong>${escapeHtml(courseTitle)}</strong>:</p>`,
-    `<div style="margin: 20px 0; padding: 16px; border-left: 4px solid #3730a3; background: #f3f4f6; white-space: pre-wrap;">${escapeHtml(announcementBody)}</div>`,
-    '<p style="margin: 28px 0;">',
-    `<a href="${announcementUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">View Announcement</a>`,
-    "</p>",
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>A new announcement has been posted for <strong>${escapeHtml(courseTitle)}</strong>:</p>
+    <div style="margin:20px 0;padding:16px 20px;border-left:4px solid #3730a3;background:#eef2ff;white-space:pre-wrap;border-radius:0 6px 6px 0;font-size:14px;line-height:1.6;">${escapeHtml(announcementBody)}</div>
+    <p style="margin:28px 0;">
+      <a href="${announcementUrl}" style="background:#3730a3;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">View Full Announcement</a>
+    </p>`;
 
-  return deliverMail({ to, subject, text, html, preview: announcementBody.slice(0, 100) });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml, unsubscribeUrl: announcementUrl });
+
+  return deliverMail({
+    to,
+    subject,
+    text,
+    html,
+    preview: announcementBody.slice(0, 100),
+    listUnsubscribeUrl: announcementUrl,
+  });
 }
 
-export async function sendPersonalMessageEmail(params: NotificationEmailBaseParams & { teacherName: string; courseTitle: string; messageTitle: string; messageBody: string; messageUrl: string }) {
+// ---------------------------------------------------------------------------
+// Email: Personal message from teacher
+// ---------------------------------------------------------------------------
+
+export async function sendPersonalMessageEmail(
+  params: NotificationEmailBaseParams & {
+    teacherName: string;
+    courseTitle: string;
+    messageTitle: string;
+    messageBody: string;
+    messageUrl: string;
+  },
+) {
   const { to, studentName, teacherName, courseTitle, messageTitle, messageBody, messageUrl } = params;
   const displayName = studentName || "Student";
   const subject = `Message from ${teacherName} — ${courseTitle}`;
-  
+  const preview = `${teacherName} sent you a message: ${messageBody.slice(0, 80)}`;
+
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
@@ -430,27 +637,36 @@ export async function sendPersonalMessageEmail(params: NotificationEmailBasePara
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    `<p>You have received a new message from <strong>${escapeHtml(teacherName)}</strong> for the course <strong>${escapeHtml(courseTitle)}</strong>:</p>`,
-    messageTitle ? `<h3 style="margin-top: 16px;">${escapeHtml(messageTitle)}</h3>` : "",
-    `<div style="margin: 20px 0; padding: 16px; border-left: 4px solid #0284c7; background: #f0f9ff; white-space: pre-wrap;">${escapeHtml(messageBody)}</div>`,
-    '<p style="margin: 28px 0;">',
-    `<a href="${messageUrl}" style="background: #0284c7; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">View Message</a>`,
-    "</p>",
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>You have received a new message from <strong>${escapeHtml(teacherName)}</strong> for the course <strong>${escapeHtml(courseTitle)}</strong>:</p>
+    ${messageTitle ? `<h3 style="margin-top:16px;margin-bottom:8px;font-size:16px;color:#1c1917;">${escapeHtml(messageTitle)}</h3>` : ""}
+    <div style="margin:12px 0 20px 0;padding:16px 20px;border-left:4px solid #0284c7;background:#f0f9ff;white-space:pre-wrap;border-radius:0 6px 6px 0;font-size:14px;line-height:1.6;">${escapeHtml(messageBody)}</div>
+    <p style="margin:28px 0;">
+      <a href="${messageUrl}" style="background:#0284c7;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">View Message</a>
+    </p>`;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
 
   return deliverMail({ to, subject, text, html, preview: messageBody.slice(0, 100) });
 }
 
-export async function sendSiteAnnouncementEmail(params: NotificationEmailBaseParams & { announcementTitle: string; announcementBody: string; announcementUrl: string }) {
+// ---------------------------------------------------------------------------
+// Email: Site-wide announcement
+// ---------------------------------------------------------------------------
+
+export async function sendSiteAnnouncementEmail(
+  params: NotificationEmailBaseParams & {
+    announcementTitle: string;
+    announcementBody: string;
+    announcementUrl: string;
+  },
+) {
   const { to, studentName, announcementTitle, announcementBody, announcementUrl } = params;
   const displayName = studentName || "Student";
-  const subject = announcementTitle;
-  
+  const subject = `Announcement: ${announcementTitle}`;
+  const preview = announcementBody.slice(0, 120);
+
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
@@ -462,26 +678,38 @@ export async function sendSiteAnnouncementEmail(params: NotificationEmailBasePar
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    `<h2 style="color: #1c1917; margin-top: 24px;">${escapeHtml(announcementTitle)}</h2>`,
-    `<div style="margin: 20px 0; white-space: pre-wrap;">${escapeHtml(announcementBody)}</div>`,
-    '<p style="margin: 28px 0;">',
-    `<a href="${announcementUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">View Announcement</a>`,
-    "</p>",
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <h2 style="color:#1c1917;margin-top:20px;margin-bottom:12px;font-size:18px;">${escapeHtml(announcementTitle)}</h2>
+    <div style="margin:0 0 20px 0;white-space:pre-wrap;line-height:1.7;">${escapeHtml(announcementBody)}</div>
+    <p style="margin:28px 0;">
+      <a href="${announcementUrl}" style="background:#3730a3;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">View Announcement</a>
+    </p>`;
 
-  return deliverMail({ to, subject, text, html, preview: announcementBody.slice(0, 100) });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml, unsubscribeUrl: announcementUrl });
+
+  return deliverMail({
+    to,
+    subject,
+    text,
+    html,
+    preview: announcementBody.slice(0, 100),
+    listUnsubscribeUrl: announcementUrl,
+  });
 }
 
-export async function sendBookOrderApprovedEmail(params: NotificationEmailBaseParams & { orderUrl: string; totalAmountStr: string }) {
+// ---------------------------------------------------------------------------
+// Email: Book order approved
+// ---------------------------------------------------------------------------
+
+export async function sendBookOrderApprovedEmail(
+  params: NotificationEmailBaseParams & { orderUrl: string; totalAmountStr: string },
+) {
   const { to, studentName, orderUrl, totalAmountStr } = params;
   const displayName = studentName || "Student";
-  const subject = "Book order approved";
-  
+  const subject = "Book order approved — Darse Quran Academy";
+  const preview = `Your book order (${totalAmountStr}) has been approved and is being processed.`;
+
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
@@ -494,26 +722,31 @@ export async function sendBookOrderApprovedEmail(params: NotificationEmailBasePa
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    `<p>Your book order (<strong>${escapeHtml(totalAmountStr)}</strong>) has been approved and is being processed.</p>`,
-    "<p>You will receive another update when your order ships.</p>",
-    '<p style="margin: 28px 0;">',
-    `<a href="${orderUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">View Order</a>`,
-    "</p>",
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>Your book order (<strong>${escapeHtml(totalAmountStr)}</strong>) has been <strong style="color:#166534;">approved</strong> and is being processed.</p>
+    <p>You will receive another notification when your order ships.</p>
+    <p style="margin:28px 0;">
+      <a href="${orderUrl}" style="background:#3730a3;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">View Order</a>
+    </p>`;
 
-  return deliverMail({ to, subject, text, html });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, priority: "high" });
 }
 
-export async function sendBookOrderDeclinedEmail(params: NotificationEmailBaseParams & { orderUrl: string }) {
+// ---------------------------------------------------------------------------
+// Email: Book order declined
+// ---------------------------------------------------------------------------
+
+export async function sendBookOrderDeclinedEmail(
+  params: NotificationEmailBaseParams & { orderUrl: string },
+) {
   const { to, studentName, orderUrl } = params;
   const displayName = studentName || "Student";
-  const subject = "Book order declined";
-  
+  const subject = "Book order update — Darse Quran Academy";
+  const preview = "Your recent book order could not be approved. Please review your order details.";
+
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
@@ -526,25 +759,32 @@ export async function sendBookOrderDeclinedEmail(params: NotificationEmailBasePa
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    "<p>Your recent book order could not be approved. If you submitted a payment reference, we may not have been able to verify it.</p>",
-    '<p style="margin: 28px 0;">',
-    `<a href="${orderUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">View Order</a>`,
-    "</p>",
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>Your recent book order could not be approved. If you submitted a payment reference, we may not have been able to verify it.</p>
+    <p style="margin:28px 0;">
+      <a href="${orderUrl}" style="background:#3730a3;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">View Order</a>
+    </p>
+    <p style="font-size:13px;color:#6b7280;">If you have questions, please reply to this email.</p>`;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
 
   return deliverMail({ to, subject, text, html });
 }
 
-export async function sendBookOrderShippedEmail(params: NotificationEmailBaseParams & { orderUrl: string; courierServiceName: string; trackingId: string }) {
+// ---------------------------------------------------------------------------
+// Email: Book order shipped
+// ---------------------------------------------------------------------------
+
+export async function sendBookOrderShippedEmail(
+  params: NotificationEmailBaseParams & { orderUrl: string; courierServiceName: string; trackingId: string },
+) {
   const { to, studentName, orderUrl, courierServiceName, trackingId } = params;
   const displayName = studentName || "Student";
-  const subject = "Your book order has shipped!";
-  
+  const subject = "Your book order has shipped — Darse Quran Academy";
+  const preview = `Good news! Your book order has shipped via ${courierServiceName}. Tracking ID: ${trackingId}`;
+
+  // Bug fix: was using "\\n" (literal backslash-n); corrected to "\n"
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
@@ -558,32 +798,37 @@ export async function sendBookOrderShippedEmail(params: NotificationEmailBasePar
     orderUrl,
     "",
     "Darse Quran Academy",
-  ].join("\\n");
+  ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    "<p>Good news! Your book order has been shipped and is on its way to you.</p>",
-    '<div style="margin: 20px 0; padding: 16px; border-left: 4px solid #16a34a; background: #f0fdf4;">',
-    '<h3 style="margin-top: 0; color: #166534;">Shipment Details</h3>',
-    `<p style="margin: 0;"><strong>Courier:</strong> ${escapeHtml(courierServiceName)}</p>`,
-    `<p style="margin: 0;"><strong>Tracking ID:</strong> ${escapeHtml(trackingId)}</p>`,
-    '</div>',
-    '<p style="margin: 28px 0;">',
-    `<a href="${orderUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">View Order</a>`,
-    "</p>",
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>Good news! Your book order has been <strong style="color:#166534;">shipped</strong> and is on its way to you.</p>
+    <div style="margin:20px 0;padding:16px 20px;border-left:4px solid #16a34a;background:#f0fdf4;border-radius:0 6px 6px 0;">
+      <p style="margin:0 0 6px 0;font-size:14px;font-weight:600;color:#166534;">Shipment Details</p>
+      <p style="margin:0 0 4px 0;font-size:14px;"><strong>Courier:</strong> ${escapeHtml(courierServiceName)}</p>
+      <p style="margin:0;font-size:14px;"><strong>Tracking ID:</strong> ${escapeHtml(trackingId)}</p>
+    </div>
+    <p style="margin:28px 0;">
+      <a href="${orderUrl}" style="background:#3730a3;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">View Order</a>
+    </p>`;
 
-  return deliverMail({ to, subject, text, html });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, priority: "high" });
 }
 
-export async function sendBookOrderRefundedEmail(params: NotificationEmailBaseParams & { orderUrl: string }) {
+// ---------------------------------------------------------------------------
+// Email: Book order refunded
+// ---------------------------------------------------------------------------
+
+export async function sendBookOrderRefundedEmail(
+  params: NotificationEmailBaseParams & { orderUrl: string },
+) {
   const { to, studentName, orderUrl } = params;
   const displayName = studentName || "Student";
-  const subject = "Book order refunded";
-  
+  const subject = "Book order refunded — Darse Quran Academy";
+  const preview = "Your book order has been canceled and your payment has been refunded.";
+
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
@@ -595,19 +840,21 @@ export async function sendBookOrderRefundedEmail(params: NotificationEmailBasePa
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    `<p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>`,
-    "<p>Your book order has been canceled and your payment has been refunded.</p>",
-    '<p style="margin: 28px 0;">',
-    `<a href="${orderUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">View Order</a>`,
-    "</p>",
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>Your book order has been canceled and your payment has been <strong>refunded</strong>.</p>
+    <p style="margin:28px 0;">
+      <a href="${orderUrl}" style="background:#3730a3;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">View Order</a>
+    </p>`;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
 
   return deliverMail({ to, subject, text, html });
 }
+
+// ---------------------------------------------------------------------------
+// Email: Email address verification
+// ---------------------------------------------------------------------------
 
 export type VerificationEmailParams = {
   to: string;
@@ -618,6 +865,8 @@ export async function sendVerificationEmail(params: VerificationEmailParams): Pr
   const { to, verificationUrl } = params;
 
   const subject = "Verify your email address — Darse Quran Academy";
+  const preview = "Welcome! Please verify your email address to complete your registration.";
+
   const text = [
     "Assalamu Alaikum,",
     "",
@@ -633,27 +882,18 @@ export async function sendVerificationEmail(params: VerificationEmailParams): Pr
     "Darse Quran Academy",
   ].join("\n");
 
-  const html = [
-    '<div style="font-family: system-ui, sans-serif; line-height: 1.6; color: #1c1917; max-width: 560px;">',
-    "<p>Assalamu Alaikum,</p>",
-    "<p>Thank you for registering at Darse Quran Academy.</p>",
-    "<p>Please verify your email address by clicking the button below:</p>",
-    '<p style="margin: 28px 0;">',
-    `<a href="${verificationUrl}" style="background: #3730a3; color: #fff; padding: 12px 24px; border-radius: 9999px; text-decoration: none; font-weight: 600;">`,
-    "Verify Email",
-    "</a></p>",
-    `<p style="font-size: 14px; color: #57534e;">Or copy this link: <a href="${verificationUrl}">${escapeHtml(verificationUrl)}</a></p>`,
-    "<p>This link will expire in 24 hours.</p>",
-    "<p>If you did not create an account, you can safely ignore this email.</p>",
-    '<p style="margin-top: 24px; font-size: 14px; color: #57534e;">— Darse Quran Academy</p>',
-    "</div>",
-  ].join("");
+  const bodyHtml = `
+    <p>Assalamu Alaikum,</p>
+    <p>Thank you for registering at <strong>Darse Quran Academy</strong>.</p>
+    <p>Please verify your email address by clicking the button below:</p>
+    <p style="margin:28px 0;">
+      <a href="${verificationUrl}" style="background:#3730a3;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Verify Email Address</a>
+    </p>
+    <p style="font-size:13px;color:#6b7280;">Or copy this link: <a href="${verificationUrl}" style="color:#3730a3;">${escapeHtml(verificationUrl)}</a></p>
+    <p style="font-size:13px;color:#6b7280;"><strong>This link will expire in 24 hours.</strong></p>
+    <p style="font-size:13px;color:#6b7280;">If you did not create an account, you can safely ignore this email.</p>`;
 
-  return deliverMail({
-    to,
-    subject,
-    text,
-    html,
-    preview: verificationUrl,
-  });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, preview: verificationUrl, priority: "high" });
 }

@@ -36,7 +36,7 @@ function getSenderEmail(): string {
   const raw =
     process.env.EMAIL_FROM?.trim() ||
     process.env.SMTP_USER?.trim() ||
-    "noreply@darsequranacademy.org";
+    "noreply@darsequranacademy.com";
   const stripped = stripEnvQuotes(raw);
   const match = stripped.match(/<([^>]+)>/);
   return match ? match[1].trim() : stripped;
@@ -50,7 +50,7 @@ function getFromAddress(): string {
   const raw =
     process.env.EMAIL_FROM?.trim() ||
     process.env.SMTP_USER?.trim() ||
-    "noreply@darsequranacademy.org";
+    "noreply@darsequranacademy.com";
   const stripped = stripEnvQuotes(raw);
   if (stripped.includes("<")) return stripped; // already has display name
   return `Darse Quran Academy <${stripped}>`;
@@ -77,7 +77,7 @@ function getReplyTo(): string {
  * Format: <hex@domain>
  */
 function generateMessageId(): string {
-  const domain = getSenderEmail().split("@")[1] || "darsequranacademy.org";
+  const domain = getSenderEmail().split("@")[1] || "darsequranacademy.com";
   const unique = randomBytes(16).toString("hex");
   return `<${unique}@${domain}>`;
 }
@@ -170,7 +170,7 @@ function buildHtmlEmail({
           <tr>
             <td style="background-color:#f3f4f6;padding:18px 32px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;border-top:none;text-align:center;color:#6b7280;font-size:12px;line-height:1.6;">
               <p style="margin:0 0 4px 0;">This is a transactional notification from <strong style="color:#374151;">Darse Quran Academy</strong>.</p>
-              <p style="margin:0;">Questions? Reply to this email or visit <a href="https://darsequranacademy.org/contact" style="color:#3730a3;text-decoration:none;">darsequranacademy.org</a>.</p>
+              <p style="margin:0;">Questions? Reply to this email or visit <a href="https://darsequranacademy.com/contact" style="color:#3730a3;text-decoration:none;">darsequranacademy.com</a>.</p>
               ${footerExtra}
             </td>
           </tr>

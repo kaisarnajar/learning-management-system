@@ -6,7 +6,59 @@ import { getChromiumExecutablePath } from "@/lib/chromium";
 export type PdfOptions = {
   format?: "A4" | "A3" | "Letter";
   landscape?: boolean;
+  /**
+   * Delay in milliseconds before launching the browser.
+   * Use this in fire-and-forget email senders to avoid racing with a
+   * concurrent download request that also needs Chromium on Vercel.
+   */
+  startDelayMs?: number;
 };
+
+// ---------------------------------------------------------------------------
+// Browser launch with retry (handles Vercel ETXTBSY race condition)
+// ---------------------------------------------------------------------------
+
+/**
+ * ETXTBSY ("Text file busy") is thrown on Vercel/Lambda when two concurrent
+ * invocations try to execute the same @sparticuz/chromium-min binary while
+ * it is still being extracted to /tmp. Retrying with exponential backoff
+ * resolves the issue once the first process finishes the extraction.
+ */
+async function launchBrowserWithRetry(maxRetries = 4) {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      if (process.env.VERCEL) {
+        return await puppeteerCore.launch({
+          args: chromium.args,
+          executablePath: await getChromiumExecutablePath(),
+          headless: true,
+        });
+      } else {
+        return await puppeteer.launch({
+          headless: true,
+          args: ["--no-sandbox", "--disable-setuid-sandbox"],
+        });
+      }
+    } catch (err: any) {
+      const isRetryable = err?.code === "ETXTBSY" || err?.message?.includes("ETXTBSY");
+      if (isRetryable && attempt < maxRetries) {
+        const delayMs = attempt * 1500; // 1.5s, 3s, 4.5s
+        console.warn(
+          `[pdf-generator] ETXTBSY on attempt ${attempt}/${maxRetries}, retrying in ${delayMs}ms...`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+      throw err;
+    }
+  }
+  // unreachable, satisfies TypeScript
+  throw new Error("[pdf-generator] Failed to launch browser after all retries.");
+}
+
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 /**
  * Generates a PDF from an HTML string using Puppeteer.
@@ -17,22 +69,13 @@ export type PdfOptions = {
  */
 export async function generatePdfFromHtml(
   html: string,
-  { format = "A4", landscape = false }: PdfOptions = {},
+  { format = "A4", landscape = false, startDelayMs = 0 }: PdfOptions = {},
 ): Promise<Buffer> {
-  let browser;
-
-  if (process.env.VERCEL) {
-    browser = await puppeteerCore.launch({
-      args: chromium.args,
-      executablePath: await getChromiumExecutablePath(),
-      headless: true,
-    });
-  } else {
-    browser = await puppeteer.launch({
-      headless: true,
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+  if (startDelayMs > 0) {
+    await new Promise((resolve) => setTimeout(resolve, startDelayMs));
   }
+
+  const browser = await launchBrowserWithRetry();
 
   try {
     const page = await browser.newPage();

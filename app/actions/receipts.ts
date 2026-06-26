@@ -150,7 +150,7 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
         </html>
       `;
 
-      const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false });
+      const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false, startDelayMs: 3000 });
       const amountStr = `₹${(record.amountInrPaise / 100).toFixed(2)}`;
       const pdfFilename = getReceiptFilename(courseTitle, paymentRecordId);
 

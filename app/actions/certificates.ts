@@ -131,7 +131,7 @@ export async function generateCertificate(enrollmentId: string, certificateType:
         </html>
       `;
 
-      const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: true });
+      const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: true, startDelayMs: 3000 });
       const pdfFilename = getCertificateFilename(courseTitle, enrollmentId);
 
       const result = await sendCertificateEmail({

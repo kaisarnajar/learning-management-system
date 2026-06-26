@@ -1,8 +1,4 @@
 import { NextResponse } from "next/server";
-import puppeteer from "puppeteer";
-import puppeteerCore from "puppeteer-core";
-import chromium from "@sparticuz/chromium-min";
-import { getChromiumExecutablePath } from "@/lib/chromium";
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { getCourseById } from "@/lib/courses";
@@ -13,6 +9,7 @@ import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-l
 import { INVOICE_TERMS, AUTHORITY_SIGNATURE } from "@/lib/academy-contact";
 import { getAcademySettings } from "@/lib/academy-settings";
 import { renderReceiptToHtml } from "@/lib/receipt-html";
+import { generatePdfFromHtml } from "@/lib/pdf-generator";
 import { ReceiptData } from "@/types/receipt";
 import fs from "fs/promises";
 import path from "path";
@@ -153,55 +150,21 @@ export async function GET(
   `;
 
   try {
-    let browser;
-    if (process.env.VERCEL) {
-      browser = await puppeteerCore.launch({
-        args: chromium.args,
-        executablePath: await getChromiumExecutablePath(),
-        headless: true,
-      });
-    } else {
-      browser = await puppeteer.launch({
-        headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox'],
-      });
-    }
+    const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false });
 
-    const page = await browser.newPage();
-    
-    // Set content and wait for it to be loaded
-    await page.setContent(fullHtml, { waitUntil: 'load' });
-    
-    // Wait for the Tailwind CDN script to fetch and apply
-    await page.waitForNetworkIdle({ idleTime: 500, timeout: 5000 }).catch(() => {});
-
-    // Generate PDF
-    const pdfBuffer = await page.pdf({
-      format: 'A4',
-      printBackground: true,
-      margin: {
-        top: '0mm',
-        right: '0mm',
-        bottom: '0mm',
-        left: '0mm',
-      },
-    });
-
-    await browser.close();
-
-    return new NextResponse(Buffer.from(pdfBuffer), {
+    return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `inline; filename="${filename}"`,
+        "Content-Type": "application/pdf",
+        "Content-Disposition": `inline; filename="${filename}"`,
         "Cache-Control": "private, no-cache",
       },
     });
   } catch (error: any) {
-    console.error('PDF Generation Error:', error?.stack || error);
+    console.error("PDF Generation Error:", error?.stack || error);
     return NextResponse.json(
-      { error: 'Failed to generate PDF', details: error?.message || String(error) },
-      { status: 500 }
+      { error: "Failed to generate PDF", details: error?.message || String(error) },
+      { status: 500 },
     );
   }
 }

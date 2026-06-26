@@ -189,6 +189,12 @@ function buildHtmlEmail({
 
 type EmailPriority = "high" | "normal";
 
+type MailAttachment = {
+  filename: string;
+  content: Buffer;
+  contentType: string;
+};
+
 type DeliverMailParams = {
   to: string;
   subject: string;
@@ -200,6 +206,8 @@ type DeliverMailParams = {
   priority?: EmailPriority;
   /** Adds List-Unsubscribe headers (for announcement-style emails) */
   listUnsubscribeUrl?: string;
+  /** Optional file attachments (e.g. PDF receipts or certificates) */
+  attachments?: MailAttachment[];
 };
 
 async function deliverMail({
@@ -210,6 +218,7 @@ async function deliverMail({
   preview,
   priority = "normal",
   listUnsubscribeUrl,
+  attachments,
 }: DeliverMailParams): Promise<EmailSendResult> {
   if (!isEmailConfigured()) {
     console.info("[email] SMTP not configured. Email would be sent to:", to);
@@ -252,6 +261,11 @@ async function deliverMail({
       text,
       html,
       headers,
+      attachments: attachments?.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        contentType: a.contentType,
+      })),
     });
     return { sent: true };
   } catch (error) {
@@ -896,4 +910,142 @@ export async function sendVerificationEmail(params: VerificationEmailParams): Pr
   const html = buildHtmlEmail({ previewText: preview, bodyHtml });
 
   return deliverMail({ to, subject, text, html, preview: verificationUrl, priority: "high" });
+}
+
+// ---------------------------------------------------------------------------
+// Email: Payment receipt with PDF attachment
+// ---------------------------------------------------------------------------
+
+export type ReceiptEmailParams = {
+  to: string;
+  studentName: string;
+  courseTitle: string;
+  invoiceNumber: string;
+  amountStr: string;
+  pdfBuffer: Buffer;
+  pdfFilename: string;
+};
+
+export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<EmailSendResult> {
+  const { to, studentName, courseTitle, invoiceNumber, amountStr, pdfBuffer, pdfFilename } = params;
+  const displayName = studentName || "Student";
+
+  const subject = `Payment Receipt — ${invoiceNumber}`;
+  const preview = `Your payment receipt for "${courseTitle}" is attached. Amount paid: ${amountStr}.`;
+
+  const text = [
+    `Assalamu Alaikum ${displayName},`,
+    "",
+    `Thank you for your payment for "${courseTitle}" at Darse Quran Academy.`,
+    "",
+    `Your payment receipt (${invoiceNumber}) for ${amountStr} is attached to this email as a PDF.`,
+    "",
+    "Please keep it for your records.",
+    "",
+    "Jazakallah Khair,",
+    "Darse Quran Academy",
+  ].join("\n");
+
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>Thank you for your payment for <strong>${escapeHtml(courseTitle)}</strong> at Darse Quran Academy.</p>
+    <div style="margin:24px 0;padding:16px 20px;background:#f0fdf4;border-left:4px solid #16a34a;border-radius:0 6px 6px 0;">
+      <p style="margin:0 0 6px 0;font-size:13px;font-weight:600;color:#166534;text-transform:uppercase;letter-spacing:0.5px;">Payment Confirmed</p>
+      <p style="margin:0 0 4px 0;font-size:14px;"><strong>Invoice No:</strong> ${escapeHtml(invoiceNumber)}</p>
+      <p style="margin:0;font-size:14px;"><strong>Amount Paid:</strong> ${escapeHtml(amountStr)}</p>
+    </div>
+    <p>Your official payment receipt is <strong>attached to this email</strong> as a PDF. Please keep it for your records.</p>
+    <p style="font-size:13px;color:#6b7280;">If you have any questions, please reply to this email or contact the academy.</p>`;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({
+    to,
+    subject,
+    text,
+    html,
+    preview,
+    priority: "high",
+    attachments: [
+      {
+        filename: pdfFilename,
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      },
+    ],
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Email: Certificate with PDF attachment
+// ---------------------------------------------------------------------------
+
+export type CertificateEmailParams = {
+  to: string;
+  studentName: string;
+  courseTitle: string;
+  certificateNumber: string;
+  certificateType: "APPRECIATION" | "COMPLETION";
+  pdfBuffer: Buffer;
+  pdfFilename: string;
+};
+
+export async function sendCertificateEmail(params: CertificateEmailParams): Promise<EmailSendResult> {
+  const { to, studentName, courseTitle, certificateNumber, certificateType, pdfBuffer, pdfFilename } = params;
+  const displayName = studentName || "Student";
+  const isCompletion = certificateType === "COMPLETION";
+  const certLabel = isCompletion ? "Certificate of Completion" : "Certificate of Appreciation";
+
+  const subject = `${certLabel} — ${courseTitle}`;
+  const preview = isCompletion
+    ? `Congratulations! Your Certificate of Completion for "${courseTitle}" is attached.`
+    : `Your Certificate of Appreciation for "${courseTitle}" is attached.`;
+
+  const text = [
+    `Assalamu Alaikum ${displayName},`,
+    "",
+    isCompletion
+      ? `Congratulations on successfully completing "${courseTitle}" at Darse Quran Academy!`
+      : `Thank you for your dedication and effort in "${courseTitle}" at Darse Quran Academy!`,
+    "",
+    `Your ${certLabel} (No. ${certificateNumber}) is attached to this email as a PDF.`,
+    "",
+    "We pray this certificate is a blessing and a recognition of your sincere efforts in seeking Islamic knowledge.",
+    "",
+    "Jazakallah Khair,",
+    "Darse Quran Academy",
+  ].join("\n");
+
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    ${
+      isCompletion
+        ? `<p>Congratulations on successfully completing <strong>${escapeHtml(courseTitle)}</strong> at Darse Quran Academy! May Allah bless your efforts and make this knowledge a source of benefit for you and others.</p>`
+        : `<p>Thank you for your dedication and effort in <strong>${escapeHtml(courseTitle)}</strong> at Darse Quran Academy. Your commitment to Islamic education is truly appreciated.</p>`
+    }
+    <div style="margin:24px 0;padding:16px 20px;background:#fef9e7;border-left:4px solid #d4a017;border-radius:0 6px 6px 0;">
+      <p style="margin:0 0 6px 0;font-size:13px;font-weight:600;color:#92400e;text-transform:uppercase;letter-spacing:0.5px;">${escapeHtml(certLabel)}</p>
+      <p style="margin:0 0 4px 0;font-size:14px;"><strong>Course:</strong> ${escapeHtml(courseTitle)}</p>
+      <p style="margin:0;font-size:14px;"><strong>Certificate No:</strong> ${escapeHtml(certificateNumber)}</p>
+    </div>
+    <p>Your <strong>${escapeHtml(certLabel)}</strong> is <strong>attached to this email</strong> as a PDF. Please download and keep it for your records.</p>
+    <p style="font-size:13px;color:#6b7280;">We pray this is a source of barakah and motivation to continue on the path of knowledge. Jazakallah Khair!</p>`;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({
+    to,
+    subject,
+    text,
+    html,
+    preview,
+    priority: "high",
+    attachments: [
+      {
+        filename: pdfFilename,
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      },
+    ],
+  });
 }

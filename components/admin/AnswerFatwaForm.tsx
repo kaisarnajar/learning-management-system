@@ -39,8 +39,13 @@ export function AnswerFatwaForm({ question, featuredCount, action, rejectAction 
           defaultValue={question.answer ?? ""}
           placeholder="Write the scholarly answer here…"
           className={inputClassName}
+          readOnly={isPending}
         />
-        <p className="mt-1 text-xs text-muted">Minimum 20 characters. The asker will be emailed when you save.</p>
+        {isPending ? (
+          <p className="mt-1 text-xs text-muted">You are reviewing a submitted answer. It cannot be edited directly.</p>
+        ) : (
+          <p className="mt-1 text-xs text-muted">Minimum 20 characters. The asker will be emailed when you save.</p>
+        )}
       </div>
 
       <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-background/40 px-4 py-4 text-sm text-foreground">

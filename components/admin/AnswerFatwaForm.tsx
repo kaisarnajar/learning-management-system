@@ -68,6 +68,8 @@ export function AnswerFatwaForm({ question, featuredCount, action, rejectAction 
       <div className="flex gap-3">
         <SubmitButton
           type="submit"
+          name="submit_action"
+          value="approve"
           className="min-h-11 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
         >
           {isPending ? "Approve & Publish" : isAnswered ? "Update answer" : "Publish answer"}
@@ -75,6 +77,8 @@ export function AnswerFatwaForm({ question, featuredCount, action, rejectAction 
         {isPending && rejectAction && (
           <SubmitButton
             type="submit"
+            name="submit_action"
+            value="reject"
             formAction={rejectAction}
             className="min-h-11 rounded-md bg-destructive-bg px-5 py-2 text-sm font-semibold text-destructive-text hover:bg-destructive-bg/80"
           >

@@ -15,8 +15,12 @@ export function SubmitButton({
   className = "",
   ...props
 }: SubmitButtonProps) {
-  const { pending } = useFormStatus();
-  const isLoading = pending || isSubmitting;
+  const { pending, data } = useFormStatus();
+  let isLoading = pending || isSubmitting;
+
+  if (pending && props.name && props.value !== undefined) {
+    isLoading = data?.get(props.name) === props.value;
+  }
 
   return (
     <button

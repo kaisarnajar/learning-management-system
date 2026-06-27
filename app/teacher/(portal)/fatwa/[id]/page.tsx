@@ -79,16 +79,16 @@ export default async function TeacherFatwaDetailPage({
               defaultValue={question.answer ?? ""}
               placeholder="Write the scholarly answer here…"
               className={inputClassName}
-              disabled={question.approvalStatus === "APPROVED"}
+              disabled={question.approvalStatus === "APPROVED" && Boolean(question.answer)}
             />
-            {question.approvalStatus === "APPROVED" ? (
+            {question.approvalStatus === "APPROVED" && Boolean(question.answer) ? (
               <p className="mt-1 text-xs text-success-text font-medium">This answer is approved and published. It can no longer be edited.</p>
             ) : (
               <p className="mt-1 text-xs text-muted">Minimum 20 characters. The admin will be notified to review it.</p>
             )}
           </div>
 
-          {question.approvalStatus !== "APPROVED" && (
+          {!(question.approvalStatus === "APPROVED" && Boolean(question.answer)) && (
             <SubmitButton
               type="submit"
               className="min-h-11 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
@@ -99,7 +99,7 @@ export default async function TeacherFatwaDetailPage({
         </form>
       </div>
       
-      {question.approvalStatus === "APPROVED" && (
+      {question.approvalStatus === "APPROVED" && Boolean(question.answer) && (
         <p className="mt-6 text-sm text-muted">
           Public link:{" "}
           <Link href={`/fatwa/${question.id}`} className="text-primary hover:underline" target="_blank">

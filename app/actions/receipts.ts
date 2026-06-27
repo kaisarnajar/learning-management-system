@@ -1,5 +1,7 @@
 "use server";
 
+import { after } from "next/server";
+
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
@@ -65,7 +67,7 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
 
   // Fire-and-forget: generate PDF and send email in the background.
   // Errors are logged but never thrown — the admin action always succeeds.
-  (async () => {
+  after(async () => {
     try {
       const course = record.courseId ? await getCourseById(record.courseId) : null;
       const courseTitle = course?.title ?? "Darse Quran Academy";
@@ -178,7 +180,7 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
     } catch (err) {
       console.error("[receipt-email] Unexpected error while sending receipt email:", err);
     }
-  })();
+  });
 
   return { success: true, invoiceNumber };
 }

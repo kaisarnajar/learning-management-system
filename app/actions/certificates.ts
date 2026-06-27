@@ -1,5 +1,7 @@
 "use server";
 
+import { after } from "next/server";
+
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
@@ -61,7 +63,7 @@ export async function generateCertificate(enrollmentId: string, certificateType:
 
   // Fire-and-forget: generate PDF and send email in the background.
   // Errors are logged but never thrown — the admin action always succeeds.
-  (async () => {
+  after(async () => {
     try {
       const course = await getCourseById(enrollment.courseId);
       const courseTitle = course?.title ?? "Course";
@@ -158,7 +160,7 @@ export async function generateCertificate(enrollmentId: string, certificateType:
     } catch (err) {
       console.error("[cert-email] Unexpected error while sending certificate email:", err);
     }
-  })();
+  });
 
   return { success: "Certificate generated successfully.", certificateNumber };
 }

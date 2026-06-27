@@ -47,8 +47,10 @@ export default async function FatwaDetailPage({ params }: FatwaDetailPageProps) 
           <section className="card-elevated p-6 sm:p-8">
             <h2 className="font-serif text-lg font-semibold text-primary">Question</h2>
             <p className="mt-1 text-xs text-muted">
-              Asked by {fatwa.askerName}
-              {answeredDate ? ` · Answered ${answeredDate}` : ""}
+              {[
+                fatwa.askerName !== "Anonymous" ? `Asked by ${fatwa.askerName}` : null,
+                answeredDate ? `Answered ${answeredDate}` : null
+              ].filter(Boolean).join(" · ")}
             </p>
             <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{fatwa.question}</p>
           </section>

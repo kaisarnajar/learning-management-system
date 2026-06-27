@@ -32,7 +32,9 @@ export function FatwaCard({ fatwa }: FatwaCardProps) {
         {excerpt(fatwa.question)}
       </p>
       <div className="mt-auto pt-4">
-        <p className="text-xs text-muted">Asked by {fatwa.askerName}</p>
+        {fatwa.askerName !== "Anonymous" && (
+          <p className="text-xs text-muted">Asked by {fatwa.askerName}</p>
+        )}
         <Link
           href={`/fatwa/${fatwa.id}`}
           className="mt-2 inline-block text-sm font-semibold text-accent hover:text-primary"

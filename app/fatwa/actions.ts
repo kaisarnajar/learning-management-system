@@ -17,25 +17,28 @@ export async function submitFatwaQuestion(
 ): Promise<SubmitFatwaState> {
   const session = await auth();
 
+  const isAnonymous = formData.get("isAnonymous") === "on";
+
   const parsed = fatwaQuestionSchema.safeParse({
     category: formData.get("category"),
     title: formData.get("title"),
     question: formData.get("question"),
-    askerName: formData.get("askerName"),
-    askerEmail: formData.get("askerEmail"),
+    askerName: isAnonymous ? "Anonymous" : formData.get("askerName"),
+    askerEmail: isAnonymous ? "anonymous@darsequranacademy.org" : formData.get("askerEmail"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
   }
 
-  const askerName = session?.user?.name?.trim() || parsed.data.askerName;
-  const askerEmail = session?.user?.email?.toLowerCase().trim() || parsed.data.askerEmail;
+  const askerName = isAnonymous ? "Anonymous" : (session?.user?.name?.trim() || parsed.data.askerName);
+  const askerEmail = isAnonymous ? "anonymous@darsequranacademy.org" : (session?.user?.email?.toLowerCase().trim() || parsed.data.askerEmail);
+  const userId = isAnonymous ? null : (session?.user?.id ?? null);
 
   try {
     await prisma.fatwaQuestion.create({
       data: {
-        userId: session?.user?.id ?? null,
+        userId,
         askerName,
         askerEmail,
         category: parsed.data.category,

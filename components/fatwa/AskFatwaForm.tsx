@@ -26,6 +26,7 @@ const ASK_FATWA_FIELDS: (keyof AskFatwaFormValues)[] = [
   "question",
   "askerName",
   "askerEmail",
+  "isAnonymous",
 ];
 
 const initialState: SubmitFatwaState = {};
@@ -51,6 +52,7 @@ export function AskFatwaForm({
       question: "",
       askerName: defaultName,
       askerEmail: defaultEmail,
+      isAnonymous: false,
     },
     fields: ASK_FATWA_FIELDS,
     validate,
@@ -198,62 +200,80 @@ export function AskFatwaForm({
         )}
       </div>
 
-      {!isLoggedIn ? (
+      <div className="flex items-center gap-2">
+        <input
+          id="isAnonymous"
+          name="isAnonymous"
+          type="checkbox"
+          checked={values.isAnonymous}
+          onChange={(e) => updateField("isAnonymous", e.target.checked)}
+          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+        />
+        <label htmlFor="isAnonymous" className="text-sm font-medium text-foreground">
+          Send Question Anonymously
+        </label>
+      </div>
+
+      {!values.isAnonymous && (
         <>
-          <div>
-            <label htmlFor="askerName" className={labelClassName}>
-              Your name <span className="text-destructive-text">*</span>
-            </label>
-            <input
-              id="askerName"
-              name="askerName"
-              type="text"
-              required
-              value={values.askerName}
-              onChange={(e) => updateField("askerName", e.target.value)}
-              onBlur={() => markTouched("askerName")}
-              aria-invalid={showError("askerName") || undefined}
-              className={formFieldInputClass(showError("askerName"))}
-              autoComplete="name"
-            />
-            {showError("askerName") && (
-              <p className={formErrorTextClassName} role="alert">
-                {errors.askerName}
+          {!isLoggedIn ? (
+            <>
+              <div>
+                <label htmlFor="askerName" className={labelClassName}>
+                  Your name <span className="text-destructive-text">*</span>
+                </label>
+                <input
+                  id="askerName"
+                  name="askerName"
+                  type="text"
+                  required
+                  value={values.askerName}
+                  onChange={(e) => updateField("askerName", e.target.value)}
+                  onBlur={() => markTouched("askerName")}
+                  aria-invalid={showError("askerName") || undefined}
+                  className={formFieldInputClass(showError("askerName"))}
+                  autoComplete="name"
+                />
+                {showError("askerName") && (
+                  <p className={formErrorTextClassName} role="alert">
+                    {errors.askerName}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="askerEmail" className={labelClassName}>
+                  Email <span className="text-destructive-text">*</span>
+                </label>
+                <p className="mt-0.5 text-xs text-muted">We will email you when your question is answered.</p>
+                <input
+                  id="askerEmail"
+                  name="askerEmail"
+                  type="email"
+                  required
+                  value={values.askerEmail}
+                  onChange={(e) => updateField("askerEmail", e.target.value)}
+                  onBlur={() => markTouched("askerEmail")}
+                  aria-invalid={showError("askerEmail") || undefined}
+                  className={formFieldInputClass(showError("askerEmail"))}
+                  autoComplete="email"
+                />
+                {showError("askerEmail") && (
+                  <p className={formErrorTextClassName} role="alert">
+                    {errors.askerEmail}
+                  </p>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <input type="hidden" name="askerName" value={values.askerName} />
+              <input type="hidden" name="askerEmail" value={values.askerEmail} />
+              <p className="text-sm text-muted">
+                Submitting as <span className="font-medium text-foreground">{values.askerName}</span> (
+                {values.askerEmail}). We will email you when answered.
               </p>
-            )}
-          </div>
-          <div>
-            <label htmlFor="askerEmail" className={labelClassName}>
-              Email <span className="text-destructive-text">*</span>
-            </label>
-            <p className="mt-0.5 text-xs text-muted">We will email you when your question is answered.</p>
-            <input
-              id="askerEmail"
-              name="askerEmail"
-              type="email"
-              required
-              value={values.askerEmail}
-              onChange={(e) => updateField("askerEmail", e.target.value)}
-              onBlur={() => markTouched("askerEmail")}
-              aria-invalid={showError("askerEmail") || undefined}
-              className={formFieldInputClass(showError("askerEmail"))}
-              autoComplete="email"
-            />
-            {showError("askerEmail") && (
-              <p className={formErrorTextClassName} role="alert">
-                {errors.askerEmail}
-              </p>
-            )}
-          </div>
-        </>
-      ) : (
-        <>
-          <input type="hidden" name="askerName" value={values.askerName} />
-          <input type="hidden" name="askerEmail" value={values.askerEmail} />
-          <p className="text-sm text-muted">
-            Submitting as <span className="font-medium text-foreground">{values.askerName}</span> (
-            {values.askerEmail}). We will email you when answered.
-          </p>
+            </>
+          )}
         </>
       )}
 

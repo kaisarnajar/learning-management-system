@@ -36,8 +36,14 @@ export type AskFatwaFormValues = {
   question: string;
   askerName: string;
   askerEmail: string;
+  isAnonymous: boolean;
 };
 
 export function validateAskFatwaForm(values: AskFatwaFormValues): FormValidationResult {
-  return zodResultToFormValidation(fatwaQuestionSchema.safeParse(values));
+  const dataToValidate = {
+    ...values,
+    askerName: values.isAnonymous ? "Anonymous" : values.askerName,
+    askerEmail: values.isAnonymous ? "anonymous@darsequranacademy.org" : values.askerEmail,
+  };
+  return zodResultToFormValidation(fatwaQuestionSchema.safeParse(dataToValidate));
 }

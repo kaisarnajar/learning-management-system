@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AnswerFatwaForm } from "@/components/admin/AnswerFatwaForm";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { answerFatwaQuestion, deleteFatwaQuestionForm } from "@/app/admin/fatwa/actions";
+import { answerFatwaQuestion, deleteFatwaQuestionForm, rejectFatwaQuestion } from "@/app/admin/fatwa/actions";
 import { getFeaturedHomepageFatwaCount, getFatwaQuestionById } from "@/lib/fatwa";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
@@ -23,6 +23,7 @@ export default async function AdminFatwaDetailPage({
   if (!question) notFound();
 
   const answerAction = answerFatwaQuestion.bind(null, id);
+  const rejectAction = rejectFatwaQuestion.bind(null, id);
   const deleteAction = deleteFatwaQuestionForm.bind(null, id);
 
   return (
@@ -32,7 +33,11 @@ export default async function AdminFatwaDetailPage({
       </Link>
 
       <h1 className="mt-4 font-serif text-2xl font-bold text-primary">
-        {question.answer ? "Edit answer" : "Answer question"}
+        {question.approvalStatus === "PENDING"
+          ? "Review pending answer"
+          : question.answer
+            ? "Edit answer"
+            : "Answer question"}
       </h1>
       <p className="mt-1 text-sm text-muted">{question.title}</p>
 
@@ -52,15 +57,24 @@ export default async function AdminFatwaDetailPage({
             month: "long",
             year: "numeric",
           })}
-          {question.answer ? " · Visible on the public Fatwa section" : ""}
+          {question.approvalStatus === "APPROVED"
+            ? " · Visible on the public Fatwa section"
+            : question.approvalStatus === "PENDING"
+              ? " · Pending your approval"
+              : " · Rejected"}
         </p>
       )}
 
       <div className="mt-8">
-        <AnswerFatwaForm question={question} featuredCount={featuredCount} action={answerAction} />
+        <AnswerFatwaForm
+          question={question}
+          featuredCount={featuredCount}
+          action={answerAction}
+          rejectAction={rejectAction}
+        />
       </div>
 
-      {question.answer && (
+      {question.approvalStatus === "APPROVED" && question.answer && (
         <p className="mt-6 text-sm text-muted">
           Public link:{" "}
           <Link href={`/fatwa/${question.id}`} className="text-primary hover:underline" target="_blank">

@@ -1,20 +1,17 @@
 import Link from "next/link";
-import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { deleteFatwaQuestion as deleteFatwa } from "@/app/admin/fatwa/actions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { getAllFatwaQuestionsPaginated, type FatwaAdminFilter } from "@/lib/fatwa";
+import { getTeacherFatwaQuestionsPaginated, type FatwaAdminFilter } from "@/lib/fatwa";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
-import { ActionToast } from "@/components/shared/ToastProvider";
-
+import { requireTeacher } from "@/lib/auth-actions";
 
 function filterHref(filter: FatwaAdminFilter | undefined, q?: string) {
   const params = new URLSearchParams();
   if (filter) params.set("filter", filter);
   if (q) params.set("q", q);
   const qs = params.toString();
-  return qs ? `/admin/fatwa?${qs}` : "/admin/fatwa";
+  return qs ? `/teacher/fatwa?${qs}` : "/teacher/fatwa";
 }
 
 function statusLabel(q: { answer: string | null; approvalStatus: string }) {
@@ -31,21 +28,25 @@ function statusClass(q: { answer: string | null; approvalStatus: string }) {
   return "bg-surface-alt text-muted";
 }
 
-export default async function AdminFatwaPage({
+export default async function TeacherFatwaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string; saved?: string; deleted?: string; page?: string; q?: string }>;
+  searchParams: Promise<{ filter?: string; page?: string; q?: string }>;
 }) {
+  const { session } = await requireTeacher();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
   const filter = (params.filter as FatwaAdminFilter) || undefined;
   const { page: requestedPage, pageSize } = parsePaginationParams(params);
-  const { items: questions, totalCount } = await getAllFatwaQuestionsPaginated(
+  
+  const { items: questions, totalCount } = await getTeacherFatwaQuestionsPaginated(
+    session.user.id,
     requestedPage,
     pageSize,
     filter,
     q,
   );
+  
   const page = clampPage(requestedPage, totalCount, pageSize);
 
   return (
@@ -82,13 +83,9 @@ export default async function AdminFatwaPage({
         </nav>
       </div>
 
-      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Answer saved and notification sent (or logged if SMTP is not configured)." variant="info" />
-
-      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Question deleted." variant="info" />
-
       <div className="mt-6">
         <ListSearchForm
-          action="/admin/fatwa"
+          action="/teacher/fatwa"
           query={q}
           placeholder="Search by subject, asker, email, or category"
           preserveParams={{ filter: params.filter }}
@@ -99,7 +96,7 @@ export default async function AdminFatwaPage({
       <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
         {totalCount === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-muted">
-            {q ? "No questions match your search." : "No questions yet."}
+            {q ? "No questions match your search." : "No questions available."}
           </p>
         ) : (
           <table className="w-full min-w-[840px] text-left text-sm">
@@ -107,10 +104,7 @@ export default async function AdminFatwaPage({
               <tr>
                 <th className="px-4 py-3 font-medium">Subject</th>
                 <th className="px-4 py-3 font-medium">Category</th>
-                <th className="px-4 py-3 font-medium">Asker</th>
-                <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Homepage</th>
                 <th className="px-4 py-3 font-medium">Submitted</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
@@ -120,17 +114,12 @@ export default async function AdminFatwaPage({
                 <tr key={q.id}>
                   <td className="px-4 py-3 font-medium text-foreground">{q.title}</td>
                   <td className="px-4 py-3 text-muted">{q.category}</td>
-                  <td className="px-4 py-3 font-medium text-foreground">{q.askerName}</td>
-                  <td className="px-4 py-3 text-muted">{q.askerEmail}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass(q)}`}
                     >
                       {statusLabel(q)}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-muted">
-                    {q.featuredOnHomepage && q.answer ? "Featured" : "Not featured"}
                   </td>
                   <td className="px-4 py-3 text-muted">
                     {q.createdAt.toLocaleDateString("en-IN", {
@@ -141,10 +130,9 @@ export default async function AdminFatwaPage({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center justify-end gap-2">
-                      <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
-                        {q.approvalStatus === "PENDING" ? "Review" : q.answer ? "View" : "Answer"}
+                      <Link href={`/teacher/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
+                        {q.answer ? "View/Edit" : "Answer"}
                       </Link>
-                      <DeleteActionButton action={deleteFatwa.bind(null, q.id)} itemName={q.title} className="text-sm font-medium text-destructive-text hover:underline" />
                     </div>
                   </td>
                 </tr>
@@ -155,7 +143,7 @@ export default async function AdminFatwaPage({
       </div>
 
       <Pagination
-        basePath="/admin/fatwa"
+        basePath="/teacher/fatwa"
         params={params}
         page={page}
         totalCount={totalCount}

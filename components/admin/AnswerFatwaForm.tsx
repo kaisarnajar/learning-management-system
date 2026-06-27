@@ -7,10 +7,12 @@ type AnswerFatwaFormProps = {
   question: FatwaQuestion;
   featuredCount: number;
   action: (formData: FormData) => Promise<void>;
+  rejectAction?: (formData: FormData) => Promise<void>;
 };
 
-export function AnswerFatwaForm({ question, featuredCount, action }: AnswerFatwaFormProps) {
+export function AnswerFatwaForm({ question, featuredCount, action, rejectAction }: AnswerFatwaFormProps) {
   const isAnswered = Boolean(question.answer);
+  const isPending = question.approvalStatus === "PENDING";
 
   return (
     <form action={action} className="mx-auto max-w-2xl space-y-5">
@@ -58,12 +60,23 @@ export function AnswerFatwaForm({ question, featuredCount, action }: AnswerFatwa
         </span>
       </label>
 
-      <SubmitButton
-        type="submit"
-        className="min-h-11 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
-      >
-        {isAnswered ? "Update answer" : "Publish answer"}
-      </SubmitButton>
+      <div className="flex gap-3">
+        <SubmitButton
+          type="submit"
+          className="min-h-11 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
+        >
+          {isPending ? "Approve & Publish" : isAnswered ? "Update answer" : "Publish answer"}
+        </SubmitButton>
+        {isPending && rejectAction && (
+          <SubmitButton
+            type="submit"
+            formAction={rejectAction}
+            className="min-h-11 rounded-md bg-destructive-bg px-5 py-2 text-sm font-semibold text-destructive-text hover:bg-destructive-bg/80"
+          >
+            Reject
+          </SubmitButton>
+        )}
+      </div>
     </form>
   );
 }

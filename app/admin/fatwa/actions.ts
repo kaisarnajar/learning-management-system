@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-actions";
 import { getFatwaPublicUrl, resolveFatwaFeaturedUpdate } from "@/lib/fatwa";
-import { sendFatwaAnswerEmail } from "@/lib/email";
+import { sendFatwaAnswerEmail, sendFatwaStatusTeacherEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { fatwaAnswerSchema } from "@/lib/validations";
 import { withDbErrorHandling } from "@/lib/db-error";
@@ -30,6 +30,7 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
   const featured = await resolveFatwaFeaturedUpdate({
     fatwa: {
       answer: parsed.data.answer,
+      approvalStatus: "APPROVED",
       featuredOnHomepage: existing.featuredOnHomepage,
       featuredAt: existing.featuredAt,
     },
@@ -40,12 +41,17 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
     redirect(`/admin/fatwa/${id}?error=${encodeURIComponent(featured.error)}`);
   }
 
+  const wasPending = existing.approvalStatus === "PENDING";
+
   await withDbErrorHandling(() => prisma.fatwaQuestion.update({
       where: { id },
       data: {
         answer: parsed.data.answer,
         answeredAt: existing.answeredAt ?? now,
-        answeredById: session.user.id,
+        // Keep the original teacher as answeredById if they wrote it, 
+        // otherwise if it was unanswered, the admin is the answerer.
+        answeredById: existing.answeredById ?? session.user.id,
+        approvalStatus: "APPROVED",
         ...featured,
       },
     }), "Database operation failed");
@@ -63,6 +69,19 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
     questionTitle: existing.title,
     fatwaUrl,
   });
+
+  if (wasPending && existing.answeredById) {
+    const teacherUser = await withDbErrorHandling(() => prisma.user.findUnique({ where: { id: existing.answeredById! } }), "Database operation failed");
+    if (teacherUser && teacherUser.email) {
+      await sendFatwaStatusTeacherEmail({
+        to: teacherUser.email,
+        teacherName: teacherUser.name || "Teacher",
+        questionTitle: existing.title,
+        status: "approved",
+        fatwaUrl,
+      });
+    }
+  }
 
   const savedParams = new URLSearchParams({ saved: "1" });
   if (!emailResult.sent) {
@@ -97,4 +116,53 @@ export async function deleteFatwaQuestionForm(id: string) {
     redirect(`/admin/fatwa/${id}?error=${encodeURIComponent(result.error)}`);
   }
   redirect("/admin/fatwa?deleted=1");
+}
+
+export async function rejectFatwaQuestion(id: string, formData: FormData) {
+  const session = await requireAdmin();
+
+  const parsed = fatwaAnswerSchema.safeParse({
+    answer: formData.get("answer"),
+  });
+
+  if (!parsed.success) {
+    redirect(`/admin/fatwa/${id}?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid answer")}`);
+  }
+
+  const existing = await withDbErrorHandling(() => prisma.fatwaQuestion.findUnique({ where: { id } }), "Database operation failed");
+  if (!existing) {
+    redirect("/admin/fatwa?error=notfound");
+  }
+
+  await withDbErrorHandling(() => prisma.fatwaQuestion.update({
+      where: { id },
+      data: {
+        answer: parsed.data.answer,
+        approvalStatus: "REJECTED",
+        featuredOnHomepage: false,
+        featuredAt: null,
+      },
+    }), "Database operation failed");
+
+  revalidatePath("/");
+  revalidatePath("/fatwa");
+  revalidatePath(`/fatwa/${id}`);
+  revalidatePath("/admin/fatwa");
+  revalidatePath(`/admin/fatwa/${id}`);
+
+  if (existing.answeredById) {
+    const teacherUser = await withDbErrorHandling(() => prisma.user.findUnique({ where: { id: existing.answeredById! } }), "Database operation failed");
+    if (teacherUser && teacherUser.email) {
+      const fatwaUrl = getFatwaPublicUrl(id);
+      await sendFatwaStatusTeacherEmail({
+        to: teacherUser.email,
+        teacherName: teacherUser.name || "Teacher",
+        questionTitle: existing.title,
+        status: "rejected",
+        fatwaUrl,
+      });
+    }
+  }
+
+  redirect(`/admin/fatwa/${id}?rejected=1`);
 }

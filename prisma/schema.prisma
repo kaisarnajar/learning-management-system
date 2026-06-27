@@ -60,6 +60,12 @@ enum BlogApprovalStatus {
   REJECTED
 }
 
+enum FatwaApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum StudentReviewStatus {
   PENDING
   APPROVED
@@ -379,6 +385,7 @@ model FatwaQuestion {
   title              String
   question           String
   answer             String?
+  approvalStatus     FatwaApprovalStatus @default(APPROVED)
   answeredAt         DateTime?
   answeredById       String?
   featuredOnHomepage Boolean   @default(false)

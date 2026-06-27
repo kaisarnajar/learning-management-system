@@ -44,13 +44,13 @@ export function getFatwaCategoryOptions(current?: string | null) {
   return [{ value: current, label: current }, ...FATWA_CATEGORY_OPTIONS];
 }
 
-export function isFatwaAnswered(fatwa: Pick<FatwaQuestion, "answer">): boolean {
-  return fatwa.answer != null && fatwa.answer.trim().length > 0;
+export function isFatwaAnswered(fatwa: Pick<FatwaQuestion, "answer" | "approvalStatus">): boolean {
+  return fatwa.approvalStatus === "APPROVED" && fatwa.answer != null && fatwa.answer.trim().length > 0;
 }
 
 export async function getFeaturedHomepageFatwas(): Promise<FatwaQuestion[]> {
   const fatwas = await withDbErrorHandling(() => prisma.fatwaQuestion.findMany({
-      where: { featuredOnHomepage: true, answer: { not: null } },
+      where: { featuredOnHomepage: true, answer: { not: null }, approvalStatus: "APPROVED" },
       orderBy: [{ featuredAt: "desc" }, { answeredAt: "desc" }],
       take: HOMEPAGE_FEATURED_FATWA_MAX,
     }), "Database operation failed");
@@ -59,14 +59,14 @@ export async function getFeaturedHomepageFatwas(): Promise<FatwaQuestion[]> {
 
 export async function getFeaturedHomepageFatwaCount(): Promise<number> {
   const fatwas = await withDbErrorHandling(() => prisma.fatwaQuestion.findMany({
-      where: { featuredOnHomepage: true, answer: { not: null } },
-      select: { answer: true },
+      where: { featuredOnHomepage: true, answer: { not: null }, approvalStatus: "APPROVED" },
+      select: { answer: true, approvalStatus: true },
     }), "Database operation failed");
   return fatwas.filter(isFatwaAnswered).length;
 }
 
 export async function resolveFatwaFeaturedUpdate(options: {
-  fatwa: Pick<FatwaQuestion, "answer" | "featuredOnHomepage" | "featuredAt">;
+  fatwa: Pick<FatwaQuestion, "answer" | "approvalStatus" | "featuredOnHomepage" | "featuredAt">;
   requestFeatured: boolean;
 }) {
   const featuredCount = await getFeaturedHomepageFatwaCount();
@@ -84,6 +84,7 @@ export async function resolveFatwaFeaturedUpdate(options: {
 function answeredFatwasWhere(category?: string) {
   return {
     answer: { not: null },
+    approvalStatus: "APPROVED" as const,
     ...(category ? { category } : {}),
   };
 }
@@ -109,27 +110,61 @@ export async function getAnsweredFatwasPaginated(
 
 export async function getAnsweredFatwaById(id: string): Promise<FatwaQuestion | null> {
   return withDbErrorHandling(() => prisma.fatwaQuestion.findFirst({
-      where: { id, answer: { not: null } },
+      where: { id, answer: { not: null }, approvalStatus: "APPROVED" },
     }), "Database operation failed");
 }
 
-function fatwaAdminWhere(filter?: "pending" | "answered", searchQuery?: string) {
+export type FatwaAdminFilter = "pending" | "answered" | "unanswered" | "rejected";
+
+function fatwaAdminWhere(filter?: FatwaAdminFilter, searchQuery?: string) {
   const statusWhere =
-    filter === "pending"
+    filter === "unanswered"
       ? { answer: null }
-      : filter === "answered"
-        ? { answer: { not: null } }
-        : undefined;
+      : filter === "pending"
+        ? { answer: { not: null }, approvalStatus: "PENDING" as const }
+        : filter === "rejected"
+          ? { answer: { not: null }, approvalStatus: "REJECTED" as const }
+          : filter === "answered"
+            ? { answer: { not: null }, approvalStatus: "APPROVED" as const }
+            : undefined;
   return andWhere(statusWhere, fatwaSearchWhere(searchQuery));
 }
 
 export async function getAllFatwaQuestionsPaginated(
   page: number,
   pageSize: number,
-  filter?: "pending" | "answered",
+  filter?: FatwaAdminFilter,
   searchQuery?: string,
 ): Promise<PaginatedResult<FatwaQuestion>> {
   const where = fatwaAdminWhere(filter, searchQuery);
+  const totalCount = await withDbErrorHandling(() => prisma.fatwaQuestion.count({ where }), "Database operation failed");
+  const safePage = clampPage(page, totalCount, pageSize);
+  const items = await withDbErrorHandling(() => prisma.fatwaQuestion.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
+  return { items, totalCount };
+}
+
+export async function getTeacherFatwaQuestionsPaginated(
+  userId: string,
+  page: number,
+  pageSize: number,
+  filter?: FatwaAdminFilter,
+  searchQuery?: string,
+): Promise<PaginatedResult<FatwaQuestion>> {
+  const baseWhere = fatwaAdminWhere(filter, searchQuery);
+  
+  // Teachers can only see unanswered questions, or questions they themselves answered.
+  const teacherWhere = {
+    OR: [
+      { answer: null },
+      { answeredById: userId }
+    ]
+  };
+  
+  const where = andWhere(baseWhere, teacherWhere);
   const totalCount = await withDbErrorHandling(() => prisma.fatwaQuestion.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.fatwaQuestion.findMany({

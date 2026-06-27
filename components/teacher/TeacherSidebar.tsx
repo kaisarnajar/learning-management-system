@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const links = [
   { href: "/teacher", label: "My courses", exact: true },
   { href: "/teacher/blogs", label: "My blogs" },
+  { href: "/teacher/fatwa", label: "Fatwa Q&A" },
 ];
 
 export function TeacherSidebar({ teacherName }: { teacherName: string }) {

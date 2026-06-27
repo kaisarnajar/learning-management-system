@@ -318,6 +318,97 @@ export async function sendFatwaAnswerEmail(params: FatwaAnswerEmailParams): Prom
 }
 
 // ---------------------------------------------------------------------------
+// Email: Admin Notification - Fatwa Submission by Teacher
+// ---------------------------------------------------------------------------
+
+export type FatwaSubmissionAdminEmailParams = {
+  teacherName: string;
+  questionTitle: string;
+  adminReviewUrl: string;
+};
+
+export async function sendFatwaSubmissionAdminEmail(params: FatwaSubmissionAdminEmailParams): Promise<EmailSendResult> {
+  const { teacherName, questionTitle, adminReviewUrl } = params;
+  
+  // Use first email if there are multiple comma-separated emails
+  const to = (process.env.ADMIN_EMAIL || "info@darsequranacademy.org").split(',')[0].trim();
+
+  const subject = `New Fatwa Reply Pending Approval — ${questionTitle}`;
+  const preview = `Teacher ${teacherName} has submitted a reply to "${questionTitle}". It requires your approval.`;
+
+  const text = [
+    "Assalamu Alaikum Admin,",
+    "",
+    `Teacher ${teacherName} has submitted a draft reply to the fatwa question: "${questionTitle}".`,
+    "",
+    "Please review and approve the answer here:",
+    adminReviewUrl,
+    "",
+    "Darse Quran Academy System",
+  ].join("\n");
+
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>Admin</strong>,</p>
+    <p>Teacher <strong>${escapeHtml(teacherName)}</strong> has submitted a draft reply to the fatwa question: <strong>&ldquo;${escapeHtml(questionTitle)}&rdquo;</strong>.</p>
+    <p>It is currently pending your review and approval.</p>
+    <p style="margin:28px 0;">
+      <a href="${adminReviewUrl}" style="background:#3730a3;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">Review Answer</a>
+    </p>
+    <p style="font-size:13px;color:#6b7280;">Or copy this link: <a href="${adminReviewUrl}" style="color:#3730a3;">${escapeHtml(adminReviewUrl)}</a></p>`;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, preview: adminReviewUrl });
+}
+
+// ---------------------------------------------------------------------------
+// Email: Teacher Notification - Fatwa Reply Status
+// ---------------------------------------------------------------------------
+
+export type FatwaStatusTeacherEmailParams = {
+  to: string;
+  teacherName: string;
+  questionTitle: string;
+  status: "approved" | "rejected";
+  fatwaUrl: string;
+};
+
+export async function sendFatwaStatusTeacherEmail(params: FatwaStatusTeacherEmailParams): Promise<EmailSendResult> {
+  const { to, teacherName, questionTitle, status, fatwaUrl } = params;
+
+  const subject = `Fatwa Reply ${status === "approved" ? "Approved" : "Rejected"} — ${questionTitle}`;
+  const preview = `Your draft reply to "${questionTitle}" has been ${status}.`;
+
+  const text = [
+    `Assalamu Alaikum ${teacherName},`,
+    "",
+    `Your draft reply to the fatwa question "${questionTitle}" has been ${status} by the admin.`,
+    "",
+    status === "approved"
+      ? "It has been published on the site."
+      : "You can view the feedback and resubmit your answer if needed.",
+    "",
+    "View the question here:",
+    fatwaUrl,
+    "",
+    "Darse Quran Academy System",
+  ].join("\n");
+
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(teacherName)}</strong>,</p>
+    <p>Your draft reply to the fatwa question <strong>&ldquo;${escapeHtml(questionTitle)}&rdquo;</strong> has been <strong style="color:${status === "approved" ? "#166534" : "#b91c1c"};">${status}</strong> by the admin.</p>
+    <p>${status === "approved" ? "It has been published on the site." : "You can view the details and resubmit your answer if needed."}</p>
+    <p style="margin:28px 0;">
+      <a href="${fatwaUrl}" style="background:#3730a3;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">View Question</a>
+    </p>
+    <p style="font-size:13px;color:#6b7280;">Or copy this link: <a href="${fatwaUrl}" style="color:#3730a3;">${escapeHtml(fatwaUrl)}</a></p>`;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, preview: fatwaUrl });
+}
+
+// ---------------------------------------------------------------------------
 // Email: Payment declined
 // ---------------------------------------------------------------------------
 

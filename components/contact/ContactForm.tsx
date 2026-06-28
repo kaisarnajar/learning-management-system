@@ -130,7 +130,7 @@ export function ContactForm({ defaultName = "", defaultEmail = "", isLoggedIn = 
           onChange={(e) => updateField("phone", e.target.value)}
           onBlur={() => markTouched("phone")}
           aria-invalid={showError("phone") || undefined}
-          placeholder="e.g. +91 70060 25120"
+          placeholder="e.g. +919622966911"
           className={formFieldInputClass(showError("phone"))}
           autoComplete="tel"
         />

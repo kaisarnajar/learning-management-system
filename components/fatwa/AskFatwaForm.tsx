@@ -280,9 +280,11 @@ export function AskFatwaForm({
       <SubmitButton
         type="submit"
         disabled={!isValid || pending}
+        isSubmitting={pending}
+        loadingText="Submitting…"
         className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {pending ? "Submitting…" : "Submit question"}
+        Submit question
       </SubmitButton>
     </form>
   );

@@ -16,8 +16,8 @@ function parseBookForm(formData: FormData) {
     description: formData.get("description"),
     priceInr: formData.get("priceInr"),
     mrpInr: formData.get("mrpInr"),
-    purchasePriceInr: formData.get("purchasePriceInr"),
     inventoryPurchased: formData.get("inventoryPurchased"),
+    weightInGrams: formData.get("weightInGrams"),
     status: formData.get("status"),
     published: formData.get("published") === "true" || formData.get("published") === "on",
     featuredOnHomepage: formData.get("featuredOnHomepage") === "true" || formData.get("featuredOnHomepage") === "on",
@@ -49,6 +49,7 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
   const mrpInrPaise = parsed.data.mrpInr ? Math.round(parseFloat(parsed.data.mrpInr) * 100) : 0;
   const purchasePriceInrPaise = Math.round(parseFloat(parsed.data.purchasePriceInr) * 100);
   const inventoryPurchased = parseInt(parsed.data.inventoryPurchased, 10);
+  const weightInGrams = parseInt(parsed.data.weightInGrams, 10);
 
   const featured = await resolveBookFeaturedUpdate({
     item: {
@@ -73,6 +74,7 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
         mrpInrPaise,
         purchasePriceInrPaise,
         inventoryPurchased,
+        weightInGrams,
         status: parsed.data.status,
         published: parsed.data.published,
         ...featured,
@@ -114,6 +116,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
   const mrpInrPaise = parsed.data.mrpInr ? Math.round(parseFloat(parsed.data.mrpInr) * 100) : 0;
   const purchasePriceInrPaise = Math.round(parseFloat(parsed.data.purchasePriceInr) * 100);
   const inventoryPurchased = parseInt(parsed.data.inventoryPurchased, 10);
+  const weightInGrams = parseInt(parsed.data.weightInGrams, 10);
 
   const existing = await prisma.book.findUnique({ where: { id: bookId } });
   if (!existing) return { error: "Book not found." };
@@ -152,6 +155,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
         mrpInrPaise,
         purchasePriceInrPaise,
         inventoryPurchased,
+        weightInGrams,
         status: parsed.data.status,
         published: parsed.data.published,
         ...featured,

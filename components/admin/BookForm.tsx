@@ -41,12 +41,13 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
       priceInr: book ? String(book.priceInrPaise / 100) : "",
       mrpInr: book && book.mrpInrPaise > 0 ? String(book.mrpInrPaise / 100) : "",
       purchasePriceInr: book ? String(book.purchasePriceInrPaise / 100) : "",
+      weightInGrams: book && 'weightInGrams' in book ? String(book.weightInGrams) : "0",
       inventoryPurchased: book ? String(book.inventoryPurchased) : "",
       status: (book?.status as BookFormValues["status"]) ?? "AVAILABLE",
       published: book?.published ?? true,
       featuredOnHomepage: book?.featuredOnHomepage ?? false,
     },
-    fields: ["title", "author", "description", "priceInr", "mrpInr", "purchasePriceInr", "inventoryPurchased", "status", "published", "featuredOnHomepage"],
+    fields: ["title", "author", "description", "priceInr", "mrpInr", "purchasePriceInr", "weightInGrams", "inventoryPurchased", "status", "published", "featuredOnHomepage"],
     validate,
   });
 
@@ -267,6 +268,27 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
           {showError("purchasePriceInr") && <p className={formErrorTextClassName} role="alert">{errors.purchasePriceInr}</p>}
         </div>
         
+        <div>
+          <label htmlFor="book-weight" className={labelClassName}>
+            Weight (grams) <span className="text-destructive-text">*</span>
+          </label>
+          <input
+            id="book-weight"
+            name="weightInGrams"
+            type="number"
+            min="0"
+            step="1"
+            required
+            value={values.weightInGrams}
+            onChange={(e) => updateField("weightInGrams", e.target.value)}
+            onBlur={() => markTouched("weightInGrams")}
+            aria-invalid={showError("weightInGrams") || undefined}
+            placeholder="e.g. 150"
+            className={formFieldInputClass(showError("weightInGrams"))}
+          />
+          {showError("weightInGrams") && <p className={formErrorTextClassName} role="alert">{errors.weightInGrams}</p>}
+        </div>
+
         <div>
           <label htmlFor="book-inventory" className={labelClassName}>
             Total Inventory Procured <span className="text-destructive-text">*</span>

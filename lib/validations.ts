@@ -387,6 +387,14 @@ export const bookSchema = z.object({
       const n = parseInt(v, 10);
       return !isNaN(n) && n >= 0;
     }, "Inventory must be a non-negative integer."),
+  weightInGrams: z
+    .string()
+    .trim()
+    .min(1, "Weight is required.")
+    .refine((v) => {
+      const n = parseInt(v, 10);
+      return !isNaN(n) && n >= 0;
+    }, "Weight must be a non-negative integer."),
   status: bookStatusEnum,
   published: z.boolean(),
   featuredOnHomepage: z.boolean().optional(),

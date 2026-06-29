@@ -59,6 +59,7 @@ export default async function CartCheckoutPage({
         mrpInrPaise: book.mrpInrPaise,
         imagePath: book.imagePath,
         quantity: selected.quantity,
+        weightInGrams: book.weightInGrams,
       };
     })
     .filter(Boolean) as {
@@ -69,12 +70,45 @@ export default async function CartCheckoutPage({
     mrpInrPaise: number;
     imagePath: string | null;
     quantity: number;
+    weightInGrams: number;
   }[];
 
-  const totalAmountInrPaise = resolvedItems.reduce(
+  const subtotalInrPaise = resolvedItems.reduce(
     (sum, i) => sum + i.priceInrPaise * i.quantity,
     0,
   );
+
+  const totalWeightGrams = resolvedItems.reduce(
+    (sum, i) => sum + i.weightInGrams * i.quantity,
+    0,
+  );
+
+  // Fetch applicable shipping charge
+  const slabs = await prisma.shippingChargeSlab.findMany({
+    orderBy: { maxWeightGrams: "asc" },
+  });
+
+  let shippingChargeInrPaise = 0;
+  if (slabs.length > 0) {
+    const applicableSlab = slabs.find(
+      (slab) => totalWeightGrams >= slab.minWeightGrams && totalWeightGrams <= slab.maxWeightGrams
+    );
+    if (applicableSlab) {
+      shippingChargeInrPaise = applicableSlab.chargeInrPaise;
+    } else {
+      // If it exceeds all, pick the highest slab. 
+      // If it's lower than all (e.g. 0), pick the lowest.
+      const highestSlab = slabs[slabs.length - 1];
+      const lowestSlab = slabs[0];
+      if (totalWeightGrams > highestSlab.maxWeightGrams) {
+        shippingChargeInrPaise = highestSlab.chargeInrPaise;
+      } else if (totalWeightGrams < lowestSlab.minWeightGrams) {
+        shippingChargeInrPaise = 0; // or lowestSlab.chargeInrPaise depending on business logic, here we do 0
+      }
+    }
+  }
+
+  const totalAmountInrPaise = subtotalInrPaise + shippingChargeInrPaise;
 
   const amountLabel = formatPrice(totalAmountInrPaise);
 
@@ -103,6 +137,7 @@ export default async function CartCheckoutPage({
           <BookCheckoutClient
             items={resolvedItems}
             totalAmountInrPaise={totalAmountInrPaise}
+            shippingChargeInrPaise={shippingChargeInrPaise}
           />
         </div>
       </div>

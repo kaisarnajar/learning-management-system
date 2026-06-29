@@ -27,9 +27,11 @@ function formatPrice(paise: number): string {
 export function BookCheckoutClient({
   items,
   totalAmountInrPaise,
+  shippingChargeInrPaise,
 }: {
   items: CheckoutItem[];
   totalAmountInrPaise: number;
+  shippingChargeInrPaise: number;
 }) {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
   const [transactionId, setTransactionId] = useState("");
@@ -142,9 +144,21 @@ export function BookCheckoutClient({
                   </div>
                 </div>
               ))}
-              <div className="flex items-center justify-between p-4 bg-background/50">
-                <p className="font-semibold text-foreground">Total</p>
-                <p className="text-lg font-bold text-primary">{formatPrice(totalAmountInrPaise)}</p>
+              <div className="p-4 bg-background/50 space-y-3">
+                <div className="flex items-center justify-between text-sm">
+                  <p className="text-muted">Subtotal</p>
+                  <p className="font-medium text-foreground">{formatPrice(totalAmountInrPaise - shippingChargeInrPaise)}</p>
+                </div>
+                {shippingChargeInrPaise > 0 && (
+                  <div className="flex items-center justify-between text-sm">
+                    <p className="text-muted">Shipping</p>
+                    <p className="font-medium text-foreground">{formatPrice(shippingChargeInrPaise)}</p>
+                  </div>
+                )}
+                <div className="flex items-center justify-between pt-3 border-t border-border">
+                  <p className="font-semibold text-foreground">Total</p>
+                  <p className="text-lg font-bold text-primary">{formatPrice(totalAmountInrPaise)}</p>
+                </div>
               </div>
             </div>
           </section>

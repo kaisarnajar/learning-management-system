@@ -560,6 +560,7 @@ model Book {
   priceInrPaise         Int
   mrpInrPaise           Int             @default(0)
   purchasePriceInrPaise Int             @default(0)
+  weightInGrams         Int             @default(0)
   inventoryPurchased    Int             @default(0)
   status                BookStatus      @default(AVAILABLE)
   imagePath             String?
@@ -581,6 +582,7 @@ model BookOrder {
   id                    String          @id @default(cuid())
   userId                String
   totalAmountInrPaise   Int
+  shippingChargeInrPaise Int             @default(0)
   status                BookOrderStatus @default(PENDING_VERIFICATION)
   paymentMethod         String?
   upiTransactionId      String?
@@ -635,4 +637,18 @@ model AnalyticsEvent {
   @@index([type])
   @@index([page])
   @@index([createdAt])
+}
+
+/**
+ * Configurable weight slabs and their associated shipping charges.
+ */
+model ShippingChargeSlab {
+  id             String   @id @default(cuid())
+  minWeightGrams Int
+  maxWeightGrams Int
+  chargeInrPaise Int
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([minWeightGrams, maxWeightGrams])
 }

@@ -56,13 +56,40 @@ export async function submitBookOrder(formData: FormData) {
     return { error: `Some books are not available: ${unavailable.map((b) => b.title).join(", ")}`, status: 400 };
   }
 
-  const bookPriceMap = new Map(books.map((b) => [b.id, b.priceInrPaise]));
-  let totalAmountInrPaise = 0;
+  const bookMap = new Map(books.map((b) => [b.id, b]));
+  let subtotalAmountInrPaise = 0;
+  let totalWeightGrams = 0;
+
   for (const item of body.items) {
-    const price = bookPriceMap.get(item.bookId);
-    if (price === undefined) return { error: "Invalid book in cart.", status: 400 };
-    totalAmountInrPaise += price * item.quantity;
+    const book = bookMap.get(item.bookId);
+    if (!book) return { error: "Invalid book in cart.", status: 400 };
+    subtotalAmountInrPaise += book.priceInrPaise * item.quantity;
+    totalWeightGrams += book.weightInGrams * item.quantity;
   }
+
+  const slabs = await prisma.shippingChargeSlab.findMany({
+    orderBy: { maxWeightGrams: "asc" },
+  });
+
+  let shippingChargeInrPaise = 0;
+  if (slabs.length > 0) {
+    const applicableSlab = slabs.find(
+      (slab) => totalWeightGrams >= slab.minWeightGrams && totalWeightGrams <= slab.maxWeightGrams
+    );
+    if (applicableSlab) {
+      shippingChargeInrPaise = applicableSlab.chargeInrPaise;
+    } else {
+      const highestSlab = slabs[slabs.length - 1];
+      const lowestSlab = slabs[0];
+      if (totalWeightGrams > highestSlab.maxWeightGrams) {
+        shippingChargeInrPaise = highestSlab.chargeInrPaise;
+      } else if (totalWeightGrams < lowestSlab.minWeightGrams) {
+        shippingChargeInrPaise = 0;
+      }
+    }
+  }
+
+  const totalAmountInrPaise = subtotalAmountInrPaise + shippingChargeInrPaise;
 
   let paymentScreenshotPath: string | null = null;
   if (screenshotFile && screenshotFile.size > 0) {
@@ -75,6 +102,7 @@ export async function submitBookOrder(formData: FormData) {
       data: {
         userId,
         totalAmountInrPaise,
+        shippingChargeInrPaise,
         paymentMethod: body.paymentMethod,
         upiTransactionId: body.upiTransactionId.trim() || null,
         paymentScreenshotPath,
@@ -87,7 +115,7 @@ export async function submitBookOrder(formData: FormData) {
           create: body.items.map((item) => ({
             bookId: item.bookId,
             quantity: item.quantity,
-            priceAtPurchaseInrPaise: bookPriceMap.get(item.bookId)!,
+            priceAtPurchaseInrPaise: bookMap.get(item.bookId)!.priceInrPaise,
           })),
         },
       },

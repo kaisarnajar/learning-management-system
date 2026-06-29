@@ -25,7 +25,7 @@ export const BASE_CATEGORIES = [
   "Fatwa",
 ] as const;
 
-export const FATWA_CATEGORIES = [...BASE_CATEGORIES, "Other"] as const;
+export const FATWA_CATEGORIES = [...BASE_CATEGORIES, "Others"] as const;
 export type FatwaCategory = (typeof FATWA_CATEGORIES)[number];
 
 export function isFatwaCategory(value: string): value is FatwaCategory {
@@ -82,10 +82,16 @@ export async function resolveFatwaFeaturedUpdate(options: {
 }
 
 function answeredFatwasWhere(category?: string) {
+  const isOthers = category === "Others";
+  
   return {
     answer: { not: null },
     approvalStatus: "APPROVED" as const,
-    ...(category ? { category } : {}),
+    ...(isOthers
+      ? { category: { notIn: [...BASE_CATEGORIES] } }
+      : category
+        ? { category }
+        : {}),
   };
 }
 

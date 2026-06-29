@@ -62,10 +62,10 @@ export function AskFatwaForm({
   const [categorySelect, setCategorySelect] = useState(() => {
     const val = values.category ?? "";
     const isStandard = categoryOptions.some((opt) => opt.value === val);
-    if (val && !isStandard) return "Other";
+    if (val && !isStandard) return "Others";
     return val;
   });
-  const isCustomCategory = categorySelect === "Other";
+  const isCustomCategory = categorySelect === "Others";
 
   const prevSuccessRef = useRef<string | undefined>(undefined);
 
@@ -106,7 +106,7 @@ export function AskFatwaForm({
             onChange={(e) => {
               const val = e.target.value;
               setCategorySelect(val);
-              if (val !== "Other") {
+              if (val !== "Others") {
                 updateField("category", val);
                 markTouched("category");
               } else {

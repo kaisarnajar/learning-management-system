@@ -16,7 +16,7 @@ import { writeDemoPngFile } from "./seed-demo-assets";
 const BULK_MONTHS = ["01", "02", "03", "04", "05", "06"] as const;
 const BULK_YEAR = "2026";
 
-const FATWA_CATEGORIES = ["Fiqh", "Tajweed", "Quran", "Hadith", "Islam", "Other"] as const;
+const FATWA_CATEGORIES = ["Fiqh", "Tajweed", "Quran", "Hadith", "Islam", "Others"] as const;
 
 const BULK_EXPENSE_MISC = [
   { category: EXPENSE_CATEGORY_WEBSITE_HOSTING, amountInrPaise: 1_200_00, description: "Hosting renewal" },
@@ -180,7 +180,7 @@ export async function seedDemoBulkFatwa(prisma: PrismaClient) {
     const answered = index % 3 !== 0;
     const createdAt = new Date(`2026-01-${String((index % 28) + 1).padStart(2, "0")}T08:00:00.000Z`);
     const answeredAt = answered ? new Date(createdAt.getTime() + 86_400_000) : null;
-    const category = FATWA_CATEGORIES[index % FATWA_CATEGORIES.length] ?? "Other";
+    const category = FATWA_CATEGORIES[index % FATWA_CATEGORIES.length] ?? "Others";
     const studentId = index % 4 === 0 ? String((index % 25) + 1).padStart(2, "0") : null;
 
     await prisma.fatwaQuestion.upsert({

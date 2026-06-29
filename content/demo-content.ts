@@ -268,7 +268,7 @@ export const demoFatwaQuestions: DemoFatwa[] = [
     id: "seed-demo-fatwa-6",
     askerName: "Guest User",
     askerEmail: "guest-fatwa@example.com",
-    category: "Other",
+    category: "Others",
     title: "Enrollment age for children's Nazira class",
     question: "What is the minimum recommended age for the children's Nazira program?",
   },

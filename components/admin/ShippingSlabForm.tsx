@@ -16,7 +16,8 @@ export function ShippingSlabForm() {
     setError("");
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const formData = new FormData(form);
     const minWeightGrams = Number(formData.get("minWeightGrams"));
     const maxWeightGrams = Number(formData.get("maxWeightGrams"));
 
@@ -33,7 +34,7 @@ export function ShippingSlabForm() {
         setLoading(false);
         return;
       }
-      e.currentTarget.reset();
+      form.reset();
       setLoading(false);
     } catch (error) {
       console.error(error);

@@ -16,6 +16,7 @@ function parseBookForm(formData: FormData) {
     description: formData.get("description"),
     priceInr: formData.get("priceInr"),
     mrpInr: formData.get("mrpInr"),
+    purchasePriceInr: formData.get("purchasePriceInr"),
     inventoryPurchased: formData.get("inventoryPurchased"),
     weightInGrams: formData.get("weightInGrams"),
     status: formData.get("status"),

@@ -29,6 +29,7 @@ async function enrollmentSearchWhere(searchQuery?: string): Promise<TextSearchWh
 export type CourseEnrollmentWithUser = {
   id: string;
   status: string;
+  rollNumber: number | null;
   completedAt: Date | null;
   certificateGeneratedAt: Date | null;
   createdAt: Date;

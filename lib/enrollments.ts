@@ -96,7 +96,7 @@ export async function getEnrollmentsForCoursePaginated(
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.enrollment.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { rollNumber: { sort: "asc", nulls: "last" } },
       include: {
         user: {
           select: { id: true, name: true, email: true },
@@ -132,7 +132,7 @@ export async function getCourseRosterEnrollmentsPaginated(
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.enrollment.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { rollNumber: { sort: "asc", nulls: "last" } },
       include: {
         user: {
           select: { id: true, name: true, email: true },

@@ -59,6 +59,10 @@ export default async function AdminStudentDetailPage({
 
       <dl className="mt-6 grid max-w-lg gap-3 text-sm">
         <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
+          <dt className="shrink-0 font-medium text-foreground sm:w-28">Registration No</dt>
+          <dd className="text-muted">{student.registrationNumber ?? "—"}</dd>
+        </div>
+        <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
           <dt className="shrink-0 font-medium text-foreground sm:w-28">Name</dt>
           <dd className="text-muted">{student.name ?? "—"}</dd>
         </div>

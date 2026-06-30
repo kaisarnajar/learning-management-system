@@ -34,6 +34,8 @@ export async function updateProfile(
     return { error: parsed.error.issues[0]?.message ?? "Invalid profile data." };
   }
 
+  const currentProfile = await getUserProfile(session.user.id);
+
   const imageFile = formData.get("image") as File | null;
   let newImageUrl: string | undefined;
 
@@ -43,7 +45,6 @@ export async function updateProfile(
       return { error: validation.error };
     }
 
-    const currentProfile = await getUserProfile(session.user.id);
     if (currentProfile?.image) {
       await deleteProfileImage(currentProfile.image);
     }
@@ -62,6 +63,22 @@ export async function updateProfile(
 
   if (newImageUrl) {
     updateData.image = newImageUrl;
+  }
+
+  // Assign registration number if the profile is newly completed or already complete but missing the number
+  const isNowComplete = Boolean(
+    updateData.name?.trim() &&
+      updateData.fatherName?.trim() &&
+      updateData.dateOfBirth &&
+      updateData.occupation &&
+      updateData.address?.trim() &&
+      updateData.whatsapp?.trim() &&
+      currentProfile?.email?.trim()
+  );
+
+  if (isNowComplete && !currentProfile?.registrationNumber) {
+    const { generateNextRegistrationNumber } = await import("@/lib/registration");
+    updateData.registrationNumber = await generateNextRegistrationNumber();
   }
 
   await withDbErrorHandling(() => prisma.user.update({

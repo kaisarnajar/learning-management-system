@@ -50,6 +50,7 @@ export default async function AdminStudentsPage({
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead className="border-b border-border bg-background/50 text-muted">
               <tr>
+                <th className="px-4 py-3 font-medium">Registration No</th>
                 <th className="px-4 py-3 font-medium">Student</th>
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Registered</th>
@@ -59,6 +60,7 @@ export default async function AdminStudentsPage({
             <tbody className="divide-y divide-border">
               {students.map((student) => (
                 <tr key={student.id}>
+                  <td className="px-4 py-3 font-medium text-foreground">{student.registrationNumber ?? "—"}</td>
                   <td className="px-4 py-3 font-medium text-foreground">{student.name ?? "—"}</td>
                   <td className="px-4 py-3 text-muted">{student.email}</td>
                   <td className="px-4 py-3 text-muted">

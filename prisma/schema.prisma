@@ -108,6 +108,7 @@ model User {
   occupation               Occupation?
   address                  String?
   whatsapp                 String?
+  registrationNumber       String?                   @unique
   emailVerified            DateTime?
   image                    String?
   password                 String?

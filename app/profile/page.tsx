@@ -103,6 +103,7 @@ export default async function ProfilePage({
           profileComplete={profileComplete}
           occupation={user.occupation}
           image={user.image}
+          registrationNumber={user.registrationNumber}
         />
 
         <ProfileSection

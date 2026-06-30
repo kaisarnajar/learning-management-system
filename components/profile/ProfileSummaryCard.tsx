@@ -9,6 +9,7 @@ type ProfileSummaryCardProps = {
   profileComplete: boolean;
   occupation: Occupation | null;
   image: string | null;
+  registrationNumber: string | null;
 };
 
 export function ProfileSummaryCard({
@@ -18,6 +19,7 @@ export function ProfileSummaryCard({
   profileComplete,
   occupation,
   image,
+  registrationNumber,
 }: ProfileSummaryCardProps) {
   const displayName = name?.trim() || "Student";
   const initials = getInitialsFromName(displayName);
@@ -52,6 +54,13 @@ export function ProfileSummaryCard({
             {profileComplete ? "Complete" : "Incomplete"}
           </span>
         </div>
+
+        {registrationNumber && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Registration No.</p>
+            <p className="mt-1 text-sm font-bold text-foreground">{registrationNumber}</p>
+          </div>
+        )}
 
         {occupation && (
           <div>

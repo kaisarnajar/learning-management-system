@@ -202,13 +202,26 @@ export async function deleteBookOrder(
 
   if (!order) return { error: "Order not found." };
 
-  if (order.status === "APPROVED" || order.status === "PENDING_VERIFICATION") {
-    return { error: "Only completed orders can be deleted." };
+  if (order.status === "PENDING_VERIFICATION") {
+    return { error: "Pending orders cannot be deleted directly. Decline them first." };
   }
 
-  await withDbErrorHandling(() => prisma.bookOrder.delete({
+  await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
+    // If order has a payment record, we should delete it too
+    // We find it by matching description since there's no strict foreign key
+    const shortId = orderId.slice(-6).toUpperCase();
+    await tx.paymentRecord.deleteMany({
+      where: {
+        paymentType: "book_purchase",
+        userId: order.userId,
+        description: `Book order #${shortId}`,
+      }
+    });
+
+    await tx.bookOrder.delete({
       where: { id: orderId },
-    }), "Database operation failed");
+    });
+  }), "Database operation failed");
 
   revalidateOrderPaths(order.userId);
 }

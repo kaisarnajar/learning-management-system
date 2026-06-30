@@ -8,6 +8,7 @@ import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { useToast } from "@/components/shared/ToastProvider";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 
 export function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
@@ -201,6 +202,13 @@ function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "defau
           ) : (
              <span className="text-xs italic text-muted">No Payment Record</span>
           )}
+          <DeleteActionButton
+            action={async () => {
+              const result = await deleteBookOrder(order.id);
+              if (result?.error) addToast(result.error, "error");
+            }}
+            itemName="payment"
+          />
         </div>
       </td>
     );

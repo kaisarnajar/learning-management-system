@@ -15,6 +15,7 @@ export const userProfileSelect = {
   whatsapp: true,
   image: true,
   registrationNumber: true,
+  createdAt: true,
 } as const;
 
 export type UserProfileData = Pick<User, keyof typeof userProfileSelect>;

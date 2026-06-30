@@ -46,8 +46,10 @@ export type BookOrderWithItems = {
     id: string;
     quantity: number;
     priceAtPurchaseInrPaise: number;
-    book: { id: string; title: string; author: string };
+    book: { id: string; title: string; author: string; imagePath: string | null };
   }[];
+  paymentRecordId: string | null;
+  receiptGeneratedAt: Date | null;
 };
 
 export function bookStatusLabel(status: BookStatus): string {
@@ -187,7 +189,7 @@ async function fetchBookOrdersPaginated(
             include: {
               user: { select: { name: true, email: true } },
               items: {
-                include: { book: { select: { id: true, title: true, author: true } } },
+                include: { book: { select: { id: true, title: true, author: true, imagePath: true } } },
               },
             },
             orderBy,
@@ -197,7 +199,28 @@ async function fetchBookOrdersPaginated(
     withDbErrorHandling(() => prisma.bookOrder.count({ where }), "Database operation failed"),
   ]);
 
-  return { items, totalCount };
+  let itemsWithPaymentRecord = items as unknown as BookOrderWithItems[];
+
+  if (items.length > 0) {
+    const paymentRecords = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
+      where: {
+        paymentType: "book_purchase",
+        userId: { in: items.map((o) => o.userId) },
+      },
+    }), "Database operation failed");
+
+    itemsWithPaymentRecord = items.map((order) => {
+      const shortId = order.id.slice(-6).toUpperCase();
+      const pr = paymentRecords?.find((p) => p.description === `Book order #${shortId}` && p.userId === order.userId);
+      return {
+        ...order,
+        paymentRecordId: pr?.id ?? null,
+        receiptGeneratedAt: pr?.receiptGeneratedAt ?? null,
+      };
+    });
+  }
+
+  return { items: itemsWithPaymentRecord, totalCount };
 }
 
 export async function getPendingBookOrdersPaginated(
@@ -228,16 +251,36 @@ export async function getPendingBookOrderCount(): Promise<number> {
   return withDbErrorHandling(() => prisma.bookOrder.count({ where: { status: "PENDING_VERIFICATION" } }), "Database operation failed");
 }
 
-export async function getBookOrdersForUser(userId: string) {
-  return withDbErrorHandling(() => prisma.bookOrder.findMany({
+export async function getBookOrdersForUser(userId: string): Promise<BookOrderWithItems[]> {
+  const items = await withDbErrorHandling(() => prisma.bookOrder.findMany({
       where: { userId },
       include: {
+        user: { select: { name: true, email: true } },
         items: {
           include: { book: { select: { id: true, title: true, author: true, imagePath: true } } },
         },
       },
       orderBy: { createdAt: "desc" },
     }), "Database operation failed");
+    
+  if (!items || items.length === 0) return [];
+  
+  const paymentRecords = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
+    where: {
+      paymentType: "book_purchase",
+      userId,
+    },
+  }), "Database operation failed");
+  
+  return items.map((order) => {
+    const shortId = order.id.slice(-6).toUpperCase();
+    const pr = paymentRecords?.find((p) => p.description === `Book order #${shortId}`);
+    return {
+      ...order,
+      paymentRecordId: pr?.id ?? null,
+      receiptGeneratedAt: pr?.receiptGeneratedAt ?? null,
+    };
+  });
 }
 
 export async function getBookCount(): Promise<number> {

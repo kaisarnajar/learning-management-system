@@ -7,6 +7,7 @@ import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrder
 import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { useToast } from "@/components/shared/ToastProvider";
+import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
 
 export function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
@@ -192,6 +193,13 @@ function OrderActions({ order }: { order: BookOrderWithItems }) {
      return (
         <td className="whitespace-nowrap px-4 py-4 align-top">
           <div className="flex items-center justify-end gap-2">
+            {order.paymentRecordId && (
+              <ReceiptActionButtons
+                paymentRecordId={order.paymentRecordId}
+                receiptGeneratedAt={order.receiptGeneratedAt}
+                isAdmin={true}
+              />
+            )}
             <MarkShippedModal orderId={order.id} />
             <ConfirmationModal
                title="Refund Order"
@@ -213,6 +221,13 @@ function OrderActions({ order }: { order: BookOrderWithItems }) {
   return (
     <td className="whitespace-nowrap px-4 py-4 align-top text-right">
       <div className="flex items-center justify-end gap-3">
+        {order.paymentRecordId && (
+          <ReceiptActionButtons
+            paymentRecordId={order.paymentRecordId}
+            receiptGeneratedAt={order.receiptGeneratedAt}
+            isAdmin={true}
+          />
+        )}
         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${bookOrderStatusClass(order.status)}`}>
           {bookOrderStatusLabel(order.status)}
         </span>

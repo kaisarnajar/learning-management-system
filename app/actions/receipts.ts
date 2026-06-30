@@ -46,12 +46,34 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
 
   let baseAmount = record.amountInrPaise;
   let gstAmount = 0;
+  let shippingAmountPaise = 0;
+
+  if (record.paymentType === "book_purchase") {
+    const match = record.description?.match(/Book order #([A-Z0-9]+)/i);
+    if (match) {
+      const shortId = match[1];
+      const bookOrder = await prisma.bookOrder.findFirst({
+        where: { 
+          userId: record.userId,
+          id: { endsWith: shortId.toLowerCase() },
+          totalAmountInrPaise: record.amountInrPaise 
+        }
+      });
+      if (bookOrder) {
+        shippingAmountPaise = bookOrder.shippingChargeInrPaise;
+      }
+    }
+  }
+
+  const itemTotalPaise = record.amountInrPaise - shippingAmountPaise;
 
   if (includeGst) {
     // Math logic based on user's specific inclusive rule
-    // "Total: ₹100, GST: ₹18, Fee: ₹82" => GST is exactly 18% of the total amount.
-    gstAmount = Math.round(record.amountInrPaise * 0.18);
-    baseAmount = record.amountInrPaise - gstAmount;
+    // "Total: ₹100, GST: ₹18, Fee: ₹82" => GST is exactly 18% of the item total amount.
+    gstAmount = Math.round(itemTotalPaise * 0.18);
+    baseAmount = itemTotalPaise - gstAmount;
+  } else {
+    baseAmount = itemTotalPaise;
   }
 
   await prisma.paymentRecord.update({

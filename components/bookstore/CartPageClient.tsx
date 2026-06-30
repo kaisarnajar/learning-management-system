@@ -7,6 +7,7 @@ import { useCart } from "@/components/bookstore/CartProvider";
 import { trackButtonClick } from "@/lib/analytics-client";
 import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
 
 type OrderItem = {
   id: string;
@@ -23,6 +24,8 @@ type PastOrder = {
   items: OrderItem[];
   courierServiceName?: string | null;
   trackingId?: string | null;
+  paymentRecordId?: string | null;
+  receiptGeneratedAt?: Date | null;
 };
 
 function formatPrice(paise: number): string {
@@ -45,11 +48,20 @@ function PastOrderCard({ order }: { order: PastOrder }) {
             {formatPrice(order.totalAmountInrPaise)}
           </p>
         </div>
-        <span
-          className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${bookOrderStatusClass(order.status)}`}
-        >
-          {bookOrderStatusLabel(order.status)}
-        </span>
+        <div className="flex flex-col items-end gap-2">
+          <span
+            className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${bookOrderStatusClass(order.status)}`}
+          >
+            {bookOrderStatusLabel(order.status)}
+          </span>
+          {order.paymentRecordId && order.receiptGeneratedAt && (
+            <ReceiptActionButtons
+              paymentRecordId={order.paymentRecordId}
+              receiptGeneratedAt={order.receiptGeneratedAt}
+              isAdmin={false}
+            />
+          )}
+        </div>
       </div>
 
       <ul className="mt-3 space-y-2 border-t border-border pt-3">

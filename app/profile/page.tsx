@@ -102,6 +102,7 @@ export default async function ProfilePage({
           memberSince={user.createdAt}
           profileComplete={profileComplete}
           occupation={user.occupation}
+          image={user.image}
         />
 
         <ProfileSection

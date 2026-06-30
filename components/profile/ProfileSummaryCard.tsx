@@ -8,6 +8,7 @@ type ProfileSummaryCardProps = {
   memberSince: Date;
   profileComplete: boolean;
   occupation: Occupation | null;
+  image: string | null;
 };
 
 export function ProfileSummaryCard({
@@ -16,6 +17,7 @@ export function ProfileSummaryCard({
   memberSince,
   profileComplete,
   occupation,
+  image,
 }: ProfileSummaryCardProps) {
   const displayName = name?.trim() || "Student";
   const initials = getInitialsFromName(displayName);
@@ -23,12 +25,16 @@ export function ProfileSummaryCard({
   return (
     <aside className="card-elevated overflow-hidden">
       <div className="pattern-teal px-6 py-8 text-center">
-        <div
-          className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-4 border-white/20 bg-teal-dark text-xl font-bold text-white shadow-lg"
-          aria-hidden
-        >
-          {initials}
-        </div>
+        {image ? (
+          <img src={image} alt="Profile" className="mx-auto h-20 w-20 rounded-full border-4 border-white/20 object-cover shadow-lg" />
+        ) : (
+          <div
+            className="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-4 border-white/20 bg-teal-dark text-xl font-bold text-white shadow-lg"
+            aria-hidden
+          >
+            {initials}
+          </div>
+        )}
         <h2 className="mt-4 font-serif text-xl font-semibold text-white">{displayName}</h2>
         <p className="mt-1 text-sm text-white/80">{email}</p>
       </div>

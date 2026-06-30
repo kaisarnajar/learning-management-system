@@ -13,6 +13,7 @@ export const userProfileSelect = {
   occupation: true,
   address: true,
   whatsapp: true,
+  image: true,
 } as const;
 
 export type UserProfileData = Pick<User, keyof typeof userProfileSelect>;

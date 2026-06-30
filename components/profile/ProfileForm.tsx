@@ -26,6 +26,7 @@ type ProfileFormProps = {
   occupation: Occupation | null;
   address: string | null;
   whatsapp: string | null;
+  image: string | null;
   onCancel?: () => void;
 };
 
@@ -89,10 +90,12 @@ export function ProfileForm({
   occupation,
   address,
   whatsapp,
+  image,
   onCancel,
 }: ProfileFormProps) {
   const parsedWhatsApp = parseStoredProfileWhatsApp(whatsapp);
   const [state, formAction, pending] = useActionState(updateProfile, initialState);
+  const [imagePreview, setImagePreview] = useState<string | null>(image);
   const [values, setValues] = useState<ProfileFormValues>({
     name: name ?? "",
     fatherName: fatherName ?? "",
@@ -140,8 +143,15 @@ export function ProfileForm({
     return Boolean(touched[field] && errors[field]);
   }
 
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImagePreview(URL.createObjectURL(file));
+    }
+  }
+
   return (
-    <form action={formAction} className="card-elevated w-full space-y-8 p-6 sm:p-8">
+    <form action={formAction} encType="multipart/form-data" className="card-elevated w-full space-y-8 p-6 sm:p-8">
       <div>
         <h2 className="font-serif text-xl font-semibold text-foreground">Registration details</h2>
         <p className="mt-2 text-sm leading-relaxed text-muted">
@@ -157,6 +167,29 @@ export function ProfileForm({
       )}
 
       <FormSection title="Personal information">
+        <div className="mb-4">
+          <label htmlFor="image" className={labelClassName}>
+            Profile Photo (Optional)
+          </label>
+          <div className="mt-2 flex items-center gap-4">
+            {imagePreview ? (
+              <img src={imagePreview} alt="Profile preview" className="w-16 h-16 rounded-full object-cover border border-border" />
+            ) : (
+              <div className="w-16 h-16 rounded-full bg-surface-muted border border-border flex items-center justify-center">
+                <span className="text-xs text-muted">No photo</span>
+              </div>
+            )}
+            <input
+              id="image"
+              name="image"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              onChange={handleImageChange}
+              className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+            />
+          </div>
+        </div>
+
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="name" className={labelClassName}>

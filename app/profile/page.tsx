@@ -112,6 +112,7 @@ export default async function ProfilePage({
           occupation={user.occupation}
           address={user.address}
           whatsapp={user.whatsapp}
+          image={user.image}
         />
       </div>
     </div>

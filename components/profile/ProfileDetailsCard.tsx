@@ -15,6 +15,7 @@ type ProfileDetailsCardProps = {
   occupation: Occupation | null;
   address: string | null;
   whatsapp: string | null;
+  image: string | null;
   onEdit: () => void;
 };
 
@@ -44,6 +45,7 @@ export function ProfileDetailsCard({
   occupation,
   address,
   whatsapp,
+  image,
   onEdit,
 }: ProfileDetailsCardProps) {
   const parsedWhatsApp = parseStoredProfileWhatsApp(whatsapp);
@@ -82,6 +84,7 @@ export function ProfileDetailsCard({
             Personal Information
           </h3>
           <div className="space-y-3">
+            <DetailRow label="Photo" value={image ? <img src={image} alt="Profile photo" className="w-16 h-16 rounded-full object-cover border border-border" /> : null} />
             <DetailRow label="Full name" value={name} />
             <DetailRow label="Father's name" value={fatherName} />
             <DetailRow label="Date of birth" value={formatDateOfBirthDisplay(dateOfBirth)} />

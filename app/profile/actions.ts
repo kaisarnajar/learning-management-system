@@ -7,6 +7,8 @@ import { buildStoredProfileWhatsApp } from "@/lib/countries";
 import { prisma } from "@/lib/prisma";
 import { profileUpdateSchema } from "@/lib/validations";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { saveProfileImage, validateProfileImage, deleteProfileImage } from "@/lib/profile-upload";
+import { getUserProfile } from "@/lib/profile";
 
 export type ProfileUpdateState = {
   error?: string;
@@ -32,16 +34,39 @@ export async function updateProfile(
     return { error: parsed.error.issues[0]?.message ?? "Invalid profile data." };
   }
 
+  const imageFile = formData.get("image") as File | null;
+  let newImageUrl: string | undefined;
+
+  if (imageFile && imageFile.size > 0) {
+    const validation = validateProfileImage(imageFile);
+    if (validation.error) {
+      return { error: validation.error };
+    }
+
+    const currentProfile = await getUserProfile(session.user.id);
+    if (currentProfile?.image) {
+      await deleteProfileImage(currentProfile.image);
+    }
+
+    newImageUrl = await saveProfileImage(session.user.id, imageFile);
+  }
+
+  const updateData: any = {
+    name: parsed.data.name,
+    fatherName: parsed.data.fatherName,
+    dateOfBirth: new Date(parsed.data.dateOfBirth),
+    occupation: parsed.data.occupation,
+    address: parsed.data.address,
+    whatsapp: buildStoredProfileWhatsApp(parsed.data.country, parsed.data.whatsapp),
+  };
+
+  if (newImageUrl) {
+    updateData.image = newImageUrl;
+  }
+
   await withDbErrorHandling(() => prisma.user.update({
       where: { id: session.user.id },
-      data: {
-        name: parsed.data.name,
-        fatherName: parsed.data.fatherName,
-        dateOfBirth: new Date(parsed.data.dateOfBirth),
-        occupation: parsed.data.occupation,
-        address: parsed.data.address,
-        whatsapp: buildStoredProfileWhatsApp(parsed.data.country, parsed.data.whatsapp),
-      },
+      data: updateData,
     }), "Database operation failed");
 
   revalidatePath("/profile");

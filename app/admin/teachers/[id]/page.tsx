@@ -82,8 +82,15 @@ export default async function AdminTeacherDetailPage({
         </div>
         {teacher.imageUrl && (
           <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-            <dt className="shrink-0 font-medium text-foreground sm:w-28">Photo URL</dt>
-            <dd className="break-all text-muted">{teacher.imageUrl}</dd>
+            <dt className="shrink-0 font-medium text-foreground sm:w-28">Photo</dt>
+            <dd className="text-muted">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={teacher.imageUrl}
+                alt={teacher.name}
+                className="h-32 w-32 rounded-lg object-cover ring-1 ring-border shadow-sm"
+              />
+            </dd>
           </div>
         )}
         <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">

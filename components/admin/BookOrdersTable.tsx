@@ -152,7 +152,7 @@ export function MarkShippedModal({ orderId }: { orderId: string }) {
     </>
   );
 }
-function OrderActions({ order }: { order: BookOrderWithItems }) {
+function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "default" | "payment_only" }) {
   const { addToast } = useToast();
   if (order.status === "PENDING_VERIFICATION") {
      return (
@@ -188,18 +188,28 @@ function OrderActions({ order }: { order: BookOrderWithItems }) {
         </td>
      );
   }
-  
+  if (mode === "payment_only") {
+    return (
+      <td className="whitespace-nowrap px-4 py-4 align-top">
+        <div className="flex items-center justify-end gap-2">
+          {order.paymentRecordId ? (
+            <ReceiptActionButtons
+              paymentRecordId={order.paymentRecordId}
+              receiptGeneratedAt={order.receiptGeneratedAt}
+              isAdmin={true}
+            />
+          ) : (
+             <span className="text-xs italic text-muted">No Payment Record</span>
+          )}
+        </div>
+      </td>
+    );
+  }
+
   if (order.status === "APPROVED") {
      return (
         <td className="whitespace-nowrap px-4 py-4 align-top">
           <div className="flex items-center justify-end gap-2">
-            {order.paymentRecordId && (
-              <ReceiptActionButtons
-                paymentRecordId={order.paymentRecordId}
-                receiptGeneratedAt={order.receiptGeneratedAt}
-                isAdmin={true}
-              />
-            )}
             <MarkShippedModal orderId={order.id} />
             <ConfirmationModal
                title="Refund Order"
@@ -221,13 +231,6 @@ function OrderActions({ order }: { order: BookOrderWithItems }) {
   return (
     <td className="whitespace-nowrap px-4 py-4 align-top text-right">
       <div className="flex items-center justify-end gap-3">
-        {order.paymentRecordId && (
-          <ReceiptActionButtons
-            paymentRecordId={order.paymentRecordId}
-            receiptGeneratedAt={order.receiptGeneratedAt}
-            isAdmin={true}
-          />
-        )}
         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${bookOrderStatusClass(order.status)}`}>
           {bookOrderStatusLabel(order.status)}
         </span>
@@ -253,8 +256,10 @@ function OrderActions({ order }: { order: BookOrderWithItems }) {
 
 export function BaseOrderRow({
   order,
+  mode = "default",
 }: {
   order: BookOrderWithItems;
+  mode?: "default" | "payment_only";
 }) {
   return (
     <tr className="border-b border-border last:border-0">
@@ -318,7 +323,7 @@ export function BaseOrderRow({
         </div>
       )}
       </td>
-      <OrderActions order={order} />
+      <OrderActions order={order} mode={mode} />
     </tr>
   );
 }
@@ -327,10 +332,12 @@ export function BookOrdersTable({
   orders,
   emptyMessage,
   showStatusColumn = false,
+  mode = "default",
 }: {
   orders: BookOrderWithItems[];
   emptyMessage: string;
   showStatusColumn?: boolean;
+  mode?: "default" | "payment_only";
 }) {
   if (orders.length === 0) {
     return <p className="px-4 py-8 text-center text-sm text-muted">{emptyMessage}</p>;
@@ -356,6 +363,7 @@ export function BookOrdersTable({
             <BaseOrderRow
               key={order.id}
               order={order}
+              mode={mode}
             />
           ))}
         </tbody>

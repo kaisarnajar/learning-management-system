@@ -52,6 +52,8 @@ export async function GET(
   let finalCourseTitle = course?.title ?? "Darse Quran Academy";
 
   let shippingAmount = 0;
+  let paymentMethod = record.submission?.paymentMethod || record.paymentType || "MANUAL";
+  
   if (record.paymentType === "book_purchase") {
     finalCourseTitle = "Book Order";
     const match = record.description?.match(/Book order #([A-Z0-9]+)/i);
@@ -66,6 +68,9 @@ export async function GET(
       });
       if (bookOrder) {
         shippingAmount = bookOrder.shippingChargeInrPaise / 100;
+        if (bookOrder.paymentMethod) {
+          paymentMethod = bookOrder.paymentMethod;
+        }
       }
     }
   }
@@ -122,7 +127,7 @@ export async function GET(
         month: "long",
         day: "numeric",
       }),
-      method: record.submission?.paymentMethod || record.paymentType || "MANUAL",
+      method: paymentMethod,
       courseName: finalCourseTitle,
       amount: record.amountInrPaise / 100,
       baseAmount: record.receiptFeeAmountPaise ? record.receiptFeeAmountPaise / 100 : undefined,

@@ -11,13 +11,13 @@ async function main() {
   const usersToBackfill = await prisma.user.findMany({
     where: {
       registrationNumber: null,
-      name: { not: null, not: "" },
-      fatherName: { not: null, not: "" },
+      name: { notIn: [""] },
+      fatherName: { notIn: [""] },
       dateOfBirth: { not: null },
       occupation: { not: null },
-      address: { not: null, not: "" },
-      whatsapp: { not: null, not: "" },
-      email: { not: null, not: "" },
+      address: { notIn: [""] },
+      whatsapp: { notIn: [""] },
+      email: { notIn: [""] },
     },
     orderBy: {
       createdAt: "asc",

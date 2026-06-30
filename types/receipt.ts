@@ -22,6 +22,7 @@ export interface PaymentInfo {
   amount: number;
   baseAmount?: number;
   gstAmount?: number;
+  shippingAmount?: number;
   currency?: string;
 }
 

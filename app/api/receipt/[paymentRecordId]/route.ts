@@ -49,8 +49,28 @@ export async function GET(
   }
 
   const course = record.courseId ? await getCourseById(record.courseId) : null;
-  const courseTitle = course?.title ?? "Darse Quran Academy";
-  const filename = getReceiptFilename(courseTitle, paymentRecordId);
+  let finalCourseTitle = course?.title ?? "Darse Quran Academy";
+
+  let shippingAmount = 0;
+  if (record.paymentType === "book_purchase") {
+    finalCourseTitle = "Book Order";
+    const match = record.description?.match(/Book order #([A-Z0-9]+)/i);
+    if (match) {
+      const shortId = match[1];
+      const bookOrder = await prisma.bookOrder.findFirst({
+        where: { 
+          userId: record.userId,
+          id: { endsWith: shortId.toLowerCase() },
+          totalAmountInrPaise: record.amountInrPaise 
+        }
+      });
+      if (bookOrder) {
+        shippingAmount = bookOrder.shippingChargeInrPaise / 100;
+      }
+    }
+  }
+
+  const filename = getReceiptFilename(finalCourseTitle, paymentRecordId);
   
   // 1. Fetch Dynamic Configuration
   const [socialLinks, academySettings] = await Promise.all([
@@ -103,10 +123,11 @@ export async function GET(
         day: "numeric",
       }),
       method: record.submission?.paymentMethod || record.paymentType || "MANUAL",
-      courseName: courseTitle,
+      courseName: finalCourseTitle,
       amount: record.amountInrPaise / 100,
       baseAmount: record.receiptFeeAmountPaise ? record.receiptFeeAmountPaise / 100 : undefined,
       gstAmount: record.receiptGstAmountPaise ? record.receiptGstAmountPaise / 100 : undefined,
+      shippingAmount: shippingAmount > 0 ? shippingAmount : undefined,
       currency: "₹",
     },
     authority: {

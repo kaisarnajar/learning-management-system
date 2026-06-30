@@ -96,6 +96,29 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
         console.error("[receipt-email] Could not load images:", e);
       }
 
+      let finalCourseTitle = courseTitle;
+      let shippingAmount = 0;
+
+      if (record.paymentType === "book_purchase") {
+        finalCourseTitle = "Book Order";
+        // Find the matching book order for this payment record
+        // The description is like "Book order #XXXXXX" which is the last 6 chars of the order ID
+        const match = record.description?.match(/Book order #([A-Z0-9]+)/i);
+        if (match) {
+          const shortId = match[1];
+          const bookOrder = await prisma.bookOrder.findFirst({
+            where: { 
+              userId: record.userId,
+              id: { endsWith: shortId.toLowerCase() },
+              totalAmountInrPaise: record.amountInrPaise 
+            }
+          });
+          if (bookOrder) {
+            shippingAmount = bookOrder.shippingChargeInrPaise / 100;
+          }
+        }
+      }
+
       const receiptData: ReceiptData = {
         academy: {
           name: academySettings.academyName,
@@ -118,10 +141,11 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
             day: "numeric",
           }),
           method: record.submission?.paymentMethod || record.paymentType || "MANUAL",
-          courseName: courseTitle,
+          courseName: finalCourseTitle,
           amount: record.amountInrPaise / 100,
           baseAmount: includeGst ? baseAmount / 100 : undefined,
           gstAmount: includeGst ? gstAmount / 100 : undefined,
+          shippingAmount: shippingAmount > 0 ? shippingAmount : undefined,
           currency: "₹",
         },
         authority: {

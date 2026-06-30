@@ -26,6 +26,22 @@ export async function getPublishedTeachersPaginated(
       orderBy: { createdAt: "desc" },
       ...paginationArgs(safePage, pageSize),
     }), "Database operation failed");
+
+  const emails = items.map((t) => t.email).filter(Boolean) as string[];
+  if (emails.length > 0) {
+    const users = await withDbErrorHandling(() => prisma.user.findMany({
+      where: { email: { in: emails } },
+      select: { email: true, image: true },
+    }), "Database operation failed");
+    
+    const userImageMap = new Map(users.map((u) => [u.email, u.image]));
+    for (const item of items) {
+      if (!item.imageUrl && item.email && userImageMap.get(item.email)) {
+        item.imageUrl = userImageMap.get(item.email) || null;
+      }
+    }
+  }
+
   return { items, totalCount };
 }
 
@@ -54,7 +70,19 @@ export async function getTeacherById(id: string): Promise<Teacher | null> {
 }
 
 export async function getPublishedTeacherById(id: string): Promise<Teacher | null> {
-  return withDbErrorHandling(() => prisma.teacher.findFirst({
+  const teacher = await withDbErrorHandling(() => prisma.teacher.findFirst({
       where: { id, published: true },
     }), "Database operation failed");
+
+  if (teacher && !teacher.imageUrl && teacher.email) {
+    const user = await withDbErrorHandling(() => prisma.user.findUnique({
+      where: { email: teacher.email! },
+      select: { image: true },
+    }), "Database operation failed");
+    if (user?.image) {
+      teacher.imageUrl = user.image;
+    }
+  }
+
+  return teacher;
 }

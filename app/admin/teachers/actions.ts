@@ -67,6 +67,8 @@ export async function createTeacher(formData: FormData) {
   revalidatePath("/teachers");
   revalidatePath("/");
   revalidatePath("/admin/teachers");
+  revalidatePath(`/admin/teachers/${id}`);
+  revalidatePath(`/teachers/${id}`);
   redirect(teacherFormPath("", "?created=1"));
 }
 
@@ -112,6 +114,7 @@ export async function updateTeacher(id: string, formData: FormData) {
   revalidatePath("/");
   revalidatePath("/admin/teachers");
   revalidatePath(`/admin/teachers/${id}`);
+  revalidatePath(`/teachers/${id}`);
   redirect(teacherFormPath("", "?saved=1"));
 }
 
@@ -129,6 +132,7 @@ export async function deleteTeacherById(id: string): Promise<{ error?: string }>
   revalidatePath("/");
   revalidatePath("/admin/teachers");
   revalidatePath(`/admin/teachers/${id}`);
+  revalidatePath(`/teachers/${id}`);
 
   return {};
 }

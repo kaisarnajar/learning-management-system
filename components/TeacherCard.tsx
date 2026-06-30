@@ -15,12 +15,10 @@ export function TeacherCard({ teacher }: TeacherCardProps) {
       className="card-elevated flex h-full flex-col p-6 transition-all hover:-translate-y-1 hover:shadow-xl"
     >
       {teacher.imageUrl ? (
-        <Image
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
           src={teacher.imageUrl}
-          alt=""
-          width={80}
-          height={80}
-          unoptimized
+          alt={teacher.name}
           className="h-20 w-20 rounded-xl object-cover ring-2 ring-accent-muted"
         />
       ) : (

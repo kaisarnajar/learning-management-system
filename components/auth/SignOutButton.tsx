@@ -11,6 +11,7 @@ type SignOutButtonProps = {
 
 export function SignOutButton({ className, children = "Sign Out" }: SignOutButtonProps) {
   const [open, setOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const titleId = useId();
 
   const close = useCallback(() => setOpen(false), []);
@@ -33,6 +34,7 @@ export function SignOutButton({ className, children = "Sign Out" }: SignOutButto
   }, [open, close]);
 
   function handleConfirmSignOut() {
+    setIsLoading(true);
     trackButtonClick("Sign Out", "/");
     void signOut({ callbackUrl: "/" });
   }
@@ -75,9 +77,10 @@ export function SignOutButton({ className, children = "Sign Out" }: SignOutButto
               <button
                 type="button"
                 onClick={handleConfirmSignOut}
-                className="min-h-10 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-light"
+                disabled={isLoading}
+                className="min-h-10 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-light disabled:opacity-70 disabled:cursor-not-allowed"
               >
-                Sign out
+                {isLoading ? "Signing out..." : "Sign out"}
               </button>
             </div>
           </div>

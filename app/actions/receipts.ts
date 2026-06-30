@@ -120,6 +120,7 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
 
       let finalCourseTitle = courseTitle;
       let shippingAmount = 0;
+      let paymentMethod = record.submission?.paymentMethod || record.paymentType || "MANUAL";
 
       if (record.paymentType === "book_purchase") {
         finalCourseTitle = "Book Order";
@@ -137,6 +138,9 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
           });
           if (bookOrder) {
             shippingAmount = bookOrder.shippingChargeInrPaise / 100;
+            if (bookOrder.paymentMethod) {
+              paymentMethod = bookOrder.paymentMethod;
+            }
           }
         }
       }
@@ -162,7 +166,7 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
             month: "long",
             day: "numeric",
           }),
-          method: record.submission?.paymentMethod || record.paymentType || "MANUAL",
+          method: paymentMethod,
           courseName: finalCourseTitle,
           amount: record.amountInrPaise / 100,
           baseAmount: includeGst ? baseAmount / 100 : undefined,

@@ -110,17 +110,28 @@ export async function confirmMonthlyPayment(
       },
     });
 
-    if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT && course) {
-      await tx.enrollment.updateMany({
-        where: {
-          userId: submission.userId,
-          courseId: submission.courseId,
-          status: AWAITING_ENROLLMENT_FEE,
-        },
-        data: { status: getRosterEnrollmentStatusForCourse(course.status) },
+      if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT && course) {
+        await tx.enrollment.updateMany({
+          where: {
+            userId: submission.userId,
+            courseId: submission.courseId,
+            status: AWAITING_ENROLLMENT_FEE,
+          },
+          data: { status: getRosterEnrollmentStatusForCourse(course.status) },
+        });
+      }
+    }), "Database operation failed");
+
+    if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT && course && getRosterEnrollmentStatusForCourse(course.status) === "active") {
+      const enrollment = await prisma.enrollment.findUnique({
+        where: { userId_courseId: { userId: submission.userId, courseId: submission.courseId } },
+        select: { id: true },
       });
+      if (enrollment) {
+        const { assignRollNumber } = await import("@/lib/roll-numbers");
+        await assignRollNumber(enrollment.id, submission.courseId);
+      }
     }
-  }), "Database operation failed");
 
   if (course) {
     await notifyPaymentApproved({

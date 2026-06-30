@@ -11,6 +11,7 @@ import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
 import { getCourseById } from "@/lib/courses";
 import { getCourseRosterEnrollmentsPaginated } from "@/lib/enrollments";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
+import { formatRollNumber } from "@/lib/roll-numbers";
 import { parseSearchQuery } from "@/lib/text-search";
 
 export default async function CourseStudentsPage({
@@ -80,6 +81,7 @@ export default async function CourseStudentsPage({
           <table className="w-full min-w-[520px] text-left text-sm">
             <thead className="border-b border-border bg-background/50 text-muted">
               <tr>
+                <th className="px-4 py-3 font-medium">Roll No</th>
                 <th className="px-4 py-3 font-medium">Name</th>
                 <th className="px-4 py-3 font-medium">Email</th>
                 <th className="w-[1%] whitespace-nowrap px-4 py-3 font-medium">Actions</th>
@@ -88,6 +90,9 @@ export default async function CourseStudentsPage({
             <tbody className="divide-y divide-border">
               {enrollments.map((enrollment) => (
                 <tr key={enrollment.id}>
+                  <td className="px-4 py-3 font-medium text-foreground">
+                    {formatRollNumber(enrollment.rollNumber)}
+                  </td>
                   <td className="px-4 py-3 font-medium text-foreground">
                     {enrollment.user.name ?? "—"}
                   </td>

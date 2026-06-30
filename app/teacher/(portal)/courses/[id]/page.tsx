@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Pagination } from "@/components/shared/Pagination";
 import { requireTeacher } from "@/lib/auth-actions";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
+import { formatRollNumber } from "@/lib/roll-numbers";
 import { getTeacherCourseStudentsPaginated } from "@/lib/teacher-portal";
 
 export default async function TeacherCourseStudentsPage({
@@ -36,6 +37,7 @@ export default async function TeacherCourseStudentsPage({
           <table className="w-full min-w-[320px] text-left text-sm">
             <thead className="border-b border-border bg-background/60 text-muted">
               <tr>
+                <th className="px-4 py-3 font-medium">Roll No</th>
                 <th className="px-4 py-3 font-medium">Student</th>
                 <th className="px-4 py-3 font-medium" />
               </tr>
@@ -43,6 +45,9 @@ export default async function TeacherCourseStudentsPage({
             <tbody className="divide-y divide-border">
               {enrollments.map((enrollment) => (
                 <tr key={enrollment.id} className="hover:bg-background/30">
+                  <td className="px-4 py-3 font-medium text-foreground">
+                    {formatRollNumber(enrollment.rollNumber)}
+                  </td>
                   <td className="px-4 py-3 font-medium text-foreground">
                     {enrollment.user.name ?? "—"}
                   </td>

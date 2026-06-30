@@ -12,6 +12,7 @@ import {
 import { enrollmentStatusLabel, getUserEnrollmentsPaginated } from "@/lib/enrollments";
 import { getPendingEnrollmentFeeSubmissionMap } from "@/lib/monthly-payments";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
+import { formatRollNumber } from "@/lib/roll-numbers";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
@@ -90,6 +91,11 @@ export default async function ProfileCoursesPage({
                     ? "Awaiting payment verification"
                     : enrollmentStatusLabel(enrollment.status)}
                 </span>
+                {enrollment.rollNumber != null && (
+                  <span className="mt-2 w-fit rounded-full bg-surface-muted px-2.5 py-0.5 text-xs font-medium text-foreground">
+                    Roll No: {formatRollNumber(enrollment.rollNumber)}
+                  </span>
+                )}
                 <h3 className="mt-2 font-serif text-lg font-semibold text-foreground">{course.title}</h3>
                 <p className="mt-2 flex-1 text-sm text-muted">{course.description}</p>
                 <p className="mt-3 text-sm text-primary">Starts: {course.startDate}</p>

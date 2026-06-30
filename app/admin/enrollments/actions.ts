@@ -92,6 +92,11 @@ export async function approveEnrollmentRequest(
     enrollmentId,
   });
 
+  if (getRosterEnrollmentStatusForCourse(course.status) === "active") {
+    const { assignRollNumber } = await import("@/lib/roll-numbers");
+    await assignRollNumber(enrollmentId, courseId);
+  }
+
   revalidateEnrollmentPaths(courseId);
   revalidatePath(`/admin/students/${enrollment.userId}`, "page");
 
@@ -167,7 +172,7 @@ export async function adminEnrollUser(
 
   const status = getRosterEnrollmentStatusForCourse(course.status);
 
-  await withDbErrorHandling(() => prisma.enrollment.upsert({
+  const upserted = await withDbErrorHandling(() => prisma.enrollment.upsert({
       where: {
         userId_courseId: { userId: account.userId, courseId: course.id },
       },
@@ -178,6 +183,11 @@ export async function adminEnrollUser(
       },
       update: { status },
     }), "Database operation failed");
+
+  if (status === "active") {
+    const { assignRollNumber } = await import("@/lib/roll-numbers");
+    await assignRollNumber(upserted.id, course.id);
+  }
 
   revalidateEnrollmentPaths(course.id);
 

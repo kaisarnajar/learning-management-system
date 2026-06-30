@@ -14,6 +14,7 @@ import {
   formatDateOfBirthDisplay,
   occupationLabel,
 } from "@/lib/profile";
+import { formatRollNumber } from "@/lib/roll-numbers";
 import { getStudentUserById } from "@/lib/students";
 
 export default async function AdminStudentDetailPage({
@@ -172,6 +173,7 @@ export default async function AdminStudentDetailPage({
               <thead className="border-b border-border bg-background/50 text-muted">
                 <tr>
                   <th className="px-4 py-3 font-medium">Course</th>
+                  <th className="px-4 py-3 font-medium">Roll No</th>
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Enrolled</th>
                   <th className="px-4 py-3 font-medium" />
@@ -182,6 +184,9 @@ export default async function AdminStudentDetailPage({
                   <tr key={enrollment.id}>
                     <td className="px-4 py-3 font-medium text-foreground">
                       {titleById.get(enrollment.courseId) ?? enrollment.courseId}
+                    </td>
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      {formatRollNumber(enrollment.rollNumber)}
                     </td>
                     <td className="px-4 py-3">
                       <span

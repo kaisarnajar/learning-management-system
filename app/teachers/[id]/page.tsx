@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/site/PageHeader";
 import { Section } from "@/components/site/Section";
+import { MarkdownText } from "@/components/shared/MarkdownText";
 import { Pagination } from "@/components/shared/Pagination";
 import { getPublicCoursesByTeacherIdPaginated } from "@/lib/courses";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
@@ -67,7 +68,7 @@ export default async function TeacherPage({ params, searchParams }: TeacherPageP
             <PageHeader title={teacher.name} description={teacher.specialization} />
           </div>
         </div>
-        <p className="mt-8 text-base leading-relaxed text-muted">{teacher.bio}</p>
+        <MarkdownText content={teacher.bio} className="mt-8" />
 
         {courseTotalCount > 0 && (
           <section className="mt-10">

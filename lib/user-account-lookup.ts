@@ -6,7 +6,7 @@ export function normalizeAccountEmail(email: string): string {
 }
 
 export type RegisteredUserLookup =
-  | { ok: true; userId: string; name: string; email: string }
+  | { ok: true; userId: string; name: string; email: string; image: string | null }
   | { ok: false; error: string };
 
 /** Admin actions may only target emails that already belong to a registered user. */
@@ -32,5 +32,5 @@ export async function lookupRegisteredUser(
 
   const displayName = user.name?.trim() || normalized.split("@")[0] || "User";
 
-  return { ok: true, userId: user.id, name: displayName, email: normalized };
+  return { ok: true, userId: user.id, name: displayName, email: normalized, image: user.image };
 }

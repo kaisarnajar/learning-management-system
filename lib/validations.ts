@@ -47,7 +47,6 @@ export const teacherAdminSchema = z.object({
     .max(4, "Max 4 characters")
     .optional()
     .or(z.literal("")),
-  imageUrl: z.string().url().optional().or(z.literal("")),
   published: z.coerce.boolean(),
 });
 

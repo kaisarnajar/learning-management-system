@@ -25,7 +25,6 @@ const TEACHER_FIELDS: (keyof TeacherFormValues)[] = [
   "specialization",
   "bio",
   "initials",
-  "imageUrl",
 ];
 
 export function TeacherForm({ teacher, action, submitLabel, error }: TeacherFormProps) {
@@ -41,7 +40,6 @@ export function TeacherForm({ teacher, action, submitLabel, error }: TeacherForm
       specialization: teacher?.specialization ?? "",
       bio: teacher?.bio ?? "",
       initials: teacher?.initials ?? "",
-      imageUrl: teacher?.imageUrl ?? "",
       published: teacher?.published ?? true,
     },
     fields: TEACHER_FIELDS,
@@ -212,27 +210,6 @@ export function TeacherForm({ teacher, action, submitLabel, error }: TeacherForm
             </p>
           )}
           <p className="mt-1 text-xs text-muted">Leave blank to auto-generate from the account name.</p>
-        </div>
-        <div>
-          <label htmlFor="imageUrl" className={labelClassName}>
-            Photo URL (optional)
-          </label>
-          <input
-            id="imageUrl"
-            name="imageUrl"
-            type="url"
-            value={values.imageUrl}
-            onChange={(e) => updateField("imageUrl", e.target.value)}
-            onBlur={() => markTouched("imageUrl")}
-            aria-invalid={showError("imageUrl") || undefined}
-            placeholder="https://..."
-            className={formFieldInputClass(showError("imageUrl"))}
-          />
-          {showError("imageUrl") && (
-            <p className={formErrorTextClassName} role="alert">
-              {errors.imageUrl}
-            </p>
-          )}
         </div>
       </div>
 

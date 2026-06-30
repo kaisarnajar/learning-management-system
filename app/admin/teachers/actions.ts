@@ -14,13 +14,11 @@ import { teacherAdminSchema } from "@/lib/validations";
 import { withDbErrorHandling } from "@/lib/db-error";
 
 function parseTeacherForm(formData: FormData) {
-  const imageUrl = formData.get("imageUrl");
   return teacherAdminSchema.safeParse({
     email: formData.get("email"),
     specialization: formData.get("specialization"),
     bio: formData.get("bio"),
     initials: formData.get("initials"),
-    imageUrl: imageUrl ? String(imageUrl) : "",
     published: formData.get("published") === "on",
   });
 }
@@ -61,7 +59,7 @@ export async function createTeacher(formData: FormData) {
         specialization: parsed.data.specialization,
         bio: parsed.data.bio,
         initials,
-        imageUrl: parsed.data.imageUrl || null,
+        imageUrl: account.image || null,
         published: parsed.data.published,
       },
     }), "Database operation failed");
@@ -105,7 +103,7 @@ export async function updateTeacher(id: string, formData: FormData) {
         specialization: parsed.data.specialization,
         bio: parsed.data.bio,
         initials,
-        imageUrl: parsed.data.imageUrl || null,
+        imageUrl: account.image || null,
         published: parsed.data.published,
       },
     }), "Database operation failed");

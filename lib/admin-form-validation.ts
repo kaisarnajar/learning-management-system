@@ -128,7 +128,6 @@ export type TeacherFormValues = {
   specialization: string;
   bio: string;
   initials: string;
-  imageUrl: string;
   published: boolean;
 };
 
@@ -139,7 +138,6 @@ export function validateTeacherForm(values: TeacherFormValues): FormValidationRe
       specialization: values.specialization,
       bio: values.bio,
       initials: values.initials,
-      imageUrl: values.imageUrl,
       published: values.published,
     }),
   );

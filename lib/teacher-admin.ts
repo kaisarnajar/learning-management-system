@@ -13,7 +13,7 @@ export function deriveTeacherInitials(name: string): string {
 }
 
 export type TeacherAccountLookup =
-  | { ok: true; name: string; email: string }
+  | { ok: true; name: string; email: string; image: string | null }
   | { ok: false; error: string };
 
 /** Admin may only link emails that already belong to a registered user account. */
@@ -45,5 +45,5 @@ export async function lookupTeacherAccount(
     return account;
   }
 
-  return { ok: true, name: account.name, email: account.email };
+  return { ok: true, name: account.name, email: account.email, image: account.image };
 }

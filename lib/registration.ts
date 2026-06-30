@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 
-export async function generateNextRegistrationNumber(): Promise<string> {
-  const prefix = "DQA2018-";
+export async function generateNextRegistrationNumber(registrationYear: number): Promise<string> {
+  const prefix = `DQA${registrationYear}-`;
 
   // We find the user with the highest registration number matching the prefix
   // Since it's padded, lexicographical sort order matches numerical order.

@@ -1,16 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
-const prefix = "DQA2018-";
 
 async function main() {
   console.log("Starting backfill of registration numbers for existing students...");
 
-  // Find all users who don't have a registration number
-  // but have completed their profile (checking the same fields as isProfileComplete)
   const usersToBackfill = await prisma.user.findMany({
     where: {
-      registrationNumber: null,
       name: { notIn: [""] },
       fatherName: { notIn: [""] },
       dateOfBirth: { not: null },
@@ -24,41 +20,19 @@ async function main() {
     },
   });
 
-  console.log(`Found ${usersToBackfill.length} users with complete profiles missing a registration number.`);
+  console.log(`Found ${usersToBackfill.length} users with complete profiles.`);
 
-  if (usersToBackfill.length === 0) {
-    console.log("Nothing to do.");
-    return;
-  }
-
-  // Find the current highest sequence number
-  const lastUser = await prisma.user.findFirst({
-    where: {
-      registrationNumber: {
-        startsWith: prefix,
-      },
-    },
-    orderBy: {
-      registrationNumber: "desc",
-    },
-    select: {
-      registrationNumber: true,
-    },
+  // Reset all existing registration numbers so we can generate them cleanly
+  await prisma.user.updateMany({
+    data: { registrationNumber: null }
   });
 
-  let nextSequenceNumber = 1;
-  if (lastUser && lastUser.registrationNumber) {
-    const sequencePart = lastUser.registrationNumber.substring(prefix.length);
-    const parsedSequence = parseInt(sequencePart, 10);
-    if (!isNaN(parsedSequence)) {
-      nextSequenceNumber = parsedSequence + 1;
-    }
-  }
+  const { generateNextRegistrationNumber } = await import("../lib/registration");
 
   // Backfill each user
   for (const user of usersToBackfill) {
-    const paddedSequence = String(nextSequenceNumber).padStart(5, "0");
-    const regNum = `${prefix}${paddedSequence}`;
+    const registrationYear = user.createdAt.getFullYear();
+    const regNum = await generateNextRegistrationNumber(registrationYear);
 
     await prisma.user.update({
       where: { id: user.id },
@@ -66,7 +40,6 @@ async function main() {
     });
 
     console.log(`Assigned ${regNum} to user ${user.email}`);
-    nextSequenceNumber++;
   }
 
   console.log("Backfill complete.");

@@ -78,7 +78,9 @@ export async function updateProfile(
 
   if (isNowComplete && !currentProfile?.registrationNumber) {
     const { generateNextRegistrationNumber } = await import("@/lib/registration");
-    updateData.registrationNumber = await generateNextRegistrationNumber();
+    // Registration year is when the user account was created
+    const registrationYear = currentProfile?.createdAt?.getFullYear() ?? new Date().getFullYear();
+    updateData.registrationNumber = await generateNextRegistrationNumber(registrationYear);
   }
 
   await withDbErrorHandling(() => prisma.user.update({

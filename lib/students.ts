@@ -14,7 +14,7 @@ function studentUsersWhere(searchQuery?: string) {
 export async function getStudentUsers() {
   return withDbErrorHandling(() => prisma.user.findMany({
       where: studentUsersWhere(),
-      orderBy: { createdAt: "desc" },
+      orderBy: { registrationNumber: { sort: "asc", nulls: "last" } },
     }), "Database operation failed");
 }
 
@@ -28,7 +28,7 @@ export async function getStudentUsersPaginated(
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.user.findMany({
       where,
-      orderBy: { createdAt: "desc" },
+      orderBy: { registrationNumber: { sort: "asc", nulls: "last" } },
       ...paginationArgs(safePage, pageSize),
     }), "Database operation failed");
   return { items, totalCount };

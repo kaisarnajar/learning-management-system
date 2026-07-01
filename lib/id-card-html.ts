@@ -135,9 +135,9 @@ export function renderIdCardToHtml(data: {
           </div>
 
           <!-- Details Table -->
-          <div class="flex flex-col flex-1 justify-center pb-12 pl-2">
+          <div class="flex flex-col flex-1 justify-center pb-6 pl-2">
             
-            <div class="flex flex-col mb-[16px]">
+            <div class="flex flex-col mb-[12px]">
               <div class="flex items-baseline">
                 <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Name</span>
                 <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
@@ -146,7 +146,7 @@ export function renderIdCardToHtml(data: {
               <div class="h-[1.5px] w-full bg-[#d4af37]/80 mt-[8px]"></div>
             </div>
 
-            <div class="flex flex-col mb-[16px]">
+            <div class="flex flex-col mb-[12px]">
               <div class="flex items-baseline">
                 <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Father's Name</span>
                 <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
@@ -155,7 +155,7 @@ export function renderIdCardToHtml(data: {
               <div class="h-[1.5px] w-full bg-[#d4af37]/80 mt-[8px]"></div>
             </div>
 
-            <div class="flex flex-col mb-[16px]">
+            <div class="flex flex-col mb-[12px]">
               <div class="flex items-baseline">
                 <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Residence</span>
                 <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
@@ -164,7 +164,7 @@ export function renderIdCardToHtml(data: {
               <div class="h-[1.5px] w-full bg-[#d4af37]/80 mt-[8px]"></div>
             </div>
 
-            <div class="flex flex-col mb-[16px]">
+            <div class="flex flex-col mb-[12px]">
               <div class="flex items-baseline">
                 <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Email</span>
                 <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
@@ -173,7 +173,7 @@ export function renderIdCardToHtml(data: {
               <div class="h-[1.5px] w-full bg-[#d4af37]/80 mt-[8px]"></div>
             </div>
 
-            <div class="flex flex-col mb-[16px]">
+            <div class="flex flex-col mb-[12px]">
               <div class="flex items-baseline">
                 <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Phone</span>
                 <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>

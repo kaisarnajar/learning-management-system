@@ -6,6 +6,8 @@ import { getChromiumExecutablePath } from "@/lib/chromium";
 export type PdfOptions = {
   format?: "A4" | "A3" | "Letter";
   landscape?: boolean;
+  width?: string | number;
+  height?: string | number;
   /**
    * Delay in milliseconds before launching the browser.
    * Use this in fire-and-forget email senders to avoid racing with a
@@ -69,7 +71,7 @@ async function launchBrowserWithRetry(maxRetries = 4) {
  */
 export async function generatePdfFromHtml(
   html: string,
-  { format = "A4", landscape = false, startDelayMs = 0 }: PdfOptions = {},
+  { format = "A4", landscape = false, width, height, startDelayMs = 0 }: PdfOptions = {},
 ): Promise<Buffer> {
   if (startDelayMs > 0) {
     await new Promise((resolve) => setTimeout(resolve, startDelayMs));
@@ -85,12 +87,20 @@ export async function generatePdfFromHtml(
     // Wait for the Tailwind CDN script + any Google Fonts to fetch and apply
     await page.waitForNetworkIdle({ idleTime: 500, timeout: 5000 }).catch(() => {});
 
-    const pdfBuffer = await page.pdf({
-      format,
+    const pdfOptions: any = {
       landscape,
       printBackground: true,
       margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },
-    });
+    };
+
+    if (width && height) {
+      pdfOptions.width = width;
+      pdfOptions.height = height;
+    } else {
+      pdfOptions.format = format;
+    }
+
+    const pdfBuffer = await page.pdf(pdfOptions);
 
     return Buffer.from(pdfBuffer);
   } finally {

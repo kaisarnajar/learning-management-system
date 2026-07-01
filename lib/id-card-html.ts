@@ -31,7 +31,13 @@ export function renderIdCardToHtml(data: {
          <span class="text-lg mt-2 font-medium opacity-60">No Photo Available</span>
        </div>`;
 
-  const cardRole = (data.role && data.role !== "USER") ? data.role.toUpperCase() : "STUDENT";
+  let cardRole = "STUDENT";
+  if (data.role && data.role !== "USER") {
+    cardRole = data.role.toUpperCase();
+    if (cardRole === "DEVELOPER") {
+      cardRole = "ADMIN";
+    }
+  }
 
   return `
 <!DOCTYPE html>
@@ -94,9 +100,11 @@ export function renderIdCardToHtml(data: {
 
           <!-- Stamp & Signature -->
           <div class="mt-4 flex flex-col items-center relative w-[230px]">
-             <div class="relative w-full h-[85px] flex justify-center items-center">
-               <img src="${data.stampUrl}" class="absolute h-[110px] opacity-90 pointer-events-none process-white-bg mix-blend-multiply" style="top: -15px;" alt="Stamp" />
-               <img src="${data.signatureUrl}" class="absolute h-[70px] z-10 process-white-bg mix-blend-multiply" style="bottom: 0px;" alt="Signature" />
+             <div class="relative flex justify-center items-center h-[85px] w-full">
+               <!-- Stamp as background layer -->
+               <img src="${data.stampUrl}" class="w-20 absolute z-10 opacity-90 process-white-bg mix-blend-multiply" style="top: 50%; left: 50%; transform: translate(-50%, -50%);" alt="Stamp" />
+               <!-- Signature as foreground layer -->
+               <img src="${data.signatureUrl}" class="max-h-[85px] max-w-[150px] object-contain relative z-20 translate-y-1 process-white-bg" alt="Signature" />
              </div>
              <div class="w-48 h-[2px] bg-[#d4af37] mt-1"></div>
              <p class="text-[17px] font-semibold text-[#0f3d2e] mt-1 tracking-wide">Founder / CEO</p>

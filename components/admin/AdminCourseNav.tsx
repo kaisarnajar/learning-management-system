@@ -13,6 +13,7 @@ export function AdminCourseNav({ courseId }: AdminCourseNavProps) {
 
   const links = [
     { href: `${base}/students`, label: "Students", exact: false },
+    { href: `${base}/attendance`, label: "Attendance", exact: false },
     { href: `${base}/announcements`, label: "Announcements", exact: false },
   ];
 

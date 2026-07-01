@@ -21,10 +21,10 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
       <div className="pattern-islamic absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none" aria-hidden="true"></div>
       
       {/* Top subtle glow */}
-      <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-gold/20 blur-[100px]" aria-hidden="true"></div>
+      <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-[#cca72f]/10 blur-[100px]" aria-hidden="true"></div>
       
       {/* Bottom subtle glow */}
-      <div className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 h-96 w-96 rounded-full bg-gold/10 blur-[100px]" aria-hidden="true"></div>
+      <div className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 h-96 w-96 rounded-full bg-[#cca72f]/5 blur-[100px]" aria-hidden="true"></div>
 
       {/* Gold top and bottom borders */}
       <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-[#cca72f]/0 via-[#cca72f] to-[#cca72f]/0 opacity-50" />
@@ -33,46 +33,57 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
       <div className="relative mx-auto max-w-5xl px-4 text-center sm:px-6">
         <div className="motion-safe:animate-fade-up flex flex-col items-center">
           
-          {/* Decorative Quote Icon */}
-          <div className="mx-auto mb-8 flex h-14 w-14 items-center justify-center rounded-full border border-gold/30 bg-gold/10 text-gold shadow-[0_0_15px_rgba(204,167,47,0.2)]">
-            <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
+          {/* Decorative Islamic Geometric Symbol / Badge */}
+          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-full border border-[#cca72f]/40 bg-[#cca72f]/10 text-[#cca72f] shadow-[0_0_15px_rgba(204,167,47,0.15)]">
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
             </svg>
           </div>
           
-          <p
+          <h2
             id="daily-inspiration-heading"
-            className="text-sm font-bold uppercase tracking-[0.25em] text-gold"
+            className="text-xs font-bold uppercase tracking-[0.3em] text-[#cca72f]"
           >
             {title}
-          </p>
+          </h2>
 
-          <blockquote className="relative mt-12 w-full">
-            {/* Soft decorative background for the quote area */}
-            <div className="absolute inset-0 rounded-3xl bg-white/5 blur-2xl"></div>
-            
-            <div className="relative">
+          <div className="relative mt-10 w-full max-w-4xl mx-auto rounded-2xl border border-[#cca72f]/20 bg-black/20 p-8 sm:p-12 md:p-16 backdrop-blur-sm shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+            {/* Corner decorations */}
+            <div className="absolute top-3 left-3 w-4 h-4 border-t border-l border-[#cca72f]/40"></div>
+            <div className="absolute top-3 right-3 w-4 h-4 border-t border-r border-[#cca72f]/40"></div>
+            <div className="absolute bottom-3 left-3 w-4 h-4 border-b border-l border-[#cca72f]/40"></div>
+            <div className="absolute bottom-3 right-3 w-4 h-4 border-b border-r border-[#cca72f]/40"></div>
+
+            <div className="relative space-y-8">
               <p
-                className="indo-pak-arabic text-3xl leading-loose text-white drop-shadow-md sm:text-4xl md:text-5xl md:leading-[2.5]"
+                className="indo-pak-arabic text-3xl leading-[2] text-white drop-shadow-[0_2px_10px_rgba(0,0,0,0.5)] sm:text-4xl md:text-5xl md:leading-[2.2]"
                 dir="rtl"
                 lang="ar"
               >
                 {inspiration.arabicText}
               </p>
               
-              <div className="mx-auto mt-10 h-px w-24 bg-gradient-to-r from-transparent via-gold/50 to-transparent"></div>
+              <div className="flex justify-center items-center gap-4 py-2">
+                <span className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#cca72f]/40"></span>
+                <span className="text-[#cca72f] opacity-80 text-lg">✦</span>
+                <span className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#cca72f]/40"></span>
+              </div>
 
-              <div className={`${sourceSerif.className} mx-auto mt-10 max-w-3xl text-lg leading-relaxed text-zinc-200 sm:text-xl md:text-2xl`}>
-                {inspiration.englishTranslation}
+              <div className={`${sourceSerif.className} mx-auto max-w-3xl text-lg leading-relaxed text-zinc-200 sm:text-xl md:text-2xl font-light italic`}>
+                "{inspiration.englishTranslation}"
               </div>
               
               {inspiration.reference && (
-                <footer className="mt-10 flex items-center justify-center gap-4 text-sm font-semibold tracking-widest text-gold/80 uppercase">
-                  <span>{inspiration.reference}</span>
+                <footer className="pt-4 flex items-center justify-center gap-3">
+                  <span className="h-[1px] w-6 bg-[#cca72f]/25"></span>
+                  <span className="text-xs font-semibold tracking-[0.2em] text-[#cca72f]/90 uppercase">
+                    {inspiration.reference}
+                  </span>
+                  <span className="h-[1px] w-6 bg-[#cca72f]/25"></span>
                 </footer>
               )}
             </div>
-          </blockquote>
+          </div>
         </div>
       </div>
     </section>

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { formatInputDateValue } from "@/lib/form-date";
 import { zodResultToFormValidation, type FormValidationResult } from "@/lib/form-validation";
 import {
@@ -273,4 +274,28 @@ export function validateBookForm(values: BookFormValues): FormValidationResult {
       featuredOnHomepage: values.featuredOnHomepage,
     }),
   );
+}
+
+export type StudentFormValues = {
+  name: string;
+  email: string;
+  fatherName: string;
+  dateOfBirth: string;
+  occupation: string;
+  address: string;
+  whatsapp: string;
+};
+
+export function validateStudentForm(values: StudentFormValues): FormValidationResult {
+  const schema = z.object({
+    name: z.string().min(2, "Name is required"),
+    email: z.string().email("Valid email is required"),
+    fatherName: z.string().min(2, "Father's name is required"),
+    dateOfBirth: z.string().min(1, "Date of birth is required"),
+    occupation: z.string().min(1, "Occupation is required"),
+    address: z.string().min(5, "Address is required"),
+    whatsapp: z.string().min(5, "WhatsApp is required"),
+  });
+  
+  return zodResultToFormValidation(schema.safeParse(values));
 }

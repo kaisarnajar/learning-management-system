@@ -78,6 +78,12 @@ export default async function AdminStudentsPage({
                       >
                         View
                       </Link>
+                      <Link
+                        href={`/admin/students/${student.id}/edit`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        Edit
+                      </Link>
                       <DeleteActionButton action={deleteStudent.bind(null, student.id)} itemName={student.name ?? student.email} className="text-sm font-medium text-destructive-text hover:underline" />
                     </div>
                   </td>

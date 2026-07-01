@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { ActionToast } from "@/components/shared/ToastProvider";
 import { RemoveStudentEnrollmentAction } from "@/components/admin/RemoveStudentEnrollmentAction";
 import { RecordStudentPaymentForm } from "@/components/admin/RecordStudentPaymentForm";
 
@@ -22,7 +23,7 @@ export default async function AdminStudentDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ error?: string; page?: string }>;
+  searchParams: Promise<{ error?: string; page?: string; saved?: string }>;
 }) {
   const { id } = await params;
   const query = await searchParams;
@@ -57,6 +58,8 @@ export default async function AdminStudentDetailPage({
           {decodeURIComponent(query.error)}
         </p>
       )}
+
+      <ActionToast trigger={query.saved === "1"} paramName="saved" message="Student details updated." variant="info" />
 
       <dl className="mt-6 grid max-w-lg gap-3 text-sm">
         <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
@@ -213,10 +216,18 @@ export default async function AdminStudentDetailPage({
         </div>
       </section>
 
-      <DeleteActionButton
-        action={deleteAction}
-        itemName="student account"
-      />
+      <div className="mt-8 flex items-center gap-4">
+        <Link
+          href={`/admin/students/${id}/edit`}
+          className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-5 py-2 text-sm font-semibold text-foreground hover:bg-accent-muted/30"
+        >
+          Edit student
+        </Link>
+        <DeleteActionButton
+          action={deleteAction}
+          itemName="student account"
+        />
+      </div>
     </div>
   );
 }

@@ -27,21 +27,25 @@ export async function GET(request: Request) {
   let base64Logo = "";
   let base64Signature = "";
   let base64Stamp = "";
+  let base64Font = "";
   
   try {
     const logoPath = path.join(process.cwd(), "public", "assets", "logo.png");
     const sigPath = path.join(process.cwd(), "public", "assets", "signature.png");
     const stampPath = path.join(process.cwd(), "public", "assets", "stamp.png");
+    const fontPath = path.join(process.cwd(), "public", "fonts", "indopak-nastaleeq.woff2");
     
-    const [logoBytes, sigBytes, stampBytes] = await Promise.all([
+    const [logoBytes, sigBytes, stampBytes, fontBytes] = await Promise.all([
       fs.readFile(logoPath).catch(() => null),
       fs.readFile(sigPath).catch(() => null),
       fs.readFile(stampPath).catch(() => null),
+      fs.readFile(fontPath).catch(() => null),
     ]);
     
     if (logoBytes) base64Logo = `data:image/png;base64,${logoBytes.toString('base64')}`;
     if (sigBytes) base64Signature = `data:image/png;base64,${sigBytes.toString('base64')}`;
     if (stampBytes) base64Stamp = `data:image/png;base64,${stampBytes.toString('base64')}`;
+    if (fontBytes) base64Font = `data:font/woff2;charset=utf-8;base64,${fontBytes.toString('base64')}`;
   } catch (e) {
     console.error("Could not load local images:", e);
   }
@@ -89,6 +93,8 @@ export async function GET(request: Request) {
     logoUrl: base64Logo,
     signatureUrl: base64Signature,
     stampUrl: base64Stamp,
+    base64Font: base64Font,
+    role: session.user.role,
   };
 
   const htmlString = renderIdCardToHtml(data);

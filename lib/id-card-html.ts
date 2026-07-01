@@ -12,6 +12,8 @@ export function renderIdCardToHtml(data: {
   logoUrl: string;
   signatureUrl: string;
   stampUrl: string;
+  base64Font?: string;
+  role?: string;
 }) {
   const getInitials = (name: string) => {
     return name
@@ -29,6 +31,8 @@ export function renderIdCardToHtml(data: {
          <span class="text-lg mt-2 font-medium opacity-60">No Photo Available</span>
        </div>`;
 
+  const cardRole = (data.role && data.role !== "USER") ? data.role.toUpperCase() : "STUDENT";
+
   return `
 <!DOCTYPE html>
 <html>
@@ -37,6 +41,14 @@ export function renderIdCardToHtml(data: {
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
+    ${data.base64Font ? `
+    @font-face {
+      font-family: 'IndoPak';
+      src: url('${data.base64Font}') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+    }
+    ` : ""}
     body {
       margin: 0;
       padding: 0;
@@ -69,7 +81,7 @@ export function renderIdCardToHtml(data: {
         <!-- LEFT COLUMN -->
         <div class="w-[250px] flex flex-col items-center flex-shrink-0">
           <!-- Logo -->
-          <img src="${data.logoUrl}" class="w-[130px] h-[130px] object-contain mb-3" alt="Logo" />
+          <img src="${data.logoUrl}" class="w-[130px] h-[130px] object-contain mb-3 process-white-bg" alt="Logo" />
           
           <!-- Photo -->
           <div class="w-[230px] h-[270px] border-[4px] border-[#0f3d2e] rounded-t-xl bg-white overflow-hidden relative shadow-md">
@@ -77,14 +89,14 @@ export function renderIdCardToHtml(data: {
           </div>
           <!-- Banner -->
           <div class="w-[230px] bg-[#0f3d2e] text-white text-center py-2 rounded-b-xl border-[4px] border-t-0 border-[#0f3d2e] font-bold text-[22px] tracking-wider shadow-md">
-            STUDENT CARD
+            ${cardRole} CARD
           </div>
 
           <!-- Stamp & Signature -->
           <div class="mt-4 flex flex-col items-center relative w-[230px]">
              <div class="relative w-full h-[85px] flex justify-center items-center">
-               <img src="${data.stampUrl}" class="absolute h-[110px] opacity-70 pointer-events-none" style="top: -15px;" alt="Stamp" />
-               <img src="${data.signatureUrl}" class="absolute h-[70px] z-10" style="bottom: 0px;" alt="Signature" />
+               <img src="${data.stampUrl}" class="absolute h-[110px] opacity-90 pointer-events-none process-white-bg mix-blend-multiply" style="top: -15px;" alt="Stamp" />
+               <img src="${data.signatureUrl}" class="absolute h-[70px] z-10 process-white-bg mix-blend-multiply" style="bottom: 0px;" alt="Signature" />
              </div>
              <div class="w-48 h-[2px] bg-[#d4af37] mt-1"></div>
              <p class="text-[17px] font-semibold text-[#0f3d2e] mt-1 tracking-wide">Founder / CEO</p>
@@ -101,7 +113,7 @@ export function renderIdCardToHtml(data: {
             
             <div class="flex items-center gap-4 mb-4">
                <div class="h-[2px] w-12 bg-[#d4af37]"></div>
-               <h2 class="text-[38px] font-bold text-[#0f3d2e]" style="font-family: 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</h2>
+               <h2 class="text-[38px] font-bold text-[#0f3d2e]" style="font-family: 'IndoPak', 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</h2>
                <div class="h-[2px] w-12 bg-[#d4af37]"></div>
             </div>
             
@@ -184,6 +196,9 @@ export function renderIdCardToHtml(data: {
 
     </div>
   </div>
+  <script>
+    ${PROCESS_IMAGE_SCRIPT}
+  </script>
 </body>
 </html>
   `;

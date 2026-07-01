@@ -11,7 +11,6 @@ import {
   paymentSettingsSchema,
   siteAnnouncementSchema,
   socialLinksSettingsSchema,
-  academySettingsSchema,
   teacherAdminSchema,
   teacherBlogPostSchema,
 } from "@/lib/validations";
@@ -234,15 +233,6 @@ export function validateSocialLinksForm(values: SocialLinksFormValues): FormVali
   return zodResultToFormValidation(socialLinksSettingsSchema.safeParse(values));
 }
 
-export type AcademySettingsFormValues = {
-  academyName: string;
-  academyAddress: string;
-  academyWebsite: string;
-};
-
-export function validateAcademySettingsForm(values: AcademySettingsFormValues): FormValidationResult {
-  return zodResultToFormValidation(academySettingsSchema.safeParse(values));
-}
 
 export type BookFormValues = {
   title: string;

@@ -64,7 +64,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     links: [
       { href: "/admin/contact-inquiries", label: "Contact inquiries" },
       { href: "/admin/social-links", label: "Social links" },
-      { href: "/admin/academy-settings", label: "Academy settings" },
     ],
   },
 ];

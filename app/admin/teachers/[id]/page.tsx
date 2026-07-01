@@ -7,6 +7,7 @@ import { deleteTeacherFromProfile } from "@/app/admin/teachers/actions";
 import { getEnrollmentCountsByCourse } from "@/lib/enrollments";
 import { getTeacherById } from "@/lib/teachers";
 import { getCoursesForTeacher } from "@/lib/teacher-portal";
+import { getInitialsFromName } from "@/lib/student-reviews";
 
 export default async function AdminTeacherDetailPage({
   params,
@@ -34,10 +35,25 @@ export default async function AdminTeacherDetailPage({
         ← Back to teachers
       </Link>
 
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Teacher profile</h1>
-          <p className="mt-1 text-sm text-muted">{teacher.email ?? "No login email linked"}</p>
+      <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-center gap-4">
+          <div className="shrink-0">
+            {teacher.imageUrl ? (
+              <img
+                src={teacher.imageUrl.includes("googleusercontent.com") ? teacher.imageUrl.replace(/=s\d+-c/g, "=s1000-c") : teacher.imageUrl}
+                alt="Profile"
+                className="h-20 w-20 rounded-xl object-cover shadow-sm"
+              />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-white shadow-sm">
+                {getInitialsFromName(teacher.name ?? "Teacher")}
+              </div>
+            )}
+          </div>
+          <div>
+            <h1 className="font-serif text-2xl font-bold text-primary">Teacher profile</h1>
+            <p className="mt-1 text-sm text-muted">{teacher.email ?? "No login email linked"}</p>
+          </div>
         </div>
         <Link
           href={`/admin/teachers/${id}/edit`}

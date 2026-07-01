@@ -68,9 +68,9 @@ export function ProfileSidebar({ unreadCount = 0 }: { unreadCount?: number }) {
 
   return (
     <div className="w-full md:w-64 shrink-0">
-      <div className="hidden md:block mb-8 px-2">
-        <h2 className="font-serif text-2xl font-bold text-primary">Student Portal</h2>
-        <p className="text-sm font-medium text-muted mt-1">Darse Quran Academy</p>
+      <div className="hidden md:block p-4 mb-2">
+        <p className="font-serif text-lg font-bold text-primary">Student Portal</p>
+        <p className="text-xs text-muted">Darse Quran Academy</p>
       </div>
 
       <div className="relative w-full md:static md:w-auto">
@@ -81,7 +81,7 @@ export function ProfileSidebar({ unreadCount = 0 }: { unreadCount?: number }) {
         <nav
           ref={scrollRef}
           onScroll={checkScroll}
-          className="flex w-full snap-x snap-mandatory items-center gap-1.5 overflow-x-auto rounded-2xl border border-border/40 bg-surface/40 p-2 shadow-sm backdrop-blur-xl md:flex-col md:items-stretch md:gap-2 md:rounded-none md:border-none md:bg-transparent md:p-0 md:shadow-none md:backdrop-blur-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex w-full snap-x snap-mandatory items-center gap-1.5 overflow-x-auto rounded-2xl border border-border/40 bg-surface/40 p-2 shadow-sm backdrop-blur-xl md:flex-col md:items-stretch md:gap-1 md:rounded-none md:border-none md:bg-transparent md:px-3 md:py-0 md:shadow-none md:backdrop-blur-none [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
           aria-label="Profile sections"
         >
           {links.map((link) => {
@@ -93,13 +93,13 @@ export function ProfileSidebar({ unreadCount = 0 }: { unreadCount?: number }) {
                 key={link.href}
                 href={link.href}
                 data-active={active}
-                className={`relative flex shrink-0 snap-start items-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-300 ease-out md:justify-start md:px-5 md:py-3 ${
+                className={`relative flex shrink-0 snap-start items-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-300 ease-out md:justify-start md:rounded-lg md:px-3 md:py-2 md:font-medium ${
                   active
-                    ? "scale-[1.02] bg-primary text-white shadow-md shadow-primary/25 md:scale-100 md:shadow-none"
-                    : "text-foreground/70 hover:scale-[1.02] hover:bg-surface-hover hover:text-foreground md:hover:scale-100"
+                    ? "scale-[1.02] bg-primary text-white shadow-md shadow-primary/25 md:scale-100 md:shadow-sm"
+                    : "text-foreground/70 hover:scale-[1.02] hover:bg-surface-hover hover:text-foreground md:text-foreground md:hover:scale-100 md:hover:bg-accent-muted/50"
                 }`}
               >
-                <Icon className={`mr-3 hidden h-5 w-5 md:block ${active ? "text-white" : "text-muted group-hover:text-foreground"}`} />
+                <Icon className={`mr-2 hidden h-4 w-4 md:block ${active ? "text-white" : "text-muted group-hover:text-foreground"}`} />
                 <span className="whitespace-nowrap">{link.label}</span>
                 
                 {link.href === "/profile/notifications" && unreadCount > 0 && (

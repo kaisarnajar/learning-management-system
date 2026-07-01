@@ -64,7 +64,7 @@ export async function getEnrolledStudentsForAttendance(courseId: string) {
     return prisma.enrollment.findMany({
       where: {
         courseId,
-        status: "approved", // Only approved students
+        status: "active", // Only active students
       },
       select: {
         id: true,

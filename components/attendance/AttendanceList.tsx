@@ -20,7 +20,7 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
         <h2 className="text-xl font-semibold">Attendance History</h2>
         <Link
           href={`${baseUrl}/${courseId}/attendance/new`}
-          className="bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700 transition-colors"
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light transition-colors"
         >
           Mark Attendance
         </Link>
@@ -71,7 +71,7 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <Link
                         href={`${baseUrl}/${courseId}/attendance/${new Date(record.date).toISOString().split('T')[0]}`}
-                        className="text-indigo-600 hover:text-indigo-900"
+                        className="font-medium text-primary hover:underline"
                       >
                         Edit
                       </Link>

@@ -186,7 +186,7 @@ export function renderIdCardToHtml(data: {
       </div>
 
       <!-- Footer -->
-      <div class="absolute bottom-0 left-0 h-[52px] bg-[#0f3d2e] w-full z-20 flex items-center px-12 justify-start border-t-[4px] border-[#d4af37] gap-3 rounded-b-[28px]">
+      <div class="absolute bottom-0 left-0 h-[52px] bg-[#0f3d2e] w-full z-20 flex items-center justify-center border-t-[4px] border-[#d4af37] gap-3 rounded-b-[28px]">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#d4af37]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
         </svg>

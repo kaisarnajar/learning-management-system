@@ -87,6 +87,9 @@ export async function generatePdfFromHtml(
     // Wait for the Tailwind CDN script + any Google Fonts to fetch and apply
     await page.waitForNetworkIdle({ idleTime: 500, timeout: 5000 }).catch(() => {});
 
+    // Wait for the image processing script to finish
+    await page.waitForFunction('window.__imagesProcessed === true', { timeout: 2000 }).catch(() => {});
+
     const pdfOptions: any = {
       landscape,
       printBackground: true,

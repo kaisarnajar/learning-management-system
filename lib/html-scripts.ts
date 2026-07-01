@@ -35,6 +35,7 @@ export const PROCESS_IMAGE_SCRIPT = `
         }
       }
     }
+    window.__imagesProcessed = true;
   }
   processImages();
 `;

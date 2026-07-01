@@ -18,6 +18,7 @@ import {
 } from "@/lib/profile";
 import { formatRollNumber } from "@/lib/roll-numbers";
 import { getStudentUserById } from "@/lib/students";
+import { getInitialsFromName } from "@/lib/student-reviews";
 import { ExternalLink } from "lucide-react";
 
 export default async function AdminStudentDetailPage({
@@ -54,9 +55,24 @@ export default async function AdminStudentDetailPage({
       </Link>
 
       <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Student profile</h1>
-          <p className="mt-1 text-sm text-muted">{student.email}</p>
+        <div className="flex items-center gap-4">
+          <div className="shrink-0">
+            {student.image ? (
+              <img
+                src={student.image.includes("googleusercontent.com") ? student.image.replace(/=s\d+-c/g, "=s1000-c") : student.image}
+                alt="Profile"
+                className="h-20 w-20 rounded-xl object-cover shadow-sm"
+              />
+            ) : (
+              <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-white shadow-sm">
+                {getInitialsFromName(student.name ?? "Student")}
+              </div>
+            )}
+          </div>
+          <div>
+            <h1 className="font-serif text-2xl font-bold text-primary">Student profile</h1>
+            <p className="mt-1 text-sm text-muted">{student.email}</p>
+          </div>
         </div>
         
         {profileComplete ? (

@@ -21,7 +21,6 @@ const links = [
   { href: "/profile/payments", label: "Payments", icon: CreditCard },
   { href: "/profile/cart", label: "Cart", icon: ShoppingCart },
   { href: "/profile/reviews", label: "My Reviews", icon: Star },
-  { href: "/profile/id-card", label: "ID Card", icon: IdCard },
 ];
 
 export function ProfileSidebar({ unreadCount = 0 }: { unreadCount?: number }) {

@@ -45,7 +45,7 @@ export function renderIdCardToHtml(data: {
   </style>
 </head>
 <body>
-  <div style="width: 1011px; height: 638px; transform: scale(0.320435); transform-origin: top left;">
+  <div style="zoom: 0.32;">
     <div
       class="w-[1011px] h-[638px] relative overflow-hidden bg-[#fdfaf3] text-[#0f3d2e] box-border border-[6px] border-[#0f3d2e] rounded-[36px] flex flex-col justify-between shadow-2xl"
       style="
@@ -71,7 +71,7 @@ export function renderIdCardToHtml(data: {
       <!-- Left side (Logo) -->
       <div class="flex items-center gap-4 relative ml-2 mt-0">
          <!-- Seal / Logo -->
-         <img src="${data.logoUrl}" class="w-[140px] h-[140px] process-white-bg absolute -top-4 -left-4" />
+         <img src="${data.logoUrl}" class="w-[140px] h-[140px] absolute -top-4 -left-4" alt="Logo" />
       </div>
 
       <!-- Right side (Title & Reg No) -->

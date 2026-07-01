@@ -115,14 +115,16 @@ export function renderIdCardToHtml(data: {
         <div class="flex-1 flex flex-col pt-2 pr-4">
           <!-- Title Section -->
           <div class="flex flex-col items-center mb-6 relative">
-            <h1 class="text-[46px] font-serif font-bold text-[#0f3d2e] tracking-wider uppercase mb-1 whitespace-nowrap">
-              DARSE QURAN ACADEMY
-            </h1>
-            
-            <div class="flex items-center gap-4 mb-4">
-               <div class="h-[2px] w-12 bg-[#d4af37]"></div>
-               <h2 class="text-[38px] font-bold text-[#0f3d2e]" style="font-family: 'IndoPak', 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</h2>
-               <div class="h-[2px] w-12 bg-[#d4af37]"></div>
+            <div class="flex flex-col items-center relative -left-6">
+              <h1 class="text-[46px] font-serif font-bold text-[#0f3d2e] tracking-wider uppercase mb-1 whitespace-nowrap">
+                DARSE QURAN ACADEMY
+              </h1>
+              
+              <div class="flex items-center gap-4 mb-4">
+                 <div class="h-[2px] w-12 bg-[#d4af37]"></div>
+                 <h2 class="text-[38px] font-bold text-[#0f3d2e]" style="font-family: 'IndoPak', 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</h2>
+                 <div class="h-[2px] w-12 bg-[#d4af37]"></div>
+              </div>
             </div>
             
             <div class="bg-[#0f3d2e] text-white px-8 py-2.5 rounded-lg flex items-center gap-4 shadow-md">

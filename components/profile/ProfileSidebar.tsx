@@ -69,7 +69,7 @@ export function ProfileSidebar({ unreadCount = 0 }: { unreadCount?: number }) {
   return (
     <div className="w-full md:w-64 shrink-0">
       <div className="hidden md:block p-4 mb-2">
-        <p className="font-serif text-lg font-bold text-primary">Student Portal</p>
+        <p className="font-serif text-lg font-bold text-primary">Student Panel</p>
         <p className="text-xs text-muted">Darse Quran Academy</p>
       </div>
 

@@ -12,10 +12,10 @@ export default async function AdminRecordPaymentPage() {
   return (
     <div>
       <Link
-        href="/admin/finance?tab=income"
+        href="/admin/transactions?tab=payments"
         className="text-sm text-primary hover:underline"
       >
-        ← Back to Income
+        ← Back to Transactions
       </Link>
 
       <h1 className="mt-4 font-serif text-2xl font-bold text-primary">Record payment</h1>

@@ -8,10 +8,10 @@ export default async function AdminRecordExpensePage() {
   return (
     <div>
       <Link
-        href="/admin/finance?tab=expenses"
+        href="/admin/transactions?tab=expenses"
         className="text-sm text-primary hover:underline"
       >
-        ← Back to Expenses
+        ← Back to Transactions
       </Link>
 
       <h1 className="mt-4 font-serif text-2xl font-bold text-primary">Record expense</h1>

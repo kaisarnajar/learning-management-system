@@ -65,5 +65,6 @@ export async function recordExpense(
     }), "Database operation failed");
 
   revalidateExpensePaths();
-  redirect("/admin/finance?tab=expenses&saved=1");
+  revalidatePath("/admin/transactions");
+  redirect("/admin/transactions?tab=expenses&saved=1");
 }

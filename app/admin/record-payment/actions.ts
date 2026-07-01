@@ -82,5 +82,7 @@ export async function recordStudentPayment(
   revalidatePath("/profile/payments");
   revalidatePath("/profile/notifications");
 
-  redirect(`/admin/finance?tab=income&saved=1`);
+  revalidatePath("/admin/transactions");
+
+  redirect(`/admin/transactions?tab=payments&saved=1`);
 }

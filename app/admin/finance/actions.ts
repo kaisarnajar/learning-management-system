@@ -18,6 +18,7 @@ function revalidateFinancePaths() {
 export async function deleteExpenseById(
   id: string,
   returnQuery: FinanceSearchParams = {},
+  basePath: string = "/admin/finance"
 ): Promise<{ error?: string; redirectTo?: string }> {
   await requireAdmin();
 
@@ -29,8 +30,9 @@ export async function deleteExpenseById(
   await withDbErrorHandling(() => prisma.expense.delete({ where: { id } }), "Database operation failed");
 
   revalidateFinancePaths();
+  revalidatePath("/admin/transactions");
 
   const filters = parseFinanceFilters(returnQuery);
   const query = buildFinanceQueryString(filters, { tab: "expenses", deleted: "1" });
-  return { redirectTo: `/admin/finance${query}` };
+  return { redirectTo: `${basePath}${query}` };
 }

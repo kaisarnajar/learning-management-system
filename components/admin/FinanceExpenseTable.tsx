@@ -17,6 +17,7 @@ import type { FinanceSearchParams } from "@/lib/finance-filters";
 type FinanceExpenseTableProps = {
   expenses: ExpenseRecord[];
   returnQuery: FinanceSearchParams;
+  basePath?: string;
 };
 
 function formatDate(date: Date): string {
@@ -27,7 +28,7 @@ function formatDate(date: Date): string {
   });
 }
 
-export function FinanceExpenseTable({ expenses, returnQuery }: FinanceExpenseTableProps) {
+export function FinanceExpenseTable({ expenses, returnQuery, basePath = "/admin/finance" }: FinanceExpenseTableProps) {
   if (expenses.length === 0) {
     return (
       <p className="px-4 py-8 text-center text-sm text-muted">No expenses for these filters.</p>
@@ -56,7 +57,7 @@ export function FinanceExpenseTable({ expenses, returnQuery }: FinanceExpenseTab
             <td className="px-4 py-3 font-medium text-destructive-text">{formatPrice(expense.amountInrPaise)}</td>
             <td className="px-4 py-3 text-muted">{expense.description ?? "—"}</td>
             <td className="px-4 py-3">
-              <DeleteActionButton action={deleteExpenseById.bind(null, expense.id, returnQuery)} itemName="expense" className="text-sm font-medium text-destructive-text hover:underline" />
+              <DeleteActionButton action={deleteExpenseById.bind(null, expense.id, returnQuery, basePath)} itemName="expense" className="text-sm font-medium text-destructive-text hover:underline" />
             </td>
           </tr>
         ))}

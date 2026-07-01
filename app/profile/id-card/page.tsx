@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import { PageHeader } from "@/components/site/PageHeader";
+import { Printer } from "lucide-react";
 
 export default function IdCardPage() {
   return (
@@ -24,6 +27,14 @@ export default function IdCardPage() {
         <p className="mt-2 max-w-md text-muted">
           We are currently working on a digital ID card feature. Check back later to see your official student identification.
         </p>
+        
+        <button
+          onClick={() => window.print()}
+          className="mt-8 inline-flex items-center justify-center gap-2 rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-light"
+        >
+          <Printer className="h-4 w-4" />
+          Print ID Card
+        </button>
       </div>
     </div>
   );

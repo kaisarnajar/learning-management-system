@@ -99,7 +99,20 @@ export async function getAttendanceRecordsForDate(courseId: string, date: Date) 
         }
       },
       include: {
-        records: true,
+        records: {
+          include: {
+            enrollment: {
+              include: {
+                user: {
+                  select: {
+                    name: true,
+                    email: true,
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     });
 
@@ -193,4 +206,86 @@ export async function getStudentAttendanceRecords(courseId: string) {
       }
     });
   }, "Failed to fetch student attendance");
+}
+
+export async function deleteCourseAttendance(courseId: string, date: Date) {
+  await authorizeCourseAttendanceManagement(courseId);
+
+  return withDbErrorHandling(async () => {
+    const targetDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+
+    await prisma.courseAttendance.delete({
+      where: {
+        courseId_date: {
+          courseId,
+          date: targetDate,
+        }
+      }
+    });
+
+    revalidatePath(`/admin/courses/${courseId}/attendance`);
+    revalidatePath(`/teacher/courses/${courseId}/attendance`);
+    revalidatePath(`/profile/courses/${courseId}`);
+  }, "Failed to delete attendance record");
+}
+
+export async function getStudentAttendanceReport(enrollmentId: string) {
+  const session = await auth();
+  if (!session) throw new Error("Unauthorized");
+
+  return withDbErrorHandling(async () => {
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          }
+        }
+      }
+    });
+
+    if (!enrollment) throw new Error("Enrollment not found");
+
+    const course = await prisma.course.findUnique({
+      where: { id: enrollment.courseId },
+      select: {
+        id: true,
+        title: true,
+        teacherId: true,
+      }
+    });
+
+    if (!course) throw new Error("Course not found");
+
+    if (!isAdminSession(session)) {
+      const teacher = await getTeacherForSession(session);
+      if (!teacher || course.teacherId !== teacher.id) {
+        throw new Error("Forbidden");
+      }
+    }
+
+    const records = await prisma.courseAttendanceRecord.findMany({
+      where: { enrollmentId },
+      include: {
+        attendance: {
+          select: {
+            date: true,
+          }
+        }
+      },
+      orderBy: {
+        attendance: {
+          date: "desc",
+        }
+      }
+    });
+
+    return {
+      enrollment,
+      course,
+      records,
+    };
+  }, "Failed to fetch student attendance report");
 }

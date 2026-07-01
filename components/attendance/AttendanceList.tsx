@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { deleteCourseAttendance } from "@/app/actions/attendance";
 
 export type AttendanceListProps = {
   courseId: string;
@@ -45,7 +47,7 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
                   Total Enrolled
                 </th>
                 <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Action
+                  Actions
                 </th>
               </tr>
             </thead>
@@ -54,6 +56,7 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
                 const total = record._count.records;
                 const present = record.records.length;
                 const absent = total - present;
+                const dateStrFormatted = new Date(record.date).toISOString().split('T')[0];
                 
                 return (
                   <tr key={record.id} className="hover:bg-gray-50">
@@ -69,12 +72,27 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
                       {total}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Link
-                        href={`${baseUrl}/${courseId}/attendance/${new Date(record.date).toISOString().split('T')[0]}`}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        Edit
-                      </Link>
+                      <div className="flex items-center justify-end gap-3">
+                        <Link
+                          href={`${baseUrl}/${courseId}/attendance/${dateStrFormatted}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          View
+                        </Link>
+                        <Link
+                          href={`${baseUrl}/${courseId}/attendance/${dateStrFormatted}/edit`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          Edit
+                        </Link>
+                        <DeleteActionButton
+                          action={async () => {
+                            await deleteCourseAttendance(courseId, new Date(record.date));
+                          }}
+                          itemName={`Attendance for ${new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(record.date))}`}
+                          className="text-sm font-medium text-destructive-text hover:underline"
+                        />
+                      </div>
                     </td>
                   </tr>
                 );

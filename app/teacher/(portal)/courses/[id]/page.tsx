@@ -54,6 +54,12 @@ export default async function TeacherCourseStudentsPage({
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center justify-end gap-3">
                       <Link
+                        href={`/teacher/courses/${id}/attendance/student/${enrollment.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        Attendance
+                      </Link>
+                      <Link
                         href={`/teacher/courses/${id}/students/${enrollment.id}`}
                         className="font-medium text-primary hover:underline"
                       >

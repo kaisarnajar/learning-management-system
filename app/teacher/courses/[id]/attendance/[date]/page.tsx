@@ -1,11 +1,9 @@
 import { requireTeacher } from "@/lib/auth-actions";
-import { getEnrolledStudentsForAttendance, getAttendanceRecordsForDate } from "@/app/actions/attendance";
-import { AttendanceForm } from "@/components/attendance/AttendanceForm";
-import Link from "next/link";
-import { ArrowLeftIcon } from "lucide-react";
+import { getAttendanceRecordsForDate } from "@/app/actions/attendance";
+import { AttendanceView } from "@/components/attendance/AttendanceView";
 import { notFound } from "next/navigation";
 
-export default async function TeacherEditAttendancePage({
+export default async function TeacherViewAttendancePage({
   params,
 }: {
   params: Promise<{ id: string; date: string }>;
@@ -18,40 +16,26 @@ export default async function TeacherEditAttendancePage({
     notFound();
   }
 
-  const [students, attendance] = await Promise.all([
-    getEnrolledStudentsForAttendance(id),
-    getAttendanceRecordsForDate(id, dateObj),
-  ]);
+  const attendance = await getAttendanceRecordsForDate(id, dateObj);
 
   if (!attendance) {
     notFound();
   }
 
-  const initialRecords = attendance.records.reduce((acc, curr) => {
-    acc[curr.enrollmentId] = curr.isPresent;
-    return acc;
-  }, {} as Record<string, boolean>);
+  const records = attendance.records.map((r) => ({
+    rollNumber: r.enrollment.rollNumber,
+    name: r.enrollment.user.name,
+    email: r.enrollment.user.email,
+    isPresent: r.isPresent,
+  }));
 
   return (
-    <div className="py-6 space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href={`/teacher/courses/${id}/attendance`}
-          className="p-2 text-gray-500 hover:text-gray-900 bg-white rounded-full hover:bg-gray-100 transition-colors border border-gray-200 shadow-sm"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-        </Link>
-        <h1 className="text-2xl font-bold text-gray-900">
-          Edit Attendance - {new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(dateObj)}
-        </h1>
-      </div>
-
-      <AttendanceForm
+    <div className="py-6">
+      <AttendanceView
         courseId={id}
         baseUrl="/teacher/courses"
-        students={students}
-        initialDate={dateObj}
-        initialRecords={initialRecords}
+        date={dateObj}
+        records={records}
       />
     </div>
   );

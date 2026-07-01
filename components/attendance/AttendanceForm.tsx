@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { saveCourseAttendance, type AttendanceRecordInput } from "@/app/actions/attendance";
+import { inputClassName, labelClassName } from "@/lib/form";
 
 export type StudentForAttendance = {
   id: string;
@@ -98,7 +99,7 @@ export function AttendanceForm({ courseId, baseUrl, students, initialDate, initi
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="bg-white p-6 rounded-lg border border-border flex flex-col sm:flex-row gap-4 justify-between items-center">
         <div className="flex items-center gap-4">
-          <label htmlFor="attendance-date" className="font-medium text-foreground">Date:</label>
+          <label htmlFor="attendance-date" className={labelClassName}>Date:</label>
           <input
             id="attendance-date"
             type="date"
@@ -106,7 +107,7 @@ export function AttendanceForm({ courseId, baseUrl, students, initialDate, initi
             disabled={isEditing}
             value={dateStr}
             onChange={(e) => setDateStr(e.target.value)}
-            className="border-border rounded-md shadow-sm focus:border-primary focus:ring-primary sm:text-sm disabled:bg-gray-100 disabled:text-gray-500"
+            className={`${inputClassName} max-w-[200px] disabled:bg-gray-100 disabled:text-gray-500`}
           />
         </div>
         
@@ -166,7 +167,12 @@ export function AttendanceForm({ courseId, baseUrl, students, initialDate, initi
                       {student.rollNumber ?? "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-foreground">{student.user.name}</div>
+                      <Link
+                        href={`${baseUrl}/${courseId}/attendance/student/${student.id}`}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        {student.user.name}
+                      </Link>
                       <div className="text-sm text-muted">{student.user.email}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">

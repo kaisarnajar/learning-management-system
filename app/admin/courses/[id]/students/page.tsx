@@ -98,7 +98,13 @@ export default async function CourseStudentsPage({
                   </td>
                   <td className="px-4 py-3 text-muted">{enrollment.user.email}</td>
                   <td className="whitespace-nowrap px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
+                    <div className="flex items-center justify-end gap-3">
+                      <Link
+                        href={`/admin/courses/${id}/attendance/student/${enrollment.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        Attendance
+                      </Link>
                       {isCompletedCourse && (
                           <CertificateActionButtons 
                             enrollmentId={enrollment.id}

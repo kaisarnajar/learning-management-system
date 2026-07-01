@@ -76,13 +76,16 @@ export async function recordStudentPayment(
     sourceType: "PaymentRecord",
   });
 
+  revalidatePaymentPaths(userId);
+
+  redirect(`/admin/transactions?tab=payments&saved=1`);
+}
+
+function revalidatePaymentPaths(userId: string) {
   revalidatePath(`/admin/students/${userId}`);
   revalidatePath("/admin/finance");
   revalidatePath("/admin/payments");
   revalidatePath("/profile/payments");
   revalidatePath("/profile/notifications");
-
   revalidatePath("/admin/transactions");
-
-  redirect(`/admin/transactions?tab=payments&saved=1`);
 }

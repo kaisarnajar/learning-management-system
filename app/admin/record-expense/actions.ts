@@ -15,7 +15,7 @@ export type RecordExpenseState = {
 
 function revalidateExpensePaths() {
   revalidatePath("/admin/finance");
-  revalidatePath("/admin/record-expense");
+  revalidatePath("/admin/transactions");
   revalidatePath("/admin");
 }
 

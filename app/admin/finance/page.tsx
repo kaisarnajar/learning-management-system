@@ -121,7 +121,7 @@ export default async function AdminFinancePage({
           <section className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
               <Link
-                href="/admin/record-payment"
+                href="/admin/transactions?tab=payments"
                 className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
               >
                 Record payment
@@ -164,7 +164,7 @@ export default async function AdminFinancePage({
           <section className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
               <Link
-                href="/admin/record-expense"
+                href="/admin/transactions?tab=expenses"
                 className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
               >
                 Record expense

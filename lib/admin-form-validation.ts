@@ -278,7 +278,6 @@ export function validateBookForm(values: BookFormValues): FormValidationResult {
 
 export type StudentFormValues = {
   name: string;
-  email: string;
   fatherName: string;
   dateOfBirth: string;
   occupation: string;
@@ -289,7 +288,6 @@ export type StudentFormValues = {
 export function validateStudentForm(values: StudentFormValues): FormValidationResult {
   const schema = z.object({
     name: z.string().min(2, "Name is required"),
-    email: z.string().email("Valid email is required"),
     fatherName: z.string().min(2, "Father's name is required"),
     dateOfBirth: z.string().min(1, "Date of birth is required"),
     occupation: z.string().min(1, "Occupation is required"),

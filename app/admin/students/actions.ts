@@ -60,7 +60,6 @@ import type { Occupation } from "@prisma/client";
 function parseStudentForm(formData: FormData): StudentFormValues {
   return {
     name: (formData.get("name") as string) ?? "",
-    email: (formData.get("email") as string) ?? "",
     fatherName: (formData.get("fatherName") as string) ?? "",
     dateOfBirth: (formData.get("dateOfBirth") as string) ?? "",
     occupation: (formData.get("occupation") as string) ?? "",
@@ -83,7 +82,6 @@ export async function updateStudentUserForm(id: string, formData: FormData) {
     where: { id },
     data: {
       name: values.name,
-      email: values.email,
       fatherName: values.fatherName,
       dateOfBirth: new Date(values.dateOfBirth),
       occupation: values.occupation as Occupation,

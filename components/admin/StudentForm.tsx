@@ -21,7 +21,6 @@ type StudentFormProps = {
 
 const STUDENT_FIELDS: (keyof StudentFormValues)[] = [
   "name",
-  "email",
   "fatherName",
   "dateOfBirth",
   "occupation",
@@ -35,7 +34,6 @@ export function StudentForm({ student, action, submitLabel, error }: StudentForm
   const { values, updateField, markTouched, showError, errors, isValid } = useZodForm({
     initialValues: {
       name: student.name ?? "",
-      email: student.email ?? "",
       fatherName: student.fatherName ?? "",
       dateOfBirth: student.dateOfBirth ? new Date(student.dateOfBirth).toISOString().slice(0, 10) : "",
       occupation: student.occupation ?? "",
@@ -80,26 +78,18 @@ export function StudentForm({ student, action, submitLabel, error }: StudentForm
       </div>
 
       <div>
-        <label htmlFor="email" className={labelClassName}>
-          Email
+        <label className={labelClassName}>
+          Email (Read-only)
         </label>
         <div className="mt-1">
           <input
-            id="email"
-            name="email"
             type="email"
-            required
-            value={values.email}
-            onChange={(e) => updateField("email", e.target.value)}
-            onBlur={() => markTouched("email")}
-            className={formFieldInputClass(showError("email"))}
+            readOnly
+            disabled
+            value={student.email}
+            className={`${formFieldInputClass(false)} bg-surface-muted cursor-not-allowed`}
           />
         </div>
-        {showError("email") && (
-          <p className={formErrorTextClassName} role="alert">
-            {errors.email}
-          </p>
-        )}
       </div>
 
       <div>

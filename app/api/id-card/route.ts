@@ -93,8 +93,8 @@ export async function GET(request: Request) {
 
   const htmlString = renderIdCardToHtml(data);
   const pdfBuffer = await generatePdfFromHtml(htmlString, { 
-    width: "1011px", 
-    height: "638px" 
+    width: "85.6mm", 
+    height: "53.98mm" 
   });
 
   const filename = `ID_Card_${user.name?.replace(/\s+/g, '_') || "Student"}.pdf`;

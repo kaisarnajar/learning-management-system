@@ -35,7 +35,7 @@ export function renderIdCardToHtml(data: {
 <head>
   <meta charset="utf-8">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
@@ -45,13 +45,14 @@ export function renderIdCardToHtml(data: {
   </style>
 </head>
 <body>
-  <div
-    class="w-[1011px] h-[638px] relative overflow-hidden bg-[#fdfaf3] text-[#0f3d2e] box-border border-[6px] border-[#0f3d2e] rounded-[36px] flex flex-col justify-between shadow-2xl"
-    style="
-      background: #fcf9f2;
-    "
-  >
-    <!-- Top Decorative Corners (Abstract curves) -->
+  <div style="width: 1011px; height: 638px; transform: scale(0.320435); transform-origin: top left;">
+    <div
+      class="w-[1011px] h-[638px] relative overflow-hidden bg-[#fdfaf3] text-[#0f3d2e] box-border border-[6px] border-[#0f3d2e] rounded-[36px] flex flex-col justify-between shadow-2xl"
+      style="
+        background: #fcf9f2;
+      "
+    >
+      <!-- Top Decorative Corners (Abstract curves) -->
     <div class="absolute top-0 right-0 w-[400px] h-[200px] overflow-hidden pointer-events-none rounded-tr-[28px]">
        <svg viewBox="0 0 400 200" class="w-full h-full" preserveAspectRatio="none">
          <path d="M0,0 L400,0 L400,200 C300,50 150,0 0,0 Z" fill="#0f3d2e" opacity="1" />
@@ -107,8 +108,8 @@ export function renderIdCardToHtml(data: {
         
         <div class="mt-4 flex flex-col items-center relative w-[240px]">
            <div class="relative w-full h-24 flex justify-center items-center">
-             <img src="${data.stampUrl}" class="absolute h-[110px] opacity-40 process-white-bg pointer-events-none" style="top: -10px; left: 10px" />
-             <img src="${data.signatureUrl}" class="absolute h-16 process-white-bg z-10" style="bottom: 5px;" />
+             <img src="${data.stampUrl}" class="absolute h-[110px] opacity-40 pointer-events-none" style="top: -10px; left: 10px" alt="Stamp" />
+             <img src="${data.signatureUrl}" class="absolute h-16 z-10" style="bottom: 5px;" alt="Signature" />
            </div>
            <div class="w-48 h-[2px] bg-[#d4af37] mt-1"></div>
            <p class="text-[17px] font-semibold text-[#0f3d2e] mt-1 tracking-wide">Founder / CEO</p>
@@ -185,6 +186,7 @@ export function renderIdCardToHtml(data: {
       <span class="text-white font-medium tracking-wide text-lg">darsequranacademy.com</span>
     </div>
 
+    </div>
   </div>
 
   <script>

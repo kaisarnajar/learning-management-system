@@ -695,7 +695,6 @@ export async function logDemoTableCounts(prisma: PrismaClient) {
     prisma.courseAnnouncement.count().then((n) => ["CourseAnnouncement", n] as const),
     prisma.studentNotification.count().then((n) => ["StudentNotification", n] as const),
     prisma.paymentSettings.count().then((n) => ["PaymentSettings", n] as const),
-    prisma.socialLinksSettings.count().then((n) => ["SocialLinksSettings", n] as const),
     prisma.passwordResetToken.count().then((n) => ["PasswordResetToken", n] as const),
     prisma.book.count().then((n) => ["Book", n] as const),
     prisma.bookOrder.count().then((n) => ["BookOrder", n] as const),

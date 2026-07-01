@@ -14,7 +14,6 @@ export const ADMIN_DASHBOARD_LINK_HREFS = new Set<string>([
   "/admin/payment-settings",
   "/admin/finance",
   "/admin/transactions",
-  "/admin/social-links",
 ]);
 
 /** Admin sidebar groups for collapsible navigation. */
@@ -63,7 +62,6 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
     title: "System Settings",
     links: [
       { href: "/admin/contact-inquiries", label: "Contact inquiries" },
-      { href: "/admin/social-links", label: "Social links" },
     ],
   },
 ];

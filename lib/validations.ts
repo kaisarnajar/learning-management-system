@@ -107,22 +107,6 @@ const optionalHttpUrl = z
   .refine((value) => value === "" || /^https?:\/\/.+/i.test(value), {
     message: "Enter a full URL starting with http:// or https://, or leave blank.",
   });
-
-export const socialLinksSettingsSchema = z.object({
-  contactEmail: z.string().trim().email("Enter a valid contact email address."),
-  whatsappNumber: z
-    .string()
-    .trim()
-    .min(10, "WhatsApp number must be at least 10 digits.")
-    .max(15, "WhatsApp number is too long.")
-    .regex(/^\d+$/, "WhatsApp number must contain only digits."),
-  whatsappDefaultMessage: z.string().trim().max(500),
-  facebookUrl: optionalHttpUrl,
-  instagramUrl: optionalHttpUrl,
-  youtubeUrl: optionalHttpUrl,
-});
-
-
 export const paymentSettingsSchema = z.object({
   upiId: z
     .string()

@@ -1,8 +1,3 @@
-import { prisma } from "@/lib/prisma";
-import { withDbErrorHandling } from "@/lib/db-error";
-
-export const SOCIAL_LINKS_SETTINGS_ID = "default";
-
 export type SocialLinksSettingsData = {
   contactEmail: string;
   whatsappNumber: string;
@@ -12,23 +7,21 @@ export type SocialLinksSettingsData = {
   youtubeUrl: string;
 };
 
-function defaultSettings(): SocialLinksSettingsData {
-  return {
-    contactEmail: "darsequraann@gmail.com",
-    whatsappNumber: "919622966911",
-    whatsappDefaultMessage:
-      "Assalamu Alaikum, I would like to know more about Darse Quran Academy.",
-    facebookUrl: "https://facebook.com",
-    instagramUrl: "https://instagram.com",
-    youtubeUrl: "https://youtube.com",
-  };
-}
+export const SOCIAL_LINKS_CONFIG: SocialLinksSettingsData = {
+  contactEmail: "darsequraann@gmail.com",
+  whatsappNumber: "919622966911",
+  whatsappDefaultMessage: "Assalamu Alaikum, I would like to know more about Darse Quran Academy.",
+  facebookUrl: "https://facebook.com",
+  instagramUrl: "https://instagram.com",
+  youtubeUrl: "https://youtube.com",
+};
 
 export function normalizeWhatsAppNumber(input: string): string {
   return input.replace(/\D/g, "");
 }
 
-export function formatWhatsAppForDisplay(digits: string): string {
+export function formatWhatsAppForDisplay(digits: string | null | undefined): string {
+  if (!digits) return "";
   const d = normalizeWhatsAppNumber(digits);
   if (d.length === 12 && d.startsWith("91")) {
     return `+91 ${d.slice(2, 7)} ${d.slice(7)}`;
@@ -49,35 +42,8 @@ export function buildWhatsAppHref(number: string, message?: string): string {
   return `https://wa.me/${digits}`;
 }
 
-function rowToSettings(row: {
-  contactEmail: string;
-  whatsappNumber: string;
-  whatsappDefaultMessage: string;
-  facebookUrl: string;
-  instagramUrl: string;
-  youtubeUrl: string;
-}): SocialLinksSettingsData {
-  const defaults = defaultSettings();
-  return {
-    contactEmail: row.contactEmail.trim() || defaults.contactEmail,
-    whatsappNumber: normalizeWhatsAppNumber(row.whatsappNumber) || defaults.whatsappNumber,
-    whatsappDefaultMessage: row.whatsappDefaultMessage.trim() || defaults.whatsappDefaultMessage,
-    facebookUrl: row.facebookUrl.trim(),
-    instagramUrl: row.instagramUrl.trim(),
-    youtubeUrl: row.youtubeUrl.trim(),
-  };
-}
-
 export async function getSocialLinksSettings(): Promise<SocialLinksSettingsData> {
-  const row = await withDbErrorHandling(() => prisma.socialLinksSettings.findUnique({
-      where: { id: SOCIAL_LINKS_SETTINGS_ID },
-    }), "Database operation failed");
-
-  if (!row) {
-    return defaultSettings();
-  }
-
-  return rowToSettings(row);
+  return SOCIAL_LINKS_CONFIG;
 }
 
 export type SocialNetworkLink = {

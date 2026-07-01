@@ -10,7 +10,6 @@ import {
   libraryItemSchema,
   paymentSettingsSchema,
   siteAnnouncementSchema,
-  socialLinksSettingsSchema,
   teacherAdminSchema,
   teacherBlogPostSchema,
 } from "@/lib/validations";
@@ -220,18 +219,6 @@ export function validatePaymentSettingsForm(values: PaymentSettingsFormValues): 
   return zodResultToFormValidation(paymentSettingsSchema.safeParse(values));
 }
 
-export type SocialLinksFormValues = {
-  contactEmail: string;
-  whatsappNumber: string;
-  whatsappDefaultMessage: string;
-  facebookUrl: string;
-  instagramUrl: string;
-  youtubeUrl: string;
-};
-
-export function validateSocialLinksForm(values: SocialLinksFormValues): FormValidationResult {
-  return zodResultToFormValidation(socialLinksSettingsSchema.safeParse(values));
-}
 
 
 export type BookFormValues = {

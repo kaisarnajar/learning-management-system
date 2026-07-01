@@ -467,19 +467,7 @@ model Expense {
   @@index([teacherId])
 }
 
-/**
- * Social and WhatsApp links (single row, id = "default"). Editable in admin.
- */
-model SocialLinksSettings {
-  id                     String   @id @default("default")
-  contactEmail           String   @default("info@darsequranacademy.org")
-  whatsappNumber         String   @default("919622966911")
-  whatsappDefaultMessage String   @default("Assalamu Alaikum, I would like to know more about Darse Quran Academy.")
-  facebookUrl            String   @default("https://facebook.com")
-  instagramUrl           String   @default("https://instagram.com")
-  youtubeUrl             String   @default("https://youtube.com")
-  updatedAt              DateTime @updatedAt
-}
+
 
 
 /**

@@ -28,7 +28,6 @@ async function assertDatabaseMigrated() {
   const checks = [
     () => prisma.course.findFirst({ select: { featuredOnHomepage: true, status: true } }),
     () => prisma.paymentSettings.findFirst({ select: { id: true } }),
-    () => prisma.socialLinksSettings.findFirst({ select: { id: true } }),
     () =>
       prisma.coursePaymentSubmission.findFirst({
         select: { paymentType: true, paymentReference: true },

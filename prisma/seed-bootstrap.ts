@@ -1,7 +1,7 @@
 import type { PrismaClient } from "@prisma/client";
 import { getDefaultFeesForLevel } from "../lib/course-pricing";
 import { PAYMENT_SETTINGS_ID } from "../lib/payment-settings";
-import { SOCIAL_LINKS_SETTINGS_ID } from "../lib/social-links";
+
 import { courses } from "../content/courses";
 import { libraryItems } from "../content/library";
 import { studentTestimonials } from "../content/testimonials";
@@ -141,28 +141,7 @@ export async function seedBootstrap(prisma: PrismaClient) {
     });
   }
 
-  await prisma.socialLinksSettings.upsert({
-    where: { id: SOCIAL_LINKS_SETTINGS_ID },
-    create: {
-      id: SOCIAL_LINKS_SETTINGS_ID,
-      contactEmail: "darsequraann@gmail.com",
-      whatsappNumber: "919622966911",
-      whatsappDefaultMessage:
-        "Assalamu Alaikum, I would like to know more about Darse Quran Academy.",
-      facebookUrl: "https://facebook.com",
-      instagramUrl: "https://instagram.com",
-      youtubeUrl: "https://youtube.com",
-    },
-    update: {
-      contactEmail: "darsequraann@gmail.com",
-      whatsappNumber: "919622966911",
-      whatsappDefaultMessage:
-        "Assalamu Alaikum, I would like to know more about Darse Quran Academy.",
-      facebookUrl: "https://facebook.com",
-      instagramUrl: "https://instagram.com",
-      youtubeUrl: "https://youtube.com",
-    },
-  });
+
 
   await prisma.paymentSettings.upsert({
     where: { id: PAYMENT_SETTINGS_ID },

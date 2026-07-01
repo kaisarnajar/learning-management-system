@@ -29,29 +29,29 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
       </div>
 
       {dates.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-gray-200">
-          <p className="text-gray-500">No attendance records found for this course.</p>
+        <div className="text-center py-12 bg-white rounded-lg border border-border">
+          <p className="text-muted">No attendance records found for this course.</p>
         </div>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+        <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface shadow-sm">
+          <table className="w-full text-left text-sm">
+            <thead className="border-b border-border bg-background/50 text-muted">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 font-medium">
                   Date
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 font-medium">
                   Present
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 font-medium">
                   Total Enrolled
                 </th>
-                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-4 py-3 font-medium text-right">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-border">
               {dates.map((record) => {
                 const total = record._count.records;
                 const present = record.records.length;
@@ -59,19 +59,19 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
                 const dateStrFormatted = new Date(record.date).toISOString().split('T')[0];
                 
                 return (
-                  <tr key={record.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <tr key={record.id} className="hover:bg-background/30">
+                    <td className="px-4 py-3 font-medium text-foreground">
                       {new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(record.date))}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 text-muted">
                       <span className="text-emerald-600 font-semibold">{present}</span> 
                       <span className="text-gray-400 mx-1">/</span> 
                       <span className="text-rose-600">{absent} absent</span>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    <td className="px-4 py-3 text-muted">
                       {total}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-3">
                         <Link
                           href={`${baseUrl}/${courseId}/attendance/${dateStrFormatted}`}

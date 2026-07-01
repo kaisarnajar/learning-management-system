@@ -1140,3 +1140,63 @@ export async function sendCertificateEmail(params: CertificateEmailParams): Prom
     ],
   });
 }
+
+// ---------------------------------------------------------------------------
+// Email: ID Card with PDF attachment
+// ---------------------------------------------------------------------------
+
+export type IdCardEmailParams = {
+  to: string;
+  studentName: string;
+  pdfBuffer: Buffer;
+  pdfFilename: string;
+};
+
+export async function sendIdCardEmail(params: IdCardEmailParams): Promise<EmailSendResult> {
+  const { to, studentName, pdfBuffer, pdfFilename } = params;
+  const displayName = studentName || "Student";
+
+  const subject = `Your Digital ID Card — Darse Quran Academy`;
+  const preview = `Your official student ID card is attached to this email.`;
+
+  const text = [
+    `Assalamu Alaikum ${displayName},`,
+    "",
+    "Your official student Digital ID Card has been generated.",
+    "",
+    "It is attached to this email as a PDF.",
+    "",
+    "Please download and keep it for your records.",
+    "",
+    "Jazakallah Khair,",
+    "Darse Quran Academy",
+  ].join("\n");
+
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>Your official student <strong>Digital ID Card</strong> has been generated.</p>
+    <div style="margin:24px 0;padding:16px 20px;background:#f0f9ff;border-left:4px solid #0284c7;border-radius:0 6px 6px 0;">
+      <p style="margin:0 0 6px 0;font-size:13px;font-weight:600;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;">Digital ID Card Issued</p>
+      <p style="margin:0;font-size:14px;">Your ID card has been generated successfully.</p>
+    </div>
+    <p>Your ID card is <strong>attached to this email</strong> as a PDF. Please download and keep it for your records.</p>
+    <p style="font-size:13px;color:#6b7280;">If you have any questions, please reply to this email.</p>`;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({
+    to,
+    subject,
+    text,
+    html,
+    preview,
+    priority: "high",
+    attachments: [
+      {
+        filename: pdfFilename,
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      },
+    ],
+  });
+}

@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { withDbErrorHandling } from "@/lib/db-error";
 import { renderIdCardToHtml } from "@/lib/id-card-html";
 import { generatePdfFromHtml } from "@/lib/pdf-generator";
+import { isAdminSession } from "@/lib/admin";
+import { resolveUserRole } from "@/lib/teacher-auth";
 import fs from "fs/promises";
 import path from "path";
 
@@ -15,15 +17,27 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
   }
 
-  const inline = new URL(request.url).searchParams.get("inline") === "1";
+  const searchParams = new URL(request.url).searchParams;
+  const inline = searchParams.get("inline") === "1";
+  const requestedUserId = searchParams.get("userId");
+
+  let targetUserId = session.user.id;
+  if (requestedUserId && requestedUserId !== session.user.id) {
+    if (!isAdminSession(session)) {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
+    targetUserId = requestedUserId;
+  }
 
   const user = await withDbErrorHandling(() => prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: targetUserId },
   }), "Database operation failed");
 
   if (!user) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
+
+  const targetRole = targetUserId === session.user.id ? session.user.role : await resolveUserRole(user.email);
 
   // Load static assets
   let base64Logo = "";
@@ -96,7 +110,7 @@ export async function GET(request: Request) {
     signatureUrl: base64Signature,
     stampUrl: base64Stamp,
     base64Font: base64Font,
-    role: session.user.role,
+    role: targetRole,
   };
 
   const htmlString = renderIdCardToHtml(data);

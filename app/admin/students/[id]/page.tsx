@@ -14,9 +14,11 @@ import { getPaymentRecordsForUserPaginated } from "@/lib/payments";
 import {
   formatDateOfBirthDisplay,
   occupationLabel,
+  isUserProfileComplete,
 } from "@/lib/profile";
 import { formatRollNumber } from "@/lib/roll-numbers";
 import { getStudentUserById } from "@/lib/students";
+import { ExternalLink } from "lucide-react";
 
 export default async function AdminStudentDetailPage({
   params,
@@ -29,10 +31,11 @@ export default async function AdminStudentDetailPage({
   const query = await searchParams;
   const { page: requestedPage, pageSize } = parsePaginationParams(query);
 
-  const [student, courses, paymentsPaginated] = await Promise.all([
+  const [student, courses, paymentsPaginated, profileComplete] = await Promise.all([
     getStudentUserById(id),
     getAllCourses(),
     getPaymentRecordsForUserPaginated(id, requestedPage, pageSize),
+    isUserProfileComplete(id),
   ]);
 
   if (!student) notFound();
@@ -50,8 +53,33 @@ export default async function AdminStudentDetailPage({
         ← Back to students
       </Link>
 
-      <h1 className="mt-4 font-serif text-2xl font-bold text-primary">Student profile</h1>
-      <p className="mt-1 text-sm text-muted">{student.email}</p>
+      <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-primary">Student profile</h1>
+          <p className="mt-1 text-sm text-muted">{student.email}</p>
+        </div>
+        
+        {profileComplete ? (
+          <a
+            href={`/api/id-card?inline=1&userId=${id}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-light"
+          >
+            <ExternalLink className="h-4 w-4" />
+            View ID Card
+          </a>
+        ) : (
+          <button
+            disabled
+            title="Student must complete their profile first."
+            className="inline-flex items-center gap-2 rounded-md bg-muted px-4 py-2 text-sm font-semibold text-white shadow-sm cursor-not-allowed opacity-70"
+          >
+            <ExternalLink className="h-4 w-4" />
+            View ID Card
+          </button>
+        )}
+      </div>
 
       {query.error && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">

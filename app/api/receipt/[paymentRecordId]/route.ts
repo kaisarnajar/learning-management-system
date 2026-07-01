@@ -106,6 +106,7 @@ export async function GET(
   }
 
   // 3. Assemble Data Layer (No Mock Data)
+  const { incomePaymentTypeLabel } = await import("@/lib/monthly-payment-status");
   const data: ReceiptData = {
     academy: {
       name: academySettings.academyName,
@@ -134,6 +135,7 @@ export async function GET(
       gstAmount: record.receiptGstAmountPaise ? record.receiptGstAmountPaise / 100 : undefined,
       shippingAmount: shippingAmount > 0 ? shippingAmount : undefined,
       currency: "₹",
+      typeLabel: record.paymentType === "book_purchase" ? "Books" : incomePaymentTypeLabel(record.paymentType),
     },
     authority: {
       name: AUTHORITY_SIGNATURE.name,

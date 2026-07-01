@@ -145,6 +145,8 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
         }
       }
 
+      const { incomePaymentTypeLabel } = await import("@/lib/monthly-payment-status");
+
       const receiptData: ReceiptData = {
         academy: {
           name: academySettings.academyName,
@@ -173,6 +175,7 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
           gstAmount: includeGst ? gstAmount / 100 : undefined,
           shippingAmount: shippingAmount > 0 ? shippingAmount : undefined,
           currency: "₹",
+          typeLabel: record.paymentType === "book_purchase" ? "Books" : incomePaymentTypeLabel(record.paymentType),
         },
         authority: {
           name: AUTHORITY_SIGNATURE.name,

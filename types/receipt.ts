@@ -24,6 +24,7 @@ export interface PaymentInfo {
   gstAmount?: number;
   shippingAmount?: number;
   currency?: string;
+  typeLabel?: string;
 }
 
 export interface AuthorityInfo {

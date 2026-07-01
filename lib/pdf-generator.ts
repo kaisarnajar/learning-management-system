@@ -81,6 +81,7 @@ export async function generatePdfFromHtml(
 
   try {
     const page = await browser.newPage();
+    await page.setViewport({ width: 1200, height: 800, deviceScaleFactor: 3 });
 
     await page.setContent(html, { waitUntil: "load" });
 

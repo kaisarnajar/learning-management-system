@@ -291,7 +291,7 @@ export const paymentRecordSchema = z.object({
   courseId: z.string().optional(),
   amountInr: z.coerce.number().positive("Amount must be greater than zero."),
   paidAt: z.string().min(1, "Payment date is required."),
-  description: z.string().trim().max(500).optional(),
+  paymentType: z.enum(["monthly", "enrollment", "manual"]),
 });
 
 const expenseCategoryEnum = z.string().trim().min(2, "Category is required.").max(100, "Category is too long.");

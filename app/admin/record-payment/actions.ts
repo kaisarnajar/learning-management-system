@@ -4,12 +4,12 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-actions";
 import { getCourseById } from "@/lib/courses";
 import { rupeesToPaise } from "@/lib/form";
-import { PAYMENT_TYPE_MANUAL } from "@/lib/monthly-payment-status";
 import { notifyPaymentApproved } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { paymentRecordSchema } from "@/lib/validations";
 import { withDbErrorHandling } from "@/lib/db-error";
 import { redirect } from "next/navigation";
+import { previewStudentAccountForEnrollment } from "@/app/admin/enrollments/actions";
 
 export type RecordPaymentState = {
   error?: string;
@@ -22,27 +22,35 @@ export async function recordStudentPayment(
 ): Promise<RecordPaymentState> {
   await requireAdmin();
 
-  const userId = formData.get("userId") as string;
-  if (!userId) {
-    return { error: "Student must be selected." };
+  const email = formData.get("email") as string;
+  if (!email || !email.trim()) {
+    return { error: "Student email must be provided." };
   }
 
   const parsed = paymentRecordSchema.safeParse({
     courseId: formData.get("courseId") || undefined,
     amountInr: formData.get("amountInr"),
     paidAt: formData.get("paidAt"),
-    description: formData.get("description") || undefined,
+    paymentType: formData.get("paymentType") || undefined,
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid payment data." };
   }
 
-  const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { id: userId } }), "Database operation failed");
-  if (!user) {
-    return { error: "Student not found." };
+  // Use the same lookup logic used for manual enrollment to ensure exact match
+  const lookup = await previewStudentAccountForEnrollment(email.trim());
+  if (!lookup.ok) {
+    return { error: lookup.error ?? "Student not found." };
   }
 
+  // Get the actual user ID from DB now that we verified the email
+  const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { email: email.trim() } }), "Database operation failed");
+  if (!user) {
+    return { error: "Student not found in database." };
+  }
+
+  const userId = user.id;
   const courseId = parsed.data.courseId?.trim() || null;
   let courseTitle = "your account";
   if (courseId) {
@@ -64,8 +72,8 @@ export async function recordStudentPayment(
         courseId,
         amountInrPaise: rupeesToPaise(parsed.data.amountInr),
         paidAt,
-        paymentType: PAYMENT_TYPE_MANUAL,
-        description: parsed.data.description?.trim() || null,
+        paymentType: parsed.data.paymentType,
+        description: null, // Description field was removed
       },
     }), "Database operation failed");
 

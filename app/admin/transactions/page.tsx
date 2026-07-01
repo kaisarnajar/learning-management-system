@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { RecordPaymentForm } from "@/components/admin/RecordPaymentForm";
 import { RecordExpenseForm } from "@/components/admin/RecordExpenseForm";
-import { getStudentUsers } from "@/lib/students";
+
 import { getAllCourses } from "@/lib/courses";
 import { getAllTeachers } from "@/lib/teachers";
 import { ActionToast } from "@/components/shared/ToastProvider";
@@ -23,8 +23,7 @@ export default async function AdminTransactionsPage({
   const params = await searchParams;
   const tab: TabType = params.tab === "expenses" ? "expenses" : "payments";
 
-  const [students, courses, teachers] = await Promise.all([
-    getStudentUsers(),
+  const [courses, teachers] = await Promise.all([
     getAllCourses(),
     getAllTeachers(),
   ]);
@@ -72,7 +71,6 @@ export default async function AdminTransactionsPage({
       <div className="mt-8 max-w-2xl">
         {tab === "payments" ? (
           <RecordPaymentForm
-            students={students.map((s) => ({ id: s.id, name: s.name, email: s.email, registrationNumber: s.registrationNumber }))}
             courses={courses.map((c) => ({ id: c.id, title: c.title }))}
           />
         ) : (

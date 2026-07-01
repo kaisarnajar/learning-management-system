@@ -3,26 +3,54 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import { useActionState, useState } from "react";
 import { recordStudentPayment, type RecordPaymentState } from "@/app/admin/record-payment/actions";
+import { previewStudentAccountForEnrollment } from "@/app/admin/enrollments/actions";
 import { inputClassName, labelClassName } from "@/lib/form";
 import type { Course } from "@prisma/client";
 
 type RecordPaymentFormProps = {
-  students: { id: string; name: string | null; email: string; registrationNumber: string | null }[];
   courses: Pick<Course, "id" | "title">[];
 };
 
 const initialState: RecordPaymentState = {};
 
-export function RecordPaymentForm({ students, courses }: RecordPaymentFormProps) {
+export function RecordPaymentForm({ courses }: RecordPaymentFormProps) {
   const [state, formAction, pending] = useActionState(recordStudentPayment, initialState);
-  const [search, setSearch] = useState("");
+  
+  const [email, setEmail] = useState("");
+  const [linkedName, setLinkedName] = useState("");
+  const [lookupError, setLookupError] = useState("");
+  const [lookupLoading, setLookupLoading] = useState(false);
 
   const today = new Date().toISOString().slice(0, 10);
 
-  const filteredStudents = students.filter(s => {
-    const q = search.toLowerCase();
-    return (s.name?.toLowerCase().includes(q) || s.email.toLowerCase().includes(q) || s.registrationNumber?.toLowerCase().includes(q));
-  }).slice(0, 20); // limit to 20 for performance in dropdown
+  async function runLookup(targetEmail: string) {
+    const trimmed = targetEmail.trim();
+    if (!trimmed) {
+      setLinkedName("");
+      setLookupError("");
+      return;
+    }
+
+    setLookupLoading(true);
+    setLookupError("");
+    try {
+      const result = await previewStudentAccountForEnrollment(trimmed);
+      if (result.ok) {
+        setLinkedName(result.name);
+        setLookupError("");
+      } else {
+        setLinkedName("");
+        setLookupError(result.error);
+      }
+    } catch {
+      setLookupError("Could not verify this email. Try again.");
+      setLinkedName("");
+    } finally {
+      setLookupLoading(false);
+    }
+  }
+
+  const canSubmit = !lookupError && (email.trim().length === 0 || Boolean(linkedName));
 
   return (
     <form action={formAction} className="card-elevated space-y-4 p-5 sm:p-6">
@@ -36,29 +64,38 @@ export function RecordPaymentForm({ students, courses }: RecordPaymentFormProps)
       )}
 
       <div>
-        <label htmlFor="studentSearch" className={labelClassName}>
-          Select student
+        <label htmlFor="email" className={labelClassName}>
+          Registered account email
         </label>
-        <div className="flex flex-col gap-2">
-          <input
-            id="studentSearch"
-            type="text"
-            placeholder="Search student by name, email, or reg number..."
-            className={inputClassName}
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <select id="userId" name="userId" className={inputClassName} required size={4}>
-            {filteredStudents.map((student) => (
-              <option key={student.id} value={student.id} className="py-1">
-                {student.name || "Unknown"} ({student.email}) {student.registrationNumber ? `[${student.registrationNumber}]` : ""}
-              </option>
-            ))}
-            {filteredStudents.length === 0 && (
-              <option disabled>No students match your search.</option>
-            )}
-          </select>
-        </div>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onBlur={() => runLookup(email)}
+          placeholder="student@example.com"
+          className={`${inputClassName} mt-1`}
+        />
+        {lookupError && (
+          <p className="mt-2 rounded-md bg-warning-bg px-3 py-2 text-sm text-warning-text" role="alert">
+            {lookupError}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label className={labelClassName}>Name (from account)</label>
+        <p
+          className={`mt-1 rounded-md border border-border bg-background/60 px-3 py-2.5 text-sm ${
+            linkedName ? "font-medium text-foreground" : "text-muted"
+          }`}
+        >
+          {lookupLoading
+            ? "Checking account…"
+            : linkedName || "Enter an email above to load the account name."}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -93,6 +130,17 @@ export function RecordPaymentForm({ students, courses }: RecordPaymentFormProps)
       </div>
 
       <div>
+        <label htmlFor="paymentType" className={labelClassName}>
+          Type
+        </label>
+        <select id="paymentType" name="paymentType" className={inputClassName} defaultValue="monthly" required>
+          <option value="monthly">Monthly Fee</option>
+          <option value="enrollment">Enrollment Fee</option>
+          <option value="manual">Other</option>
+        </select>
+      </div>
+
+      <div>
         <label htmlFor="courseId" className={labelClassName}>
           Course (optional)
         </label>
@@ -106,24 +154,10 @@ export function RecordPaymentForm({ students, courses }: RecordPaymentFormProps)
         </select>
       </div>
 
-      <div>
-        <label htmlFor="description" className={labelClassName}>
-          Short description (optional)
-        </label>
-        <textarea
-          id="description"
-          name="description"
-          rows={2}
-          maxLength={500}
-          placeholder="e.g. Monthly fee — March 2026, UPI ref 123456"
-          className={inputClassName}
-        />
-      </div>
-
       <SubmitButton
         type="submit"
-        disabled={pending}
-        className="min-h-11 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light disabled:opacity-60"
+        disabled={pending || !canSubmit}
+        className="min-h-11 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light disabled:cursor-not-allowed disabled:opacity-60"
       >
         {pending ? "Saving…" : "Add payment"}
       </SubmitButton>

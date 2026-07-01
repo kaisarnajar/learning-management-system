@@ -75,8 +75,12 @@ export async function sendIdCardToEmailAction(targetUserId?: string): Promise<{ 
     let base64ProfilePic = "";
     if (user.image) {
       try {
-        if (user.image.startsWith("http")) {
-          const res = await fetch(user.image);
+        let imageUrl = user.image;
+        if (imageUrl.startsWith("http")) {
+          if (imageUrl.includes("googleusercontent.com")) {
+            imageUrl = imageUrl.replace(/=s\d+-c/g, "=s1000-c");
+          }
+          const res = await fetch(imageUrl);
           if (res.ok) {
             const buffer = await res.arrayBuffer();
             const mimeType = res.headers.get("content-type") || "image/jpeg";

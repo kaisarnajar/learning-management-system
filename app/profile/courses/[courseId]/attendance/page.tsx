@@ -4,10 +4,11 @@ import { getStudentAttendanceRecords } from "@/app/actions/attendance";
 export default async function StudentCourseAttendancePage({
   params,
 }: {
-  params: { courseId: string };
+  params: Promise<{ courseId: string }>;
 }) {
   await requireUser();
-  const records = await getStudentAttendanceRecords(params.courseId);
+  const { courseId } = await params;
+  const records = await getStudentAttendanceRecords(courseId);
 
   const total = records.length;
   const present = records.filter(r => r.isPresent).length;

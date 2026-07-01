@@ -5,15 +5,16 @@ import { AttendanceList } from "@/components/attendance/AttendanceList";
 export default async function TeacherCourseAttendancePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   await requireTeacher(); // Ensure logged in as teacher
-  const dates = await getCourseAttendanceDates(params.id); // This checks if teacher owns the course
+  const { id } = await params;
+  const dates = await getCourseAttendanceDates(id); // This checks if teacher owns the course
 
   return (
     <div className="py-6">
       <AttendanceList 
-        courseId={params.id}
+        courseId={id}
         baseUrl="/teacher/courses"
         dates={dates}
       />

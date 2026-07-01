@@ -5,15 +5,16 @@ import { AttendanceList } from "@/components/attendance/AttendanceList";
 export default async function AdminCourseAttendancePage({
   params,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
 }) {
   await requireAdmin();
-  const dates = await getCourseAttendanceDates(params.id);
+  const { id } = await params;
+  const dates = await getCourseAttendanceDates(id);
 
   return (
     <div className="py-6">
       <AttendanceList 
-        courseId={params.id}
+        courseId={id}
         baseUrl="/admin/courses"
         dates={dates}
       />

@@ -8,18 +8,19 @@ import { notFound } from "next/navigation";
 export default async function TeacherEditAttendancePage({
   params,
 }: {
-  params: { id: string; date: string };
+  params: Promise<{ id: string; date: string }>;
 }) {
   await requireTeacher();
-  const dateObj = new Date(params.date);
+  const { id, date } = await params;
+  const dateObj = new Date(date);
   
   if (isNaN(dateObj.getTime())) {
     notFound();
   }
 
   const [students, attendance] = await Promise.all([
-    getEnrolledStudentsForAttendance(params.id),
-    getAttendanceRecordsForDate(params.id, dateObj),
+    getEnrolledStudentsForAttendance(id),
+    getAttendanceRecordsForDate(id, dateObj),
   ]);
 
   if (!attendance) {
@@ -35,7 +36,7 @@ export default async function TeacherEditAttendancePage({
     <div className="py-6 space-y-6">
       <div className="flex items-center gap-4">
         <Link
-          href={`/teacher/courses/${params.id}/attendance`}
+          href={`/teacher/courses/${id}/attendance`}
           className="p-2 text-gray-500 hover:text-gray-900 bg-white rounded-full hover:bg-gray-100 transition-colors border border-gray-200 shadow-sm"
         >
           <ArrowLeftIcon className="w-5 h-5" />
@@ -46,7 +47,7 @@ export default async function TeacherEditAttendancePage({
       </div>
 
       <AttendanceForm
-        courseId={params.id}
+        courseId={id}
         baseUrl="/teacher/courses"
         students={students}
         initialDate={dateObj}

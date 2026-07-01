@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { ProfileNav } from "@/components/profile/ProfileNav";
-import { PageHeader } from "@/components/site/PageHeader";
-import { Section } from "@/components/site/Section";
+import { ProfileSidebar } from "@/components/profile/ProfileSidebar";
 import { VerificationBanner } from "@/components/auth/VerificationBanner";
 import { requireUser } from "@/lib/auth-actions";
 import { getUnreadNotificationCount } from "@/lib/notifications";
@@ -37,13 +35,21 @@ export default async function ProfileLayout({ children }: { children: React.Reac
   const description = profileHeaderDescription(profile?.name ?? session.user.name);
 
   return (
-    <Section>
-      <PageHeader title="My Profile" description={description} />
-      <div className="mx-auto mt-8 max-w-5xl space-y-8">
-        {!session.user.emailVerified && <VerificationBanner />}
-        <ProfileNav unreadCount={unreadCount} />
-        <div>{children}</div>
+    <div className="bg-[#F8FAFC] min-h-screen pb-12 pt-6">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        {!session.user.emailVerified && (
+          <div className="mb-8">
+            <VerificationBanner />
+          </div>
+        )}
+        
+        <div className="flex flex-col gap-8 md:flex-row md:items-start">
+          <ProfileSidebar unreadCount={unreadCount} />
+          <div className="min-w-0 flex-1">
+            {children}
+          </div>
+        </div>
       </div>
-    </Section>
+    </div>
   );
 }

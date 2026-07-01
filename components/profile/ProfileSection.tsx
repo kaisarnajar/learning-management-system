@@ -15,6 +15,7 @@ type ProfileSectionProps = {
   address: string | null;
   whatsapp: string | null;
   image: string | null;
+  registrationNumber?: string | null;
 };
 
 export function ProfileSection({
@@ -26,6 +27,7 @@ export function ProfileSection({
   address,
   whatsapp,
   image,
+  registrationNumber,
 }: ProfileSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
 
@@ -55,6 +57,7 @@ export function ProfileSection({
       address={address}
       whatsapp={whatsapp}
       image={image}
+      registrationNumber={registrationNumber}
       onEdit={() => setIsEditing(true)}
     />
   );

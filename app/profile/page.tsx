@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { ProfileSection } from "@/components/profile/ProfileSection";
-import { ProfileSummaryCard } from "@/components/profile/ProfileSummaryCard";
 import { requireUser } from "@/lib/auth-actions";
 import {
   isProfileComplete,
@@ -95,17 +94,7 @@ export default async function ProfilePage({
         </div>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,280px)_1fr] lg:items-start">
-        <ProfileSummaryCard
-          name={user.name}
-          email={user.email}
-          memberSince={user.createdAt}
-          profileComplete={profileComplete}
-          occupation={user.occupation}
-          image={user.image}
-          registrationNumber={user.registrationNumber}
-        />
-
+      <div>
         <ProfileSection
           name={user.name}
           email={user.email}
@@ -115,6 +104,7 @@ export default async function ProfilePage({
           address={user.address}
           whatsapp={user.whatsapp}
           image={user.image}
+          registrationNumber={user.registrationNumber}
         />
       </div>
     </div>

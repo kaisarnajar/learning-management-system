@@ -35,7 +35,7 @@ export function renderIdCardToHtml(data: {
 <head>
   <meta charset="utf-8">
   <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cormorant+Garamond:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body {
       margin: 0;
@@ -45,19 +45,19 @@ export function renderIdCardToHtml(data: {
   </style>
 </head>
 <body>
-  <div style="zoom: 0.32;">
+  <div>
     <div
       class="w-[1011px] h-[638px] relative overflow-hidden bg-[#fdfaf3] text-[#0f3d2e] box-border border-[6px] border-[#0f3d2e] rounded-[36px] shadow-2xl"
       style="background: #fcf9f2;"
     >
       <!-- Top Decorative Corners (Abstract curves) -->
-      <div class="absolute top-0 right-0 w-[400px] h-[200px] overflow-hidden pointer-events-none rounded-tr-[28px]">
+      <div class="absolute top-0 right-0 w-[250px] h-[125px] overflow-hidden pointer-events-none rounded-tr-[28px]">
          <svg viewBox="0 0 400 200" class="w-full h-full" preserveAspectRatio="none">
            <path d="M0,0 L400,0 L400,200 C300,50 150,0 0,0 Z" fill="#0f3d2e" opacity="1" />
            <path d="M50,0 L400,0 L400,150 C300,20 200,0 50,0 Z" fill="#d4af37" opacity="1" />
          </svg>
       </div>
-      <div class="absolute bottom-0 left-0 w-[400px] h-[200px] overflow-hidden pointer-events-none transform rotate-180 rounded-tr-[28px]">
+      <div class="absolute bottom-0 left-0 w-[250px] h-[125px] overflow-hidden pointer-events-none transform rotate-180 rounded-tr-[28px]">
          <svg viewBox="0 0 400 200" class="w-full h-full" preserveAspectRatio="none">
            <path d="M0,0 L400,0 L400,200 C300,50 150,0 0,0 Z" fill="#0f3d2e" opacity="1" />
          </svg>
@@ -101,7 +101,7 @@ export function renderIdCardToHtml(data: {
             
             <div class="flex items-center gap-4 mb-4">
                <div class="h-[2px] w-12 bg-[#d4af37]"></div>
-               <h2 class="text-[34px] font-bold text-[#0f3d2e]" style="font-family: 'Amiri', 'Traditional Arabic', serif; line-height: 1;">خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</h2>
+               <h2 class="text-[38px] font-bold text-[#0f3d2e]" style="font-family: 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</h2>
                <div class="h-[2px] w-12 bg-[#d4af37]"></div>
             </div>
             

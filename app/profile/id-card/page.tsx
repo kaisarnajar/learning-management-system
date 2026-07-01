@@ -38,7 +38,7 @@ export default function IdCardPage() {
             We'll constrain max-width so it looks good on desktop and fits on mobile. */}
         <div className="relative w-full max-w-[856px] aspect-[1.58] bg-white rounded-xl overflow-hidden shadow-md ring-1 ring-border/50">
           <iframe
-            src="/api/id-card?inline=1"
+            src="/api/id-card?inline=1#toolbar=0&navpanes=0&scrollbar=0"
             className="w-full h-full border-none"
             onLoad={() => setIsLoading(false)}
             title="Student ID Card Preview"

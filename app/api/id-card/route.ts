@@ -78,12 +78,12 @@ export async function GET(request: Request) {
     : "N/A";
 
   const data = {
-    studentName: user.name || "Student Name",
-    fathersName: user.fatherName || "N/A",
-    residence: user.address || "N/A",
-    email: user.email,
-    phone: user.whatsapp || "N/A",
-    dob: dobFormatted,
+    studentName: user.name || "",
+    fathersName: user.fatherName || "",
+    residence: user.address || "",
+    email: user.email || "",
+    phone: user.whatsapp || "",
+    dob: user.dateOfBirth ? dobFormatted : "",
     registrationNo: user.registrationNumber || "PENDING",
     profilePicUrl: base64ProfilePic || undefined,
     logoUrl: base64Logo,
@@ -93,8 +93,8 @@ export async function GET(request: Request) {
 
   const htmlString = renderIdCardToHtml(data);
   const pdfBuffer = await generatePdfFromHtml(htmlString, { 
-    width: "85.6mm", 
-    height: "54.0mm" 
+    width: "1011px", 
+    height: "638px" 
   });
 
   const filename = `ID_Card_${user.name?.replace(/\s+/g, '_') || "Student"}.pdf`;

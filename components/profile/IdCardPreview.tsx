@@ -1,11 +1,16 @@
 "use client";
 
 import { Download, Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/site/PageHeader";
 
 export function IdCardPreview() {
   const [isLoading, setIsLoading] = useState(true);
+  const [iframeSrc, setIframeSrc] = useState("/api/id-card?inline=1#toolbar=0&navpanes=0&scrollbar=0");
+
+  useEffect(() => {
+    setIframeSrc(`/api/id-card?inline=1&t=${Date.now()}#toolbar=0&navpanes=0&scrollbar=0`);
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -38,7 +43,7 @@ export function IdCardPreview() {
             We'll constrain max-width so it looks good on desktop and fits on mobile. */}
         <div className="relative w-full max-w-[856px] aspect-[1.58] bg-white rounded-xl overflow-hidden shadow-md ring-1 ring-border/50">
           <iframe
-            src="/api/id-card?inline=1#toolbar=0&navpanes=0&scrollbar=0"
+            src={iframeSrc}
             className="w-full h-full border-none"
             onLoad={() => setIsLoading(false)}
             title="Student ID Card Preview"

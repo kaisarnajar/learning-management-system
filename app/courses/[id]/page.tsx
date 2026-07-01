@@ -75,7 +75,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
         <p className="mt-2 text-sm text-muted">Starts: {course.startDate}</p>
         <CourseDurationDisplay duration={course.duration} className="mt-1" />
 
-        <p className="mt-6 text-base leading-relaxed text-muted">{course.description}</p>
+        <p className="mt-6 whitespace-pre-wrap text-base leading-relaxed text-muted">{course.description}</p>
 
         <CourseTeacherInfo teacher={course.teacher} />
 

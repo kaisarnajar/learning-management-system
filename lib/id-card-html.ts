@@ -135,10 +135,10 @@ export function renderIdCardToHtml(data: {
           </div>
 
           <!-- Details Table -->
-          <div class="flex flex-col flex-1 justify-center pb-4 pl-2">
+          <div class="flex flex-col flex-1 justify-center pb-12 pl-2">
             
             <div class="flex flex-col mb-[16px]">
-              <div class="flex items-start">
+              <div class="flex items-baseline">
                 <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Name</span>
                 <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
                 <span class="text-[22px] text-gray-800 font-medium leading-tight">${data.studentName}</span>
@@ -147,7 +147,7 @@ export function renderIdCardToHtml(data: {
             </div>
 
             <div class="flex flex-col mb-[16px]">
-              <div class="flex items-start">
+              <div class="flex items-baseline">
                 <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Father's Name</span>
                 <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
                 <span class="text-[22px] text-gray-800 font-medium leading-tight">${data.fathersName}</span>
@@ -156,7 +156,7 @@ export function renderIdCardToHtml(data: {
             </div>
 
             <div class="flex flex-col mb-[16px]">
-              <div class="flex items-start">
+              <div class="flex items-baseline">
                 <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Residence</span>
                 <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
                 <span class="text-[20px] text-gray-800 font-medium leading-snug">${data.residence}</span>
@@ -165,7 +165,7 @@ export function renderIdCardToHtml(data: {
             </div>
 
             <div class="flex flex-col mb-[16px]">
-              <div class="flex items-start">
+              <div class="flex items-baseline">
                 <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Email</span>
                 <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
                 <span class="text-[22px] text-gray-800 font-medium leading-tight">${data.email}</span>
@@ -174,7 +174,7 @@ export function renderIdCardToHtml(data: {
             </div>
 
             <div class="flex flex-col mb-[16px]">
-              <div class="flex items-start">
+              <div class="flex items-baseline">
                 <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Phone</span>
                 <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
                 <span class="text-[22px] text-gray-800 font-medium leading-tight">${data.phone}</span>
@@ -183,7 +183,7 @@ export function renderIdCardToHtml(data: {
             </div>
 
             <div class="flex flex-col">
-              <div class="flex items-start">
+              <div class="flex items-baseline">
                 <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Date of Birth</span>
                 <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
                 <span class="text-[22px] text-gray-800 font-medium leading-tight">${data.dob}</span>

@@ -60,15 +60,13 @@ export default async function AdminStudentDetailPage({
         </div>
         
         {profileComplete ? (
-          <a
-            href={`/api/id-card?inline=1&userId=${id}`}
-            target="_blank"
-            rel="noopener noreferrer"
+          <Link
+            href={`/admin/students/${id}/id-card`}
             className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-light"
           >
             <ExternalLink className="h-4 w-4" />
             View ID Card
-          </a>
+          </Link>
         ) : (
           <button
             disabled

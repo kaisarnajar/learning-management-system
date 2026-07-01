@@ -5,22 +5,39 @@ import { prisma } from "@/lib/prisma";
 import { renderIdCardToHtml } from "@/lib/id-card-html";
 import { generatePdfFromHtml } from "@/lib/pdf-generator";
 import { sendIdCardEmail } from "@/lib/email";
+import { resolveUserRole } from "@/lib/teacher-auth";
 import fs from "fs/promises";
 import path from "path";
 
-export async function sendIdCardToEmailAction(): Promise<{ success?: boolean; error?: string }> {
+export async function sendIdCardToEmailAction(targetUserId?: string): Promise<{ success?: boolean; error?: string }> {
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return { error: "Unauthorized." };
     }
 
+    let idToFetch = session.user.id;
+    let targetRole = session.user.role;
+    
+    // If targetUserId is provided, check if current user is admin/developer
+    if (targetUserId && targetUserId !== session.user.id) {
+      if (session.user.role !== "ADMIN" && session.user.role !== "DEVELOPER") {
+        return { error: "Unauthorized. Admin access required." };
+      }
+      idToFetch = targetUserId;
+    }
+
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: idToFetch },
     });
 
     if (!user) {
       return { error: "User not found." };
+    }
+    
+    // Use target user's role if fetching another user
+    if (targetUserId && targetUserId !== session.user.id) {
+      targetRole = await resolveUserRole(user.email);
     }
     
     if (!user.email) {
@@ -97,7 +114,7 @@ export async function sendIdCardToEmailAction(): Promise<{ success?: boolean; er
       signatureUrl: base64Signature,
       stampUrl: base64Stamp,
       base64Font: base64Font,
-      role: session.user.role,
+      role: targetRole,
     };
 
     const htmlString = renderIdCardToHtml(data);

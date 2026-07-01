@@ -119,6 +119,15 @@ export default async function AdminFinancePage({
 
         {filters.tab === "income" ? (
           <section className="space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <Link
+                href="/admin/record-payment"
+                className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
+              >
+                Record payment
+              </Link>
+            </div>
+
             <ListSearchForm
               action="/admin/finance"
               query={filters.q}

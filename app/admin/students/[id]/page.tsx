@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { RemoveStudentEnrollmentAction } from "@/components/admin/RemoveStudentEnrollmentAction";
-import { RecordStudentPaymentForm } from "@/components/admin/RecordStudentPaymentForm";
+
 
 import { Pagination } from "@/components/shared/Pagination";
 import { deleteStudentUserForm } from "@/app/admin/students/actions";
@@ -185,9 +185,6 @@ export default async function AdminStudentDetailPage({
           pageSize={pageSize}
         />
 
-        <div className="mt-6 max-w-xl">
-          <RecordStudentPaymentForm userId={id} courses={courses} />
-        </div>
       </section>
 
       <section className="mt-10">

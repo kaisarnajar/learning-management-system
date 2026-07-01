@@ -9,6 +9,7 @@ import { notifyPaymentApproved } from "@/lib/notifications";
 import { prisma } from "@/lib/prisma";
 import { paymentRecordSchema } from "@/lib/validations";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { redirect } from "next/navigation";
 
 export type RecordPaymentState = {
   error?: string;
@@ -16,11 +17,15 @@ export type RecordPaymentState = {
 };
 
 export async function recordStudentPayment(
-  userId: string,
   _prev: RecordPaymentState,
   formData: FormData,
 ): Promise<RecordPaymentState> {
   await requireAdmin();
+
+  const userId = formData.get("userId") as string;
+  if (!userId) {
+    return { error: "Student must be selected." };
+  }
 
   const parsed = paymentRecordSchema.safeParse({
     courseId: formData.get("courseId") || undefined,
@@ -73,8 +78,9 @@ export async function recordStudentPayment(
 
   revalidatePath(`/admin/students/${userId}`);
   revalidatePath("/admin/finance");
+  revalidatePath("/admin/payments");
   revalidatePath("/profile/payments");
   revalidatePath("/profile/notifications");
 
-  return { success: "Payment recorded. The student has been notified by email — if they don't see it, ask them to check their Spam/Junk folder." };
+  redirect(`/admin/finance?tab=income&saved=1`);
 }

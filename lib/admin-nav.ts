@@ -13,6 +13,7 @@ export type AdminNavGroup = {
 export const ADMIN_DASHBOARD_LINK_HREFS = new Set<string>([
   "/admin/payment-settings",
   "/admin/finance",
+  "/admin/record-payment",
   "/admin/record-expense",
   "/admin/social-links",
 ]);
@@ -54,6 +55,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: "/admin/payments", label: "Payments" },
       { href: "/admin/receipts", label: "Payment Receipts" },
       { href: "/admin/finance", label: "Finance" },
+      { href: "/admin/record-payment", label: "Record payment" },
       { href: "/admin/record-expense", label: "Record expense" },
       { href: "/admin/payment-settings", label: "Payment details" },
       { href: "/admin/shipping-charges", label: "Shipping charges" },

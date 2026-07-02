@@ -21,19 +21,34 @@ export async function POST(request: Request) {
 
     const email = parsed.data.email.toLowerCase().trim();
     const token = await createPasswordResetToken(email);
+    let debugLink: string | undefined;
 
     if (token) {
       const resetUrl = buildPasswordResetUrl(token);
+      
+      const isEmailConfigured = Boolean(
+        process.env.SMTP_HOST && 
+        process.env.SMTP_USER && 
+        process.env.SMTP_PASS
+      );
+
+      if (process.env.NODE_ENV === "development" || !isEmailConfigured) {
+        debugLink = resetUrl;
+      }
+
       try {
         await sendPasswordResetEmail({ to: email, resetUrl });
       } catch (emailError) {
         if (emailError && typeof emailError === "object" && "digest" in emailError && typeof emailError.digest === "string" && emailError.digest.startsWith("NEXT_REDIRECT")) { throw emailError; }
         console.error("[forgot-password] SMTP send failed:", emailError);
         console.info("[forgot-password] Reset link (use if email did not arrive):", resetUrl);
+        if (process.env.NODE_ENV === "development") {
+          debugLink = resetUrl;
+        }
       }
     }
 
-    return NextResponse.json({ success: true, message: GENERIC_SUCCESS });
+    return NextResponse.json({ success: true, message: GENERIC_SUCCESS, debugLink });
   } catch (error) {
     if (isRedirectError(error)) { throw error; }
     console.error("[forgot-password] Request failed:", error);

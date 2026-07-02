@@ -13,6 +13,7 @@ export function ForgotPasswordForm() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
+  const [debugLink, setDebugLink] = useState("");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -20,6 +21,7 @@ export function ForgotPasswordForm() {
     if (loading) return;
     setError("");
     setMessage("");
+    setDebugLink("");
     setLoading(true);
 
     try {
@@ -40,6 +42,9 @@ export function ForgotPasswordForm() {
         data.message ||
           "If an account with that email exists and uses a password, we sent reset instructions. Please check your Inbox. If you don't see it, check your Spam/Junk folder as well.",
       );
+      if (data.debugLink) {
+        setDebugLink(data.debugLink);
+      }
       setEmail("");
     } catch {
       setError("Something went wrong. Please try again.");
@@ -59,9 +64,17 @@ export function ForgotPasswordForm() {
       </p>
 
       {message && (
-        <p className="mt-4 rounded-md bg-success-bg px-4 py-3 text-center text-sm text-success-text">
-          {message}
-        </p>
+        <div className="mt-4 rounded-md bg-success-bg px-4 py-3 text-center text-sm text-success-text">
+          <p>{message}</p>
+          {debugLink && (
+            <p className="mt-2 pt-2 border-t border-success-text/20">
+              <span className="font-bold text-rose-700">Development Mode:</span>{" "}
+              <a href={debugLink} className="underline font-semibold text-primary hover:text-primary-light">
+                Click here to reset password directly
+              </a>
+            </p>
+          )}
+        </div>
       )}
 
       {error && (

@@ -1200,3 +1200,65 @@ export async function sendIdCardEmail(params: IdCardEmailParams): Promise<EmailS
     ],
   });
 }
+
+// ---------------------------------------------------------------------------
+// Email: Grade Card with PDF attachment
+// ---------------------------------------------------------------------------
+
+export type GradeCardEmailParams = {
+  to: string;
+  studentName: string;
+  courseTitle: string;
+  pdfBuffer: Buffer;
+  pdfFilename: string;
+};
+
+export async function sendGradeCardEmail(params: GradeCardEmailParams): Promise<EmailSendResult> {
+  const { to, studentName, courseTitle, pdfBuffer, pdfFilename } = params;
+  const displayName = studentName || "Student";
+
+  const subject = `Academic Test Report — ${courseTitle}`;
+  const preview = `Your official academic test report for ${courseTitle} is attached.`;
+
+  const text = [
+    `Assalamu Alaikum ${displayName},`,
+    "",
+    `Your academic test report (Grade Card) for the course "${courseTitle}" has been generated.`,
+    "",
+    "It is attached to this email as a PDF document.",
+    "",
+    "Please download and review it for your academic records.",
+    "",
+    "Jazakallah Khair,",
+    "Darse Quran Academy",
+  ].join("\n");
+
+  const bodyHtml = `
+    <p>Assalamu Alaikum <strong>${escapeHtml(displayName)}</strong>,</p>
+    <p>Your academic test report (Grade Card) for the course <strong>${escapeHtml(courseTitle)}</strong> has been generated.</p>
+    <div style="margin:24px 0;padding:16px 20px;background:#f0f9ff;border-left:4px solid #0284c7;border-radius:0 6px 6px 0;">
+      <p style="margin:0 0 6px 0;font-size:13px;font-weight:600;color:#0369a1;text-transform:uppercase;letter-spacing:0.5px;">Grade Card Issued</p>
+      <p style="margin:0;font-size:14px;">Your official academic record has been prepared and generated successfully.</p>
+    </div>
+    <p>The PDF document is <strong>attached to this email</strong>. Please download and keep it for your records.</p>
+    <p style="font-size:13px;color:#6b7280;">If you have any questions, please reply to this email.</p>`;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({
+    to,
+    subject,
+    text,
+    html,
+    preview,
+    priority: "high",
+    attachments: [
+      {
+        filename: pdfFilename,
+        content: pdfBuffer,
+        contentType: "application/pdf",
+      },
+    ],
+  });
+}
+

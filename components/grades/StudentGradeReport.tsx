@@ -19,6 +19,9 @@ export type StudentGradeReportProps = {
   studentEmail: string;
   courseTitle: string;
   records: GradeReportRecord[];
+  isAdmin?: boolean;
+  courseId?: string;
+  enrollmentId?: string;
 };
 
 export function StudentGradeReport({
@@ -27,6 +30,9 @@ export function StudentGradeReport({
   studentEmail,
   courseTitle,
   records,
+  isAdmin = false,
+  courseId,
+  enrollmentId,
 }: StudentGradeReportProps) {
   const totalExams = records.length;
   let totalMarksObtained = 0;
@@ -41,19 +47,29 @@ export function StudentGradeReport({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-4">
-        <Link
-          href={backUrl}
-          className="p-2 text-muted hover:text-foreground bg-surface rounded-full hover:bg-accent-muted/50 transition-colors border border-border shadow-sm"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Grade Report</h1>
-          <p className="text-sm text-muted">
-            {studentName || "Student"} ({studentEmail})
-          </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <Link
+            href={backUrl}
+            className="p-2 text-muted hover:text-foreground bg-surface rounded-full hover:bg-accent-muted/50 transition-colors border border-border shadow-sm"
+          >
+            <ArrowLeftIcon className="w-5 h-5" />
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">Grade Report</h1>
+            <p className="text-sm text-muted">
+              {studentName || "Student"} ({studentEmail})
+            </p>
+          </div>
         </div>
+        {isAdmin && courseId && enrollmentId && (
+          <Link
+            href={`/admin/courses/${courseId}/grades/student/${enrollmentId}/grade-card`}
+            className="inline-flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-light self-start sm:self-center"
+          >
+            View Grade Card
+          </Link>
+        )}
       </div>
 
       <div className="bg-white p-6 rounded-lg border border-border flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">

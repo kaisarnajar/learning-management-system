@@ -5,6 +5,8 @@ import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { getTeacherForSession } from "@/lib/teacher-auth";
 import { revalidatePath } from "next/cache";
+import { generateGradeCardPdf } from "@/lib/grade-card-html";
+import { sendGradeCardEmail } from "@/lib/email";
 import {
   type GradeRecordInput,
   getCourseGradeCardsFromDb,
@@ -113,4 +115,66 @@ export async function getStudentGradeReport(enrollmentId: string) {
   }
 
   return report;
+}
+
+export async function sendGradeCardToEmailAction(enrollmentId: string): Promise<{ success?: boolean; error?: string }> {
+  try {
+    const session = await auth();
+    if (!session?.user?.id || (session.user.role !== "ADMIN" && session.user.role !== "DEVELOPER")) {
+      return { error: "Unauthorized. Admin access required." };
+    }
+
+    if (!enrollmentId) {
+      return { error: "enrollmentId is required." };
+    }
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: { id: enrollmentId },
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+          }
+        }
+      }
+    });
+
+    if (!enrollment) {
+      return { error: "Enrollment not found." };
+    }
+
+    if (!enrollment.user.email) {
+      return { error: "No email address found for this student." };
+    }
+
+    const course = await prisma.course.findUnique({
+      where: { id: enrollment.courseId },
+      select: { title: true }
+    });
+
+    if (!course) {
+      return { error: "Course not found." };
+    }
+
+    const pdfBuffer = await generateGradeCardPdf(enrollmentId);
+    const filename = `Grade_Card_${enrollment.user.name?.replace(/\s+/g, '_') || "Student"}.pdf`;
+
+    const emailResult = await sendGradeCardEmail({
+      to: enrollment.user.email,
+      studentName: enrollment.user.name || "Student",
+      courseTitle: course.title,
+      pdfBuffer,
+      pdfFilename: filename,
+    });
+
+    if (emailResult.sent) {
+      return { success: true };
+    } else {
+      return { error: emailResult.error || "Failed to send email." };
+    }
+  } catch (error) {
+    console.error("sendGradeCardToEmailAction error:", error);
+    return { error: "An unexpected error occurred while generating or sending the Grade Card." };
+  }
 }

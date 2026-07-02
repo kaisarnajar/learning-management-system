@@ -20,6 +20,9 @@ export default async function AdminStudentGradeReportPage({
         studentEmail={report.enrollment.user.email}
         courseTitle={report.course.title}
         records={report.records}
+        isAdmin={true}
+        courseId={id}
+        enrollmentId={studentId}
       />
     </div>
   );

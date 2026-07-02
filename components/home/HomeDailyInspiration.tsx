@@ -70,7 +70,7 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
 
               {/* Arabic Text */}
               <p
-                className={`${indoPakArabic.className} indo-pak-arabic !text-center text-5xl leading-relaxed text-white drop-shadow-md sm:text-6xl md:text-7xl lg:text-8xl md:leading-[1.8]`}
+                className={`${indoPakArabic.className} indo-pak-arabic !text-center text-4xl leading-relaxed text-white drop-shadow-md sm:text-5xl md:text-6xl lg:text-7xl md:leading-[1.8]`}
                 dir="rtl"
                 lang="ar"
               >

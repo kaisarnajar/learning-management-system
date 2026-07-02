@@ -184,13 +184,9 @@ export function GradeForm({
                       {student.rollNumber ?? "N/A"}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <Link
-                        href={`${baseUrl}/${courseId}/grades/student/${student.id}`}
-                        className="text-sm font-medium text-primary hover:underline"
-                      >
-                        {student.user.name}
-                      </Link>
-                      <div className="text-sm text-muted">{student.user.email}</div>
+                      <span className="text-sm font-medium text-foreground">
+                        {student.user.name ?? "—"}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <input

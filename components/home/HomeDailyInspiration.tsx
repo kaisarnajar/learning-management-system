@@ -3,6 +3,7 @@ import {
   type DailyInspirationRecord,
 } from "@/lib/daily-inspiration";
 import { Source_Serif_4 } from "next/font/google";
+import { indoPakArabic } from "@/lib/fonts/indo-pak-arabic";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["400", "600"] });
 
@@ -53,7 +54,7 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
             
             <div className="relative">
               <p
-                className="indo-pak-arabic text-3xl leading-loose text-white drop-shadow-md sm:text-4xl md:text-5xl md:leading-[2.5]"
+                className={`${indoPakArabic.className} indo-pak-arabic text-center text-3xl leading-loose text-white drop-shadow-md sm:text-4xl md:text-5xl md:leading-[2.5]`}
                 dir="rtl"
                 lang="ar"
               >

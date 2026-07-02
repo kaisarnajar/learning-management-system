@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins, Amiri } from "next/font/google";
+import { indoPakArabic } from "@/lib/fonts/indo-pak-arabic";
 import { CartProvider } from "@/components/bookstore/CartProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ToastProvider } from "@/components/shared/ToastProvider";
@@ -38,7 +39,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${poppins.variable} ${amiri.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="en" className={`${poppins.variable} ${amiri.variable} ${indoPakArabic.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col overflow-x-hidden font-sans" suppressHydrationWarning>
         <SessionProvider>
           <ToastProvider>

@@ -42,9 +42,10 @@ export default async function BlogDetailPage({ params }: PageProps) {
           <p className="mt-4 text-lg leading-relaxed text-muted">{post.excerpt}</p>
         )}
 
-        <div className="mt-8 whitespace-pre-wrap text-base leading-relaxed text-foreground">
-          {post.body}
-        </div>
+        <div
+          dangerouslySetInnerHTML={{ __html: post.body }}
+          className="blog-content mt-8 text-base leading-relaxed text-foreground"
+        />
 
         {post.images.length > 0 && (
           <div className="mt-10 space-y-6">

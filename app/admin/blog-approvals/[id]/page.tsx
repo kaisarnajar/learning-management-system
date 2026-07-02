@@ -60,7 +60,10 @@ export default async function AdminBlogApprovalDetailPage({
 
       <section className="mt-8">
         <h2 className="font-serif text-lg font-semibold text-foreground">Content</h2>
-        <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{post.body}</p>
+        <div
+          dangerouslySetInnerHTML={{ __html: post.body }}
+          className="blog-content mt-3 text-sm leading-relaxed text-foreground"
+        />
       </section>
 
       {post.images.length > 0 && (

@@ -13,6 +13,7 @@ import { MAX_BLOG_IMAGES } from "@/lib/blog-limits";
 import { labelClassName } from "@/lib/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
 import { useZodForm } from "@/lib/use-zod-form";
+import { RichTextEditor } from "@/components/shared/RichTextEditor";
 
 type BlogPostFormPost = {
   title: string;
@@ -146,18 +147,12 @@ export function BlogPostForm({
         <label htmlFor="body" className={labelClassName}>
           Blog content
         </label>
-        <textarea
-          id="body"
-          name="body"
-          required
-          rows={14}
-          readOnly={contentReadOnly}
+        <input type="hidden" name="body" value={values.body} />
+        <RichTextEditor
           value={values.body}
-          onChange={(e) => updateField("body", e.target.value)}
-          onBlur={() => markTouched("body")}
-          aria-invalid={showError("body") || undefined}
+          onChange={(val) => updateField("body", val)}
+          readOnly={contentReadOnly}
           placeholder="Write your article here. You can add screenshots below."
-          className={`${formFieldInputClass(showError("body"))}${contentReadOnly ? " cursor-default bg-background/60" : ""}`}
         />
         {showError("body") && (
           <p className={formErrorTextClassName} role="alert">

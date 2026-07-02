@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireTeacher } from "@/lib/auth-actions";
-import { getFatwaPublicUrl } from "@/lib/fatwa";
 import { sendFatwaSubmissionAdminEmail } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { fatwaAnswerSchema } from "@/lib/validations";

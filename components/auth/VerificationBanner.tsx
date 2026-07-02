@@ -22,7 +22,7 @@ export function VerificationBanner() {
         setStatus("error");
         setMessage(data.error || "Failed to resend verification email.");
       }
-    } catch (error) {
+    } catch {
       setStatus("error");
       setMessage("An unexpected error occurred.");
     } finally {

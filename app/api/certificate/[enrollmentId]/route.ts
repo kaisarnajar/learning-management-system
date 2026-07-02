@@ -159,10 +159,11 @@ export async function GET(
         "Cache-Control": "private, no-cache",
       },
     });
-  } catch (error: any) {
-    console.error("PDF Generation Error:", error?.stack || error);
+  } catch (error) {
+    const err = error as Error;
+    console.error("PDF Generation Error:", err.stack || err);
     return NextResponse.json(
-      { error: "Failed to generate PDF", details: error?.message || String(error) },
+      { error: "Failed to generate PDF", details: err.message || String(error) },
       { status: 500 },
     );
   }

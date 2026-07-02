@@ -87,8 +87,9 @@ export function AttendanceForm({ courseId, baseUrl, students, initialDate, initi
         await saveCourseAttendance(courseId, parsedDate, records);
         router.push(`${baseUrl}/${courseId}/attendance`);
         router.refresh();
-      } catch (err: any) {
-        setError(err.message || "Failed to save attendance");
+      } catch (err) {
+        const errorVal = err as Error;
+        setError(errorVal.message || "Failed to save attendance");
       }
     });
   };

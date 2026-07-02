@@ -119,7 +119,7 @@ export async function deleteFatwaQuestionForm(id: string) {
 }
 
 export async function rejectFatwaQuestion(id: string, formData: FormData) {
-  const session = await requireAdmin();
+  await requireAdmin();
 
   const parsed = fatwaAnswerSchema.safeParse({
     answer: formData.get("answer"),

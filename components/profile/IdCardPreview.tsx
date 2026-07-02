@@ -1,24 +1,17 @@
 "use client";
 
 import { Mail, Loader2 } from "lucide-react";
-import { useState, useEffect, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { PageHeader } from "@/components/site/PageHeader";
 import { useToast } from "@/components/shared/ToastProvider";
 import { sendIdCardToEmailAction } from "@/app/actions/id-card";
 
 export function IdCardPreview({ userId }: { userId?: string }) {
   const [isLoading, setIsLoading] = useState(true);
-  const [iframeSrc, setIframeSrc] = useState(
-    `/api/id-card?inline=1${userId ? `&userId=${userId}` : ""}#toolbar=0&navpanes=0&scrollbar=0`
-  );
   const [isPending, startTransition] = useTransition();
   const { addToast } = useToast();
 
-  useEffect(() => {
-    setIframeSrc(
-      `/api/id-card?inline=1&t=${Date.now()}${userId ? `&userId=${userId}` : ""}#toolbar=0&navpanes=0&scrollbar=0`
-    );
-  }, [userId]);
+  const iframeSrc = `/api/id-card?inline=1${userId ? `&userId=${userId}` : ""}#toolbar=0&navpanes=0&scrollbar=0`;
 
   const handleSendEmail = () => {
     startTransition(async () => {

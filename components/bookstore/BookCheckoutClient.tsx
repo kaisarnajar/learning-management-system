@@ -40,7 +40,6 @@ export function BookCheckoutClient({
   const [deliveryPhoneNumber, setDeliveryPhoneNumber] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
   const { removeItem } = useCart();
   const router = useRouter();

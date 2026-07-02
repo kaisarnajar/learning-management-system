@@ -124,7 +124,7 @@ export function ProfileDetailsCard({
               <User className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-muted">Father's Name</p>
+              <p className="text-xs font-medium text-muted">Father&apos;s Name</p>
               <p className="mt-0.5 text-sm font-semibold text-foreground">{fatherName || "Not provided"}</p>
             </div>
           </div>

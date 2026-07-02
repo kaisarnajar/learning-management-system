@@ -1,7 +1,6 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-actions";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";

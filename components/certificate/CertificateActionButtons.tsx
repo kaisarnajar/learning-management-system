@@ -5,7 +5,6 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ActionButton } from "@/components/shared/ActionButton";
 import { generateCertificate } from "@/app/actions/certificates";
-import { useToast } from "@/components/shared/ToastProvider";
 
 interface CertificateActionButtonsProps {
   enrollmentId: string;

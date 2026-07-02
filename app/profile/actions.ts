@@ -52,11 +52,20 @@ export async function updateProfile(
     newImageUrl = await saveProfileImage(session.user.id, imageFile);
   }
 
-  const updateData: any = {
+  const updateData: {
+    name: string;
+    fatherName: string;
+    dateOfBirth: Date;
+    occupation: any;
+    address: string;
+    whatsapp: string;
+    image?: string;
+    registrationNumber?: string;
+  } = {
     name: parsed.data.name,
     fatherName: parsed.data.fatherName,
     dateOfBirth: new Date(parsed.data.dateOfBirth),
-    occupation: parsed.data.occupation,
+    occupation: parsed.data.occupation as any,
     address: parsed.data.address,
     whatsapp: buildStoredProfileWhatsApp(parsed.data.country, parsed.data.whatsapp),
   };

@@ -94,7 +94,7 @@ export function StudentForm({ student, action, submitLabel, error }: StudentForm
 
       <div>
         <label htmlFor="fatherName" className={labelClassName}>
-          Father's Name
+          Father&apos;s Name
         </label>
         <div className="mt-1">
           <input

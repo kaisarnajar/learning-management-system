@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
 import { trackButtonClick } from "@/lib/analytics-client";
 import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";

@@ -1,4 +1,3 @@
-import Image from "next/image";
 import { TrackedLink } from "@/components/analytics/TrackedLink";
 import type { Teacher } from "@/lib/teachers";
 

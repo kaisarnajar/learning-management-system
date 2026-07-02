@@ -41,8 +41,9 @@ async function launchBrowserWithRetry(maxRetries = 4) {
           args: ["--no-sandbox", "--disable-setuid-sandbox"],
         });
       }
-    } catch (err: any) {
-      const isRetryable = err?.code === "ETXTBSY" || err?.message?.includes("ETXTBSY");
+    } catch (err) {
+      const errorVal = err as { code?: string; message?: string };
+      const isRetryable = errorVal?.code === "ETXTBSY" || errorVal?.message?.includes("ETXTBSY");
       if (isRetryable && attempt < maxRetries) {
         const delayMs = attempt * 1500; // 1.5s, 3s, 4.5s
         console.warn(
@@ -91,7 +92,14 @@ export async function generatePdfFromHtml(
     // Wait for the image processing script to finish
     await page.waitForFunction('window.__imagesProcessed === true', { timeout: 2000 }).catch(() => {});
 
-    const pdfOptions: any = {
+    const pdfOptions: {
+      landscape: boolean;
+      printBackground: boolean;
+      margin: { top: string; right: string; bottom: string; left: string };
+      width?: string | number;
+      height?: string | number;
+      format?: any;
+    } = {
       landscape,
       printBackground: true,
       margin: { top: "0mm", right: "0mm", bottom: "0mm", left: "0mm" },

@@ -39,7 +39,7 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
   const languageOptions = getLibraryLanguageOptions(item?.language);
 
   const [imagePreview, setImagePreview] = useState<string | null>(
-    (item as LibraryItem & { imagePath?: string | null })?.imagePath ?? null
+    item?.imagePath ?? null
   );
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -127,7 +127,7 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
         <input
           type="hidden"
           name="removeImage"
-          value={!imagePreview && (item as any)?.imagePath ? "true" : "false"}
+          value={!imagePreview && item?.imagePath ? "true" : "false"}
         />
       </div>
       <div>

@@ -70,7 +70,7 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
               </div>
 
               <div className={`${sourceSerif.className} mx-auto max-w-3xl text-lg leading-relaxed text-zinc-200 sm:text-xl md:text-2xl font-light italic`}>
-                "{inspiration.englishTranslation}"
+                &ldquo;{inspiration.englishTranslation}&rdquo;
               </div>
               
               {inspiration.reference && (

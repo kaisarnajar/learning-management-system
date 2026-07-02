@@ -4,10 +4,7 @@ import {
   getProfileCountryOrDefault,
   isValidProfileLocalNumber,
 } from "@/lib/countries";
-import { COURSE_CATEGORIES } from "@/lib/course-categories";
-import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_TEACHER_SALARY } from "@/lib/expense-categories";
-import { FATWA_CATEGORIES } from "@/lib/fatwa";
-import { LIBRARY_LANGUAGES, LIBRARY_TOPICS } from "@/lib/library-options";
+import { EXPENSE_CATEGORY_TEACHER_SALARY } from "@/lib/expense-categories";
 import { isPaymentYearAllowed } from "@/lib/monthly-payments";
 import { OCCUPATION_VALUES } from "@/lib/occupations";
 
@@ -101,12 +98,6 @@ export const resetPasswordSchema = z
     path: ["confirmPassword"],
   });
 
-const optionalHttpUrl = z
-  .string()
-  .trim()
-  .refine((value) => value === "" || /^https?:\/\/.+/i.test(value), {
-    message: "Enter a full URL starting with http:// or https://, or leave blank.",
-  });
 export const paymentSettingsSchema = z.object({
   upiId: z
     .string()

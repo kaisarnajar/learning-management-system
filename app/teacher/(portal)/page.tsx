@@ -2,9 +2,8 @@ import Link from "next/link";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { Pagination } from "@/components/shared/Pagination";
 import { requireTeacher } from "@/lib/auth-actions";
-import { CourseCategoryIcon } from "@/components/courses/CourseCategoryIcon";
+import { CourseThumbnail } from "@/components/courses/CourseThumbnail";
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
-import { getCourseBannerClass } from "@/lib/course-display";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
 import { getCoursesForTeacherPaginated, getTeacherDashboardStats } from "@/lib/teacher-portal";
 
@@ -61,11 +60,7 @@ export default async function TeacherDashboardPage({
           {courses.map((course) => (
             <li key={course.id}>
               <article className="card-elevated overflow-hidden">
-                <div
-                  className={`flex h-20 items-center justify-center bg-gradient-to-br ${getCourseBannerClass(course.category)} px-4 text-white`}
-                >
-                  <CourseCategoryIcon category={course.category} size="sm" />
-                </div>
+                <CourseThumbnail category={course.category} size="sm" />
                 <div className="p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <CourseStatusBadge status={course.status} />

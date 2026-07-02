@@ -4,8 +4,8 @@ import { CoursePricingDisplay } from "@/components/courses/CoursePricingDisplay"
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
 import { CourseTeacherInfo } from "@/components/courses/CourseTeacherInfo";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
-import { CourseCategoryIcon } from "@/components/courses/CourseCategoryIcon";
-import { getCourseBannerClass, getCourseLevelClass } from "@/lib/course-display";
+import { CourseThumbnail } from "@/components/courses/CourseThumbnail";
+import { getCourseLevelClass } from "@/lib/course-display";
 import type { CourseWithTeacher } from "@/lib/courses";
 
 type CourseCardProps = {
@@ -34,9 +34,9 @@ export function CourseCard({
         href={detailHref}
         eventName="View Course"
         pageName="/courses"
-        className={`flex h-32 items-center justify-center bg-gradient-to-br ${getCourseBannerClass(course.category)} text-white`}
+        className="block"
       >
-        <CourseCategoryIcon category={course.category} size="md" />
+        <CourseThumbnail category={course.category} size="md" />
       </TrackedLink>
       <div className="flex flex-1 flex-col p-5">
         <div className="flex-1">

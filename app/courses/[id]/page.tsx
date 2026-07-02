@@ -8,8 +8,8 @@ import { CourseTeacherInfo } from "@/components/courses/CourseTeacherInfo";
 import { Section } from "@/components/site/Section";
 import { auth } from "@/lib/auth";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
-import { CourseCategoryIcon } from "@/components/courses/CourseCategoryIcon";
-import { getCourseBannerClass, getCourseLevelClass } from "@/lib/course-display";
+import { CourseThumbnail } from "@/components/courses/CourseThumbnail";
+import { getCourseLevelClass } from "@/lib/course-display";
 import { getPublicCourseById } from "@/lib/courses";
 import { getUserCourseEnrollmentMap } from "@/lib/enrollments";
 import { hasPendingEnrollmentFeeSubmission } from "@/lib/monthly-payments";
@@ -55,11 +55,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
       </Link>
 
       <article className="mx-auto mt-6 max-w-2xl">
-        <div
-          className={`flex h-40 items-center justify-center rounded-lg bg-gradient-to-br ${getCourseBannerClass(course.category)} text-white sm:h-48`}
-        >
-          <CourseCategoryIcon category={course.category} size="lg" />
-        </div>
+        <CourseThumbnail category={course.category} size="lg" className="rounded-lg" />
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <span className="text-xs font-semibold uppercase tracking-wide text-gold">

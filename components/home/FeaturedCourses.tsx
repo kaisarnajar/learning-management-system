@@ -4,8 +4,7 @@ import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { CoursePricingDisplay } from "@/components/courses/CoursePricingDisplay";
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
 import { CourseTeacherInfo } from "@/components/courses/CourseTeacherInfo";
-import { CourseCategoryIcon } from "@/components/courses/CourseCategoryIcon";
-import { getCourseBannerClass } from "@/lib/course-display";
+import { CourseThumbnail } from "@/components/courses/CourseThumbnail";
 import type { CourseWithTeacher } from "@/lib/courses";
 
 type FeaturedCoursesProps = {
@@ -34,9 +33,9 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
               <li key={course.id} className="card-elevated overflow-hidden p-0">
                 <Link
                   href={detailHref}
-                  className={`flex h-40 items-center justify-center bg-gradient-to-br ${getCourseBannerClass(course.category)} text-white`}
+                  className="block"
                 >
-                  <CourseCategoryIcon category={course.category} size="lg" />
+                  <CourseThumbnail category={course.category} size="lg" />
                 </Link>
                 <div className="p-5">
                   <span className="text-xs font-semibold uppercase tracking-wide text-gold">

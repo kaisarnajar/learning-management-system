@@ -3,7 +3,20 @@ import { getDefaultFeesForLevel } from "../lib/course-pricing";
 import { PAYMENT_SETTINGS_ID } from "../lib/payment-settings";
 
 import { courses } from "../content/courses";
-import { libraryItems } from "../content/library";
+const libraryItems = [
+  { id: "1", title: "Noorani Qaida", author: "Moulana Noor Muhammad", topic: "Quran", level: "Beginner", language: "Urdu" },
+  { id: "2", title: "Tajweed Rules Explained", author: "Sheikh Ahmad Ali", topic: "Tajweed", level: "Intermediate", language: "English" },
+  { id: "3", title: "Introduction to Islamic Law", author: "Various Scholars", topic: "Fiqh", level: "Advanced", language: "Urdu" },
+  { id: "4", title: "Stories of the Prophets", author: "Ibn Kathir (abridged)", topic: "Seerah", level: "Beginner", language: "English" },
+  { id: "5", title: "Arabic Made Easy", author: "Dr. V. Abdur Rahim", topic: "Arabic Language", level: "Beginner", language: "English" },
+  { id: "6", title: "Riyad us-Saliheen", author: "Imam An-Nawawi", topic: "Hadith", level: "Intermediate", language: "Other" },
+  { id: "7", title: "Essentials of Faith and Worship", author: "Compiled Reader", topic: "Islam", level: "Beginner", language: "Urdu" },
+  { id: "8", title: "Tafsir Ibn Kathir (Selected Surahs)", author: "Ibn Kathir", topic: "Quran", level: "Advanced", language: "Arabic" },
+  { id: "9", title: "Forty Hadith of Imam Nawawi", author: "Imam An-Nawawi", topic: "Hadith", level: "Beginner", language: "English" },
+  { id: "10", title: "Madinah Arabic Reader — Book 1", author: "Dr. V. Abdur Rahim", topic: "Arabic Language", level: "Beginner", language: "English" },
+  { id: "11", title: "The Sealed Nectar (Ar-Raheeq Al-Makhtum)", author: "Safi-ur-Rahman al-Mubarakpuri", topic: "Seerah", level: "Intermediate", language: "English" },
+  { id: "12", title: "Qiraat al-Ashr — Introduction", author: "Compiled Reference", topic: "Qiraat", level: "Advanced", language: "Arabic" },
+];
 import { studentTestimonials } from "../content/testimonials";
 import { teachers } from "../content/teachers";
 import { seedCourseStatus } from "./seed-helpers";

@@ -12,20 +12,15 @@ import path from "path";
 export async function sendIdCardToEmailAction(targetUserId?: string): Promise<{ success?: boolean; error?: string }> {
   try {
     const session = await auth();
-    if (!session?.user?.id) {
-      return { error: "Unauthorized." };
+    if (!session?.user?.id || (session.user.role !== "ADMIN" && session.user.role !== "DEVELOPER")) {
+      return { error: "Unauthorized. Admin access required." };
     }
 
-    let idToFetch = session.user.id;
-    let targetRole = session.user.role;
-    
-    // If targetUserId is provided, check if current user is admin/developer
-    if (targetUserId && targetUserId !== session.user.id) {
-      if (session.user.role !== "ADMIN" && session.user.role !== "DEVELOPER") {
-        return { error: "Unauthorized. Admin access required." };
-      }
-      idToFetch = targetUserId;
+    if (!targetUserId) {
+      return { error: "targetUserId is required." };
     }
+
+    const idToFetch = targetUserId;
 
     const user = await prisma.user.findUnique({
       where: { id: idToFetch },
@@ -35,10 +30,7 @@ export async function sendIdCardToEmailAction(targetUserId?: string): Promise<{ 
       return { error: "User not found." };
     }
     
-    // Use target user's role if fetching another user
-    if (targetUserId && targetUserId !== session.user.id) {
-      targetRole = await resolveUserRole(user.email);
-    }
+    const targetRole = await resolveUserRole(user.email);
     
     if (!user.email) {
       return { error: "No email address found for this user." };

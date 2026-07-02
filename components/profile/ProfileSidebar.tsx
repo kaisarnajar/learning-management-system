@@ -11,7 +11,6 @@ import {
   CreditCard,
   ShoppingCart,
   Star,
-  IdCard,
 } from "lucide-react";
 
 const links = [

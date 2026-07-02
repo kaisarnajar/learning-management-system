@@ -13,21 +13,19 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  if (!isAdminSession(session)) {
+    return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
   }
 
   const searchParams = new URL(request.url).searchParams;
   const inline = searchParams.get("inline") === "1";
   const requestedUserId = searchParams.get("userId");
 
-  let targetUserId = session.user.id;
-  if (requestedUserId && requestedUserId !== session.user.id) {
-    if (!isAdminSession(session)) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-    }
-    targetUserId = requestedUserId;
+  if (!requestedUserId) {
+    return NextResponse.json({ error: "userId parameter is required." }, { status: 400 });
   }
+
+  const targetUserId = requestedUserId;
 
   const user = await withDbErrorHandling(() => prisma.user.findUnique({
     where: { id: targetUserId },
@@ -37,7 +35,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
 
-  const targetRole = targetUserId === session.user.id ? session.user.role : await resolveUserRole(user.email);
+  const targetRole = await resolveUserRole(user.email);
 
   // Load static assets
   let base64Logo = "";

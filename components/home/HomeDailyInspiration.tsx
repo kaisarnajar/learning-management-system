@@ -43,7 +43,7 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
           
           <p
             id="daily-inspiration-heading"
-            className="text-sm font-bold uppercase tracking-[0.25em] text-gold"
+            className="text-base font-bold uppercase tracking-[0.25em] text-gold"
           >
             {title}
           </p>
@@ -54,7 +54,7 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
             
             <div className="relative">
               <p
-                className={`${indoPakArabic.className} indo-pak-arabic text-center text-3xl leading-loose text-white drop-shadow-md sm:text-4xl md:text-5xl md:leading-[2.5]`}
+                className={`${indoPakArabic.className} indo-pak-arabic text-center text-4xl leading-relaxed text-white drop-shadow-md sm:text-5xl md:text-6xl md:leading-[2]`}
                 dir="rtl"
                 lang="ar"
               >
@@ -63,12 +63,12 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
               
               <div className="mx-auto mt-10 h-px w-24 bg-gradient-to-r from-transparent via-gold/50 to-transparent"></div>
 
-              <div className={`${sourceSerif.className} mx-auto mt-10 max-w-3xl text-lg leading-relaxed text-zinc-200 sm:text-xl md:text-2xl`}>
+              <div className={`${sourceSerif.className} mx-auto mt-10 max-w-3xl text-center text-xl leading-relaxed text-zinc-200 sm:text-2xl md:text-3xl`}>
                 {inspiration.englishTranslation}
               </div>
               
               {inspiration.reference && (
-                <footer className="mt-10 flex items-center justify-center gap-4 text-sm font-semibold tracking-widest text-gold/80 uppercase">
+                <footer className="mt-10 flex items-center justify-center gap-4 text-center text-base font-semibold tracking-widest text-gold/80 uppercase">
                   <span>{inspiration.reference}</span>
                 </footer>
               )}

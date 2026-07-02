@@ -5,7 +5,8 @@ import {
   PENDING_ENROLLMENT_APPROVAL,
 } from "@/lib/enrollment-status";
 import { getCourseIdsByTitleSearch } from "@/lib/courses";
-import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
+import { type PaginatedResult } from "@/lib/pagination";
+import { paginateQuery } from "@/lib/prisma-utils";
 import { prisma } from "@/lib/prisma";
 import { andWhere, buildSearchOr, type TextSearchWhere } from "@/lib/text-search";
 import { withDbErrorHandling } from "@/lib/db-error";
@@ -59,14 +60,10 @@ export async function getUserEnrollmentsPaginated(
   pageSize: number,
 ): Promise<PaginatedResult<Awaited<ReturnType<typeof getUserEnrollments>>[number]>> {
   const where = { userId };
-  const totalCount = await withDbErrorHandling(() => prisma.enrollment.count({ where }), "Database operation failed");
-  const safePage = clampPage(page, totalCount, pageSize);
-  const items = await withDbErrorHandling(() => prisma.enrollment.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      ...paginationArgs(safePage, pageSize),
-    }), "Database operation failed");
-  return { items, totalCount };
+  return paginateQuery(prisma.enrollment, {
+    where,
+    orderBy: { createdAt: "desc" },
+  }, page, pageSize);
 }
 
 export function enrollmentStatusLabel(status: string) {
@@ -92,19 +89,15 @@ export async function getEnrollmentsForCoursePaginated(
 ): Promise<PaginatedResult<CourseEnrollmentWithUser>> {
   noStore();
   const where = { courseId };
-  const totalCount = await withDbErrorHandling(() => prisma.enrollment.count({ where }), "Database operation failed");
-  const safePage = clampPage(page, totalCount, pageSize);
-  const items = await withDbErrorHandling(() => prisma.enrollment.findMany({
-      where,
-      orderBy: { rollNumber: { sort: "asc", nulls: "last" } },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true },
-        },
+  return paginateQuery(prisma.enrollment, {
+    where,
+    orderBy: { rollNumber: { sort: "asc", nulls: "last" } },
+    include: {
+      user: {
+        select: { id: true, name: true, email: true },
       },
-      ...paginationArgs(safePage, pageSize),
-    }), "Database operation failed");
-  return { items, totalCount };
+    },
+  }, page, pageSize);
 }
 
 /** Active roster for in-progress courses; completed roster when the course is completed. */
@@ -128,19 +121,15 @@ export async function getCourseRosterEnrollmentsPaginated(
     ? buildSearchOr([], [{ relation: "user", fields: ["name", "email"] }], searchQuery)
     : undefined;
   const where = andWhere(base, searchWhere);
-  const totalCount = await withDbErrorHandling(() => prisma.enrollment.count({ where }), "Database operation failed");
-  const safePage = clampPage(page, totalCount, pageSize);
-  const items = await withDbErrorHandling(() => prisma.enrollment.findMany({
-      where,
-      orderBy: { rollNumber: { sort: "asc", nulls: "last" } },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true },
-        },
+  return paginateQuery(prisma.enrollment, {
+    where,
+    orderBy: { rollNumber: { sort: "asc", nulls: "last" } },
+    include: {
+      user: {
+        select: { id: true, name: true, email: true },
       },
-      ...paginationArgs(safePage, pageSize),
-    }), "Database operation failed");
-  return { items, totalCount };
+    },
+  }, page, pageSize);
 }
 
 export async function getEnrollmentCountsByCourse(): Promise<Map<string, number>> {
@@ -187,19 +176,15 @@ export async function getPendingFreeEnrollmentApprovalsPaginated(
   noStore();
   const base = { status: PENDING_ENROLLMENT_APPROVAL };
   const where = andWhere(base, await enrollmentSearchWhere(searchQuery));
-  const totalCount = await withDbErrorHandling(() => prisma.enrollment.count({ where }), "Database operation failed");
-  const safePage = clampPage(page, totalCount, pageSize);
-  const items = await withDbErrorHandling(() => prisma.enrollment.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true },
-        },
+  return paginateQuery(prisma.enrollment, {
+    where,
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: {
+        select: { id: true, name: true, email: true },
       },
-      ...paginationArgs(safePage, pageSize),
-    }), "Database operation failed");
-  return { items, totalCount };
+    },
+  }, page, pageSize);
 }
 
 export async function getAwaitingEnrollmentFeeEnrollmentsPaginated(
@@ -210,19 +195,15 @@ export async function getAwaitingEnrollmentFeeEnrollmentsPaginated(
   noStore();
   const base = { status: AWAITING_ENROLLMENT_FEE };
   const where = andWhere(base, await enrollmentSearchWhere(searchQuery));
-  const totalCount = await withDbErrorHandling(() => prisma.enrollment.count({ where }), "Database operation failed");
-  const safePage = clampPage(page, totalCount, pageSize);
-  const items = await withDbErrorHandling(() => prisma.enrollment.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true },
-        },
+  return paginateQuery(prisma.enrollment, {
+    where,
+    orderBy: { createdAt: "desc" },
+    include: {
+      user: {
+        select: { id: true, name: true, email: true },
       },
-      ...paginationArgs(safePage, pageSize),
-    }), "Database operation failed");
-  return { items, totalCount };
+    },
+  }, page, pageSize);
 }
 
 export async function getPendingEnrollmentApprovalCount(): Promise<number> {

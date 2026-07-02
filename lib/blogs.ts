@@ -1,10 +1,11 @@
 import type { BlogImage, BlogPost } from "@prisma/client";
 import { BLOG_PUBLIC_WHERE } from "@/lib/blog-approval";
 import { resolveHomepageFeaturedUpdate } from "@/lib/homepage-featured";
-import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
+import { type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { andWhere, buildSearchOr } from "@/lib/text-search";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { paginateQuery } from "@/lib/prisma-utils";
 
 function adminBlogPostsWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -90,15 +91,11 @@ export async function getPublishedBlogPostsPaginated(
 ): Promise<PaginatedResult<BlogPostWithImages>> {
   const searchWhere = searchQuery ? buildSearchOr(["title", "excerpt", "body"], [{ relation: "createdBy", fields: ["name"] }], searchQuery) : undefined;
   const where = andWhere(BLOG_PUBLIC_WHERE, searchWhere) || BLOG_PUBLIC_WHERE;
-  const totalCount = await withDbErrorHandling(() => prisma.blogPost.count({ where }), "Database operation failed");
-  const safePage = clampPage(page, totalCount, pageSize);
-  const items = await withDbErrorHandling(() => prisma.blogPost.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: blogPostPublicInclude,
-      ...paginationArgs(safePage, pageSize),
-    }), "Database operation failed");
-  return { items, totalCount };
+  return paginateQuery(prisma.blogPost, {
+    where,
+    orderBy: { createdAt: "desc" },
+    include: blogPostPublicInclude,
+  }, page, pageSize);
 }
 
 export async function getPublishedBlogPostById(id: string) {
@@ -122,15 +119,11 @@ export async function getAllBlogPostsForAdminPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<BlogPostWithImages>> {
   const where = adminBlogPostsWhere(searchQuery);
-  const totalCount = await withDbErrorHandling(() => prisma.blogPost.count({ where }), "Database operation failed");
-  const safePage = clampPage(page, totalCount, pageSize);
-  const items = await withDbErrorHandling(() => prisma.blogPost.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: blogPostAdminInclude,
-      ...paginationArgs(safePage, pageSize),
-    }), "Database operation failed");
-  return { items, totalCount };
+  return paginateQuery(prisma.blogPost, {
+    where,
+    orderBy: { createdAt: "desc" },
+    include: blogPostAdminInclude,
+  }, page, pageSize);
 }
 
 export async function getBlogPostForAdmin(id: string) {
@@ -149,18 +142,14 @@ export async function getTeacherBlogPostsPaginated(
   pageSize: number,
 ): Promise<PaginatedResult<BlogPostWithImages>> {
   const where = { createdById: userId };
-  const totalCount = await withDbErrorHandling(() => prisma.blogPost.count({ where }), "Database operation failed");
-  const safePage = clampPage(page, totalCount, pageSize);
-  const items = await withDbErrorHandling(() => prisma.blogPost.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: {
-        images: { orderBy: { sortOrder: "asc" } },
-        createdBy: { select: { name: true, email: true } },
-      },
-      ...paginationArgs(safePage, pageSize),
-    }), "Database operation failed");
-  return { items, totalCount };
+  return paginateQuery(prisma.blogPost, {
+    where,
+    orderBy: { createdAt: "desc" },
+    include: {
+      images: { orderBy: { sortOrder: "asc" } },
+      createdBy: { select: { name: true, email: true } },
+    },
+  }, page, pageSize);
 }
 
 export async function getBlogPostForTeacher(id: string, userId: string) {

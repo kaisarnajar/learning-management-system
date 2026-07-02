@@ -66,7 +66,19 @@ export async function getAllTeachersPaginated(
 }
 
 export async function getTeacherById(id: string): Promise<Teacher | null> {
-  return withDbErrorHandling(() => prisma.teacher.findUnique({ where: { id } }), "Database operation failed");
+  const teacher = await withDbErrorHandling(() => prisma.teacher.findUnique({ where: { id } }), "Database operation failed");
+
+  if (teacher && !teacher.imageUrl && teacher.email) {
+    const user = await withDbErrorHandling(() => prisma.user.findUnique({
+      where: { email: teacher.email! },
+      select: { image: true },
+    }), "Database operation failed");
+    if (user?.image) {
+      teacher.imageUrl = user.image;
+    }
+  }
+
+  return teacher;
 }
 
 export async function getPublishedTeacherById(id: string): Promise<Teacher | null> {

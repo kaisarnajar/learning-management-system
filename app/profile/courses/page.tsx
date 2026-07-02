@@ -136,6 +136,12 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
                     >
                       My attendance
                     </Link>
+                    <Link
+                      href={`/profile/courses/${course.id}/grades`}
+                      className="mt-3 flex min-h-11 items-center justify-center rounded-full border border-border bg-surface px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-accent-muted/30"
+                    >
+                      My grade card
+                    </Link>
                   </>
                 )}
 

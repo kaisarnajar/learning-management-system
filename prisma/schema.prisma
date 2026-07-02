@@ -199,6 +199,7 @@ model Course {
   paymentRecords     PaymentRecord[]
   announcements      CourseAnnouncement[]
   attendances        CourseAttendance[]
+  grades             CourseGrade[]
 
   @@index([featuredOnHomepage, featuredAt])
   @@index([teacherId])
@@ -375,6 +376,7 @@ model Enrollment {
   user                   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   announcements          CourseAnnouncement[]
   attendanceRecords      CourseAttendanceRecord[]
+  gradeRecords           CourseGradeRecord[]
 
   @@unique([userId, courseId])
   @@unique([courseId, rollNumber])
@@ -665,3 +667,35 @@ model CourseAttendanceRecord {
   @@unique([attendanceId, enrollmentId])
   @@index([enrollmentId])
 }
+
+model CourseGrade {
+  id        String   @id @default(cuid())
+  courseId  String
+  title     String
+  date      DateTime @db.Date
+  maxMarks  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  records   CourseGradeRecord[]
+
+  @@index([courseId])
+  @@index([date])
+}
+
+model CourseGradeRecord {
+  id            String           @id @default(cuid())
+  gradeId       String
+  enrollmentId  String
+  marksObtained Float
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  grade         CourseGrade      @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  enrollment    Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@unique([gradeId, enrollmentId])
+  @@index([enrollmentId])
+}
+

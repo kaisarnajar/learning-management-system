@@ -41,10 +41,10 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
       <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-gold/0 via-gold/40 to-gold/0" />
 
       {/* Rosette Ornaments in Corners */}
-      <div className="absolute top-12 left-12 text-[#cca72f]/20 pointer-events-none select-none hidden md:block">
+      <div className="absolute top-12 left-12 text-[#cca72f]/30 pointer-events-none select-none hidden md:block">
         <RosetteIcon className="w-24 h-24" />
       </div>
-      <div className="absolute bottom-12 right-12 text-[#cca72f]/20 pointer-events-none select-none hidden md:block">
+      <div className="absolute bottom-12 right-12 text-[#cca72f]/30 pointer-events-none select-none hidden md:block">
         <RosetteIcon className="w-24 h-24" />
       </div>
 
@@ -70,7 +70,7 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
 
               {/* Arabic Text */}
               <p
-                className={`${indoPakArabic.className} indo-pak-arabic !text-center text-4xl leading-relaxed text-white drop-shadow-md sm:text-5xl md:text-6xl lg:text-7xl md:leading-[1.8]`}
+                className={`${indoPakArabic.className} indo-pak-arabic !text-center text-3xl leading-relaxed text-white drop-shadow-md sm:text-4xl md:text-5xl lg:text-6xl md:leading-[1.8]`}
                 dir="rtl"
                 lang="ar"
               >

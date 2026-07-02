@@ -32,7 +32,7 @@ export function SignOutButton({ className, children = "Sign Out" }: SignOutButto
       <dialog
         ref={dialogRef}
         aria-labelledby={titleId}
-        className="relative w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl backdrop:bg-black/45 open:animate-in open:fade-in-0 open:zoom-in-95"
+        className="backdrop:bg-black/50 backdrop:backdrop-blur-sm fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-sm p-6 bg-surface rounded-xl shadow-xl border border-border open:animate-in open:fade-in-90 open:zoom-in-95 m-0 overflow-hidden text-left"
       >
         <h2 id={titleId} className="font-serif text-lg font-bold text-foreground">
           Sign out?

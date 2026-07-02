@@ -14,7 +14,7 @@ export default async function AdminNewGradePage({
   return (
     <div className="py-6 space-y-6">
       <div>
-        <h2 className="text-xl font-semibold">Add Grade Card</h2>
+        <h2 className="text-xl font-semibold">Add Exam</h2>
         <p className="text-sm text-muted">Record exam performance for enrolled students.</p>
       </div>
 

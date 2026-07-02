@@ -25,7 +25,7 @@ export function GradeList({ courseId, baseUrl, grades }: GradeListProps) {
           href={`${baseUrl}/${courseId}/grades/new`}
           className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light transition-colors"
         >
-          Add Grade Card
+          Add Exam
         </Link>
       </div>
 

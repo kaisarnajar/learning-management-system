@@ -71,16 +71,38 @@ npm install
 ```
 
 ### 2. Environment Variables
-Copy the example environment file and configure your database connection:
+Copy the example environment file:
 ```bash
 cp .env.example .env
 ```
-Open `.env` and set `DATABASE_URL` to point to your PostgreSQL instance:
+Open `.env` and set the following required variables:
 ```env
+# Database
 DATABASE_URL="postgresql://user:password@localhost:5432/darsequran"
+DIRECT_URL="postgresql://user:password@localhost:5432/darsequran" # Used for Prisma migrations
+
+# NextAuth v5
 AUTH_SECRET="generate-a-random-32-char-string"
 AUTH_URL="http://localhost:3000"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Administrators
 ADMIN_EMAIL="admin@yourdomain.com"
+DEVELOPER_EMAIL="developer@yourdomain.com"
+
+# SMTP Email Config (Nodemailer)
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=587
+SMTP_USER="your-email@gmail.com"
+SMTP_PASS="your-gmail-app-password"
+EMAIL_FROM="Darse Quran Academy <your-email@gmail.com>"
+
+# Cloudflare R2 Storage (Required for uploads)
+R2_ACCOUNT_ID="your-r2-account-id"
+R2_ACCESS_KEY_ID="your-r2-access-key-id"
+R2_SECRET_ACCESS_KEY="your-r2-secret-access-key"
+R2_BUCKET_NAME="your-r2-bucket"
+R2_PUBLIC_URL="https://your-public-bucket-url.r2.dev"
 ```
 
 ### 3. Database Migration & Seeding
@@ -113,25 +135,21 @@ After running the seed script, use these accounts for local QA testing:
 
 ## Deployment
 
-This project requires **PostgreSQL** and heavily utilizes **local file uploads** (`/public/uploads/...`) for storing payment screenshots, certificates, and blog images.
+This project requires **PostgreSQL** and utilizes **Cloudflare R2** for all file uploads (such as payment screenshots, blog headers, bookstore assets, and user profiles).
 
-> **⚠️ CRITICAL:** Because of the local file upload dependency, serverless platforms like Vercel or Netlify are **NOT suitable**. Serverless containers are ephemeral, meaning uploaded files will be instantly deleted after upload.
+### Supported Hosting: Vercel, Railway, Render, or VPS
+Because all files are uploaded directly to Cloudflare R2, serverless platforms like **Vercel** and **Netlify** are fully supported. 
 
-### Recommended Hosting: Railway, Render, or VPS
-Deploy to a Platform as a Service (PaaS) like **Railway**, **Render**, or a traditional **VPS** (e.g., DigitalOcean). These platforms support **Persistent Disk Volumes**, guaranteeing your file uploads survive deployments.
+### Deployment Steps (Example using Vercel & Neon/Supabase)
 
-### Deployment Steps (Example using Railway)
-
-1. **Create a PostgreSQL Database:** Provision a managed PostgreSQL instance and copy the connection string.
-2. **Set Environment Variables:** Add `DATABASE_URL`, `AUTH_URL`, `AUTH_SECRET`, and `ADMIN_EMAIL` to your production environment variables.
-3. **Mount a Persistent Volume:** In your hosting dashboard, mount a persistent volume specifically to the `/public/uploads` directory.
-4. **Deploy the Code:** Push your code. The build command `npm run build` will automatically run `prisma generate`.
-5. **Run Migrations:** Execute the following against your production database to create tables:
+1. **Provision database & R2:** Set up a PostgreSQL instance (e.g., via Neon) and a Cloudflare R2 bucket.
+2. **Configure environment variables:** In your hosting dashboard, add all variables defined in `.env.example`.
+3. **Deploy:** Push your code. The build command `npm run build` will automatically run `prisma generate`.
+4. **Run Migrations:** Execute migrations against your production database:
    ```bash
    npx prisma migrate deploy
    ```
-6. **Start the Server:** Ensure the start command is `npm run start`.
-7. **First Login:** Sign in using the email provided in `ADMIN_EMAIL`. You can now manage Payment Details, Social Links, and content at `/admin`.
+5. **First Login:** Sign in using the email provided in `ADMIN_EMAIL`. You can now manage your academy from the admin dashboard.
 
 ---
 

@@ -105,6 +105,12 @@ export default async function CourseStudentsPage({
                       >
                         Attendance
                       </Link>
+                      <Link
+                        href={`/admin/courses/${id}/grades/student/${enrollment.id}`}
+                        className="font-medium text-primary hover:underline"
+                      >
+                        Grade Card
+                      </Link>
                       {isCompletedCourse && (
                           <CertificateActionButtons 
                             enrollmentId={enrollment.id}

@@ -19,6 +19,9 @@ export default async function AdminStudentAttendanceReportPage({
         studentEmail={enrollment.user.email}
         courseTitle={course.title}
         records={records}
+        isAdmin={true}
+        courseId={id}
+        enrollmentId={enrollmentId}
       />
     </div>
   );

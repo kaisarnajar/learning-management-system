@@ -104,7 +104,7 @@ html {
 
 /* Indo-Pak Quran script (Nastaleeq) for Arabic with full tashkeel */
 .indo-pak-arabic {
-  font-family: var(--font-indo-pak), "Traditional Arabic", serif;
+  font-family: var(--font-indo-pak), "Traditional Arabic", serif !important;
   font-weight: 400;
   line-height: 2;
   font-feature-settings: "liga" 1, "calt" 1;

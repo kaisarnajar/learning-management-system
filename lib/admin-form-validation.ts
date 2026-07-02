@@ -15,21 +15,14 @@ import {
 } from "@/lib/validations";
 import type { AnnouncementCategory } from "@prisma/client";
 
-export type SiteAnnouncementFormValues = {
-  title: string;
-  body: string;
-  location: string;
-  eventDate: string;
-  showOnHomepage: boolean;
-  published: boolean;
-};
+export type SiteAnnouncementFormValues = z.infer<typeof siteAnnouncementSchema>;
 
 export function validateSiteAnnouncementForm(values: SiteAnnouncementFormValues): FormValidationResult {
-  const eventDate = values.eventDate.trim()
+  const eventDate = values.eventDate?.trim()
     ? formatInputDateValue(values.eventDate.trim()) ?? ""
     : "";
 
-  if (values.eventDate.trim() && !eventDate) {
+  if (values.eventDate?.trim() && !eventDate) {
     return {
       success: false,
       issues: [
@@ -65,18 +58,7 @@ export function validateSiteAnnouncementForm(values: SiteAnnouncementFormValues)
   );
 }
 
-export type CourseFormValues = {
-  title: string;
-  description: string;
-  startDate: string;
-  duration: string;
-  category: string;
-  teacherId: string;
-  level: "Beginner" | "Intermediate" | "Advanced";
-  enrollmentFeeInr: string;
-  monthlyFeeInr: string;
-  status: string;
-};
+export type CourseFormValues = z.infer<typeof courseSchema>;
 
 export function validateCourseForm(values: CourseFormValues): FormValidationResult {
   const startDate = formatInputDateValue(values.startDate.trim()) ?? "";
@@ -104,11 +86,7 @@ export function validateCourseForm(values: CourseFormValues): FormValidationResu
   );
 }
 
-export type CourseAnnouncementFormValues = {
-  category: AnnouncementCategory;
-  title: string;
-  body: string;
-};
+export type CourseAnnouncementFormValues = z.infer<typeof courseAnnouncementSchema>;
 
 export function validateCourseAnnouncementForm(
   values: CourseAnnouncementFormValues,
@@ -122,13 +100,7 @@ export function validateCourseAnnouncementForm(
   );
 }
 
-export type TeacherFormValues = {
-  email: string;
-  specialization: string;
-  bio: string;
-  initials: string;
-  published: boolean;
-};
+export type TeacherFormValues = z.infer<typeof teacherAdminSchema>;
 
 export function validateTeacherForm(values: TeacherFormValues): FormValidationResult {
   return zodResultToFormValidation(
@@ -142,12 +114,7 @@ export function validateTeacherForm(values: TeacherFormValues): FormValidationRe
   );
 }
 
-export type BlogPostFormValues = {
-  title: string;
-  excerpt: string;
-  body: string;
-  published: boolean;
-};
+export type BlogPostFormValues = z.infer<typeof blogPostSchema>;
 
 export function validateBlogPostForm(values: BlogPostFormValues, mode: "admin" | "teacher"): FormValidationResult {
   const schema = mode === "teacher" ? teacherBlogPostSchema : blogPostSchema;
@@ -161,13 +128,7 @@ export function validateBlogPostForm(values: BlogPostFormValues, mode: "admin" |
   );
 }
 
-export type DailyInspirationFormValues = {
-  kind: "QURAN" | "HADITH";
-  arabicText: string;
-  englishTranslation: string;
-  reference: string;
-  published: boolean;
-};
+export type DailyInspirationFormValues = z.infer<typeof dailyInspirationSchema>;
 
 export function validateDailyInspirationForm(values: DailyInspirationFormValues): FormValidationResult {
   return zodResultToFormValidation(
@@ -181,15 +142,7 @@ export function validateDailyInspirationForm(values: DailyInspirationFormValues)
   );
 }
 
-export type LibraryFormValues = {
-  title: string;
-  author: string;
-  topic: string;
-  level: "Beginner" | "Intermediate" | "Advanced";
-  language: string;
-  pdfUrl: string;
-  published: boolean;
-};
+export type LibraryFormValues = z.infer<typeof libraryItemSchema>;
 
 export function validateLibraryForm(values: LibraryFormValues): FormValidationResult {
   return zodResultToFormValidation(
@@ -205,15 +158,7 @@ export function validateLibraryForm(values: LibraryFormValues): FormValidationRe
   );
 }
 
-export type PaymentSettingsFormValues = {
-  upiId: string;
-  upiPayeeName: string;
-  bankAccountName: string;
-  bankName: string;
-  bankAccountNumber: string;
-  bankIfsc: string;
-  bankBranch: string;
-};
+export type PaymentSettingsFormValues = z.infer<typeof paymentSettingsSchema>;
 
 export function validatePaymentSettingsForm(values: PaymentSettingsFormValues): FormValidationResult {
   return zodResultToFormValidation(paymentSettingsSchema.safeParse(values));
@@ -221,19 +166,7 @@ export function validatePaymentSettingsForm(values: PaymentSettingsFormValues): 
 
 
 
-export type BookFormValues = {
-  title: string;
-  author: string;
-  description: string;
-  priceInr: string;
-  mrpInr?: string;
-  purchasePriceInr: string;
-  weightInGrams: string;
-  inventoryPurchased: string;
-  status: "AVAILABLE" | "OUT_OF_STOCK" | "COMING_SOON";
-  published: boolean;
-  featuredOnHomepage: boolean;
-};
+export type BookFormValues = z.infer<typeof bookSchema>;
 
 export function validateBookForm(values: BookFormValues): FormValidationResult {
   return zodResultToFormValidation(
@@ -253,26 +186,19 @@ export function validateBookForm(values: BookFormValues): FormValidationResult {
   );
 }
 
-export type StudentFormValues = {
-  name: string;
-  fatherName: string;
-  dateOfBirth: string;
-  occupation: string;
-  address: string;
-  whatsapp: string;
-};
+const studentSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  fatherName: z.string().min(2, "Father's name is required"),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  occupation: z.string().min(1, "Occupation is required"),
+  address: z.string().min(5, "Address is required"),
+  whatsapp: z.string().min(5, "WhatsApp is required"),
+});
+
+export type StudentFormValues = z.infer<typeof studentSchema>;
 
 export function validateStudentForm(values: StudentFormValues): FormValidationResult {
-  const schema = z.object({
-    name: z.string().min(2, "Name is required"),
-    fatherName: z.string().min(2, "Father's name is required"),
-    dateOfBirth: z.string().min(1, "Date of birth is required"),
-    occupation: z.string().min(1, "Occupation is required"),
-    address: z.string().min(5, "Address is required"),
-    whatsapp: z.string().min(5, "WhatsApp is required"),
-  });
-  
-  return zodResultToFormValidation(schema.safeParse(values));
+  return zodResultToFormValidation(studentSchema.safeParse(values));
 }
 
 

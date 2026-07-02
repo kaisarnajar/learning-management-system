@@ -4,10 +4,22 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { trackButtonClick } from "@/lib/analytics-client";
 import { authContinueUrl, getPostLoginPath } from "@/lib/auth-redirect";
+import { useZodForm } from "@/lib/use-zod-form";
+import { z } from "zod";
+import { zodResultToFormValidation } from "@/lib/form-validation";
+import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
+import { labelClassName } from "@/lib/form";
+
+const loginSchema = z.object({
+  email: z.string().trim().email("Enter a valid email address."),
+  password: z.string().min(1, "Password is required."),
+});
+
+type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
   const router = useRouter();
@@ -17,22 +29,28 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
   const passwordReset = searchParams.get("reset") === "1";
   const teacherProfileError = searchParams.get("error") === "teacher-profile";
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const validate = useCallback((v: LoginFormValues) => zodResultToFormValidation(loginSchema.safeParse(v)), []);
+
+  const { values, updateField, markTouched, showError, errors, isValid } = useZodForm({
+    initialValues: { email: "", password: "" },
+    fields: ["email", "password"],
+    validate,
+  });
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (loading) return;
+    if (!isValid || loading) return;
     trackButtonClick("Sign In", "/login");
     setError("");
     setLoading(true);
 
     try {
       const result = await signIn("credentials", {
-        email,
-        password,
+        email: values.email,
+        password: values.password,
         redirect: false,
         callbackUrl,
       });
@@ -104,7 +122,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-foreground">
+            <label htmlFor="email" className={labelClassName}>
               Email
             </label>
             <input
@@ -112,15 +130,22 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
               type="email"
               autoComplete="email"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              value={values.email}
+              onChange={(e) => updateField("email", e.target.value)}
+              onBlur={() => markTouched("email")}
+              aria-invalid={showError("email") || undefined}
+              className={formFieldInputClass(showError("email"))}
             />
+            {showError("email") && (
+              <p className={formErrorTextClassName} role="alert">
+                {errors.email}
+              </p>
+            )}
           </div>
 
           <div>
             <div className="flex items-center justify-between gap-2">
-              <label htmlFor="password" className="block text-sm font-medium text-foreground">
+              <label htmlFor="password" className={labelClassName}>
                 Password
               </label>
               <Link
@@ -135,15 +160,22 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
               type="password"
               autoComplete="current-password"
               required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              value={values.password}
+              onChange={(e) => updateField("password", e.target.value)}
+              onBlur={() => markTouched("password")}
+              aria-invalid={showError("password") || undefined}
+              className={formFieldInputClass(showError("password"))}
             />
+            {showError("password") && (
+              <p className={formErrorTextClassName} role="alert">
+                {errors.password}
+              </p>
+            )}
           </div>
 
           <SubmitButton isSubmitting={loading}
             type="submit"
-            disabled={loading}
+            disabled={loading || !isValid}
             className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-light disabled:opacity-60"
           >
             {loading ? "Signing in…" : "Sign in with Email"}

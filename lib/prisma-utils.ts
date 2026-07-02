@@ -5,16 +5,16 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/paginatio
  * A generic helper to handle the common pattern of running `count` and `findMany` sequentially
  * with page clamping.
  */
-export async function paginateQuery<T, W = unknown>(
+export async function paginateQuery<T, W = any>(
   model: {
-    findMany: (args: unknown) => Promise<T[]>;
+    findMany: (args: any) => Promise<T[]>;
     count: (args: { where?: W }) => Promise<number>;
   },
   args: {
     where?: W;
-    orderBy?: unknown;
-    include?: unknown;
-    select?: unknown;
+    orderBy?: any;
+    include?: any;
+    select?: any;
   },
   page: number,
   pageSize: number

@@ -1,25 +1,25 @@
 import Link from "next/link";
-import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { deleteCourse } from "@/app/admin/courses/actions";
-import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { getCoursePricingFromCourse } from "@/lib/course-pricing";
 import { getAllCoursesPaginated } from "@/lib/courses";
 import { getEnrollmentCountsByCourse } from "@/lib/enrollments";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { AdminCoursesTable } from "@/components/admin/AdminCoursesTable";
+import { Suspense } from "react";
 
+type PageParams = {
+  deleted?: string;
+  created?: string;
+  saved?: string;
+  deleteError?: string;
+  page?: string;
+  q?: string;
+};
 
-export default async function AdminCoursesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ deleted?: string; created?: string; saved?: string; deleteError?: string; page?: string; q?: string }>;
-}) {
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
+async function AdminCoursesList({ params, q }: { params: PageParams; q?: string }) {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
   const [{ items: courses, totalCount }, enrollmentCounts] = await Promise.all([
     getAllCoursesPaginated(requestedPage, pageSize, q),
     getEnrollmentCountsByCourse(),
@@ -27,11 +27,59 @@ export default async function AdminCoursesPage({
   const page = clampPage(requestedPage, totalCount, pageSize);
 
   return (
+    <>
+      <div className="mt-6">
+        <ListSearchForm
+          action="/admin/courses"
+          query={q}
+          placeholder="Search by title, category, or instructor"
+          totalCount={q ? totalCount : undefined}
+        />
+      </div>
+
+      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
+        {totalCount === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-muted">
+            {q ? "No courses match your search." : "No courses yet."}
+          </p>
+        ) : (
+          <AdminCoursesTable courses={courses} enrollmentCounts={enrollmentCounts} />
+        )}
+      </div>
+
+      <Pagination
+        basePath="/admin/courses"
+        params={params as any}
+        page={page}
+        totalCount={totalCount}
+        pageSize={pageSize}
+      />
+    </>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <>
+      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
+      <div className="mt-4 h-[400px] w-full rounded-lg bg-border/40 animate-pulse" />
+    </>
+  );
+}
+
+export default async function AdminCoursesPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
+
+  return (
     <div>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-bold text-primary">Courses</h1>
-          <p className="mt-1 text-sm text-muted">{totalCount} total</p>
         </div>
         <Link
           href="/admin/courses/new"
@@ -51,93 +99,9 @@ export default async function AdminCoursesPage({
         </p>
       )}
 
-      <div className="mt-6">
-        <ListSearchForm
-          action="/admin/courses"
-          query={q}
-          placeholder="Search by title, category, or instructor"
-          totalCount={q ? totalCount : undefined}
-        />
-      </div>
-
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-        {totalCount === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted">
-            {q ? "No courses match your search." : "No courses yet."}
-          </p>
-        ) : (
-        <table className="w-full min-w-[840px] text-left text-sm">
-          <thead className="border-b border-border bg-background/50 text-muted">
-            <tr>
-              <th className="px-4 py-3 font-medium">Title</th>
-              <th className="px-4 py-3 font-medium">Category</th>
-              <th className="px-4 py-3 font-medium">Instructor</th>
-              <th className="px-4 py-3 font-medium">Duration</th>
-              <th className="px-4 py-3 font-medium">Registration fee</th>
-              <th className="px-4 py-3 font-medium">Monthly fee</th>
-              <th className="px-4 py-3 font-medium">Students</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Homepage</th>
-              <th className="w-[1%] whitespace-nowrap px-4 py-3 font-medium" />
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border">
-            {courses.map((course) => {
-              const studentCount = enrollmentCounts.get(course.id) ?? 0;
-              const fees = getCoursePricingFromCourse(course);
-              return (
-                <tr key={course.id}>
-                  <td className="px-4 py-3 font-medium text-foreground">{course.title}</td>
-                  <td className="px-4 py-3 text-muted">{course.category}</td>
-                  <td className="px-4 py-3 text-muted">
-                    {course.teacher?.name ?? "—"}
-                  </td>
-                  <td className="px-4 py-3 text-muted">{course.duration || "—"}</td>
-                  <td className="px-4 py-3 text-muted">₹{fees.registrationFeeInr}</td>
-                  <td className="px-4 py-3 text-muted">₹{fees.monthlyFeeInr}</td>
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/admin/courses/${course.id}/students`}
-                      className="font-medium text-primary hover:underline"
-                    >
-                      {studentCount}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3">
-                    <CourseStatusBadge status={course.status} />
-                  </td>
-                  <td className="px-4 py-3 text-muted">
-                    {course.featuredOnHomepage && course.status !== "DRAFT" ? "Featured" : "Not featured"}
-                  </td>
-                  <td className="whitespace-nowrap px-4 py-3">
-                    <div className="flex items-center justify-end gap-3">
-                      <Link
-                        href={`/admin/courses/${course.id}/students`}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        View
-                      </Link>
-                      <Link href={`/admin/courses/${course.id}/edit`} className="font-medium text-primary hover:underline">
-                        Edit
-                      </Link>
-                      <DeleteActionButton action={deleteCourse.bind(null, course.id)} itemName={course.title} warningMessage={studentCount > 0 ? `This course can't be deleted because ${studentCount} student${studentCount === 1 ? "" : "s"} ${studentCount === 1 ? "is" : "are"} enrolled.` : undefined} className="text-sm font-medium text-destructive-text hover:underline" />
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        )}
-      </div>
-
-      <Pagination
-        basePath="/admin/courses"
-        params={params}
-        page={page}
-        totalCount={totalCount}
-        pageSize={pageSize}
-      />
+      <Suspense fallback={<TableSkeleton />}>
+        <AdminCoursesList params={params} q={q} />
+      </Suspense>
     </div>
   );
 }

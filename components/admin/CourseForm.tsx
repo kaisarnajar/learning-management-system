@@ -60,8 +60,8 @@ export function CourseForm({ course, teachers, featuredCount, action, submitLabe
       category: course?.category ?? "",
       teacherId: course?.teacherId ?? "",
       level: (course?.level ?? "Beginner") as CourseFormValues["level"],
-      enrollmentFeeInr: String(feeDefaults.registrationFeeInr),
-      monthlyFeeInr: String(feeDefaults.monthlyFeeInr),
+      enrollmentFeeInr: feeDefaults.registrationFeeInr,
+      monthlyFeeInr: feeDefaults.monthlyFeeInr,
       status: course?.status ?? "PUBLISHED",
     },
     fields: COURSE_FIELDS,
@@ -288,7 +288,7 @@ export function CourseForm({ course, teachers, featuredCount, action, submitLabe
             step={1}
             required
             value={values.enrollmentFeeInr}
-            onChange={(e) => updateField("enrollmentFeeInr", e.target.value)}
+            onChange={(e) => updateField("enrollmentFeeInr", e.target.value === "" ? 0 : Number(e.target.value))}
             onBlur={() => markTouched("enrollmentFeeInr")}
             aria-invalid={showError("enrollmentFeeInr") || undefined}
             className={formFieldInputClass(showError("enrollmentFeeInr"))}
@@ -312,7 +312,7 @@ export function CourseForm({ course, teachers, featuredCount, action, submitLabe
             step={1}
             required
             value={values.monthlyFeeInr}
-            onChange={(e) => updateField("monthlyFeeInr", e.target.value)}
+            onChange={(e) => updateField("monthlyFeeInr", e.target.value === "" ? 0 : Number(e.target.value))}
             onBlur={() => markTouched("monthlyFeeInr")}
             aria-invalid={showError("monthlyFeeInr") || undefined}
             className={formFieldInputClass(showError("monthlyFeeInr"))}

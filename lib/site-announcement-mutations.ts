@@ -58,3 +58,42 @@ export async function removeAnnouncementImages(imageIds: string[], announcementI
     await withDbErrorHandling(() => prisma.siteAnnouncementImage.delete({ where: { id: img.id } }), "Database operation failed");
   }
 }
+
+export async function createSiteAnnouncementRecord(data: {
+  title: string;
+  body: string;
+  eventDate: string | null;
+  location: string | null;
+  showOnHomepage: boolean;
+  published: boolean;
+  createdById: string;
+}) {
+  return withDbErrorHandling(() => prisma.siteAnnouncement.create({ data }), "Database operation failed");
+}
+
+export async function updateSiteAnnouncementRecord(id: string, data: {
+  title: string;
+  body: string;
+  eventDate: string | null;
+  location: string | null;
+  showOnHomepage: boolean;
+  published: boolean;
+}) {
+  return withDbErrorHandling(() => prisma.siteAnnouncement.update({
+    where: { id },
+    data,
+  }), "Database operation failed");
+}
+
+export async function toggleSiteAnnouncementHomepageRecord(id: string, showOnHomepage: boolean) {
+  return withDbErrorHandling(() => prisma.siteAnnouncement.update({
+    where: { id },
+    data: { showOnHomepage },
+  }), "Database operation failed");
+}
+
+export async function deleteSiteAnnouncementRecord(id: string) {
+  return withDbErrorHandling(() => prisma.siteAnnouncement.delete({
+    where: { id },
+  }), "Database operation failed");
+}

@@ -151,7 +151,7 @@ export function AdminStudentReviewEditForm({
             variant="primary"
             onConfirm={async () => {
               const result = await approveStudentReview(review.id, featureOnHomepage, getReturnTo());
-              if (result?.error) { window.alert(result.error); }
+              if (result?.error) { addToast(result.error, "error"); }
             }}
             trigger={
               <button
@@ -169,7 +169,7 @@ export function AdminStudentReviewEditForm({
             variant="destructive"
             onConfirm={async () => {
               const result = await rejectStudentReview(review.id, getReturnTo());
-              if (result?.error) { window.alert(result.error); }
+              if (result?.error) { addToast(result.error, "error"); }
             }}
             trigger={
               <button

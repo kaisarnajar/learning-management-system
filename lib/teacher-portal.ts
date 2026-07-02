@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Course, CourseStatus } from "@prisma/client";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
@@ -56,11 +57,11 @@ export async function getCoursesForTeacherPaginated(
   return { items, totalCount };
 }
 
-export async function getTeacherCourseForPortal(teacherId: string, courseId: string) {
+export const getTeacherCourseForPortal = cache(async (teacherId: string, courseId: string) => {
   return withDbErrorHandling(() => prisma.course.findFirst({
       where: { id: courseId, teacherId },
     }), "Database operation failed");
-}
+});
 
 export async function getTeacherCourseStudentsPaginated(
   teacherId: string,
@@ -75,11 +76,11 @@ export async function getTeacherCourseStudentsPaginated(
   return { course, enrollments: items, totalCount };
 }
 
-export async function getTeacherEnrollmentInCourse(
+export const getTeacherEnrollmentInCourse = cache(async (
   teacherId: string,
   courseId: string,
   enrollmentId: string,
-) {
+) => {
   const course = await getTeacherCourseForPortal(teacherId, courseId);
   if (!course) return null;
 
@@ -104,7 +105,7 @@ export async function getTeacherEnrollmentInCourse(
   if (!enrollment) return null;
 
   return { course, enrollment };
-}
+});
 
 export async function getTeacherDashboardStats(teacherId: string) {
   const courses = await withDbErrorHandling(() => prisma.course.findMany({

@@ -2,6 +2,31 @@ import type { PaymentRecord } from "@prisma/client";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { getMonthlyFeePaise, getRegistrationFeePaise } from "@/lib/course-pricing";
+import { getCourseById } from "@/lib/courses";
+import { buildMonthlyFeeLabel, buildEnrollmentFeeLabel } from "@/lib/monthly-payments";
+import {
+  MONTHLY_PAYMENT_PENDING,
+  MONTHLY_PAYMENT_APPROVED,
+  PAYMENT_TYPE_MONTHLY,
+  PAYMENT_TYPE_ENROLLMENT,
+} from "@/lib/monthly-payment-status";
+import { createCoursePaymentSubmission } from "@/lib/payment-submission";
+import { AWAITING_ENROLLMENT_FEE } from "@/lib/enrollment-status";
+
+export async function getPaymentRecordById(id: string) {
+  return withDbErrorHandling(() => prisma.paymentRecord.findUnique({
+      where: { id },
+      include: {
+        user: {
+          select: { id: true, name: true, email: true, address: true, whatsapp: true },
+        },
+        submission: {
+          select: { paymentMethod: true, upiTransactionId: true, label: true },
+        },
+      },
+    }), "Database operation failed");
+}
 
 export async function getPaymentRecordsForUserPaginated(
   userId: string,
@@ -24,4 +49,149 @@ export async function getPaymentSubmissionsForUser(userId: string) {
       where: { userId },
       orderBy: { createdAt: "desc" },
     }), "Database operation failed");
+}
+
+export async function processMonthlyPayment(
+  userId: string,
+  courseId: string,
+  paymentMonth: string,
+  paymentYear: string,
+  paymentMethod: string | null,
+  upiTransactionId: string | null,
+  screenshotFile: File | null
+) {
+  const course = await getCourseById(courseId);
+  if (!course) return { error: "Course not found.", status: 404 };
+
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId: course.id } },
+  });
+
+  if (!enrollment || (enrollment.status !== "active" && enrollment.status !== "completed")) {
+    return { error: "You must be enrolled and approved in this course before paying monthly fees.", status: 400 };
+  }
+
+  const label = buildMonthlyFeeLabel(paymentMonth, paymentYear);
+
+  const duplicatePending = await prisma.coursePaymentSubmission.findFirst({
+    where: {
+      userId,
+      courseId: course.id,
+      label,
+      status: { in: [MONTHLY_PAYMENT_PENDING, "approved"] },
+    },
+  });
+
+  if (duplicatePending) {
+    return {
+      error: duplicatePending.status === "approved"
+        ? `Payment for ${label} is already recorded.`
+        : `A payment for ${label} is already awaiting verification.`,
+      status: 400,
+    };
+  }
+
+  const submissionResult = await createCoursePaymentSubmission({
+    userId,
+    courseId: course.id,
+    paymentType: PAYMENT_TYPE_MONTHLY,
+    label,
+    amountInrPaise: getMonthlyFeePaise(course),
+    status: MONTHLY_PAYMENT_PENDING,
+    paymentMethod,
+    upiTransactionId,
+    screenshotFile,
+  });
+
+  if (submissionResult.error) return { error: submissionResult.error, status: 400 };
+
+  return { success: true };
+}
+
+export async function processEnrollmentPayment(
+  userId: string,
+  courseId: string,
+  paymentMethod: string | null,
+  upiTransactionId: string | null,
+  screenshotFile: File | null
+) {
+  const course = await getCourseById(courseId);
+  if (!course) return { error: "Course not found.", status: 404 };
+
+  const enrollmentFeePaise = getRegistrationFeePaise(course);
+  if (enrollmentFeePaise <= 0) return { error: "This course has no enrollment fee.", status: 400 };
+
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { userId_courseId: { userId, courseId } },
+  });
+
+  if (enrollment?.status === "active" || enrollment?.status === "completed") {
+    return { error: "You are already enrolled and approved in this course.", status: 400 };
+  }
+
+  const label = buildEnrollmentFeeLabel(course.title);
+
+  const duplicatePending = await prisma.coursePaymentSubmission.findFirst({
+    where: {
+      userId,
+      courseId,
+      paymentType: PAYMENT_TYPE_ENROLLMENT,
+      status: { in: [MONTHLY_PAYMENT_PENDING, MONTHLY_PAYMENT_APPROVED] },
+    },
+  });
+
+  if (duplicatePending) {
+    return {
+      error: duplicatePending.status === MONTHLY_PAYMENT_APPROVED
+        ? "Your enrollment fee is already recorded."
+        : "Your enrollment fee payment is already awaiting verification.",
+      status: 400,
+    };
+  }
+
+  if (upiTransactionId) {
+    const duplicateUtr = await prisma.coursePaymentSubmission.findFirst({
+      where: { upiTransactionId },
+    });
+    if (duplicateUtr) {
+      return { error: "This transaction reference was already used. Contact support if this is a mistake.", status: 400 };
+    }
+  }
+
+  const created = await prisma.$transaction(async (tx) => {
+    await tx.enrollment.upsert({
+      where: { userId_courseId: { userId, courseId } },
+      create: { userId, courseId, status: AWAITING_ENROLLMENT_FEE },
+      update: { status: AWAITING_ENROLLMENT_FEE },
+    });
+
+    return tx.coursePaymentSubmission.create({
+      data: {
+        userId,
+        courseId,
+        paymentType: PAYMENT_TYPE_ENROLLMENT,
+        label,
+        amountInrPaise: enrollmentFeePaise,
+        status: MONTHLY_PAYMENT_PENDING,
+        paymentMethod,
+        upiTransactionId,
+      },
+    });
+  });
+
+  await prisma.coursePaymentSubmission.update({
+    where: { id: created.id },
+    data: { paymentReference: created.id },
+  });
+
+  if (screenshotFile && screenshotFile.size > 0) {
+    const { savePaymentScreenshot } = await import("@/lib/payment-upload");
+    const paymentScreenshotPath = await savePaymentScreenshot(created.id, screenshotFile);
+    await prisma.coursePaymentSubmission.update({
+      where: { id: created.id },
+      data: { paymentScreenshotPath },
+    });
+  }
+
+  return { success: true };
 }

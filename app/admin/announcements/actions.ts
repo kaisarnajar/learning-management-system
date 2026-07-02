@@ -5,15 +5,17 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-actions";
 import { formatInputDateValue } from "@/lib/form-date";
-import { prisma } from "@/lib/prisma";
 import { notifyAllStudentsOfSiteAnnouncement } from "@/lib/notifications";
-import { enforceHomepageAnnouncementLimit, resolveAnnouncementFeaturedUpdate } from "@/lib/site-announcements";
+import { enforceHomepageAnnouncementLimit, resolveAnnouncementFeaturedUpdate, getSiteAnnouncementById } from "@/lib/site-announcements";
 import { siteAnnouncementSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
 import {
   addImagesToAnnouncement,
   getRemoveAnnouncementImageIds,
   removeAnnouncementImages,
+  createSiteAnnouncementRecord,
+  updateSiteAnnouncementRecord,
+  toggleSiteAnnouncementHomepageRecord,
+  deleteSiteAnnouncementRecord
 } from "@/lib/site-announcement-mutations";
 import { deleteAnnouncementImageFile } from "@/lib/site-announcement-upload";
 
@@ -79,21 +81,19 @@ export async function createSiteAnnouncement(formData: FormData) {
   }
 
   try {
-    const announcement = await prisma.siteAnnouncement.create({
-      data: {
-        title: parsed.data.title,
-        body: parsed.data.body,
-        eventDate: parsed.data.eventDate || null,
-        location: parsed.data.location || null,
-        showOnHomepage: featured.showOnHomepage,
-        published: parsed.data.published,
-        createdById: session.user.id,
-      },
+    const announcement = await createSiteAnnouncementRecord({
+      title: parsed.data.title,
+      body: parsed.data.body,
+      eventDate: parsed.data.eventDate || null,
+      location: parsed.data.location || null,
+      showOnHomepage: featured.showOnHomepage,
+      published: parsed.data.published,
+      createdById: session.user.id,
     });
 
     const imageResult = await addImagesToAnnouncement(announcement.id, formData, 0);
     if (imageResult.error) {
-      await prisma.siteAnnouncement.delete({ where: { id: announcement.id } });
+      await deleteSiteAnnouncementRecord(announcement.id);
       redirect(`${adminListPath("/new")}?error=${encodeURIComponent(imageResult.error)}`);
     }
 
@@ -124,10 +124,7 @@ export async function updateSiteAnnouncement(id: string, formData: FormData) {
 
   let existing;
   try {
-    existing = await prisma.siteAnnouncement.findUnique({
-      where: { id },
-      include: { images: true },
-    });
+    existing = await getSiteAnnouncementById(id);
   } catch (error) {
     if (isRedirectError(error)) { throw error; }
     console.error("Database error fetching site announcement:", error);
@@ -159,16 +156,13 @@ export async function updateSiteAnnouncement(id: string, formData: FormData) {
   }
 
   try {
-    await prisma.siteAnnouncement.update({
-      where: { id },
-      data: {
-        title: parsed.data.title,
-        body: parsed.data.body,
-        eventDate: parsed.data.eventDate || null,
-        location: parsed.data.location || null,
-        showOnHomepage: featured.showOnHomepage,
-        published: parsed.data.published,
-      },
+    await updateSiteAnnouncementRecord(id, {
+      title: parsed.data.title,
+      body: parsed.data.body,
+      eventDate: parsed.data.eventDate || null,
+      location: parsed.data.location || null,
+      showOnHomepage: featured.showOnHomepage,
+      published: parsed.data.published,
     });
 
     if (parsed.data.published && !existing.published) {
@@ -191,7 +185,7 @@ export async function updateSiteAnnouncement(id: string, formData: FormData) {
 export async function toggleSiteAnnouncementHomepage(id: string) {
   await requireAdmin();
 
-  const existing = await withDbErrorHandling(() => prisma.siteAnnouncement.findUnique({ where: { id } }), "Database operation failed");
+  const existing = await getSiteAnnouncementById(id);
   if (!existing) {
     redirect(`${adminListPath()}?error=notfound`);
   }
@@ -205,10 +199,7 @@ export async function toggleSiteAnnouncementHomepage(id: string) {
   const showOnHomepage = !existing.showOnHomepage;
 
   try {
-    await prisma.siteAnnouncement.update({
-      where: { id },
-      data: { showOnHomepage },
-    });
+    await toggleSiteAnnouncementHomepageRecord(id, showOnHomepage);
 
     if (showOnHomepage) {
       await enforceHomepageAnnouncementLimit();
@@ -226,10 +217,15 @@ export async function toggleSiteAnnouncementHomepage(id: string) {
 export async function deleteSiteAnnouncement(id: string) {
   await requireAdmin();
 
-  const existing = await withDbErrorHandling(
-    () => prisma.siteAnnouncement.findUnique({ where: { id }, include: { images: true } }),
-    "Database operation failed"
-  );
+  let existing;
+  try {
+    existing = await getSiteAnnouncementById(id);
+  } catch (error) {
+    if (isRedirectError(error)) { throw error; }
+    console.error("Database error fetching site announcement:", error);
+    redirect(`${adminListPath()}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
+  }
+  
   if (!existing) {
     redirect(`${adminListPath()}?error=notfound`);
   }
@@ -238,7 +234,7 @@ export async function deleteSiteAnnouncement(id: string) {
     for (const img of existing.images) {
       await deleteAnnouncementImageFile(img.imagePath);
     }
-    await prisma.siteAnnouncement.delete({ where: { id } });
+    await deleteSiteAnnouncementRecord(id);
   } catch (error) {
     if (isRedirectError(error)) { throw error; }
     console.error("Database error deleting site announcement:", error);

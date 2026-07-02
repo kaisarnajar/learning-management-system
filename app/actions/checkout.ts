@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@/lib/auth";
+import { ensureAuth } from "@/lib/auth-utils";
 import { isCourseEnrollmentOpen } from "@/lib/course-status";
 import { getRegistrationFeePaise } from "@/lib/course-pricing";
 import { getCourseById } from "@/lib/courses";
@@ -13,9 +13,9 @@ import { prisma } from "@/lib/prisma";
 import { isUpiConfigured } from "@/lib/upi";
 
 export async function submitCheckout(courseId: string) {
-  const session = await auth();
+  const { session, error: authError } = await ensureAuth();
 
-  if (!session?.user?.id) {
+  if (authError || !session) {
     return { error: "Please sign in to enroll.", status: 401 };
   }
   if (!session.user.emailVerified) {

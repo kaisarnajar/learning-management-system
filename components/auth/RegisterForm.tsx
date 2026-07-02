@@ -4,25 +4,43 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { trackButtonClick } from "@/lib/analytics-client";
 import { authContinueUrl, getPostLoginPath } from "@/lib/auth-redirect";
+import { useZodForm } from "@/lib/use-zod-form";
+import { z } from "zod";
+import { zodResultToFormValidation } from "@/lib/form-validation";
+import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
+import { labelClassName } from "@/lib/form";
+
+const registerSchema = z.object({
+  name: z.string().trim().min(2, "Name must be at least 2 characters."),
+  email: z.string().trim().email("Enter a valid email address."),
+  password: z.string().min(8, "Password must be at least 8 characters."),
+});
+
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const validate = useCallback((v: RegisterFormValues) => zodResultToFormValidation(registerSchema.safeParse(v)), []);
+
+  const { values, updateField, markTouched, showError, errors, isValid } = useZodForm({
+    initialValues: { name: "", email: "", password: "" },
+    fields: ["name", "email", "password"],
+    validate,
+  });
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (loading) return;
+    if (!isValid || loading) return;
     setError("");
     setLoading(true);
 
@@ -32,7 +50,7 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, password }),
+        body: JSON.stringify({ name: values.name, email: values.email, password: values.password }),
       });
 
       const data = await res.json();
@@ -44,8 +62,8 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
       }
 
       const signInResult = await signIn("credentials", {
-        email,
-        password,
+        email: values.email,
+        password: values.password,
         redirect: false,
         callbackUrl,
       });
@@ -92,21 +110,28 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="name" className="block text-sm font-medium text-foreground">
+            <label htmlFor="name" className={labelClassName}>
               Full name
             </label>
             <input
               id="name"
               type="text"
               autoComplete="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              value={values.name}
+              onChange={(e) => updateField("name", e.target.value)}
+              onBlur={() => markTouched("name")}
+              aria-invalid={showError("name") || undefined}
+              className={formFieldInputClass(showError("name"))}
             />
+            {showError("name") && (
+              <p className={formErrorTextClassName} role="alert">
+                {errors.name}
+              </p>
+            )}
           </div>
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-foreground">
+            <label htmlFor="email" className={labelClassName}>
               Email
             </label>
             <input
@@ -114,14 +139,21 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
               type="email"
               autoComplete="email"
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              value={values.email}
+              onChange={(e) => updateField("email", e.target.value)}
+              onBlur={() => markTouched("email")}
+              aria-invalid={showError("email") || undefined}
+              className={formFieldInputClass(showError("email"))}
             />
+            {showError("email") && (
+              <p className={formErrorTextClassName} role="alert">
+                {errors.email}
+              </p>
+            )}
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-foreground">
+            <label htmlFor="password" className={labelClassName}>
               Password
             </label>
             <input
@@ -130,16 +162,24 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
               autoComplete="new-password"
               required
               minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              value={values.password}
+              onChange={(e) => updateField("password", e.target.value)}
+              onBlur={() => markTouched("password")}
+              aria-invalid={showError("password") || undefined}
+              className={formFieldInputClass(showError("password"))}
             />
-            <p className="mt-1 text-xs text-muted">At least 8 characters</p>
+            {showError("password") ? (
+              <p className={formErrorTextClassName} role="alert">
+                {errors.password}
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-muted">At least 8 characters</p>
+            )}
           </div>
 
           <SubmitButton isSubmitting={loading}
             type="submit"
-            disabled={loading}
+            disabled={loading || !isValid}
             className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-light disabled:opacity-60"
           >
             {loading ? "Creating account…" : "Register with Email"}

@@ -1,3 +1,4 @@
+import { cache } from "react";
 import type { Course as PrismaCourse, CourseStatus, Teacher } from "@prisma/client";
 import { isCoursePubliclyVisible } from "@/lib/course-status";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
@@ -52,7 +53,7 @@ export async function getPublicCoursesPaginated(
   return { items, totalCount };
 }
 
-export async function getFeaturedHomepageCourses(): Promise<CourseWithTeacher[]> {
+export const getFeaturedHomepageCourses = cache(async (): Promise<CourseWithTeacher[]> => {
   const courses = await withDbErrorHandling(() => prisma.course.findMany({
       where: { featuredOnHomepage: true },
       include: courseWithTeacherInclude,
@@ -60,7 +61,7 @@ export async function getFeaturedHomepageCourses(): Promise<CourseWithTeacher[]>
       take: HOMEPAGE_FEATURED_COURSES_MAX,
     }), "Database operation failed");
   return courses.filter((c) => isCoursePubliclyVisible(c.status));
-}
+});
 
 export async function getFeaturedHomepageCourseCount(): Promise<number> {
   const courses = await withDbErrorHandling(() => prisma.course.findMany({
@@ -133,12 +134,12 @@ export async function getAllCoursesPaginated(
   return { items, totalCount };
 }
 
-export async function getCourseById(id: string): Promise<CourseWithTeacher | null> {
+export const getCourseById = cache(async (id: string): Promise<CourseWithTeacher | null> => {
   return withDbErrorHandling(() => prisma.course.findUnique({
       where: { id },
       include: courseWithTeacherInclude,
     }), "Database operation failed");
-}
+});
 
 export async function getPublicCoursesByTeacherIdPaginated(
   teacherId: string,
@@ -157,11 +158,11 @@ export async function getPublicCoursesByTeacherIdPaginated(
   return { items, totalCount };
 }
 
-export async function getPublicCourseById(id: string): Promise<CourseWithTeacher | null> {
+export const getPublicCourseById = cache(async (id: string): Promise<CourseWithTeacher | null> => {
   const course = await getCourseById(id);
   if (!course || !isCoursePubliclyVisible(course.status)) return null;
   return course;
-}
+});
 
 export async function getCoursesByIds(ids: string[]): Promise<Map<string, CourseWithTeacher>> {
   if (ids.length === 0) return new Map();

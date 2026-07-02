@@ -1,12 +1,8 @@
+import { z } from "zod";
 import { zodResultToFormValidation, type FormValidationResult } from "@/lib/form-validation";
 import { contactInquirySchema, fatwaQuestionSchema, studentReviewSchema } from "@/lib/validations";
 
-export type StudentReviewFormValues = {
-  quote: string;
-  course: string;
-  location: string;
-  rating: number;
-};
+export type StudentReviewFormValues = z.infer<typeof studentReviewSchema>;
 
 export function validateStudentReviewForm(values: StudentReviewFormValues): FormValidationResult {
   return zodResultToFormValidation(
@@ -19,23 +15,13 @@ export function validateStudentReviewForm(values: StudentReviewFormValues): Form
   );
 }
 
-export type ContactInquiryFormValues = {
-  name: string;
-  email: string;
-  phone: string;
-  message: string;
-};
+export type ContactInquiryFormValues = z.infer<typeof contactInquirySchema>;
 
 export function validateContactInquiryForm(values: ContactInquiryFormValues): FormValidationResult {
   return zodResultToFormValidation(contactInquirySchema.safeParse(values));
 }
 
-export type AskFatwaFormValues = {
-  category: string;
-  title: string;
-  question: string;
-  askerName: string;
-  askerEmail: string;
+export type AskFatwaFormValues = z.infer<typeof fatwaQuestionSchema> & {
   isAnonymous: boolean;
 };
 

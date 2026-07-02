@@ -4,6 +4,7 @@ import { CertificateActionButtons } from "@/components/certificate/CertificateAc
 import { Pagination } from "@/components/shared/Pagination";
 import { requireUser } from "@/lib/auth-actions";
 import { canDownloadCertificate } from "@/lib/certificate";
+import { Suspense } from "react";
 
 import {
   AWAITING_ENROLLMENT_FEE,
@@ -15,21 +16,16 @@ import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/paginati
 import { formatRollNumber } from "@/lib/roll-numbers";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
+type PageParams = { declined?: string; page?: string };
 
-export default async function ProfileCoursesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ declined?: string; page?: string }>;
-}) {
-  const session = await requireUser();
-  const params = await searchParams;
-  const { page: requestedPage, pageSize } = parsePaginationParams(params, {
+async function CoursesContent({ params, userId }: { params: PageParams; userId: string }) {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params as any, {
     pageSize: GRID_PAGE_SIZE,
   });
 
   const [enrollmentsPaginated, pendingEnrollmentPayments] = await Promise.all([
-    getUserEnrollmentsPaginated(session.user.id, requestedPage, pageSize),
-    getPendingEnrollmentFeeSubmissionMap(session.user.id),
+    getUserEnrollmentsPaginated(userId, requestedPage, pageSize),
+    getPendingEnrollmentFeeSubmissionMap(userId),
   ]);
 
   const enrollments = enrollmentsPaginated.items;
@@ -45,15 +41,8 @@ export default async function ProfileCoursesPage({
   }));
 
   return (
-    <div>
+    <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h2 className="font-serif text-lg font-semibold text-foreground">My Courses</h2>
-          <p className="mt-1 text-sm text-muted">
-            {session.user.name ? `Welcome, ${session.user.name}. ` : ""}
-            Enrolled programs and monthly fee payments appear below.
-          </p>
-        </div>
         {totalCount > 0 && (
           <Link
             href="/courses"
@@ -178,11 +167,47 @@ export default async function ProfileCoursesPage({
 
       <Pagination
         basePath="/profile/courses"
-        params={params}
+        params={params as any}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}
       />
+    </>
+  );
+}
+
+function CoursesSkeleton() {
+  return (
+    <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+      {[1, 2, 3, 4].map((i) => (
+        <li key={i} className="card-elevated flex flex-col p-5 h-[300px] bg-border/40 animate-pulse" />
+      ))}
+    </ul>
+  );
+}
+
+export default async function ProfileCoursesPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  const session = await requireUser();
+  const params = await searchParams;
+
+  return (
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h2 className="font-serif text-lg font-semibold text-foreground">My Courses</h2>
+          <p className="mt-1 text-sm text-muted">
+            {session.user.name ? `Welcome, ${session.user.name}. ` : ""}
+            Enrolled programs and monthly fee payments appear below.
+          </p>
+        </div>
+      </div>
+      <Suspense fallback={<CoursesSkeleton />}>
+        <CoursesContent params={params} userId={session.user.id} />
+      </Suspense>
     </div>
   );
 }

@@ -15,7 +15,6 @@ export function getReturnToUrl(pathname: string, searchParams: URLSearchParams) 
 
 export function ActionButton({
   action,
-  confirmMessage,
   children,
   loadingText,
   variant = "primary",
@@ -24,7 +23,6 @@ export function ActionButton({
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   action: (returnTo: string) => Promise<{ error?: string } | void | any>;
-  confirmMessage?: string;
   children: React.ReactNode;
   loadingText?: React.ReactNode;
   variant?: ActionButtonVariant;
@@ -40,8 +38,6 @@ export function ActionButton({
   if (hidden) return null;
 
   function handleAction() {
-    if (confirmMessage && !window.confirm(confirmMessage)) return;
-
     startTransition(async () => {
       try {
         const returnTo = getReturnToUrl(pathname, searchParams);

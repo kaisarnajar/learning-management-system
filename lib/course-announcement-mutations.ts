@@ -160,3 +160,13 @@ export async function deleteCourseAnnouncementRecord(
   await deleteAnnouncementAttachment(existing.attachmentPath);
   await withDbErrorHandling(() => prisma.courseAnnouncement.delete({ where: { id: existing.id } }), "Database operation failed");
 }
+
+export async function getCourseAnnouncementRecord(
+  id: string,
+  courseId: string,
+  enrollmentId: string | null = null,
+) {
+  return withDbErrorHandling(() => prisma.courseAnnouncement.findFirst({
+    where: { id, courseId, enrollmentId },
+  }), "Database operation failed");
+}

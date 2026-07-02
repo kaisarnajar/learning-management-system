@@ -3,7 +3,8 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { saveCourseAttendance, type AttendanceRecordInput } from "@/app/actions/attendance";
+import { saveCourseAttendance } from "@/app/actions/attendance";
+import type { AttendanceRecordInput } from "@/lib/attendance";
 import { inputClassName, labelClassName } from "@/lib/form";
 
 export type StudentForAttendance = {

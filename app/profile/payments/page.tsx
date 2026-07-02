@@ -10,6 +10,7 @@ import {
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { getPaymentRecordsForUserPaginated, getPaymentSubmissionsForUser } from "@/lib/payments";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { Suspense } from "react";
 
 type TabType = "pending" | "history";
 
@@ -20,21 +21,17 @@ function tabHref(type: TabType) {
   return qs ? `/profile/payments?${qs}` : "/profile/payments";
 }
 
-export default async function ProfilePaymentsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ submitted?: string; declined?: string; page?: string; tab?: string }>;
-}) {
-  const session = await requireUser();
-  const params = await searchParams;
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
+type PageParams = { submitted?: string; declined?: string; page?: string; tab?: string };
+
+async function PaymentsContent({ params, userId }: { params: PageParams; userId: string }) {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
   
   const validTabs: TabType[] = ["pending", "history"];
   const currentTab: TabType = validTabs.includes(params.tab as TabType) ? (params.tab as TabType) : "pending";
 
   const [paymentsPaginated, submissions, courses] = await Promise.all([
-    getPaymentRecordsForUserPaginated(session.user.id, requestedPage, pageSize),
-    getPaymentSubmissionsForUser(session.user.id),
+    getPaymentRecordsForUserPaginated(userId, requestedPage, pageSize),
+    getPaymentSubmissionsForUser(userId),
     getAllCourses(),
   ]);
 
@@ -51,15 +48,7 @@ export default async function ProfilePaymentsPage({
   ];
 
   return (
-    <div>
-      <h2 className="font-serif text-lg font-semibold text-foreground">Payments</h2>
-      <p className="mt-1 text-sm text-muted">
-        Approved monthly fees and your submitted payments awaiting verification.
-      </p>
-
-      <ActionToast trigger={params.submitted === "1"} paramName="submitted" message="Payment submitted. The academy will verify it shortly." variant="info" />
-      <ActionToast trigger={params.declined === "1"} paramName="declined" message="Your previous payment was declined. You can submit again from My Courses." variant="error" />
-
+    <>
       <nav className="mt-8 flex flex-wrap gap-2" aria-label="Payment tabs">
         {tabs.map((item) => {
           const active = currentTab === item.value;
@@ -186,13 +175,50 @@ export default async function ProfilePaymentsPage({
 
           <Pagination
             basePath="/profile/payments"
-            params={params}
+            params={params as any}
             page={page}
             totalCount={paymentTotalCount}
             pageSize={pageSize}
           />
         </section>
       )}
+    </>
+  );
+}
+
+function PaymentsSkeleton() {
+  return (
+    <>
+      <div className="mt-8 flex gap-2">
+        <div className="h-10 w-32 rounded-full bg-border/40 animate-pulse" />
+        <div className="h-10 w-32 rounded-full bg-border/40 animate-pulse" />
+      </div>
+      <div className="mt-6 h-[300px] w-full rounded-lg bg-border/40 animate-pulse" />
+    </>
+  );
+}
+
+export default async function ProfilePaymentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  const session = await requireUser();
+  const params = await searchParams;
+
+  return (
+    <div>
+      <h2 className="font-serif text-lg font-semibold text-foreground">Payments</h2>
+      <p className="mt-1 text-sm text-muted">
+        Approved monthly fees and your submitted payments awaiting verification.
+      </p>
+
+      <ActionToast trigger={params.submitted === "1"} paramName="submitted" message="Payment submitted. The academy will verify it shortly." variant="info" />
+      <ActionToast trigger={params.declined === "1"} paramName="declined" message="Your previous payment was declined. You can submit again from My Courses." variant="error" />
+
+      <Suspense fallback={<PaymentsSkeleton />}>
+        <PaymentsContent params={params} userId={session.user.id} />
+      </Suspense>
     </div>
   );
 }

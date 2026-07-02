@@ -7,7 +7,7 @@ import { clampPage, parsePaginationParams } from "@/lib/pagination";
 import { getStudentUsersPaginated } from "@/lib/students";
 import { parseSearchQuery } from "@/lib/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
-
+import { AdminStudentsTable } from "@/components/admin/AdminStudentsTable";
 
 export default async function AdminStudentsPage({
   searchParams,
@@ -47,50 +47,7 @@ export default async function AdminStudentsPage({
             {q ? "No students match your search." : "No student accounts yet."}
           </p>
         ) : (
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead className="border-b border-border bg-background/50 text-muted">
-              <tr>
-                <th className="px-4 py-3 font-medium">Registration No</th>
-                <th className="px-4 py-3 font-medium">Student</th>
-                <th className="px-4 py-3 font-medium">Email</th>
-                <th className="px-4 py-3 font-medium">Registered</th>
-                <th className="px-4 py-3 font-medium" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {students.map((student) => (
-                <tr key={student.id}>
-                  <td className="px-4 py-3 font-medium text-foreground">{student.registrationNumber ?? "—"}</td>
-                  <td className="px-4 py-3 font-medium text-foreground">{student.name ?? "—"}</td>
-                  <td className="px-4 py-3 text-muted">{student.email}</td>
-                  <td className="px-4 py-3 text-muted">
-                    {student.createdAt.toLocaleDateString("en-IN", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap items-center justify-end gap-2">
-                      <Link
-                        href={`/admin/students/${student.id}`}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        View
-                      </Link>
-                      <Link
-                        href={`/admin/students/${student.id}/edit`}
-                        className="font-medium text-primary hover:underline"
-                      >
-                        Edit
-                      </Link>
-                      <DeleteActionButton action={deleteStudent.bind(null, student.id)} itemName={student.name ?? student.email} className="text-sm font-medium text-destructive-text hover:underline" />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <AdminStudentsTable students={students} />
         )}
       </div>
 

@@ -3,10 +3,9 @@ import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { getCourseById } from "@/lib/courses";
 import { prepareReceiptData } from "@/lib/payment-receipt";
-import { prisma } from "@/lib/prisma";
-import { withDbErrorHandling } from "@/lib/db-error";
 import { renderReceiptToHtml } from "@/lib/receipt-html";
 import { generatePdfFromHtml } from "@/lib/pdf-generator";
+import { getPaymentRecordById } from "@/lib/payments";
 
 export async function GET(
   _request: Request,
@@ -14,17 +13,7 @@ export async function GET(
 ) {
   const { paymentRecordId } = await params;
 
-  const record = await withDbErrorHandling(() => prisma.paymentRecord.findUnique({
-      where: { id: paymentRecordId },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true, address: true, whatsapp: true },
-        },
-        submission: {
-          select: { paymentMethod: true, upiTransactionId: true, label: true },
-        },
-      },
-    }), "Database operation failed");
+  const record = await getPaymentRecordById(paymentRecordId);
 
   if (!record) {
     return NextResponse.json({ error: "Receipt not found." }, { status: 404 });

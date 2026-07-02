@@ -20,6 +20,7 @@ export function renderCertificateToHtml(data: {
   const gradeText = (isCompletion && data.certificateGrade != null) ? ` and has obtained a Grade of <strong class="text-[#0f3d2e]">${data.certificateGrade}/10</strong>` : "";
 
   return `
+<link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet" />
 <div
   class="w-[1123px] h-[794px] relative overflow-hidden bg-[#fdfaf3]"
   style="
@@ -46,27 +47,37 @@ export function renderCertificateToHtml(data: {
   </div>
 
   <!-- Header -->
-  <div class="pt-14 text-center relative z-10">
-    
-    <img
-      src="${data.sealUrl}"
-      class="w-20 h-20 mx-auto mb-2 process-white-bg"
-    />
+  <div class="pt-14 relative z-10">
+    <div class="flex items-center justify-center gap-6 max-w-[800px] mx-auto">
+      <img
+        src="${data.sealUrl}"
+        class="w-20 h-20 process-white-bg flex-shrink-0"
+        alt="Logo"
+      />
+  
+      <div class="flex flex-col items-center">
+        <h1
+          class="text-[34px] font-serif font-bold tracking-wide text-[#0f3d2e] uppercase leading-tight"
+        >
+          ${data.academyName}
+        </h1>
+        
+        <div class="flex items-center gap-4 mt-2">
+           <div class="h-[2px] w-10 bg-[#d4af37]"></div>
+           <h2 class="text-[26px] font-bold text-[#0f3d2e]" style="font-family: 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</h2>
+           <div class="h-[2px] w-10 bg-[#d4af37]"></div>
+        </div>
+      </div>
+    </div>
 
-    <h1
-      class="text-[36px] font-serif font-bold tracking-wide text-[#0f3d2e] uppercase leading-tight"
-    >
-      ${data.academyName}
-    </h1>
-
-    <div class="w-48 h-[2px] bg-[#d4af37] mx-auto mt-2"></div>
-
-    <h2
-      class="text-[48px] font-serif mt-3 text-[#b8860b] leading-tight"
-      style="letter-spacing:2px"
-    >
-      ${title}
-    </h2>
+    <div class="text-center mt-5">
+      <h2
+        class="text-[44px] font-serif text-[#b8860b] leading-tight"
+        style="letter-spacing:2px"
+      >
+        ${title}
+      </h2>
+    </div>
   </div>
 
   <!-- Body -->

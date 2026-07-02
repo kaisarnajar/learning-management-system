@@ -34,7 +34,7 @@ export function GradeForm({
   initialGradeId = null,
   initialTitle = "",
   initialDate,
-  initialMaxMarks = 100,
+  initialMaxMarks,
   initialRecords = {}
 }: GradeFormProps) {
   const router = useRouter();
@@ -42,7 +42,9 @@ export function GradeForm({
   const [error, setError] = useState<string | null>(null);
 
   const [title, setTitle] = useState(initialTitle);
-  const [maxMarks, setMaxMarks] = useState<number>(initialMaxMarks);
+  const [maxMarks, setMaxMarks] = useState<number | "">(
+    initialMaxMarks !== undefined ? initialMaxMarks : ""
+  );
   
   const [dateStr, setDateStr] = useState(
     initialDate 
@@ -81,7 +83,7 @@ export function GradeForm({
       setError("Please provide an exam title.");
       return;
     }
-    if (maxMarks <= 0) {
+    if (maxMarks === "" || maxMarks <= 0) {
       setError("Maximum marks must be greater than 0.");
       return;
     }
@@ -139,7 +141,7 @@ export function GradeForm({
               min="1"
               required
               value={maxMarks}
-              onChange={(e) => setMaxMarks(Number(e.target.value))}
+              onChange={(e) => setMaxMarks(e.target.value === "" ? "" : Number(e.target.value))}
               className={`${inputClassName} w-full`}
             />
           </div>
@@ -197,7 +199,6 @@ export function GradeForm({
                         value={mark}
                         onChange={(e) => handleMarkChange(student.id, e.target.value)}
                         className={`${inputClassName} w-32 text-right inline-block`}
-                        placeholder="0"
                       />
                     </td>
                   </tr>

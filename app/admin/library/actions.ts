@@ -152,18 +152,13 @@ export async function deleteLibraryItemById(id: string): Promise<{ error?: strin
   return {};
 }
 
-export async function deleteLibraryItem(id: string) {
+export async function deleteLibraryItemAction(id: string, returnTo: "list" | "profile" = "list") {
   const result = await deleteLibraryItemById(id);
   if (result.error) {
-    redirect(`/admin/library/${id}/edit?saveError=${encodeURIComponent(result.error)}`);
-  }
-  redirect("/admin/library?deleted=1");
-}
-
-export async function deleteLibraryItemFromProfile(id: string) {
-  const result = await deleteLibraryItemById(id);
-  if (result.error) {
-    redirect(`/admin/library/${id}?error=${encodeURIComponent(result.error)}`);
+    const errorUrl = returnTo === "profile" 
+      ? `/admin/library/${id}?error=${encodeURIComponent(result.error)}`
+      : `/admin/library/${id}/edit?saveError=${encodeURIComponent(result.error)}`;
+    redirect(errorUrl);
   }
   redirect("/admin/library?deleted=1");
 }

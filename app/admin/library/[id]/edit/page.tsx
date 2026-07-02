@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { LibraryForm } from "@/components/admin/LibraryForm";
-import { deleteLibraryItem, updateLibraryItem } from "@/app/admin/library/actions";
+import { deleteLibraryItemAction, updateLibraryItem } from "@/app/admin/library/actions";
 import { getFeaturedHomepageLibraryCount, getLibraryItemById } from "@/lib/library";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
@@ -24,7 +24,7 @@ export default async function EditLibraryPage({
   if (!item) notFound();
 
   const boundUpdate = updateLibraryItem.bind(null, id);
-  const boundDelete = deleteLibraryItem.bind(null, id);
+  const boundDelete = deleteLibraryItemAction.bind(null, id, "list");
 
   return (
     <div>

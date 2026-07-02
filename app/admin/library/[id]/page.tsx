@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { deleteLibraryItemFromProfile } from "@/app/admin/library/actions";
+import { deleteLibraryItemAction } from "@/app/admin/library/actions";
 import { getLibraryItemById } from "@/lib/library";
 
 export default async function AdminLibraryDetailPage({
@@ -18,7 +18,7 @@ export default async function AdminLibraryDetailPage({
 
   if (!item) notFound();
 
-  const deleteAction = deleteLibraryItemFromProfile.bind(null, id);
+  const deleteAction = deleteLibraryItemAction.bind(null, id, "profile");
 
   return (
     <div>

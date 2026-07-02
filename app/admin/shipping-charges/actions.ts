@@ -3,16 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth-actions";
 import { prisma } from "@/lib/prisma";
-import { z } from "zod";
-
-const slabSchema = z.object({
-  minWeightGrams: z.coerce.number().int().min(0, "Minimum weight must be 0 or more."),
-  maxWeightGrams: z.coerce.number().int().min(1, "Maximum weight must be at least 1."),
-  chargeInr: z.coerce.number().min(0, "Charge cannot be negative."),
-}).refine(data => data.maxWeightGrams > data.minWeightGrams, {
-  message: "Maximum weight must be greater than minimum weight.",
-  path: ["maxWeightGrams"]
-});
+import { slabSchema } from "@/lib/validations";
 
 export async function createShippingSlab(formData: FormData) {
   await requireAdmin();

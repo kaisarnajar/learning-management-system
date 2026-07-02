@@ -2,17 +2,11 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { getCourseById } from "@/lib/courses";
-import { getReceiptFilename } from "@/lib/payment-receipt";
+import { prepareReceiptData } from "@/lib/payment-receipt";
 import { prisma } from "@/lib/prisma";
 import { withDbErrorHandling } from "@/lib/db-error";
-import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-links";
-import { INVOICE_TERMS, AUTHORITY_SIGNATURE } from "@/lib/academy-contact";
-import { getAcademySettings } from "@/lib/academy-settings";
 import { renderReceiptToHtml } from "@/lib/receipt-html";
 import { generatePdfFromHtml } from "@/lib/pdf-generator";
-import { ReceiptData } from "@/types/receipt";
-import fs from "fs/promises";
-import path from "path";
 
 export async function GET(
   _request: Request,
@@ -49,105 +43,12 @@ export async function GET(
   }
 
   const course = record.courseId ? await getCourseById(record.courseId) : null;
-  let finalCourseTitle = course?.title ?? "Darse Quran Academy";
+  const courseTitle = course?.title ?? "Darse Quran Academy";
 
-  let shippingAmount = 0;
-  let paymentMethod = record.submission?.paymentMethod || record.paymentType || "MANUAL";
-  
-  if (record.paymentType === "book_purchase") {
-    finalCourseTitle = "Book Order";
-    const match = record.description?.match(/Book order #([A-Z0-9]+)/i);
-    if (match) {
-      const shortId = match[1];
-      const bookOrder = await prisma.bookOrder.findFirst({
-        where: { 
-          userId: record.userId,
-          id: { endsWith: shortId.toLowerCase() },
-          totalAmountInrPaise: record.amountInrPaise 
-        }
-      });
-      if (bookOrder) {
-        shippingAmount = bookOrder.shippingChargeInrPaise / 100;
-        if (bookOrder.paymentMethod) {
-          paymentMethod = bookOrder.paymentMethod;
-        }
-      }
-    }
-  }
-
-  const filename = getReceiptFilename(finalCourseTitle, paymentRecordId);
-  
-  // 1. Fetch Dynamic Configuration
-  const [socialLinks, academySettings] = await Promise.all([
-    getSocialLinksSettings(),
-    getAcademySettings(),
-  ]);
-  
-  // 2. Read Images and convert to Base64 to guarantee rendering inside Puppeteer
-  let base64Logo = "";
-  let base64Signature = "";
-  let base64Stamp = "";
-  try {
-    const logoPath = path.join(process.cwd(), "public", "assets", "logo.png");
-    const sigPath = path.join(process.cwd(), "public", "assets", "signature.png");
-    const stampPath = path.join(process.cwd(), "public", "assets", "stamp.png");
-    
-    const [logoBytes, sigBytes, stampBytes] = await Promise.all([
-      fs.readFile(logoPath).catch(() => null),
-      fs.readFile(sigPath).catch(() => null),
-      fs.readFile(stampPath).catch(() => null),
-    ]);
-    
-    if (logoBytes) base64Logo = `data:image/png;base64,${logoBytes.toString('base64')}`;
-    if (sigBytes) base64Signature = `data:image/png;base64,${sigBytes.toString('base64')}`;
-    if (stampBytes) base64Stamp = `data:image/png;base64,${stampBytes.toString('base64')}`;
-  } catch (e) {
-    console.error("Could not load images:", e);
-  }
-
-  // 3. Assemble Data Layer (No Mock Data)
-  const { incomePaymentTypeLabel } = await import("@/lib/monthly-payment-status");
-  const data: ReceiptData = {
-    academy: {
-      name: academySettings.academyName,
-      address: academySettings.academyAddress,
-      phone: formatWhatsAppForDisplay(socialLinks.whatsappNumber) || "",
-      email: socialLinks.contactEmail || "",
-      website: academySettings.academyWebsite,
-      logoUrl: base64Logo, // Use injected Base64 to fix Puppeteer rendering
-    },
-    student: {
-      name: record.user.name || "Student",
-      address: record.user.address || "N/A",
-      phone: record.user.whatsapp ? formatWhatsAppForDisplay(record.user.whatsapp) : "N/A",
-    },
-    payment: {
-      receiptId: record.invoiceNumber,
-      date: record.receiptGeneratedAt.toLocaleDateString("en-IN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }),
-      method: paymentMethod,
-      courseName: finalCourseTitle,
-      amount: record.amountInrPaise / 100,
-      baseAmount: record.receiptFeeAmountPaise ? record.receiptFeeAmountPaise / 100 : undefined,
-      gstAmount: record.receiptGstAmountPaise ? record.receiptGstAmountPaise / 100 : undefined,
-      shippingAmount: shippingAmount > 0 ? shippingAmount : undefined,
-      currency: "₹",
-      typeLabel: record.paymentType === "book_purchase" ? "Books" : incomePaymentTypeLabel(record.paymentType),
-    },
-    authority: {
-      name: AUTHORITY_SIGNATURE.name,
-      designation: AUTHORITY_SIGNATURE.designation,
-      signatureUrl: base64Signature, // Use injected Base64
-      stampUrl: base64Stamp,
-    },
-    termsAndConditions: [...INVOICE_TERMS],
-  };
+  const { receiptData, filename } = await prepareReceiptData(record, courseTitle);
 
   // 4. Generate HTML String using the robust string template generator
-  const componentHtml = renderReceiptToHtml(data);
+  const componentHtml = renderReceiptToHtml(receiptData);
 
   // 5. Wrap in isolated HTML document with Tailwind CDN
   const fullHtml = `

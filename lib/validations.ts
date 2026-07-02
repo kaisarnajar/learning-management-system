@@ -383,3 +383,12 @@ export const bookstoreCheckoutSchema = z.object({
   deliveryPhoneNumber: z.string().trim().regex(/^[0-9]{10,15}$/, "Valid phone number (10-15 digits) is required."),
   notes: z.string().trim().optional(),
 });
+
+export const slabSchema = z.object({
+  minWeightGrams: z.coerce.number().int().min(0, "Minimum weight must be 0 or more."),
+  maxWeightGrams: z.coerce.number().int().min(1, "Maximum weight must be at least 1."),
+  chargeInr: z.coerce.number().min(0, "Charge cannot be negative."),
+}).refine(data => data.maxWeightGrams > data.minWeightGrams, {
+  message: "Maximum weight must be greater than minimum weight.",
+  path: ["maxWeightGrams"]
+});

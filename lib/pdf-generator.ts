@@ -98,7 +98,7 @@ export async function generatePdfFromHtml(
       margin: { top: string; right: string; bottom: string; left: string };
       width?: string | number;
       height?: string | number;
-      format?: any;
+      format?: PdfOptions["format"];
     } = {
       landscape,
       printBackground: true,

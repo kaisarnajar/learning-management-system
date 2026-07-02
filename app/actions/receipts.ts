@@ -8,15 +8,9 @@ import { prisma } from "@/lib/prisma";
 import { sendReceiptEmail } from "@/lib/email";
 import { generatePdfFromHtml } from "@/lib/pdf-generator";
 import { renderReceiptToHtml } from "@/lib/receipt-html";
-import { getReceiptFilename } from "@/lib/payment-receipt";
-import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-links";
-import { getAcademySettings } from "@/lib/academy-settings";
-import { INVOICE_TERMS, AUTHORITY_SIGNATURE } from "@/lib/academy-contact";
+import { prepareReceiptData } from "@/lib/payment-receipt";
 import { getCourseById } from "@/lib/courses";
-import { ReceiptData } from "@/types/receipt";
 import crypto from "crypto";
-import fs from "fs/promises";
-import path from "path";
 
 export async function generateReceipt(paymentRecordId: string, includeGst: boolean) {
   const session = await auth();
@@ -94,97 +88,12 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
       const course = record.courseId ? await getCourseById(record.courseId) : null;
       const courseTitle = course?.title ?? "Darse Quran Academy";
 
-      const [socialLinks, academySettings] = await Promise.all([
-        getSocialLinksSettings(),
-        getAcademySettings(),
-      ]);
-
-      let base64Logo = "";
-      let base64Signature = "";
-      let base64Stamp = "";
-      try {
-        const logoPath = path.join(process.cwd(), "public", "assets", "logo.png");
-        const sigPath = path.join(process.cwd(), "public", "assets", "signature.png");
-        const stampPath = path.join(process.cwd(), "public", "assets", "stamp.png");
-        const [logoBytes, sigBytes, stampBytes] = await Promise.all([
-          fs.readFile(logoPath).catch(() => null),
-          fs.readFile(sigPath).catch(() => null),
-          fs.readFile(stampPath).catch(() => null),
-        ]);
-        if (logoBytes) base64Logo = `data:image/png;base64,${logoBytes.toString("base64")}`;
-        if (sigBytes) base64Signature = `data:image/png;base64,${sigBytes.toString("base64")}`;
-        if (stampBytes) base64Stamp = `data:image/png;base64,${stampBytes.toString("base64")}`;
-      } catch (e) {
-        console.error("[receipt-email] Could not load images:", e);
-      }
-
-      let finalCourseTitle = courseTitle;
-      let shippingAmount = 0;
-      let paymentMethod = record.submission?.paymentMethod || record.paymentType || "MANUAL";
-
-      if (record.paymentType === "book_purchase") {
-        finalCourseTitle = "Book Order";
-        // Find the matching book order for this payment record
-        // The description is like "Book order #XXXXXX" which is the last 6 chars of the order ID
-        const match = record.description?.match(/Book order #([A-Z0-9]+)/i);
-        if (match) {
-          const shortId = match[1];
-          const bookOrder = await prisma.bookOrder.findFirst({
-            where: { 
-              userId: record.userId,
-              id: { endsWith: shortId.toLowerCase() },
-              totalAmountInrPaise: record.amountInrPaise 
-            }
-          });
-          if (bookOrder) {
-            shippingAmount = bookOrder.shippingChargeInrPaise / 100;
-            if (bookOrder.paymentMethod) {
-              paymentMethod = bookOrder.paymentMethod;
-            }
-          }
-        }
-      }
-
-      const { incomePaymentTypeLabel } = await import("@/lib/monthly-payment-status");
-
-      const receiptData: ReceiptData = {
-        academy: {
-          name: academySettings.academyName,
-          address: academySettings.academyAddress,
-          phone: formatWhatsAppForDisplay(socialLinks.whatsappNumber) || "",
-          email: socialLinks.contactEmail || "",
-          website: academySettings.academyWebsite,
-          logoUrl: base64Logo,
-        },
-        student: {
-          name: record.user.name || "Student",
-          address: record.user.address || "N/A",
-          phone: record.user.whatsapp ? formatWhatsAppForDisplay(record.user.whatsapp) : "N/A",
-        },
-        payment: {
-          receiptId: invoiceNumber,
-          date: new Date().toLocaleDateString("en-IN", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          }),
-          method: paymentMethod,
-          courseName: finalCourseTitle,
-          amount: record.amountInrPaise / 100,
-          baseAmount: includeGst ? baseAmount / 100 : undefined,
-          gstAmount: includeGst ? gstAmount / 100 : undefined,
-          shippingAmount: shippingAmount > 0 ? shippingAmount : undefined,
-          currency: "₹",
-          typeLabel: record.paymentType === "book_purchase" ? "Books" : incomePaymentTypeLabel(record.paymentType),
-        },
-        authority: {
-          name: AUTHORITY_SIGNATURE.name,
-          designation: AUTHORITY_SIGNATURE.designation,
-          signatureUrl: base64Signature,
-          stampUrl: base64Stamp,
-        },
-        termsAndConditions: [...INVOICE_TERMS],
-      };
+      const { receiptData, filename: pdfFilename } = await prepareReceiptData(record, courseTitle, {
+        invoiceNumberOverride: invoiceNumber,
+        includeGstOverride: includeGst,
+        baseAmountPaiseOverride: baseAmount,
+        gstAmountPaiseOverride: gstAmount,
+      });
 
       const componentHtml = renderReceiptToHtml(receiptData);
       const fullHtml = `
@@ -207,7 +116,6 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
 
       const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false, startDelayMs: 3000 });
       const amountStr = `₹${(record.amountInrPaise / 100).toFixed(2)}`;
-      const pdfFilename = getReceiptFilename(courseTitle, paymentRecordId);
 
       const result = await sendReceiptEmail({
         to: record.user.email,

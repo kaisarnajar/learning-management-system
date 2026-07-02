@@ -1,4 +1,5 @@
 import type { Occupation } from "@prisma/client";
+import Image from "next/image";
 import { getInitialsFromName } from "@/lib/student-reviews";
 import { occupationLabel, formatDateOfBirthDisplay } from "@/lib/profile";
 import {
@@ -50,10 +51,13 @@ export function ProfileDetailsCard({
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
           <div className="shrink-0">
             {image ? (
-              <img
+              <Image
                 src={image}
                 alt="Profile"
+                width={112}
+                height={112}
                 className="h-28 w-28 rounded-xl object-cover shadow-sm"
+                unoptimized
               />
             ) : (
               <div

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth-actions";
 import { buildStoredProfileWhatsApp } from "@/lib/countries";
 import { prisma } from "@/lib/prisma";
+import { Occupation } from "@prisma/client";
 import { profileUpdateSchema } from "@/lib/validations";
 import { withDbErrorHandling } from "@/lib/db-error";
 import { saveProfileImage, validateProfileImage, deleteProfileImage } from "@/lib/profile-upload";
@@ -56,7 +57,7 @@ export async function updateProfile(
     name: string;
     fatherName: string;
     dateOfBirth: Date;
-    occupation: any;
+    occupation: Occupation;
     address: string;
     whatsapp: string;
     image?: string;
@@ -65,7 +66,7 @@ export async function updateProfile(
     name: parsed.data.name,
     fatherName: parsed.data.fatherName,
     dateOfBirth: new Date(parsed.data.dateOfBirth),
-    occupation: parsed.data.occupation as any,
+    occupation: parsed.data.occupation as Occupation,
     address: parsed.data.address,
     whatsapp: buildStoredProfileWhatsApp(parsed.data.country, parsed.data.whatsapp),
   };

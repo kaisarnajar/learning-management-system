@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { ActionToast } from "@/components/shared/ToastProvider";
@@ -58,10 +59,13 @@ export default async function AdminStudentDetailPage({
         <div className="flex items-center gap-4">
           <div className="shrink-0">
             {student.image ? (
-              <img
+              <Image
                 src={student.image.includes("googleusercontent.com") ? student.image.replace(/=s\d+-c/g, "=s1000-c") : student.image}
                 alt="Profile"
+                width={80}
+                height={80}
                 className="h-20 w-20 rounded-xl object-cover shadow-sm"
+                unoptimized
               />
             ) : (
               <div className="flex h-20 w-20 items-center justify-center rounded-xl bg-primary text-2xl font-bold text-white shadow-sm">

@@ -1,6 +1,6 @@
 "use client";
 import { SubmitButton } from "@/components/shared/SubmitButton";
-
+import Image from "next/image";
 import type { Occupation } from "@prisma/client";
 import type { ReactNode } from "react";
 import { useActionState, useMemo, useState } from "react";
@@ -173,7 +173,7 @@ export function ProfileForm({
           </label>
           <div className="mt-2 flex items-center gap-4">
             {imagePreview ? (
-              <img src={imagePreview} alt="Profile preview" className="w-16 h-16 rounded-full object-cover border border-border" />
+              <Image src={imagePreview} alt="Profile preview" width={64} height={64} className="w-16 h-16 rounded-full object-cover border border-border" unoptimized />
             ) : (
               <div className="w-16 h-16 rounded-full bg-surface-muted border border-border flex items-center justify-center">
                 <span className="text-xs text-muted">No photo</span>

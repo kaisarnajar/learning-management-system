@@ -1,5 +1,6 @@
 "use client";
 import { SubmitButton } from "@/components/shared/SubmitButton";
+import { Eye, EyeOff } from "lucide-react";
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -31,6 +32,7 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const validate = useCallback((v: LoginFormValues) => zodResultToFormValidation(loginSchema.safeParse(v)), []);
 
@@ -155,17 +157,31 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
                 Forgot password?
               </Link>
             </div>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={values.password}
-              onChange={(e) => updateField("password", e.target.value)}
-              onBlur={() => markTouched("password")}
-              aria-invalid={showError("password") || undefined}
-              className={formFieldInputClass(showError("password"))}
-            />
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                required
+                value={values.password}
+                onChange={(e) => updateField("password", e.target.value)}
+                onBlur={() => markTouched("password")}
+                aria-invalid={showError("password") || undefined}
+                className={`${formFieldInputClass(showError("password"))} pr-10`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted hover:text-foreground transition-colors"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-5 w-5" />
+                ) : (
+                  <Eye className="h-5 w-5" />
+                )}
+              </button>
+            </div>
             {showError("password") && (
               <p className={formErrorTextClassName} role="alert">
                 {errors.password}

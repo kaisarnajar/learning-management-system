@@ -57,7 +57,10 @@ export default async function FatwaDetailPage({ params }: FatwaDetailPageProps) 
 
           <section className="card-elevated border-l-4 border-l-accent p-6 sm:p-8">
             <h2 className="font-serif text-lg font-semibold text-primary">Answer</h2>
-            <p className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-foreground">{fatwa.answer}</p>
+            <div
+              className="blog-content mt-4 text-base leading-relaxed text-foreground"
+              dangerouslySetInnerHTML={{ __html: fatwa.answer }}
+            />
           </section>
         </div>
 

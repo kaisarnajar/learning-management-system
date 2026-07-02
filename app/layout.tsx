@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Poppins } from "next/font/google";
+import { Poppins, Amiri } from "next/font/google";
 import { CartProvider } from "@/components/bookstore/CartProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ToastProvider } from "@/components/shared/ToastProvider";
@@ -17,6 +17,12 @@ const poppins = Poppins({
   weight: ["400", "500", "600", "700"],
 });
 
+const amiri = Amiri({
+  variable: "--font-amiri",
+  subsets: ["arabic"],
+  weight: ["400", "700"],
+});
+
 export const metadata: Metadata = {
   title: {
     default: "Darse Quran Academy | Online Islamic Learning",
@@ -32,7 +38,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${poppins.variable} h-full antialiased`} suppressHydrationWarning>
+    <html lang="en" className={`${poppins.variable} ${amiri.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col overflow-x-hidden font-sans" suppressHydrationWarning>
         <SessionProvider>
           <ToastProvider>

@@ -1,7 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 import type { FatwaQuestion } from "@prisma/client";
 import { HOMEPAGE_FEATURED_FATWA_MAX } from "@/lib/fatwa";
-import { inputClassName, labelClassName } from "@/lib/form";
+import { labelClassName } from "@/lib/form";
+import { RichTextEditor } from "@/components/shared/RichTextEditor";
 
 type AnswerFatwaFormProps = {
   question: FatwaQuestion;
@@ -13,6 +17,7 @@ type AnswerFatwaFormProps = {
 export function AnswerFatwaForm({ question, featuredCount, action, rejectAction }: AnswerFatwaFormProps) {
   const isAnswered = Boolean(question.answer);
   const isPending = question.approvalStatus === "PENDING";
+  const [answer, setAnswer] = useState(question.answer ?? "");
 
   return (
     <form action={action} className="mx-auto max-w-2xl space-y-5">
@@ -29,18 +34,17 @@ export function AnswerFatwaForm({ question, featuredCount, action, rejectAction 
         <label htmlFor="answer" className={labelClassName}>
           {isAnswered ? "Update answer" : "Publish answer"}
         </label>
-        <textarea
-          id="answer"
-          name="answer"
-          required
-          minLength={20}
-          maxLength={10000}
-          rows={12}
-          defaultValue={question.answer ?? ""}
+        
+        {/* Hidden input to pass the editor content back to the Server Action */}
+        <input type="hidden" name="answer" value={answer} />
+        
+        <RichTextEditor
+          value={answer}
+          onChange={setAnswer}
           placeholder="Write the scholarly answer here…"
-          className={inputClassName}
           readOnly={isPending}
         />
+        
         {isPending ? (
           <p className="mt-1 text-xs text-muted">You are reviewing a submitted answer. It cannot be edited directly.</p>
         ) : (

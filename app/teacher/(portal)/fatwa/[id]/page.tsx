@@ -4,8 +4,7 @@ import { requireTeacher } from "@/lib/auth-actions";
 import { getFatwaQuestionById } from "@/lib/fatwa";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { submitTeacherFatwaAnswer } from "@/app/teacher/(portal)/fatwa/actions";
-import { SubmitButton } from "@/components/shared/SubmitButton";
-import { inputClassName, labelClassName } from "@/lib/form";
+import { AnswerTeacherFatwaForm } from "@/components/teacher/AnswerTeacherFatwaForm";
 
 export default async function TeacherFatwaDetailPage({
   params,
@@ -56,52 +55,7 @@ export default async function TeacherFatwaDetailPage({
       )}
 
       <div className="mt-8">
-        <form action={answerAction} className="mx-auto max-w-2xl space-y-5">
-          <div className="rounded-lg border border-border bg-background/50 p-4 text-sm">
-            <p className="font-medium text-foreground">{question.title}</p>
-            <p className="mt-2 whitespace-pre-wrap text-muted">{question.question}</p>
-            <p className="mt-3 text-xs text-muted">
-              {question.category}
-            </p>
-          </div>
-
-          <div>
-            <label htmlFor="answer" className={labelClassName}>
-              {question.answer ? "Update draft" : "Submit draft for review"}
-            </label>
-            <textarea
-              id="answer"
-              name="answer"
-              required
-              minLength={20}
-              maxLength={10000}
-              rows={12}
-              defaultValue={question.answer ?? ""}
-              placeholder="Write the scholarly answer here…"
-              className={inputClassName}
-              disabled={
-                (question.approvalStatus === "APPROVED" && Boolean(question.answer)) ||
-                question.approvalStatus === "PENDING"
-              }
-            />
-            {question.approvalStatus === "APPROVED" && Boolean(question.answer) ? (
-              <p className="mt-1 text-xs text-success-text font-medium">This answer is approved and published. It can no longer be edited.</p>
-            ) : question.approvalStatus === "PENDING" ? (
-              <p className="mt-1 text-xs text-warning-text font-medium">This draft is pending review by the admin. You cannot edit it unless it is rejected.</p>
-            ) : (
-              <p className="mt-1 text-xs text-muted">Minimum 20 characters. The admin will be notified to review it.</p>
-            )}
-          </div>
-
-          {!(question.approvalStatus === "APPROVED" && Boolean(question.answer)) && question.approvalStatus !== "PENDING" && (
-            <SubmitButton
-              type="submit"
-              className="min-h-11 rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
-            >
-              {question.answer ? "Update draft" : "Submit draft"}
-            </SubmitButton>
-          )}
-        </form>
+        <AnswerTeacherFatwaForm question={question} action={answerAction} />
       </div>
       
       {question.approvalStatus === "APPROVED" && Boolean(question.answer) && (

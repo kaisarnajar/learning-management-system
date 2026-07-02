@@ -281,4 +281,16 @@ div[contenteditable="true"]:empty:before {
   display: block;
 }
 
+/* RTL Arabic/Urdu Typography overrides */
+[dir="rtl"] {
+  font-family: var(--font-amiri), "Amiri", "Noto Naskh Arabic", "Scheherazade New", serif;
+  font-size: 1.15em;
+  line-height: 1.85;
+  text-align: right;
+}
+
+[dir="rtl"] p {
+  line-height: 1.85;
+}
+
 

@@ -12,7 +12,6 @@ import {
   siteAnnouncementSchema,
   teacherAdminSchema,
   teacherBlogPostSchema,
-  slabSchema,
 } from "@/lib/validations";
 import type { AnnouncementCategory } from "@prisma/client";
 
@@ -276,18 +275,4 @@ export function validateStudentForm(values: StudentFormValues): FormValidationRe
   return zodResultToFormValidation(schema.safeParse(values));
 }
 
-export type ShippingSlabFormValues = {
-  minWeightGrams: string;
-  maxWeightGrams: string;
-  chargeInr: string;
-};
 
-export function validateShippingSlabForm(values: ShippingSlabFormValues): FormValidationResult {
-  return zodResultToFormValidation(
-    slabSchema.safeParse({
-      minWeightGrams: values.minWeightGrams,
-      maxWeightGrams: values.maxWeightGrams,
-      chargeInr: values.chargeInr,
-    })
-  );
-}

@@ -41,11 +41,3 @@ export async function requireUser() {
   }
   return session;
 }
-
-export async function requireVerifiedEmail() {
-  const session = await requireUser();
-  if (!session.user.emailVerified) {
-    throw new Error("Email verification required");
-  }
-  return session;
-}

@@ -41,10 +41,3 @@ export const EXPENSE_CATEGORY_OPTIONS = EXPENSE_CATEGORIES.map((category) => ({
   value: category,
   label: expenseCategoryLabel(category),
 }));
-
-export function getExpenseCategoryOptions(current?: string | null) {
-  if (!current || isExpenseCategory(current)) {
-    return EXPENSE_CATEGORY_OPTIONS;
-  }
-  return [{ value: current, label: current }, ...EXPENSE_CATEGORY_OPTIONS];
-}

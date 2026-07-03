@@ -13,6 +13,7 @@ export const PAYMENT_SETTINGS_ID = "default";
 
 export type PaymentSettingsData = {
   upiId: string;
+  upiNumber: string;
   upiPayeeName: string;
   bankAccountName: string;
   bankName: string;
@@ -24,6 +25,7 @@ export type PaymentSettingsData = {
 function defaultSettings(): PaymentSettingsData {
   return {
     upiId: "",
+    upiNumber: "",
     upiPayeeName: "Darse Quran Academy",
     bankAccountName: "Darse Quran Academy",
     bankName: "",
@@ -35,6 +37,7 @@ function defaultSettings(): PaymentSettingsData {
 
 function rowToSettings(row: {
   upiId: string;
+  upiNumber: string;
   upiPayeeName: string;
   bankAccountName: string;
   bankName: string;
@@ -45,6 +48,7 @@ function rowToSettings(row: {
   const defaults = defaultSettings();
   return {
     upiId: row.upiId.trim(),
+    upiNumber: row.upiNumber.trim(),
     upiPayeeName: row.upiPayeeName.trim() || defaults.upiPayeeName,
     bankAccountName: row.bankAccountName.trim() || defaults.bankAccountName,
     bankName: row.bankName.trim(),
@@ -55,9 +59,13 @@ function rowToSettings(row: {
 }
 
 export async function getPaymentSettings(): Promise<PaymentSettingsData> {
-  const row = await withDbErrorHandling(() => prisma.paymentSettings.findUnique({
-      where: { id: PAYMENT_SETTINGS_ID },
-    }), "Database operation failed");
+  const row = await withDbErrorHandling(
+    () =>
+      prisma.paymentSettings.findUnique({
+        where: { id: PAYMENT_SETTINGS_ID },
+      }),
+    "Database operation failed",
+  );
 
   if (!row) {
     return defaultSettings();

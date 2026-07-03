@@ -80,6 +80,15 @@ export async function PaymentDetailsPanel({
                   <p className="mt-0.5 font-mono text-sm font-semibold text-foreground">{upiId}</p>
                 </div>
                 <CopyButton text={upiId} label="Copy UPI ID" />
+                {settings.upiNumber && (
+                  <div className="w-full border-t border-border pt-3 flex flex-col items-center lg:items-start">
+                    <p className="text-xs text-muted">UPI Number</p>
+                    <p className="mt-0.5 font-mono text-sm font-semibold text-foreground">{settings.upiNumber}</p>
+                    <div className="mt-2">
+                      <CopyButton text={settings.upiNumber} label="Copy UPI Number" />
+                    </div>
+                  </div>
+                )}
                 {paymentRef && (
                   <div className="w-full border-t border-border pt-3">
                     <p className="text-xs text-muted">Payment reference (include if asked)</p>

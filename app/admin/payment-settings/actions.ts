@@ -25,6 +25,7 @@ export async function updatePaymentSettings(formData: FormData) {
 
   const parsed = paymentSettingsSchema.safeParse({
     upiId: formData.get("upiId"),
+    upiNumber: formData.get("upiNumber"),
     upiPayeeName: formData.get("upiPayeeName"),
     bankAccountName: formData.get("bankAccountName"),
     bankName: formData.get("bankName"),

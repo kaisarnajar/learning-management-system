@@ -480,6 +480,7 @@ model Expense {
 model PaymentSettings {
   id                String   @id @default("default")
   upiId             String   @default("")
+  upiNumber         String   @default("")
   upiPayeeName      String   @default("Darse Quran Academy")
   bankAccountName   String   @default("Darse Quran Academy")
   bankName          String   @default("")

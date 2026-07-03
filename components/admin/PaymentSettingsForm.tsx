@@ -18,6 +18,7 @@ type PaymentSettingsFormProps = {
 
 const PAYMENT_FIELDS: (keyof PaymentSettingsFormValues)[] = [
   "upiId",
+  "upiNumber",
   "upiPayeeName",
   "bankAccountName",
   "bankName",
@@ -35,6 +36,7 @@ export function PaymentSettingsForm({ settings, action }: PaymentSettingsFormPro
   const { values, updateField, markTouched, showError, errors, isValid } = useZodForm({
     initialValues: {
       upiId: settings.upiId,
+      upiNumber: settings.upiNumber,
       upiPayeeName: settings.upiPayeeName,
       bankAccountName: settings.bankAccountName,
       bankName: settings.bankName,
@@ -87,6 +89,27 @@ export function PaymentSettingsForm({ settings, action }: PaymentSettingsFormPro
           {showError("upiId") && (
             <p className={formErrorTextClassName} role="alert">
               {errors.upiId}
+            </p>
+          )}
+        </div>
+        <div>
+          <label htmlFor="upiNumber" className={labelClassName}>
+            UPI Number (optional)
+          </label>
+          <input
+            id="upiNumber"
+            name="upiNumber"
+            type="text"
+            value={values.upiNumber}
+            onChange={(e) => updateField("upiNumber", e.target.value)}
+            onBlur={() => markTouched("upiNumber")}
+            placeholder="e.g. 9876543210"
+            aria-invalid={showError("upiNumber") || undefined}
+            className={formFieldInputClass(showError("upiNumber"))}
+          />
+          {showError("upiNumber") && (
+            <p className={formErrorTextClassName} role="alert">
+              {errors.upiNumber}
             </p>
           )}
         </div>

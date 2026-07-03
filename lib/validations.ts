@@ -105,6 +105,13 @@ export const paymentSettingsSchema = z.object({
     .min(1, "UPI ID is required.")
     .max(120)
     .regex(/^[\w.-]+@[\w.-]+$/, "Enter a valid UPI ID (e.g. name@bank)."),
+  upiNumber: z
+    .string()
+    .trim()
+    .max(50)
+    .regex(/^\d*$/, "Enter a valid UPI Number (digits only).")
+    .optional()
+    .or(z.literal("")),
   upiPayeeName: z.string().trim().min(1, "Payee name is required.").max(100),
   bankAccountName: z.string().trim().min(1, "Account name is required.").max(120),
   bankName: z.string().trim().min(1, "Bank name is required.").max(120),

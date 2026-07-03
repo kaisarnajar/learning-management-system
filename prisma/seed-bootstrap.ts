@@ -161,6 +161,7 @@ export async function seedBootstrap(prisma: PrismaClient) {
     create: {
       id: PAYMENT_SETTINGS_ID,
       upiId: "darsequran.demo@oksbi",
+      upiNumber: "9876543210",
       upiPayeeName: "Darse Quran Academy",
       bankAccountName: "Darse Quran Academy",
       bankName: "State Bank of India",
@@ -170,6 +171,7 @@ export async function seedBootstrap(prisma: PrismaClient) {
     },
     update: {
       upiId: "darsequran.demo@oksbi",
+      upiNumber: "9876543210",
       upiPayeeName: "Darse Quran Academy",
       bankAccountName: "Darse Quran Academy",
       bankName: "State Bank of India",

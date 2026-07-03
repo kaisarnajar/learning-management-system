@@ -4,6 +4,9 @@ import {
   MONTHLY_PAYMENT_APPROVED,
   PAYMENT_TYPE_ENROLLMENT,
   PAYMENT_TYPE_MONTHLY,
+  PAYMENT_TYPE_QUARTERLY,
+  PAYMENT_TYPE_HALF_YEARLY,
+  PAYMENT_TYPE_YEARLY,
 } from "@/lib/monthly-payment-status";
 import { getCourseIdsByTitleSearch } from "@/lib/courses";
 import { APPROVAL_PAGE_SIZE, clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
@@ -60,7 +63,10 @@ export async function getPendingMonthlyPaymentsPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
-  const base = { status: MONTHLY_PAYMENT_PENDING, paymentType: PAYMENT_TYPE_MONTHLY };
+  const base = {
+    status: MONTHLY_PAYMENT_PENDING,
+    paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY] }
+  };
   const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
   const totalCount = await withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
@@ -201,7 +207,10 @@ export async function getApprovedMonthlyPaymentsPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
-  const base = { status: MONTHLY_PAYMENT_APPROVED, paymentType: PAYMENT_TYPE_MONTHLY };
+  const base = {
+    status: MONTHLY_PAYMENT_APPROVED,
+    paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY] }
+  };
   const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
   const totalCount = await withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);

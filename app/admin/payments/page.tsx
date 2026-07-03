@@ -61,15 +61,15 @@ export default async function AdminPaymentApprovalsPage({
   const tabs = [
     { label: "Enrollment Fee Pending", value: "enrollment_pending" as TabType, count: pendingEnrollmentCount, showBadge: true },
     { label: "Enrollment Fee Approved", value: "enrollment_approved" as TabType, count: 0, showBadge: false },
-    { label: "Monthly Fee Pending", value: "monthly_pending" as TabType, count: pendingMonthlyCount, showBadge: true },
-    { label: "Monthly Fee Approved", value: "monthly_approved" as TabType, count: 0, showBadge: false },
+    { label: "Fee Pending", value: "monthly_pending" as TabType, count: pendingMonthlyCount, showBadge: true },
+    { label: "Fee Approved", value: "monthly_approved" as TabType, count: 0, showBadge: false },
   ];
 
   return (
     <div>
       <h1 className="font-serif text-2xl font-bold text-primary">Payments</h1>
       <p className="mt-1 text-sm text-muted">
-        Verify enrollment and monthly fee payments submitted by students. Free enrollment requests
+        Verify enrollment and fee payments submitted by students. Free enrollment requests
         are managed under Enrollments.
       </p>
       

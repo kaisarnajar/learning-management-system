@@ -13,6 +13,7 @@ export type AdminNavGroup = {
 export const ADMIN_DASHBOARD_LINK_HREFS = new Set<string>([
   "/admin/payment-settings",
   "/admin/finance",
+  "/admin/transactions",
 ]);
 
 /** Admin sidebar groups for collapsible navigation. */
@@ -49,9 +50,10 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
   {
     title: "Payments & Finance",
     links: [
-      { href: "/admin/payments", label: "Payments & Finance" },
+      { href: "/admin/payments", label: "Payments" },
       { href: "/admin/receipts", label: "Payment Receipts" },
-      { href: "/admin/finance", label: "Finance Records" },
+      { href: "/admin/finance", label: "Finance" },
+      { href: "/admin/transactions", label: "Transactions" },
       { href: "/admin/payment-settings", label: "Payment details" },
       { href: "/admin/shipping-charges", label: "Shipping charges" },
     ],

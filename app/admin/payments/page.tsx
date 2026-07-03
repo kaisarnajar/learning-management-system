@@ -1,20 +1,23 @@
 import Link from "next/link";
 import { PaymentApprovalsTable } from "@/components/admin/PaymentApprovalsTable";
-import { RecordPaymentForm } from "@/components/admin/RecordPaymentForm";
-import { RecordExpenseForm } from "@/components/admin/RecordExpenseForm";
+import { FinanceIncomeTable } from "@/components/admin/FinanceIncomeTable";
+import { FinanceExpenseTable } from "@/components/admin/FinanceExpenseTable";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { getAllCourses } from "@/lib/courses";
-import { getAllTeachers } from "@/lib/teachers";
 import {
   getPendingEnrollmentFeePaymentsPaginated,
   getApprovedEnrollmentFeePaymentsPaginated,
   getPendingMonthlyPaymentsPaginated,
   getApprovedMonthlyPaymentsPaginated,
 } from "@/lib/monthly-payments";
+import { getIncomeRecordsPaginated } from "@/lib/finance-income";
+import { getExpensesPaginated } from "@/lib/finance-expenses";
+import { parseFinanceFilters } from "@/lib/finance-filters";
 import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import type { FinanceSearchParams } from "@/lib/finance-filters";
 
 
 type TabType =
@@ -22,28 +25,28 @@ type TabType =
   | "enrollment_approved"
   | "monthly_pending"
   | "monthly_approved"
-  | "record_payment"
-  | "record_expense";
+  | "manual_transactions"
+  | "manual_expenses";
 
 const PENDING_TABS: TabType[] = ["enrollment_pending", "monthly_pending"];
 const COMPLETED_TABS: TabType[] = [
   "enrollment_approved",
   "monthly_approved",
-  "record_payment",
-  "record_expense",
+  "manual_transactions",
+  "manual_expenses",
 ];
 const ALL_TABS: TabType[] = [...PENDING_TABS, ...COMPLETED_TABS];
 
-/** Tabs that show the approval table (not a form). */
-const TABLE_TABS = new Set<TabType>([
+/** Approval table tabs (CoursePaymentSubmission data). */
+const APPROVAL_TABLE_TABS = new Set<TabType>([
   "enrollment_pending",
   "monthly_pending",
   "enrollment_approved",
   "monthly_approved",
 ]);
 
-function tabHref(type: TabType) {
-  const params = new URLSearchParams();
+function tabHref(type: TabType, extraParams?: Record<string, string>) {
+  const params = new URLSearchParams(extraParams);
   if (type !== "enrollment_pending") params.set("type", type);
   const qs = params.toString();
   return qs ? `/admin/payments?${qs}` : "/admin/payments";
@@ -84,18 +87,19 @@ function TabLink({
   );
 }
 
+type SearchParams = {
+  type?: string;
+  confirmed?: string;
+  declined?: string;
+  deleted?: string;
+  page?: string;
+  q?: string;
+} & FinanceSearchParams;
+
 export default async function AdminPaymentApprovalsPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    type?: string;
-    confirmed?: string;
-    declined?: string;
-    deleted?: string;
-    saved?: string;
-    page?: string;
-    q?: string;
-  }>;
+  searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
@@ -104,25 +108,32 @@ export default async function AdminPaymentApprovalsPage({
     ? (params.type as TabType)
     : "enrollment_pending";
 
-  const isFormTab = !TABLE_TABS.has(type);
+  const isApprovalTab = APPROVAL_TABLE_TABS.has(type);
+  const isManualTransactions = type === "manual_transactions";
+  const isManualExpenses = type === "manual_expenses";
 
   const { page: requestedPage, pageSize } = parsePaginationParams(params, {
     pageSize: APPROVAL_PAGE_SIZE,
   });
 
-  // Always fetch pending counts for badges; only fetch table data for table tabs
+  // Parse finance filters (used for manual_transactions / manual_expenses)
+  // Default to all_time so all manually recorded entries show up
+  const financeFilters = parseFinanceFilters({ ...params, preset: params.preset ?? "all_time" });
+
+  // Fetch pending badge counts + active tab data in parallel
   const [
     courses,
-    teachers,
     pendingEnrollmentResult,
     pendingMonthlyResult,
-    activeResult,
+    activeApprovalResult,
+    activeIncomeResult,
+    activeExpenseResult,
   ] = await Promise.all([
     getAllCourses(),
-    getAllTeachers(),
     getPendingEnrollmentFeePaymentsPaginated(1, 1, q),
     getPendingMonthlyPaymentsPaginated(1, 1, q),
-    TABLE_TABS.has(type)
+    // Approval table tabs
+    isApprovalTab
       ? (type === "enrollment_pending"
           ? getPendingEnrollmentFeePaymentsPaginated(requestedPage, pageSize, q)
           : type === "enrollment_approved"
@@ -131,12 +142,26 @@ export default async function AdminPaymentApprovalsPage({
           ? getPendingMonthlyPaymentsPaginated(requestedPage, pageSize, q)
           : getApprovedMonthlyPaymentsPaginated(requestedPage, pageSize, q))
       : Promise.resolve({ items: [], totalCount: 0 }),
+    // Manually added transactions tab
+    isManualTransactions
+      ? getIncomeRecordsPaginated({ ...financeFilters, q: q ?? undefined }, requestedPage, pageSize)
+      : Promise.resolve({ items: [], totalCount: 0 }),
+    // Manually added expenses tab
+    isManualExpenses
+      ? getExpensesPaginated({ ...financeFilters, q: q ?? undefined }, requestedPage, pageSize)
+      : Promise.resolve({ items: [], totalCount: 0 }),
   ]);
 
   const pendingEnrollmentCount = pendingEnrollmentResult.totalCount;
   const pendingMonthlyCount = pendingMonthlyResult.totalCount;
 
-  const safePage = clampPage(requestedPage, activeResult.totalCount, pageSize);
+  const activeTotal = isManualTransactions
+    ? activeIncomeResult.totalCount
+    : isManualExpenses
+    ? activeExpenseResult.totalCount
+    : activeApprovalResult.totalCount;
+
+  const safePage = clampPage(requestedPage, activeTotal, pageSize);
   const titleById = new Map(courses.map((c) => [c.id, c.title]));
 
   const pendingTabDefs = [
@@ -155,15 +180,18 @@ export default async function AdminPaymentApprovalsPage({
   const completedTabDefs = [
     { label: "Enrollment Fee Approved", value: "enrollment_approved" as TabType },
     { label: "Course Fee Approved", value: "monthly_approved" as TabType },
-    { label: "Record Payment", value: "record_payment" as TabType },
-    { label: "Record Expense", value: "record_expense" as TabType },
+    { label: "Manually Added Transactions", value: "manual_transactions" as TabType },
+    { label: "Manually Added Expenses", value: "manual_expenses" as TabType },
   ];
+
+  const preserveParams = type !== "enrollment_pending" ? { type } : undefined;
 
   return (
     <div>
-      <h1 className="font-serif text-2xl font-bold text-primary">Payments &amp; Finance</h1>
+      <h1 className="font-serif text-2xl font-bold text-primary">Payments</h1>
       <p className="mt-1 text-sm text-muted">
-        Verify student payments, approve or decline submissions, and record manual transactions.
+        Verify enrollment and fee payments submitted by students. Free enrollment requests
+        are managed under Enrollments.
       </p>
 
       <ActionToast
@@ -184,14 +212,8 @@ export default async function AdminPaymentApprovalsPage({
         message="Payment record successfully deleted."
         variant="info"
       />
-      <ActionToast
-        trigger={params.saved === "1"}
-        paramName="saved"
-        message="Transaction recorded successfully."
-        variant="info"
-      />
 
-      {/* ── Pending Payments ─────────────────────────────── */}
+      {/* ── Pending Payments ─────────────────────────── */}
       <div className="mt-8">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
           Pending Payments
@@ -209,7 +231,7 @@ export default async function AdminPaymentApprovalsPage({
         </nav>
       </div>
 
-      {/* ── Completed Payments ───────────────────────────── */}
+      {/* ── Completed Payments ───────────────────────── */}
       <div className="mt-6">
         <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted">
           Completed Payments
@@ -226,43 +248,22 @@ export default async function AdminPaymentApprovalsPage({
         </nav>
       </div>
 
-      {/* ── Tab Content ──────────────────────────────────── */}
-      {isFormTab ? (
-        <div className="mt-8 max-w-2xl">
-          {type === "record_payment" ? (
-            <>
-              <p className="mb-4 text-sm text-muted">
-                Manually log a payment received from a student.
-              </p>
-              <RecordPaymentForm
-                courses={courses.map((c) => ({ id: c.id, title: c.title }))}
-              />
-            </>
-          ) : (
-            <>
-              <p className="mb-4 text-sm text-muted">
-                Manually log an operational expense for the academy.
-              </p>
-              <RecordExpenseForm
-                teachers={teachers.map((t) => ({ id: t.id, name: t.name }))}
-              />
-            </>
-          )}
+      {/* ── Tab Content ─────────────────────────────── */}
+      <section id={type} className="mt-6">
+        <div className="mb-2">
+          <ListSearchForm
+            action="/admin/payments"
+            query={q}
+            preserveParams={preserveParams}
+            totalCount={activeTotal}
+            placeholder="Search by name, email, course, or reference..."
+          />
         </div>
-      ) : (
-        <section id={type} className="mt-6">
-          <div className="mb-2">
-            <ListSearchForm
-              action="/admin/payments"
-              query={q}
-              preserveParams={{ type: type !== "enrollment_pending" ? type : undefined }}
-              totalCount={activeResult.totalCount}
-              placeholder="Search by name, email, course, or reference..."
-            />
-          </div>
-          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+
+        <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+          {isApprovalTab ? (
             <PaymentApprovalsTable
-              submissions={activeResult.items}
+              submissions={activeApprovalResult.items}
               courseTitleById={titleById}
               emptyMessage={
                 q
@@ -270,16 +271,25 @@ export default async function AdminPaymentApprovalsPage({
                   : "No payments found for this category."
               }
             />
-          </div>
-          <Pagination
-            basePath="/admin/payments"
-            params={params}
-            page={safePage}
-            totalCount={activeResult.totalCount}
-            pageSize={pageSize}
-          />
-        </section>
-      )}
+          ) : isManualTransactions ? (
+            <FinanceIncomeTable records={activeIncomeResult.items} />
+          ) : (
+            <FinanceExpenseTable
+              expenses={activeExpenseResult.items}
+              returnQuery={(({ type: _type, confirmed: _c, declined: _d, deleted: _del, ...rest }) => rest)(params)}
+              basePath="/admin/payments"
+            />
+          )}
+        </div>
+
+        <Pagination
+          basePath="/admin/payments"
+          params={params}
+          page={safePage}
+          totalCount={activeTotal}
+          pageSize={pageSize}
+        />
+      </section>
     </div>
   );
 }

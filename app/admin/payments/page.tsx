@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { PaymentApprovalsTable } from "@/components/admin/PaymentApprovalsTable";
-import { FinanceIncomeTable } from "@/components/admin/FinanceIncomeTable";
+import { ManualTransactionsTable } from "@/components/admin/ManualTransactionsTable";
 import { FinanceExpenseTable } from "@/components/admin/FinanceExpenseTable";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
@@ -272,7 +272,7 @@ export default async function AdminPaymentApprovalsPage({
               }
             />
           ) : isManualTransactions ? (
-            <FinanceIncomeTable records={activeIncomeResult.items} />
+            <ManualTransactionsTable records={activeIncomeResult.items} />
           ) : (
             <FinanceExpenseTable
               expenses={activeExpenseResult.items}

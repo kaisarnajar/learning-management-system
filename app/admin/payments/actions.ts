@@ -231,3 +231,29 @@ export async function deleteApprovedPayment(
   revalidatePaymentPaths(submission.userId, submission.courseId);
   redirect(paymentReturnUrl(returnTo, "deleted"));
 }
+
+export async function deleteManualPaymentRecord(
+  recordId: string,
+  returnTo?: string,
+): Promise<{ error?: string } | void> {
+  await requireAdmin();
+
+  const record = await withDbErrorHandling(
+    () => prisma.paymentRecord.findUnique({ where: { id: recordId } }),
+    "Database operation failed",
+  );
+
+  if (!record) {
+    return { error: "Payment record not found." };
+  }
+
+  await withDbErrorHandling(
+    () => prisma.paymentRecord.delete({ where: { id: recordId } }),
+    "Database operation failed",
+  );
+
+  revalidatePaymentPaths(record.userId);
+  const param = new URLSearchParams({ type: "manual_transactions", deleted: "1" });
+  redirect(returnTo ?? `/admin/payments?${param.toString()}`);
+}
+

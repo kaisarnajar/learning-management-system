@@ -12,6 +12,7 @@ import { withDbErrorHandling } from "@/lib/db-error";
 
 function revalidateFinancePaths() {
   revalidatePath("/admin/finance");
+  revalidatePath("/admin/payments");
   revalidatePath("/admin");
 }
 

@@ -111,7 +111,7 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
                       href={`/profile/courses/${course.id}/pay`}
                       className="mt-4 flex min-h-11 items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-light"
                     >
-                      Pay monthly fee
+                      Pay Fee
                     </Link>
                   ) : (
                     <span className="mt-4 flex min-h-11 items-center justify-center rounded-full bg-surface-muted px-4 py-3 text-sm font-medium text-muted cursor-not-allowed">

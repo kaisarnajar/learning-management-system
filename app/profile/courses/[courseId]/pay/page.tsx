@@ -46,7 +46,7 @@ export default async function PayMonthlyFeePage({
         ← My courses
       </Link>
 
-      <h2 className="mt-4 font-serif text-lg font-semibold text-foreground">Pay monthly fee</h2>
+      <h2 className="mt-4 font-serif text-lg font-semibold text-foreground">Pay Fee</h2>
       <p className="mt-1 text-sm text-muted">{course.title}</p>
       <p className="mt-2 text-sm font-medium text-foreground">Amount: {amountLabel} per month</p>
 

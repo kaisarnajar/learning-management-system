@@ -3,6 +3,7 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteCourse } from "@/app/admin/courses/actions";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { getCoursePricingFromCourse } from "@/lib/course-pricing";
+import { getFeeFrequencyLabel } from "@/lib/fee-frequency";
 import type { CourseWithTeacher } from "@/lib/courses";
 
 export function AdminCoursesTable({
@@ -21,7 +22,7 @@ export function AdminCoursesTable({
           <th className="px-4 py-3 font-medium">Instructor</th>
           <th className="px-4 py-3 font-medium">Duration</th>
           <th className="px-4 py-3 font-medium">Registration fee</th>
-          <th className="px-4 py-3 font-medium">Monthly fee</th>
+          <th className="px-4 py-3 font-medium">Course fee</th>
           <th className="px-4 py-3 font-medium">Students</th>
           <th className="px-4 py-3 font-medium">Status</th>
           <th className="px-4 py-3 font-medium">Homepage</th>
@@ -41,7 +42,10 @@ export function AdminCoursesTable({
               </td>
               <td className="px-4 py-3 text-muted">{course.duration || "—"}</td>
               <td className="px-4 py-3 text-muted">₹{fees.registrationFeeInr}</td>
-              <td className="px-4 py-3 text-muted">₹{fees.monthlyFeeInr}</td>
+              <td className="px-4 py-3 text-muted">
+                ₹{fees.monthlyFeeInr}{" "}
+                <span className="text-xs text-muted/70">{getFeeFrequencyLabel(course.feeFrequency)}</span>
+              </td>
               <td className="px-4 py-3">
                 <Link
                   href={`/admin/courses/${course.id}/students`}

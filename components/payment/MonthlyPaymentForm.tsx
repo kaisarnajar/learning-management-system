@@ -2,6 +2,7 @@
 import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import { getPaymentYearOptions } from "@/lib/monthly-payments";
+import { getFeeFrequencyOption, isOneTimeFee, getFeeFrequencyLabel } from "@/lib/fee-frequency";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { submitMonthlyPayment } from "@/app/actions/payments";
@@ -25,14 +26,18 @@ const MONTHS = [
 
 type MonthlyPaymentFormProps = {
   courseId: string;
-  monthlyFeePaise: number;
+  /** Base fee amount in paise for the configured billing period. */
+  feePaise: number;
+  /** The course's configured fee frequency (e.g. "MONTHLY", "EVERY_3_MONTHS"). */
+  feeFrequency?: string | null;
   defaultMonth?: string;
   defaultYear?: string;
 };
 
 export function MonthlyPaymentForm({
   courseId,
-  monthlyFeePaise,
+  feePaise,
+  feeFrequency,
   defaultMonth,
   defaultYear,
 }: MonthlyPaymentFormProps) {
@@ -41,9 +46,12 @@ export function MonthlyPaymentForm({
   const yearOptions = getPaymentYearOptions(now);
   const defaultYearValue =
     defaultYear && yearOptions.includes(defaultYear) ? defaultYear : String(now.getFullYear());
+
+  const freqOption = getFeeFrequencyOption(feeFrequency);
+  const isOneTime = isOneTimeFee(feeFrequency);
+
   const [paymentMonth, setPaymentMonth] = useState(defaultMonth ?? String(now.getMonth() + 1).padStart(2, "0"));
   const [paymentYear, setPaymentYear] = useState(defaultYearValue);
-  const [feePeriod, setFeePeriod] = useState<"monthly" | "quarterly" | "half_yearly" | "yearly">("monthly");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
   const [transactionId, setTransactionId] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
@@ -51,8 +59,8 @@ export function MonthlyPaymentForm({
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const multiplier = feePeriod === "quarterly" ? 3 : feePeriod === "half_yearly" ? 6 : feePeriod === "yearly" ? 12 : 1;
-  const totalAmountPaise = monthlyFeePaise * multiplier;
+  // Amount is the base fee — multiplier already baked in at the course level
+  const totalAmountPaise = feePaise;
 
   function handleClearScreenshot() {
     setScreenshot(null);
@@ -70,11 +78,11 @@ export function MonthlyPaymentForm({
     try {
       const formData = new FormData();
       formData.append("courseId", courseId);
-      formData.append("paymentMonth", paymentMonth);
-      formData.append("paymentYear", paymentYear);
+      formData.append("paymentMonth", isOneTime ? "01" : paymentMonth);
+      formData.append("paymentYear", isOneTime ? String(now.getFullYear()) : paymentYear);
       formData.append("paymentMethod", paymentMethod);
       formData.append("upiTransactionId", transactionId.trim());
-      formData.append("paymentType", feePeriod);
+      formData.append("paymentType", freqOption.paymentType);
       if (screenshot && screenshot.size > 0) {
         formData.append("screenshot", screenshot);
       }
@@ -96,72 +104,57 @@ export function MonthlyPaymentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="feePeriod" className="block text-sm font-medium text-foreground">
-            Fee Period
-          </label>
-          <select
-            id="feePeriod"
-            value={feePeriod}
-            onChange={(e) => setFeePeriod(e.target.value as any)}
-            required
-            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm"
-          >
-            <option value="monthly">Monthly Fee (1 Month)</option>
-            <option value="quarterly">Quarterly Fee (3 Months)</option>
-            <option value="half_yearly">Half Yearly Fee (6 Months)</option>
-            <option value="yearly">Yearly Fee (12 Months)</option>
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-foreground">
-            Amount to Pay
-          </label>
-          <div className="mt-1 flex h-[42px] w-full items-center rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground">
-            ₹{(totalAmountPaise / 100).toFixed(2)}
-          </div>
-        </div>
+      {/* Fee summary badge */}
+      <div className="flex items-center justify-between rounded-lg border border-border bg-background/50 px-4 py-3">
+        <span className="text-sm text-muted">
+          Fee type: <span className="font-semibold text-foreground">{getFeeFrequencyLabel(feeFrequency)}</span>
+        </span>
+        <span className="text-sm font-bold text-foreground">
+          ₹{(totalAmountPaise / 100).toFixed(2)}
+        </span>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="paymentMonth" className="block text-sm font-medium text-foreground">
-            Starting Month
-          </label>
-          <select
-            id="paymentMonth"
-            value={paymentMonth}
-            onChange={(e) => setPaymentMonth(e.target.value)}
-            required
-            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm"
-          >
-            {MONTHS.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
+      {/* Month / year pickers — only for recurring fees */}
+      {!isOneTime && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="paymentMonth" className="block text-sm font-medium text-foreground">
+              Starting Month
+            </label>
+            <select
+              id="paymentMonth"
+              value={paymentMonth}
+              onChange={(e) => setPaymentMonth(e.target.value)}
+              required
+              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm"
+            >
+              {MONTHS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label htmlFor="paymentYear" className="block text-sm font-medium text-foreground">
+              Starting Year
+            </label>
+            <select
+              id="paymentYear"
+              value={paymentYear}
+              onChange={(e) => setPaymentYear(e.target.value)}
+              required
+              className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm"
+            >
+              {yearOptions.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-        <div>
-          <label htmlFor="paymentYear" className="block text-sm font-medium text-foreground">
-            Starting Year
-          </label>
-          <select
-            id="paymentYear"
-            value={paymentYear}
-            onChange={(e) => setPaymentYear(e.target.value)}
-            required
-            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm"
-          >
-            {yearOptions.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
+      )}
 
       <fieldset>
         <legend className="text-sm font-medium text-foreground">How did you pay?</legend>

@@ -10,6 +10,14 @@ import { OCCUPATION_VALUES } from "@/lib/occupations";
 
 export const levelEnum = z.enum(["Beginner", "Intermediate", "Advanced"]);
 
+export const feeFrequencyEnum = z.enum([
+  "MONTHLY",
+  "EVERY_3_MONTHS",
+  "EVERY_6_MONTHS",
+  "YEARLY",
+  "ONE_TIME",
+]).optional().default("MONTHLY");
+
 export const courseStatusEnum = z.enum([
   "DRAFT",
   "PUBLISHED",
@@ -28,7 +36,8 @@ export const courseSchema = z.object({
   level: levelEnum,
   category: courseCategoryEnum,
   enrollmentFeeInr: z.coerce.number().min(0, "Enrollment fee cannot be negative."),
-  monthlyFeeInr: z.coerce.number().min(0, "Monthly fee cannot be negative."),
+  monthlyFeeInr: z.coerce.number().min(0, "Fee amount cannot be negative."),
+  feeFrequency: feeFrequencyEnum,
   teacherId: z.string().min(1, "Teacher is required"),
   status: courseStatusEnum,
 });
@@ -134,7 +143,7 @@ export const monthlyPaymentSubmitSchema = z.object({
     .min(8, "Enter a valid transaction / UTR reference (at least 8 characters).")
     .max(50)
     .regex(/^[a-zA-Z0-9]+$/, "Reference should contain only letters and numbers."),
-  paymentType: z.enum(["monthly", "quarterly", "half_yearly", "yearly"]).optional().default("monthly"),
+  paymentType: z.enum(["monthly", "quarterly", "half_yearly", "yearly", "one_time"]).optional().default("monthly"),
 });
 
 export const enrollmentPaymentSubmitSchema = z.object({
@@ -269,7 +278,7 @@ export const paymentRecordSchema = z.object({
   courseId: z.string().optional(),
   amountInr: z.coerce.number().positive("Amount must be greater than zero."),
   paidAt: z.string().min(1, "Payment date is required."),
-  paymentType: z.enum(["monthly", "quarterly", "half_yearly", "yearly", "enrollment", "manual"]),
+  paymentType: z.enum(["monthly", "quarterly", "half_yearly", "yearly", "one_time", "enrollment", "manual"]),
 });
 
 const expenseCategoryEnum = z.string().trim().min(2, "Category is required.").max(100, "Category is too long.");

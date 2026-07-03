@@ -13,6 +13,7 @@ import { getPendingEnrollmentFeeSubmissionMap } from "@/lib/monthly-payments";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
 import { formatRollNumber } from "@/lib/roll-numbers";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { getFeeFrequencyLabel } from "@/lib/fee-frequency";
 
 type PageParams = { declined?: string; page?: string };
 
@@ -111,11 +112,11 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
                       href={`/profile/courses/${course.id}/pay`}
                       className="mt-4 flex min-h-11 items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-light"
                     >
-                      Pay Fee
+                      Pay {getFeeFrequencyLabel(course.feeFrequency)} Fee
                     </Link>
                   ) : (
                     <span className="mt-4 flex min-h-11 items-center justify-center rounded-full bg-surface-muted px-4 py-3 text-sm font-medium text-muted cursor-not-allowed">
-                      No monthly fee required
+                      No fee required
                     </span>
                   )
                 )}

@@ -80,6 +80,7 @@ export function validateCourseForm(values: CourseFormValues): FormValidationResu
       category: values.category,
       enrollmentFeeInr: values.enrollmentFeeInr,
       monthlyFeeInr: values.monthlyFeeInr,
+      feeFrequency: values.feeFrequency,
       teacherId: values.teacherId,
       status: values.status,
     }),

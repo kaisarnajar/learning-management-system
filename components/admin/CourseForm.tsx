@@ -13,6 +13,7 @@ import { getCourseStartDateInputValue } from "@/lib/course-start-date";
 import { HOMEPAGE_FEATURED_COURSES_MAX } from "@/lib/courses";
 import { getCoursePricingFromCourse, getDefaultFeesForLevel } from "@/lib/course-pricing";
 import { COURSE_STATUS_OPTIONS } from "@/lib/course-status";
+import { FEE_FREQUENCY_OPTIONS, getFeeFrequencyOption } from "@/lib/fee-frequency";
 import { labelClassName } from "@/lib/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
 import { useZodForm } from "@/lib/use-zod-form";
@@ -35,6 +36,7 @@ const COURSE_FIELDS: (keyof CourseFormValues)[] = [
   "level",
   "enrollmentFeeInr",
   "monthlyFeeInr",
+  "feeFrequency",
   "status",
 ];
 
@@ -62,6 +64,7 @@ export function CourseForm({ course, teachers, featuredCount, action, submitLabe
       level: (course?.level ?? "Beginner") as CourseFormValues["level"],
       enrollmentFeeInr: feeDefaults.registrationFeeInr,
       monthlyFeeInr: feeDefaults.monthlyFeeInr,
+      feeFrequency: (course?.feeFrequency ?? "MONTHLY") as CourseFormValues["feeFrequency"],
       status: course?.status ?? "PUBLISHED",
     },
     fields: COURSE_FIELDS,
@@ -300,9 +303,33 @@ export function CourseForm({ course, teachers, featuredCount, action, submitLabe
           )}
           <p className="mt-1 text-xs text-muted">Use 0 when there is no one-time enrollment fee.</p>
         </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="feeFrequency" className={labelClassName}>
+            Fee Frequency
+          </label>
+          <select
+            id="feeFrequency"
+            name="feeFrequency"
+            value={values.feeFrequency ?? "MONTHLY"}
+            onChange={(e) => updateField("feeFrequency", e.target.value as CourseFormValues["feeFrequency"])}
+            className={formFieldInputClass(false)}
+          >
+            {FEE_FREQUENCY_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-muted">
+            Controls how often students pay the fee below.{" "}
+            {getFeeFrequencyOption(values.feeFrequency).value === "ONE_TIME"
+              ? "Students pay once (no recurring billing)."
+              : `Students pay ${getFeeFrequencyOption(values.feeFrequency).label.toLowerCase()} from their profile.`}
+          </p>
+        </div>
         <div>
           <label htmlFor="monthlyFeeInr" className={labelClassName}>
-            Monthly fee (₹)
+            Fee Amount (₹)
           </label>
           <input
             id="monthlyFeeInr"
@@ -322,7 +349,9 @@ export function CourseForm({ course, teachers, featuredCount, action, submitLabe
               {errors.monthlyFeeInr}
             </p>
           )}
-          <p className="mt-1 text-xs text-muted">Paid monthly from the student profile after enrollment.</p>
+          <p className="mt-1 text-xs text-muted">
+            Amount due per billing period ({getFeeFrequencyOption(values.feeFrequency).label.toLowerCase()}).
+          </p>
         </div>
       </div>
 

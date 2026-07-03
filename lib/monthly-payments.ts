@@ -7,6 +7,7 @@ import {
   PAYMENT_TYPE_QUARTERLY,
   PAYMENT_TYPE_HALF_YEARLY,
   PAYMENT_TYPE_YEARLY,
+  PAYMENT_TYPE_ONE_TIME,
 } from "@/lib/monthly-payment-status";
 import { getCourseIdsByTitleSearch } from "@/lib/courses";
 import { APPROVAL_PAGE_SIZE, clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
@@ -65,7 +66,7 @@ export async function getPendingMonthlyPaymentsPaginated(
   noStore();
   const base = {
     status: MONTHLY_PAYMENT_PENDING,
-    paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY] }
+    paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY, PAYMENT_TYPE_ONE_TIME] }
   };
   const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
   const totalCount = await withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where }), "Database operation failed");
@@ -166,6 +167,9 @@ export function buildMonthlyFeeLabel(month: string, year: string, paymentType: s
   if (paymentType === "yearly") {
     return `Yearly fee — starting ${monthName} ${year}`;
   }
+  if (paymentType === "one_time") {
+    return `One-Time fee — ${year}`;
+  }
   return `Monthly fee — ${monthName} ${year}`;
 }
 
@@ -209,7 +213,7 @@ export async function getApprovedMonthlyPaymentsPaginated(
   noStore();
   const base = {
     status: MONTHLY_PAYMENT_APPROVED,
-    paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY] }
+    paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY, PAYMENT_TYPE_ONE_TIME] }
   };
   const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
   const totalCount = await withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where }), "Database operation failed");

@@ -30,6 +30,7 @@ function parseCourseForm(formData: FormData) {
     category: formData.get("category"),
     enrollmentFeeInr: formData.get("enrollmentFeeInr") ?? defaults.registrationFeeInr,
     monthlyFeeInr: formData.get("monthlyFeeInr") ?? defaults.monthlyFeeInr,
+    feeFrequency: formData.get("feeFrequency") ?? "MONTHLY",
     teacherId,
     status: formData.get("status"),
   });
@@ -47,6 +48,7 @@ function parseCourseForm(formData: FormData) {
       category: parsed.data.category,
       priceInrPaise: Math.round(parsed.data.enrollmentFeeInr * 100),
       monthlyFeeInrPaise: Math.round(parsed.data.monthlyFeeInr * 100),
+      feeFrequency: (parsed.data.feeFrequency ?? "MONTHLY") as import("@prisma/client").FeeFrequency,
       teacherId: parsed.data.teacherId,
       status: parsed.data.status,
       featuredOnHomepage,

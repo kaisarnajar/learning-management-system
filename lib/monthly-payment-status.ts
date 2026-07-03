@@ -2,6 +2,7 @@ export const PAYMENT_TYPE_MONTHLY = "monthly" as const;
 export const PAYMENT_TYPE_QUARTERLY = "quarterly" as const;
 export const PAYMENT_TYPE_HALF_YEARLY = "half_yearly" as const;
 export const PAYMENT_TYPE_YEARLY = "yearly" as const;
+export const PAYMENT_TYPE_ONE_TIME = "one_time" as const;
 export const PAYMENT_TYPE_ENROLLMENT = "enrollment" as const;
 export const PAYMENT_TYPE_MANUAL = "manual" as const;
 
@@ -11,6 +12,7 @@ export const INCOME_PAYMENT_TYPES = [
   PAYMENT_TYPE_QUARTERLY,
   PAYMENT_TYPE_HALF_YEARLY,
   PAYMENT_TYPE_YEARLY,
+  PAYMENT_TYPE_ONE_TIME,
   PAYMENT_TYPE_MANUAL,
 ] as const;
 
@@ -22,6 +24,7 @@ export function incomePaymentTypeLabel(type: string | null | undefined): string 
   if (type === PAYMENT_TYPE_QUARTERLY) return "Quarterly fee";
   if (type === PAYMENT_TYPE_HALF_YEARLY) return "Half Yearly fee";
   if (type === PAYMENT_TYPE_YEARLY) return "Yearly fee";
+  if (type === PAYMENT_TYPE_ONE_TIME) return "One-Time fee";
   if (type === PAYMENT_TYPE_MANUAL) return "Manual";
   return type ?? "Unknown";
 }

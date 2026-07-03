@@ -8,8 +8,9 @@ import { formatPrice, getCourseById } from "@/lib/courses";
 import { prisma } from "@/lib/prisma";
 import { isUpiConfigured } from "@/lib/upi";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { getFeeFrequencyLabel, getFeeFrequencySuffix } from "@/lib/fee-frequency";
 
-export default async function PayMonthlyFeePage({
+export default async function PayFeePage({
   params,
 }: {
   params: Promise<{ courseId: string }>;
@@ -38,7 +39,11 @@ export default async function PayMonthlyFeePage({
     );
   }
 
-  const amountLabel = formatPrice(getMonthlyFeePaise(course));
+  const feePaise = getMonthlyFeePaise(course);
+  const feeFrequency = course.feeFrequency ?? "MONTHLY";
+  const freqLabel = getFeeFrequencyLabel(feeFrequency);
+  const freqSuffix = getFeeFrequencySuffix(feeFrequency);
+  const amountLabel = formatPrice(feePaise);
 
   return (
     <div>
@@ -48,21 +53,27 @@ export default async function PayMonthlyFeePage({
 
       <h2 className="mt-4 font-serif text-lg font-semibold text-foreground">Pay Fee</h2>
       <p className="mt-1 text-sm text-muted">{course.title}</p>
-      <p className="mt-2 text-sm font-medium text-foreground">Amount: {amountLabel} per month</p>
+      <p className="mt-2 text-sm font-medium text-foreground">
+        {amountLabel} {freqSuffix} · <span className="text-muted">{freqLabel}</span>
+      </p>
 
       <div className="mx-auto mt-8 max-w-5xl space-y-8">
         <PaymentDetailsPanel
           amountLabel={amountLabel}
-          amountPaise={getMonthlyFeePaise(course)}
-          paymentNote={`${course.title} monthly`.slice(0, 80)}
+          amountPaise={feePaise}
+          paymentNote={`${course.title} — ${freqLabel}`.slice(0, 80)}
         />
         <div className="card-elevated p-6 sm:p-8">
           <h3 className="text-sm font-bold uppercase tracking-wide text-primary">Submit payment</h3>
           <p className="mt-2 text-sm text-muted">
-            After paying by UPI or bank transfer, select the month and enter your transaction reference.
+            After paying by UPI or bank transfer, enter your transaction reference below.
           </p>
           <div className="mt-6">
-            <MonthlyPaymentForm courseId={course.id} monthlyFeePaise={getMonthlyFeePaise(course)} />
+            <MonthlyPaymentForm
+              courseId={course.id}
+              feePaise={feePaise}
+              feeFrequency={feeFrequency}
+            />
           </div>
         </div>
       </div>

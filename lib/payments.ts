@@ -5,6 +5,7 @@ import { withDbErrorHandling } from "@/lib/db-error";
 import { getMonthlyFeePaise, getRegistrationFeePaise } from "@/lib/course-pricing";
 import { getCourseById } from "@/lib/courses";
 import { buildMonthlyFeeLabel, buildEnrollmentFeeLabel } from "@/lib/monthly-payments";
+import { getFeeFrequencyPaymentType } from "@/lib/fee-frequency";
 import {
   MONTHLY_PAYMENT_PENDING,
   MONTHLY_PAYMENT_APPROVED,
@@ -59,10 +60,13 @@ export async function processMonthlyPayment(
   paymentMethod: string | null,
   upiTransactionId: string | null,
   screenshotFile: File | null,
-  paymentType: string = "monthly"
+  paymentType?: string // kept for backward compat but now ignored — derived from course
 ) {
   const course = await getCourseById(courseId);
   if (!course) return { error: "Course not found.", status: 404 };
+
+  // Always use the course-configured fee frequency — student cannot override it
+  const derivedPaymentType = getFeeFrequencyPaymentType(course.feeFrequency);
 
   const enrollment = await prisma.enrollment.findUnique({
     where: { userId_courseId: { userId, courseId: course.id } },
@@ -72,7 +76,7 @@ export async function processMonthlyPayment(
     return { error: "You must be enrolled and approved in this course before paying course fees.", status: 400 };
   }
 
-  const label = buildMonthlyFeeLabel(paymentMonth, paymentYear, paymentType);
+  const label = buildMonthlyFeeLabel(paymentMonth, paymentYear, derivedPaymentType);
 
   const duplicatePending = await prisma.coursePaymentSubmission.findFirst({
     where: {
@@ -92,13 +96,12 @@ export async function processMonthlyPayment(
     };
   }
 
-  const multiplier = paymentType === "quarterly" ? 3 : paymentType === "half_yearly" ? 6 : paymentType === "yearly" ? 12 : 1;
-  const amountInrPaise = getMonthlyFeePaise(course) * multiplier;
+  const amountInrPaise = getMonthlyFeePaise(course);
 
   const submissionResult = await createCoursePaymentSubmission({
     userId,
     courseId: course.id,
-    paymentType,
+    paymentType: derivedPaymentType,
     label,
     amountInrPaise,
     status: MONTHLY_PAYMENT_PENDING,

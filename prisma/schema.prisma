@@ -39,6 +39,14 @@ enum CourseStatus {
   ON_HOLD
 }
 
+enum FeeFrequency {
+  MONTHLY
+  EVERY_3_MONTHS
+  EVERY_6_MONTHS
+  YEARLY
+  ONE_TIME
+}
+
 enum AnnouncementCategory {
   EXAMS_TESTS
   ASSIGNMENTS_HOMEWORK
@@ -189,6 +197,7 @@ model Course {
   category           String
   priceInrPaise      Int
   monthlyFeeInrPaise Int
+  feeFrequency       FeeFrequency?
   teacherId          String?
   status             CourseStatus         @default(PUBLISHED)
   featuredOnHomepage Boolean              @default(false)

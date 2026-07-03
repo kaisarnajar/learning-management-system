@@ -3,9 +3,14 @@ import {
   getCoursePricingFromCourse,
   type CourseFeeSource,
 } from "@/lib/course-pricing";
+import { getFeeFrequencyLabel, getFeeFrequencySuffix } from "@/lib/fee-frequency";
+
+type CourseFeeSourceWithFreq = CourseFeeSource & {
+  feeFrequency?: string | null;
+};
 
 type CoursePricingDisplayProps = {
-  course: CourseFeeSource;
+  course: CourseFeeSourceWithFreq;
   className?: string;
   compact?: boolean;
 };
@@ -17,12 +22,15 @@ export function CoursePricingDisplay({
 }: CoursePricingDisplayProps) {
   const pricing = getCoursePricingFromCourse(course);
   const enrollmentLabel = formatEnrollmentFeeLabel(course);
+  const freqLabel = getFeeFrequencyLabel(course.feeFrequency);
+  const freqSuffix = getFeeFrequencySuffix(course.feeFrequency);
 
   if (compact) {
     return (
       <p className={`text-sm text-muted ${className}`}>
         Enrollment: {enrollmentLabel} ·{" "}
-        <span className="font-semibold text-foreground">₹{pricing.monthlyFeeInr}</span>/mo
+        <span className="font-semibold text-foreground">₹{pricing.monthlyFeeInr}</span>{" "}
+        <span className="text-xs">{freqSuffix}</span>
       </p>
     );
   }
@@ -33,8 +41,9 @@ export function CoursePricingDisplay({
         <span className="font-medium text-foreground">Enrollment:</span> {enrollmentLabel}
       </p>
       <p className="text-sm text-muted">
-        <span className="font-medium text-foreground">Monthly fee:</span> ₹{pricing.monthlyFeeInr}
-        /month
+        <span className="font-medium text-foreground">Fee:</span> ₹{pricing.monthlyFeeInr}{" "}
+        {freqSuffix}{" "}
+        <span className="text-xs text-muted">({freqLabel})</span>
       </p>
     </div>
   );

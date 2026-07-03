@@ -62,7 +62,7 @@ export default async function PayMonthlyFeePage({
             After paying by UPI or bank transfer, select the month and enter your transaction reference.
           </p>
           <div className="mt-6">
-            <MonthlyPaymentForm courseId={course.id} />
+            <MonthlyPaymentForm courseId={course.id} monthlyFeePaise={getMonthlyFeePaise(course)} />
           </div>
         </div>
       </div>

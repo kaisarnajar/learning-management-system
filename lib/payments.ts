@@ -58,7 +58,8 @@ export async function processMonthlyPayment(
   paymentYear: string,
   paymentMethod: string | null,
   upiTransactionId: string | null,
-  screenshotFile: File | null
+  screenshotFile: File | null,
+  paymentType: string = "monthly"
 ) {
   const course = await getCourseById(courseId);
   if (!course) return { error: "Course not found.", status: 404 };
@@ -68,10 +69,10 @@ export async function processMonthlyPayment(
   });
 
   if (!enrollment || (enrollment.status !== "active" && enrollment.status !== "completed")) {
-    return { error: "You must be enrolled and approved in this course before paying monthly fees.", status: 400 };
+    return { error: "You must be enrolled and approved in this course before paying course fees.", status: 400 };
   }
 
-  const label = buildMonthlyFeeLabel(paymentMonth, paymentYear);
+  const label = buildMonthlyFeeLabel(paymentMonth, paymentYear, paymentType);
 
   const duplicatePending = await prisma.coursePaymentSubmission.findFirst({
     where: {
@@ -91,12 +92,15 @@ export async function processMonthlyPayment(
     };
   }
 
+  const multiplier = paymentType === "quarterly" ? 3 : paymentType === "half_yearly" ? 6 : paymentType === "yearly" ? 12 : 1;
+  const amountInrPaise = getMonthlyFeePaise(course) * multiplier;
+
   const submissionResult = await createCoursePaymentSubmission({
     userId,
     courseId: course.id,
-    paymentType: PAYMENT_TYPE_MONTHLY,
+    paymentType,
     label,
-    amountInrPaise: getMonthlyFeePaise(course),
+    amountInrPaise,
     status: MONTHLY_PAYMENT_PENDING,
     paymentMethod,
     upiTransactionId,

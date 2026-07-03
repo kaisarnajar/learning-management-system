@@ -19,6 +19,7 @@ export async function submitMonthlyPayment(formData: FormData) {
       paymentYear: formData.get("paymentYear"),
       paymentMethod: formData.get("paymentMethod"),
       upiTransactionId: formData.get("upiTransactionId"),
+      paymentType: formData.get("paymentType"),
     });
 
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid payment details.", status: 400 };
@@ -35,12 +36,13 @@ export async function submitMonthlyPayment(formData: FormData) {
       parsed.data.paymentYear,
       parsed.data.paymentMethod ?? null,
       parsed.data.upiTransactionId ?? null,
-      screenshotFile
+      screenshotFile,
+      parsed.data.paymentType
     );
 
     if (result.error) return { error: result.error, status: result.status ?? 400 };
 
-    return { redirectUrl: "/profile/payments?submitted=1", message: "Thank you! We will verify your monthly fee payment shortly." };
+    return { redirectUrl: "/profile/payments?submitted=1", message: "Thank you! We will verify your course fee payment shortly." };
   } catch (error) {
     console.error("Caught error:", error);
     return { error: "Could not submit payment. Please try again.", status: 500 };

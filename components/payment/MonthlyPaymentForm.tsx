@@ -25,12 +25,14 @@ const MONTHS = [
 
 type MonthlyPaymentFormProps = {
   courseId: string;
+  monthlyFeePaise: number;
   defaultMonth?: string;
   defaultYear?: string;
 };
 
 export function MonthlyPaymentForm({
   courseId,
+  monthlyFeePaise,
   defaultMonth,
   defaultYear,
 }: MonthlyPaymentFormProps) {
@@ -41,12 +43,16 @@ export function MonthlyPaymentForm({
     defaultYear && yearOptions.includes(defaultYear) ? defaultYear : String(now.getFullYear());
   const [paymentMonth, setPaymentMonth] = useState(defaultMonth ?? String(now.getMonth() + 1).padStart(2, "0"));
   const [paymentYear, setPaymentYear] = useState(defaultYearValue);
+  const [feePeriod, setFeePeriod] = useState<"monthly" | "quarterly" | "half_yearly" | "yearly">("monthly");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
   const [transactionId, setTransactionId] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  const multiplier = feePeriod === "quarterly" ? 3 : feePeriod === "half_yearly" ? 6 : feePeriod === "yearly" ? 12 : 1;
+  const totalAmountPaise = monthlyFeePaise * multiplier;
 
   function handleClearScreenshot() {
     setScreenshot(null);
@@ -68,6 +74,7 @@ export function MonthlyPaymentForm({
       formData.append("paymentYear", paymentYear);
       formData.append("paymentMethod", paymentMethod);
       formData.append("upiTransactionId", transactionId.trim());
+      formData.append("paymentType", feePeriod);
       if (screenshot && screenshot.size > 0) {
         formData.append("screenshot", screenshot);
       }
@@ -91,8 +98,36 @@ export function MonthlyPaymentForm({
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
+          <label htmlFor="feePeriod" className="block text-sm font-medium text-foreground">
+            Fee Period
+          </label>
+          <select
+            id="feePeriod"
+            value={feePeriod}
+            onChange={(e) => setFeePeriod(e.target.value as any)}
+            required
+            className="mt-1 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm"
+          >
+            <option value="monthly">Monthly Fee (1 Month)</option>
+            <option value="quarterly">Quarterly Fee (3 Months)</option>
+            <option value="half_yearly">Half Yearly Fee (6 Months)</option>
+            <option value="yearly">Yearly Fee (12 Months)</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-foreground">
+            Amount to Pay
+          </label>
+          <div className="mt-1 flex h-[42px] w-full items-center rounded-lg border border-border bg-background px-3 text-sm font-semibold text-foreground">
+            ₹{(totalAmountPaise / 100).toFixed(2)}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div>
           <label htmlFor="paymentMonth" className="block text-sm font-medium text-foreground">
-            Month
+            Starting Month
           </label>
           <select
             id="paymentMonth"
@@ -110,7 +145,7 @@ export function MonthlyPaymentForm({
         </div>
         <div>
           <label htmlFor="paymentYear" className="block text-sm font-medium text-foreground">
-            Year
+            Starting Year
           </label>
           <select
             id="paymentYear"
@@ -207,7 +242,7 @@ export function MonthlyPaymentForm({
         disabled={loading}
         className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-light disabled:opacity-60"
       >
-        {loading ? "Submitting…" : "Submit monthly fee for verification"}
+        {loading ? "Submitting…" : "Submit fee payment for verification"}
       </SubmitButton>
     </form>
   );

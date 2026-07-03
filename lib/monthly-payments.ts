@@ -133,7 +133,7 @@ export function isPaymentYearAllowed(year: string, referenceDate = new Date()): 
   return y >= min && y <= max;
 }
 
-export function buildMonthlyFeeLabel(month: string, year: string): string {
+export function buildMonthlyFeeLabel(month: string, year: string, paymentType: string = "monthly"): string {
   const monthNames = [
     "January",
     "February",
@@ -150,6 +150,16 @@ export function buildMonthlyFeeLabel(month: string, year: string): string {
   ];
   const index = Number.parseInt(month, 10) - 1;
   const monthName = monthNames[index] ?? month;
+
+  if (paymentType === "quarterly") {
+    return `Quarterly fee — starting ${monthName} ${year}`;
+  }
+  if (paymentType === "half_yearly") {
+    return `Half Yearly fee — starting ${monthName} ${year}`;
+  }
+  if (paymentType === "yearly") {
+    return `Yearly fee — starting ${monthName} ${year}`;
+  }
   return `Monthly fee — ${monthName} ${year}`;
 }
 

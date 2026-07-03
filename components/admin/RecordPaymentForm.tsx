@@ -135,6 +135,9 @@ export function RecordPaymentForm({ courses }: RecordPaymentFormProps) {
         </label>
         <select id="paymentType" name="paymentType" className={inputClassName} defaultValue="monthly" required>
           <option value="monthly">Monthly Fee</option>
+          <option value="quarterly">Quarterly Fee</option>
+          <option value="half_yearly">Half Yearly Fee</option>
+          <option value="yearly">Yearly Fee</option>
           <option value="enrollment">Enrollment Fee</option>
           <option value="manual">Other</option>
         </select>

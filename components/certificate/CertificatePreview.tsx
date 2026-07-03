@@ -1,7 +1,7 @@
 "use client";
 
 import { Mail, Loader2 } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { PageHeader } from "@/components/site/PageHeader";
 import { useToast } from "@/components/shared/ToastProvider";
 import { sendCertificateToEmailAction } from "@/app/actions/certificates";
@@ -10,6 +10,13 @@ export function CertificatePreview({ enrollmentId }: { enrollmentId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const { addToast } = useToast();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 6000); // 6s safety timeout
+    return () => clearTimeout(timer);
+  }, []);
 
   const iframeSrc = `/api/certificate/${enrollmentId}?inline=1#toolbar=0&navpanes=0&scrollbar=0`;
 

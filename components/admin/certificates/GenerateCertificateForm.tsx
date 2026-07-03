@@ -53,7 +53,6 @@ export function GenerateCertificateForm({ enrollments }: GenerateCertificateForm
         addToast("Certificate generated successfully.", "success");
         // Redirect to preview page
         router.push(`/admin/certificates/${enrollmentId}`);
-        router.refresh();
       }
     });
   };

@@ -55,55 +55,6 @@ export async function generateCertificate(enrollmentId: string, certificateType:
     },
   });
 
-  after(async () => {
-    try {
-      const course = await getCourseById(enrollment.courseId);
-      const courseTitle = course?.title ?? "Course";
-
-      const issueDate = new Date().toLocaleDateString("en-IN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-
-      const pdfBuffer = await generateCertificatePdf({
-        studentName: enrollment.user.name || "Student",
-        studentAddress: enrollment.user.address,
-        courseTitle,
-        issueDate,
-        certificateNumber,
-        certificateType,
-        certificateGrade: certificateType === "COMPLETION" ? (certificateGrade ?? null) : null,
-        startDelayMs: 3000,
-      });
-      const pdfFilename = getCertificateFilename(courseTitle, enrollmentId);
-
-      const result = await sendCertificateEmail({
-        to: enrollment.user.email,
-        studentName: enrollment.user.name || "",
-        courseTitle,
-        certificateNumber,
-        certificateType,
-        pdfBuffer,
-        pdfFilename,
-      });
-
-      if (result.sent) {
-        await prisma.enrollment.update({
-          where: { id: enrollmentId },
-          data: { certificateEmailSentAt: new Date() },
-        });
-        console.info("[cert-email] Certificate email sent to:", enrollment.user.email);
-      } else if (result.skipped) {
-        console.info("[cert-email] Email skipped (SMTP not configured).");
-      } else {
-        console.error("[cert-email] Failed to send certificate email:", result.error);
-      }
-    } catch (err) {
-      console.error("[cert-email] Unexpected error while sending certificate email:", err);
-    }
-  });
-
   return { success: "Certificate generated successfully.", certificateNumber };
 }
 

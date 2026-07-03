@@ -1,7 +1,5 @@
 "use server";
 
-import { after } from "next/server";
-
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
@@ -81,68 +79,6 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
     },
   });
 
-  // Fire-and-forget: generate PDF and send email in the background.
-  // Errors are logged but never thrown — the admin action always succeeds.
-  after(async () => {
-    try {
-      const course = record.courseId ? await getCourseById(record.courseId) : null;
-      const courseTitle = course?.title ?? "Darse Quran Academy";
-
-      const { receiptData, filename: pdfFilename } = await prepareReceiptData(record, courseTitle, {
-        invoiceNumberOverride: invoiceNumber,
-        includeGstOverride: includeGst,
-        baseAmountPaiseOverride: baseAmount,
-        gstAmountPaiseOverride: gstAmount,
-      });
-
-      const componentHtml = renderReceiptToHtml(receiptData);
-      const fullHtml = `
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-          <meta charset="UTF-8">
-          <script src="https://cdn.tailwindcss.com"></script>
-          <style>
-            @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-            body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: white !important; margin: 0; }
-            img { max-width: 100%; height: auto; }
-          </style>
-        </head>
-        <body>
-          <div class="p-8 flex justify-center min-h-screen">${componentHtml}</div>
-        </body>
-        </html>
-      `;
-
-      const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false, startDelayMs: 3000 });
-      const amountStr = `₹${(record.amountInrPaise / 100).toFixed(2)}`;
-
-      const result = await sendReceiptEmail({
-        to: record.user.email,
-        studentName: record.user.name || "",
-        courseTitle,
-        invoiceNumber,
-        amountStr,
-        pdfBuffer,
-        pdfFilename,
-      });
-
-      if (result.sent) {
-        await prisma.paymentRecord.update({
-          where: { id: paymentRecordId },
-          data: { receiptEmailSentAt: new Date() },
-        });
-        console.info("[receipt-email] Receipt email sent to:", record.user.email);
-      } else if (result.skipped) {
-        console.info("[receipt-email] Email skipped (SMTP not configured).");
-      } else {
-        console.error("[receipt-email] Failed to send receipt email:", result.error);
-      }
-    } catch (err) {
-      console.error("[receipt-email] Unexpected error while sending receipt email:", err);
-    }
-  });
-
   return { success: true, invoiceNumber };
 }
 
@@ -179,4 +115,84 @@ export async function deleteReceipt(paymentRecordId: string) {
   });
 
   return { success: true };
+}
+
+export async function sendReceiptToEmailAction(paymentRecordId: string): Promise<{ success?: boolean; error?: string }> {
+  const session = await auth();
+  const isAdmin = isAdminSession(session);
+
+  if (!isAdmin) {
+    return { error: "Unauthorized: Only admins can send receipts." };
+  }
+
+  const record = await prisma.paymentRecord.findUnique({
+    where: { id: paymentRecordId },
+    include: {
+      user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } },
+      submission: { select: { paymentMethod: true, upiTransactionId: true, label: true } },
+    },
+  });
+
+  if (!record || !record.receiptGeneratedAt || !record.invoiceNumber) {
+    return { error: "Receipt has not been generated yet or payment record not found." };
+  }
+
+  try {
+    const course = record.courseId ? await getCourseById(record.courseId) : null;
+    const courseTitle = course?.title ?? "Darse Quran Academy";
+
+    const { receiptData, filename: pdfFilename } = await prepareReceiptData(record, courseTitle, {
+      invoiceNumberOverride: record.invoiceNumber,
+      includeGstOverride: record.receiptIncludesGst ?? false,
+      baseAmountPaiseOverride: record.receiptFeeAmountPaise ?? record.amountInrPaise,
+      gstAmountPaiseOverride: record.receiptGstAmountPaise ?? 0,
+    });
+
+    const componentHtml = renderReceiptToHtml(receiptData);
+    const fullHtml = `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <style>
+          @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
+          body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: white !important; margin: 0; }
+          img { max-width: 100%; height: auto; }
+        </style>
+      </head>
+      <body>
+        <div class="p-8 flex justify-center min-h-screen">${componentHtml}</div>
+      </body>
+      </html>
+    `;
+
+    const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false });
+    const amountStr = `₹${(record.amountInrPaise / 100).toFixed(2)}`;
+
+    const result = await sendReceiptEmail({
+      to: record.user.email,
+      studentName: record.user.name || "",
+      courseTitle,
+      invoiceNumber: record.invoiceNumber,
+      amountStr,
+      pdfBuffer,
+      pdfFilename,
+    });
+
+    if (result.sent) {
+      await prisma.paymentRecord.update({
+        where: { id: paymentRecordId },
+        data: { receiptEmailSentAt: new Date() },
+      });
+      return { success: true };
+    } else if (result.skipped) {
+      return { error: "Email skipped (SMTP not configured)." };
+    } else {
+      return { error: result.error || "Failed to send email." };
+    }
+  } catch (error) {
+    console.error("sendReceiptToEmailAction error:", error);
+    return { error: "Unexpected error while sending receipt email." };
+  }
 }

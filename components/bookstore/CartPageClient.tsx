@@ -54,13 +54,6 @@ function PastOrderCard({ order }: { order: PastOrder }) {
           >
             {bookOrderStatusLabel(order.status)}
           </span>
-          {order.paymentRecordId && order.receiptGeneratedAt && (
-            <ReceiptActionButtons
-              paymentRecordId={order.paymentRecordId}
-              receiptGeneratedAt={order.receiptGeneratedAt}
-              isAdmin={false}
-            />
-          )}
         </div>
       </div>
 

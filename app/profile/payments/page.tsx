@@ -137,7 +137,6 @@ async function PaymentsContent({ params, userId }: { params: PageParams; userId:
                     <th className="px-4 py-3 font-medium">Amount</th>
                     <th className="px-4 py-3 font-medium">Course</th>
                     <th className="px-4 py-3 font-medium">Description</th>
-                    <th className="px-4 py-3 font-medium">Receipt</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -159,13 +158,6 @@ async function PaymentsContent({ params, userId }: { params: PageParams; userId:
                           : "—"}
                       </td>
                       <td className="px-4 py-3 text-muted">{payment.description ?? "—"}</td>
-                      <td className="px-4 py-3">
-                        <ReceiptActionButtons 
-                          paymentRecordId={payment.id} 
-                          receiptGeneratedAt={payment.receiptGeneratedAt}
-                          isAdmin={false}
-                        />
-                      </td>
                     </tr>
                   ))}
                 </tbody>

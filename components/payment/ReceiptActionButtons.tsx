@@ -45,7 +45,7 @@ export function ReceiptActionButtons({
       await generateReceipt(paymentRecordId, includeGst);
       setIsOpen(false);
       addToast("Receipt generated successfully.", "success");
-      router.refresh();
+      router.push(`/admin/receipts/${paymentRecordId}`);
     } catch (e: unknown) {
       console.error(e);
       const msg = e instanceof Error ? e.message : "Failed to generate receipt";
@@ -58,20 +58,19 @@ export function ReceiptActionButtons({
 
   const btnClass = "inline-flex min-h-9 items-center justify-center rounded-md border border-primary bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors disabled:opacity-60";
 
+  if (!isAdmin) {
+    return null;
+  }
+
   if (receiptGeneratedAt) {
     return (
       <Link
-        href={`/api/receipt/${paymentRecordId}`}
-        target="_blank"
+        href={`/admin/receipts/${paymentRecordId}`}
         className={btnClass}
       >
         {label}
       </Link>
     );
-  }
-
-  if (!isAdmin) {
-    return <span className="text-xs text-muted">Pending Generation</span>;
   }
 
   return (

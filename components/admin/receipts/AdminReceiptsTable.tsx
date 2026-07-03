@@ -85,8 +85,7 @@ export function AdminReceiptsTable({
               <td className="px-4 py-3 text-right">
                 <div className="flex items-center justify-end gap-2">
                   <Link
-                    href={`/api/receipt/${receipt.id}`}
-                    target="_blank"
+                    href={`/admin/receipts/${receipt.id}`}
                     className="inline-flex min-h-8 items-center justify-center rounded-md border border-primary bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors"
                   >
                     View

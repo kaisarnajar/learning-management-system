@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 
-import { CertificateActionButtons } from "@/components/certificate/CertificateActionButtons";
+
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
@@ -111,14 +111,7 @@ export default async function CourseStudentsPage({
                       >
                         Grade Card
                       </Link>
-                      {isCompletedCourse && (
-                          <CertificateActionButtons 
-                            enrollmentId={enrollment.id}
-                            certificateGeneratedAt={enrollment.certificateGeneratedAt}
-                            isAdmin={true}
-                            courseTitle={course.title}
-                          />
-                        )}
+
                       <ConfirmationModal 
                         title="Remove Enrollment" 
                         description={`Remove ${enrollment.user.name ?? enrollment.user.email} from this course? Their account will not be deleted; they can enroll again later.`} 

@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
-import { CertificateActionButtons } from "@/components/certificate/CertificateActionButtons";
 import { Pagination } from "@/components/shared/Pagination";
 import { requireUser } from "@/lib/auth-actions";
-import { canDownloadCertificate } from "@/lib/certificate";
 import { Suspense } from "react";
 
 import {
@@ -145,14 +143,7 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
                   </>
                 )}
 
-                {canDownloadCertificate(course.status, enrollment.status) && (
-                  <CertificateActionButtons 
-                    enrollmentId={enrollment.id} 
-                    certificateGeneratedAt={enrollment.certificateGeneratedAt}
-                    isAdmin={false}
-                    courseTitle={course.title} 
-                  />
-                )}
+
 
                 {enrollment.completedAt && (
                   <p className="mt-3 text-xs text-muted">

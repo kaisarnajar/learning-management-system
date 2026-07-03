@@ -13,6 +13,13 @@ export async function GET(
   const { enrollmentId } = await params;
   const inline = new URL(request.url).searchParams.get("inline") === "1";
 
+  const session = await auth();
+  const isAdmin = isAdminSession(session);
+
+  if (!isAdmin) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+
   const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
       where: { id: enrollmentId },
       include: {
@@ -29,26 +36,14 @@ export async function GET(
     return NextResponse.json({ error: "Course not found." }, { status: 404 });
   }
 
-  if (!canDownloadCertificate(course.status, enrollment.status)) {
-    return NextResponse.json({ error: "Certificate is not available yet." }, { status: 404 });
-  }
-
-  const session = await auth();
-  const isOwner = session?.user?.id === enrollment.userId;
-  const isAdmin = isAdminSession(session);
-
-  if (!isOwner && !isAdmin) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
-  }
-
   if (!enrollment.certificateGeneratedAt || !enrollment.certificateNumber) {
     return NextResponse.json({ error: "Certificate has not been generated yet." }, { status: 400 });
   }
 
   const filename = getCertificateFilename(course.title, enrollmentId);
   
-  const issueDate = enrollment.completedAt 
-    ? enrollment.completedAt.toLocaleDateString("en-IN", {
+  const issueDate = enrollment.certificateGeneratedAt 
+    ? enrollment.certificateGeneratedAt.toLocaleDateString("en-IN", {
         year: "numeric",
         month: "long",
         day: "numeric",

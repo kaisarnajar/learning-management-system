@@ -3,6 +3,7 @@ import { getGeneratedCertificatesPaginated } from "@/lib/certificates-admin";
 import { AdminCertificatesTable } from "@/components/admin/certificates/AdminCertificatesTable";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Certificates Management | Admin",
@@ -28,6 +29,14 @@ export default async function AdminCertificatesPage({
           <p className="mt-1 text-sm text-muted">
             View and search all generated certificates for students.
           </p>
+        </div>
+        <div>
+          <Link
+            href="/admin/certificates/new"
+            className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-light transition-colors"
+          >
+            Generate New Certificate
+          </Link>
         </div>
       </header>
 

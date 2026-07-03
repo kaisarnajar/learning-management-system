@@ -139,3 +139,68 @@ export async function deleteCertificate(enrollmentId: string) {
 
   return { success: "Certificate deleted successfully." };
 }
+
+export async function sendCertificateToEmailAction(enrollmentId: string): Promise<{ success?: boolean; error?: string }> {
+  const session = await auth();
+  const isAdmin = isAdminSession(session);
+
+  if (!isAdmin) {
+    return { error: "Unauthorized: Only admins can send certificates." };
+  }
+
+  const enrollment = await prisma.enrollment.findUnique({
+    where: { id: enrollmentId },
+    include: { user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } } },
+  });
+
+  if (!enrollment || !enrollment.certificateGeneratedAt || !enrollment.certificateNumber) {
+    return { error: "Certificate has not been generated yet or enrollment not found." };
+  }
+
+  try {
+    const course = await getCourseById(enrollment.courseId);
+    const courseTitle = course?.title ?? "Course";
+
+    const issueDate = enrollment.certificateGeneratedAt.toLocaleDateString("en-IN", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
+    const pdfBuffer = await generateCertificatePdf({
+      studentName: enrollment.user.name || "Student",
+      studentAddress: enrollment.user.address,
+      courseTitle,
+      issueDate,
+      certificateNumber: enrollment.certificateNumber,
+      certificateType: (enrollment.certificateType as "APPRECIATION" | "COMPLETION" | null) || "COMPLETION",
+      certificateGrade: enrollment.certificateGrade,
+    });
+    const pdfFilename = getCertificateFilename(courseTitle, enrollmentId);
+
+    const result = await sendCertificateEmail({
+      to: enrollment.user.email,
+      studentName: enrollment.user.name || "",
+      courseTitle,
+      certificateNumber: enrollment.certificateNumber,
+      certificateType: (enrollment.certificateType as "APPRECIATION" | "COMPLETION" | null) || "COMPLETION",
+      pdfBuffer,
+      pdfFilename,
+    });
+
+    if (result.sent) {
+      await prisma.enrollment.update({
+        where: { id: enrollmentId },
+        data: { certificateEmailSentAt: new Date() },
+      });
+      return { success: true };
+    } else if (result.skipped) {
+      return { error: "Email skipped (SMTP not configured)." };
+    } else {
+      return { error: result.error || "Failed to send email." };
+    }
+  } catch (error) {
+    console.error("sendCertificateToEmailAction error:", error);
+    return { error: "Unexpected error while sending certificate email." };
+  }
+}

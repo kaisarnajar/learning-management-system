@@ -41,10 +41,10 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
       <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-gold/0 via-gold/40 to-gold/0" />
 
       {/* Rosette Ornaments in Corners */}
-      <div className="absolute top-12 left-12 text-[#cca72f]/30 pointer-events-none select-none hidden md:block">
+      <div className="absolute top-12 left-12 text-[#cca72f] pointer-events-none select-none hidden md:block">
         <RosetteIcon className="w-24 h-24" />
       </div>
-      <div className="absolute bottom-12 right-12 text-[#cca72f]/30 pointer-events-none select-none hidden md:block">
+      <div className="absolute bottom-12 right-12 text-[#cca72f] pointer-events-none select-none hidden md:block">
         <RosetteIcon className="w-24 h-24" />
       </div>
 

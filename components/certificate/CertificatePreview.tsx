@@ -10,6 +10,7 @@ export function CertificatePreview({ enrollmentId }: { enrollmentId: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const { addToast } = useToast();
+  const [timestamp] = useState(() => Date.now());
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -18,7 +19,7 @@ export function CertificatePreview({ enrollmentId }: { enrollmentId: string }) {
     return () => clearTimeout(timer);
   }, []);
 
-  const iframeSrc = `/api/certificate/${enrollmentId}?inline=1#toolbar=0&navpanes=0&scrollbar=0`;
+  const iframeSrc = `/api/certificate/${enrollmentId}?inline=1&t=${timestamp}#toolbar=0&navpanes=0&scrollbar=0`;
 
   const handleSendEmail = () => {
     startTransition(async () => {

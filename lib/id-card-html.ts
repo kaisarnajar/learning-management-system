@@ -268,7 +268,7 @@ export async function generateIdCardPdf(user: {
           imageUrl = imageUrl.replace(/=s\d+-c/g, "=s1000-c");
         }
         
-        const res = await fetch(imageUrl);
+        const res = await fetch(imageUrl, { cache: "no-store" });
         if (res.ok) {
           const buffer = await res.arrayBuffer();
           const mimeType = res.headers.get("content-type") || "image/jpeg";

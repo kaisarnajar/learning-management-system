@@ -10,8 +10,9 @@ export function AttendanceCardPreview({ enrollmentId }: { enrollmentId: string }
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const { addToast } = useToast();
+  const [timestamp] = useState(() => Date.now());
 
-  const iframeSrc = `/api/attendance-card?inline=1&enrollmentId=${enrollmentId}#toolbar=0&navpanes=0&scrollbar=0`;
+  const iframeSrc = `/api/attendance-card?inline=1&enrollmentId=${enrollmentId}&t=${timestamp}#toolbar=0&navpanes=0&scrollbar=0`;
 
   const handleSendEmail = () => {
     startTransition(async () => {

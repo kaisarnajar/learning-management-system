@@ -10,8 +10,9 @@ export function IdCardPreview({ userId }: { userId?: string }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const { addToast } = useToast();
+  const [timestamp] = useState(() => Date.now());
 
-  const iframeSrc = `/api/id-card?inline=1${userId ? `&userId=${userId}` : ""}#toolbar=0&navpanes=0&scrollbar=0`;
+  const iframeSrc = `/api/id-card?inline=1${userId ? `&userId=${userId}` : ""}&t=${timestamp}#toolbar=0&navpanes=0&scrollbar=0`;
 
   const handleSendEmail = () => {
     startTransition(async () => {

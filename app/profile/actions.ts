@@ -101,6 +101,10 @@ export async function updateProfile(
   revalidatePath("/profile");
   revalidatePath("/profile/courses");
   revalidatePath("/courses");
+  revalidatePath("/admin/students", "page");
+  revalidatePath(`/admin/students/${session.user.id}`, "page");
+  revalidatePath(`/admin/students/${session.user.id}/id-card`, "page");
+  revalidatePath("/", "layout");
 
   redirect("/profile");
 }

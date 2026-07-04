@@ -41,6 +41,7 @@ export default async function AdminGenerateCertificatePage() {
     id: env.id,
     user: env.user,
     course: {
+      id: env.courseId,
       title: courseMap.get(env.courseId) || "Unknown Course",
     },
   }));

@@ -14,6 +14,7 @@ type EnrollmentItem = {
     email: string;
   };
   course: {
+    id: string;
     title: string;
   };
 };
@@ -27,15 +28,27 @@ export function GenerateCertificateForm({ enrollments }: GenerateCertificateForm
   const { addToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
+  const [selectedCourseId, setSelectedCourseId] = useState("");
   const [enrollmentId, setEnrollmentId] = useState("");
   const [type, setType] = useState<"APPRECIATION" | "COMPLETION">("APPRECIATION");
   const [grade, setGrade] = useState<number | "">("");
   const [error, setError] = useState<string | null>(null);
 
+  // Extract unique courses list from the enrollments
+  const coursesMap = new Map<string, string>();
+  enrollments.forEach((env) => {
+    if (env.course.id) {
+      coursesMap.set(env.course.id, env.course.title);
+    }
+  });
+  const availableCourses = Array.from(coursesMap.entries()).map(([id, title]) => ({ id, title }));
+
+  const filteredEnrollments = enrollments.filter((env) => env.course.id === selectedCourseId);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!enrollmentId) {
-      setError("Please select a student and course.");
+      setError("Please select a student.");
       return;
     }
     if (type === "COMPLETION" && (grade === "" || isNaN(grade as number))) {
@@ -66,24 +79,53 @@ export function GenerateCertificateForm({ enrollments }: GenerateCertificateForm
       )}
 
       <div>
+        <label htmlFor="courseId" className={labelClassName}>
+          Select Course
+        </label>
+        <select
+          id="courseId"
+          value={selectedCourseId}
+          onChange={(e) => {
+            setSelectedCourseId(e.target.value);
+            setEnrollmentId("");
+          }}
+          className={`${inputClassName} mt-1 w-full bg-background`}
+          disabled={isPending}
+          required
+        >
+          <option value="">-- Choose course --</option>
+          {availableCourses.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.title}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
         <label htmlFor="enrollmentId" className={labelClassName}>
-          Select Student & Course
+          Select Student
         </label>
         <select
           id="enrollmentId"
           value={enrollmentId}
           onChange={(e) => setEnrollmentId(e.target.value)}
           className={`${inputClassName} mt-1 w-full bg-background`}
-          disabled={isPending}
+          disabled={isPending || !selectedCourseId}
           required
         >
-          <option value="">-- Choose student & course --</option>
-          {enrollments.map((env) => (
+          <option value="">-- Choose student --</option>
+          {filteredEnrollments.map((env) => (
             <option key={env.id} value={env.id}>
-              {env.user.name || env.user.email} — {env.course.title}
+              {env.user.name || env.user.email}
             </option>
           ))}
         </select>
+        {selectedCourseId && filteredEnrollments.length === 0 && (
+          <p className="mt-2 text-xs text-muted">
+            All students in this course already have certificates generated.
+          </p>
+        )}
         {enrollments.length === 0 && (
           <p className="mt-2 text-xs text-muted">
             All active students currently have certificates generated. No pending enrollments.

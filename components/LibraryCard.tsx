@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { TrackedLink } from "@/components/analytics/TrackedLink";
+import Link from "next/link";
 import type { LibraryItem } from "@/lib/library";
 
 type LibraryCardProps = {
@@ -32,16 +32,14 @@ export function LibraryCard({ item }: LibraryCardProps) {
             <span className="rounded-lg bg-background px-2.5 py-1">{item.language}</span>
           </div>
           {item.pdfUrl ? (
-            <TrackedLink
+            <Link
               href={item.pdfUrl}
-              eventName="Download Resource"
-              pageName="/library"
               target="_blank"
               rel="noopener noreferrer"
               className="mt-4 flex min-h-11 w-full items-center justify-center rounded-full bg-primary px-4 py-3 text-sm font-medium text-white transition-colors hover:bg-primary-light"
             >
               View PDF
-            </TrackedLink>
+            </Link>
           ) : (
             <button
               type="button"

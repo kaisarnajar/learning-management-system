@@ -1,7 +1,7 @@
 "use client";
 
 import { useCart } from "@/components/bookstore/CartProvider";
-import { trackButtonClick } from "@/lib/analytics-client";
+
 import type { BookStatus } from "@prisma/client";
 
 type AddToCartButtonProps = {
@@ -56,10 +56,7 @@ export function AddToCartButton({
   return (
     <button
       type="button"
-      onClick={() => {
-        trackButtonClick("Add to Cart", `/bookstore/${bookId}`);
-        addItem({ bookId, title, author, priceInrPaise, mrpInrPaise, imagePath });
-      }}
+      onClick={() => addItem({ bookId, title, author, priceInrPaise, mrpInrPaise, imagePath })}
       className="w-full rounded-full bg-primary px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-light transition-colors"
     >
       Add to Cart

@@ -4,7 +4,7 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { trackButtonClick } from "@/lib/analytics-client";
+
 
 export function ForgotPasswordForm() {
   const searchParams = useSearchParams();
@@ -84,10 +84,7 @@ export function ForgotPasswordForm() {
       )}
 
       <form
-        onSubmit={(e) => {
-          trackButtonClick("Send Reset Link", "/forgot-password");
-          handleSubmit(e);
-        }}
+        onSubmit={handleSubmit}
         className="mt-6 space-y-4"
       >
         <div>

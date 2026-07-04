@@ -1,4 +1,4 @@
-import { TrackedLink } from "@/components/analytics/TrackedLink";
+import Link from "next/link";
 import { SiteLogo } from "@/components/site/SiteLogo";
 import {
   EmailIcon,
@@ -115,14 +115,12 @@ export async function Footer() {
             <ul className="mt-6 space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.href + link.label}>
-                  <TrackedLink
+                  <Link
                     href={link.href}
-                    eventName={`Footer: ${link.label}`}
-                    pageName="/"
                     className="text-sm text-muted transition-colors hover:text-[#cca72f]"
                   >
                     {link.label}
-                  </TrackedLink>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -133,14 +131,12 @@ export async function Footer() {
             <p className="text-sm font-bold uppercase tracking-widest text-[#cca72f]">Contact</p>
             <ul className="mt-6 space-y-4 text-sm text-muted">
               <li>
-                <TrackedLink 
+                <Link 
                   href="/contact" 
-                  eventName="Footer: Send us a message" 
-                  pageName="/" 
                   className="inline-block rounded-full border border-border px-5 py-2 font-medium text-foreground transition-colors hover:border-[#cca72f] hover:text-[#cca72f]"
                 >
                   Send us a message
-                </TrackedLink>
+                </Link>
               </li>
               {settings.contactEmail && (
                 <li>

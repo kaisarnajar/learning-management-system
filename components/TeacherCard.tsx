@@ -1,4 +1,4 @@
-import { TrackedLink } from "@/components/analytics/TrackedLink";
+import Link from "next/link";
 import type { Teacher } from "@/lib/teachers";
 
 type TeacherCardProps = {
@@ -7,10 +7,8 @@ type TeacherCardProps = {
 
 export function TeacherCard({ teacher }: TeacherCardProps) {
   return (
-    <TrackedLink
+    <Link
       href={`/teachers/${teacher.id}`}
-      eventName="View Profile"
-      pageName="/teachers"
       className="card-elevated flex h-full flex-col p-6 transition-all hover:-translate-y-1 hover:shadow-xl"
     >
       {teacher.imageUrl ? (
@@ -32,6 +30,6 @@ export function TeacherCard({ teacher }: TeacherCardProps) {
       <p className="mt-1 text-sm font-medium text-gold">{teacher.specialization}</p>
       <p className="mt-3 line-clamp-3 text-sm leading-relaxed text-muted">{teacher.bio}</p>
       <span className="mt-auto pt-4 text-xs font-semibold uppercase tracking-wide text-gold">View profile →</span>
-    </TrackedLink>
+    </Link>
   );
 }

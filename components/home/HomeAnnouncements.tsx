@@ -1,4 +1,4 @@
-import { TrackedLink } from "@/components/analytics/TrackedLink";
+import Link from "next/link";
 import { SiteAnnouncementCard } from "@/components/announcements/SiteAnnouncementCard";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import {
@@ -23,9 +23,9 @@ export async function HomeAnnouncements() {
               Events, visits, and important updates from Darse Quran Academy.
             </p>
           </div>
-          <TrackedLink href="/announcements" eventName="View All Announcements" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
+          <Link href="/announcements" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
             View all
-          </TrackedLink>
+          </Link>
         </div>
         <ul className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
           {announcements.map((announcement) => (

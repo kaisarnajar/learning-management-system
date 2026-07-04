@@ -615,24 +615,6 @@ model BookOrderItem {
   @@index([bookId])
 }
 
-enum AnalyticsEventType {
-  PAGE_VIEW
-  BUTTON_CLICK
-  CUSTOM
-}
-
-model AnalyticsEvent {
-  id        String             @id @default(cuid())
-  type      AnalyticsEventType
-  page      String
-  eventName String?
-  userId    String?
-  createdAt DateTime           @default(now())
-
-  @@index([type])
-  @@index([page])
-  @@index([createdAt])
-}
 
 /**
  * Configurable weight slabs and their associated shipping charges.

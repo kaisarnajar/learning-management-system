@@ -1,4 +1,4 @@
-import { TrackedLink } from "@/components/analytics/TrackedLink";
+import Link from "next/link";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { getFeaturedHomepageBlogPosts } from "@/lib/blogs";
@@ -20,9 +20,9 @@ export async function FeaturedBlogs() {
               Articles and reflections from our teachers and scholars.
             </p>
           </div>
-          <TrackedLink href="/blog" eventName="View All Blogs" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
+          <Link href="/blog" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
             View all
-          </TrackedLink>
+          </Link>
         </div>
         <ul className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-2">
           {posts.map((post) => (

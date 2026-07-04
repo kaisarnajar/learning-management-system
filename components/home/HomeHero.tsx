@@ -1,4 +1,4 @@
-import { TrackedLink } from "@/components/analytics/TrackedLink";
+import Link from "next/link";
 import { indoPakArabic } from "@/lib/fonts/indo-pak-arabic";
 import { Source_Serif_4 } from "next/font/google";
 
@@ -26,17 +26,15 @@ export function HomeHero() {
           </p>
           
           <div className="mt-10">
-            <TrackedLink 
+            <Link 
               href="/courses" 
-              eventName="Explore Courses" 
-              pageName="/" 
               className="inline-flex items-center justify-center rounded bg-[#cca72f] px-8 py-3.5 text-sm font-semibold text-[#4e3d00] transition-colors hover:bg-[#e9c349]"
             >
               Explore Courses
               <svg className="ml-2 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
               </svg>
-            </TrackedLink>
+            </Link>
           </div>
         </div>
 

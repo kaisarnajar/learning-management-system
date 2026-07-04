@@ -4,7 +4,7 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import { useCallback } from "react";
 import { useActionState } from "react";
 import { submitContactInquiry, type SubmitContactInquiryState } from "@/app/contact/actions";
-import { trackButtonClick } from "@/lib/analytics-client";
+
 import { labelClassName } from "@/lib/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
 import {
@@ -45,11 +45,7 @@ export function ContactForm({ defaultName = "", defaultEmail = "", isLoggedIn = 
   return (
     <form
       action={formAction}
-      onSubmit={() => {
-        if (isValid) {
-          trackButtonClick("Send Us a Message", "/contact");
-        }
-      }}
+
       className="card-elevated space-y-5 p-6 sm:p-8"
     >
       {state.error && (

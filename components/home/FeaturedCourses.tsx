@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { TrackedLink } from "@/components/analytics/TrackedLink";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { CoursePricingDisplay } from "@/components/courses/CoursePricingDisplay";
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
@@ -22,9 +21,9 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
               Explore our core curriculum designed for deep understanding and spiritual growth.
             </p>
           </div>
-          <TrackedLink href="/courses" eventName="View All Courses" pageName="/" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
+          <Link href="/courses" className="btn-gold-solid inline-flex px-8 py-3 text-sm">
             View all
-          </TrackedLink>
+          </Link>
         </div>
         <ul className="mt-10 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {courses.map((course) => {
@@ -50,14 +49,12 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
                   <CourseTeacherInfo teacher={course.teacher} compact />
                   <CourseDurationDisplay duration={course.duration} className="mt-2" />
                   <CoursePricingDisplay course={course} className="mt-2" compact />
-                  <TrackedLink
+                  <Link
                     href={detailHref}
-                    eventName="View Course"
-                    pageName="/"
                     className="btn-gold-outline mt-4 inline-flex w-full items-center justify-center py-2.5 text-xs"
                   >
                     Course Details
-                  </TrackedLink>
+                  </Link>
                 </div>
               </li>
             );

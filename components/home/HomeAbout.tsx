@@ -1,4 +1,4 @@
-import { TrackedLink } from "@/components/analytics/TrackedLink";
+import Link from "next/link";
 import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
@@ -37,14 +37,12 @@ export function HomeAbout() {
           </p>
           
           <div className="mt-10">
-            <TrackedLink
+            <Link
               href="/about"
-              eventName="Read More About Us"
-              pageName="/"
               className="btn-gold-solid inline-flex px-8 py-3.5 text-sm md:text-base shadow-xl shadow-black/20"
             >
               Read More
-            </TrackedLink>
+            </Link>
           </div>
         </div>
       </div>

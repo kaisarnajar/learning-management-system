@@ -210,14 +210,6 @@ export default async function AdminDashboardPage() {
         );
       })}
 
-      {isDeveloper && (
-        <section className="mt-10">
-          <h2 className="font-serif text-lg font-semibold text-foreground">Analytics & Insights</h2>
-          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            <DashboardLinkCard link={{ label: "Analytics", href: "/developer/analytics" }} />
-          </div>
-        </section>
-      )}
     </div>
   );
 }

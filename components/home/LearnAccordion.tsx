@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TrackedLink } from "@/components/analytics/TrackedLink";
+import Link from "next/link";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 
 const items = [
@@ -58,20 +58,18 @@ export function LearnAccordion() {
                 </button>
                 <div
                   className={`grid transition-all duration-300 ease-in-out ${
-                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+                     isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
                   }`}
                 >
                   <div className="overflow-hidden">
                     <div className="pb-4">
                       <p className="text-sm leading-relaxed text-muted">{item.body}</p>
-                      <TrackedLink
+                      <Link
                         href="/courses"
-                        eventName="View Courses"
-                        pageName="/"
                         className="mt-4 inline-flex items-center text-sm font-semibold text-gold hover:underline"
                       >
                         Start learning →
-                      </TrackedLink>
+                      </Link>
                     </div>
                   </div>
                 </div>

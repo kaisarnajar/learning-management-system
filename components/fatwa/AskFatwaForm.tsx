@@ -12,7 +12,7 @@ import {
   validateAskFatwaForm,
 } from "@/lib/profile-form-validation";
 import { useZodForm } from "@/lib/use-zod-form";
-import { trackButtonClick } from "@/lib/analytics-client";
+
 
 type AskFatwaFormProps = {
   defaultName?: string;
@@ -80,11 +80,7 @@ export function AskFatwaForm({
   return (
     <form
       action={formAction}
-      onSubmit={() => {
-        if (isValid) {
-          trackButtonClick("Submit Question", "/fatwa/ask");
-        }
-      }}
+
       className="card-elevated space-y-5 p-6 sm:p-8"
     >
       {state.error && (

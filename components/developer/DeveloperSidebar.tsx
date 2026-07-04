@@ -5,17 +5,10 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ADMIN_NAV_GROUPS, ADMIN_NAV_LINKS } from "@/lib/admin-nav";
 
-const DEVELOPER_NAV_GROUPS = [
-  {
-    title: "Analytics & Tools",
-    links: [{ href: "/developer/analytics", label: "Analytics" }],
-  },
-  ...ADMIN_NAV_GROUPS,
-];
+const DEVELOPER_NAV_GROUPS = ADMIN_NAV_GROUPS;
 
 const allLinks = [
   { href: "/admin", label: "Dashboard", exact: true },
-  { href: "/developer/analytics", label: "Analytics", exact: false },
   ...ADMIN_NAV_LINKS.map((link) => ({ ...link, exact: false })),
 ];
 

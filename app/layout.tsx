@@ -6,7 +6,6 @@ import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ToastProvider } from "@/components/shared/ToastProvider";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
-import { AnalyticsTracker } from "@/components/analytics/AnalyticsTracker";
 import { WhatsAppButton } from "@/components/site/WhatsAppButton";
 import "./globals.css";
 
@@ -48,7 +47,6 @@ export default function RootLayout({
               <main className="flex-1">{children}</main>
               <Footer />
               <WhatsAppButton />
-              <AnalyticsTracker />
             </CartProvider>
           </ToastProvider>
         </SessionProvider>

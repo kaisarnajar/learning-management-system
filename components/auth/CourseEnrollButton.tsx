@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { submitCheckout } from "@/app/actions/checkout";
-import { trackButtonClick } from "@/lib/analytics-client";
+
 import { getCourseEnrollmentClosedMessage } from "@/lib/course-status";
 import {
   AWAITING_ENROLLMENT_FEE,
@@ -120,7 +120,7 @@ export function CourseEnrollButton({
   async function handleEnroll() {
     setError("");
     setLoading(true);
-    trackButtonClick("Enroll Now", `/courses/${courseId}`);
+
 
     try {
       const data = await submitCheckout(courseId);

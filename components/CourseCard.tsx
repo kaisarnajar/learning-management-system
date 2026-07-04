@@ -1,4 +1,4 @@
-import { TrackedLink } from "@/components/analytics/TrackedLink";
+import Link from "next/link";
 import { CourseEnrollButton } from "@/components/auth/CourseEnrollButton";
 import { CoursePricingDisplay } from "@/components/courses/CoursePricingDisplay";
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
@@ -30,14 +30,12 @@ export function CourseCard({
 
   return (
     <article className="card-elevated flex h-full flex-col overflow-hidden p-0 transition-transform hover:-translate-y-0.5">
-      <TrackedLink
+      <Link
         href={detailHref}
-        eventName="View Course"
-        pageName="/courses"
         className="block"
       >
         <CourseThumbnail category={course.category} size="md" />
-      </TrackedLink>
+      </Link>
       <div className="flex flex-1 flex-col p-5">
         <div className="flex-1">
           <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -50,9 +48,9 @@ export function CourseCard({
             <CourseStatusBadge status={course.status} />
           </div>
           <h3 className="text-lg font-bold text-foreground">
-            <TrackedLink href={detailHref} eventName="View Course" pageName="/courses" className="hover:text-gold">
+            <Link href={detailHref} className="hover:text-gold">
               {course.title}
-            </TrackedLink>
+            </Link>
           </h3>
           <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-muted">{course.description}</p>
           <CourseTeacherInfo teacher={course.teacher} />
@@ -61,14 +59,12 @@ export function CourseCard({
         <p className="mt-4 text-sm text-muted">Starts: {course.startDate}</p>
         <CourseDurationDisplay duration={course.duration} className="mt-1" />
         <CoursePricingDisplay course={course} className="mt-2" />
-        <TrackedLink
+        <Link
           href={detailHref}
-          eventName="View Course"
-          pageName="/courses"
           className="btn-gold-outline mt-4 inline-flex w-full items-center justify-center py-2.5 text-xs"
         >
           Course Details
-        </TrackedLink>
+        </Link>
           <CourseEnrollButton
             courseId={course.id}
             courseStatus={course.status}

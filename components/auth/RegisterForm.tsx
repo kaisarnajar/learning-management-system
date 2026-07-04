@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useCallback, useState } from "react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { trackButtonClick } from "@/lib/analytics-client";
+
 import { authContinueUrl, getPostLoginPath } from "@/lib/auth-redirect";
 import { useZodForm } from "@/lib/use-zod-form";
 import { z } from "zod";
@@ -46,7 +46,7 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
     setError("");
     setLoading(true);
 
-    trackButtonClick("Create Account", "/register");
+
 
     try {
       const res = await fetch("/api/auth/register", {

@@ -42,11 +42,11 @@ function notificationIconClass(type: StudentNotificationType): string {
     case "ENROLLMENT_REJECTED":
       return "bg-destructive-bg text-destructive-text ring-destructive-text/30";
     case "PERSONAL_MESSAGE":
-      return "bg-info-bg text-violet-700 ring-violet-200/80";
+      return "bg-info-bg text-violet-700 dark:text-violet-300 ring-violet-200/80 dark:ring-violet-800/30";
     case "COURSE_ANNOUNCEMENT":
-      return "bg-sky-100 text-sky-700 ring-sky-200/80";
+      return "bg-sky-100 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 ring-sky-200/80 dark:ring-sky-800/30";
     case "SITE_ANNOUNCEMENT":
-      return "bg-warning-bg text-warning-text ring-amber-200/80";
+      return "bg-warning-bg text-warning-text ring-amber-200/80 dark:ring-amber-800/30";
     default:
       return "bg-accent-muted text-foreground ring-border";
   }
@@ -113,7 +113,7 @@ export function NotificationCard({ notification }: { notification: StudentNotifi
           aria-label={`View notification: ${notification.title}`}
           className={`group card-elevated flex h-full w-full flex-col overflow-hidden p-4 text-left transition-all hover:-translate-y-0.5 hover:shadow-md ${
             unread
-              ? "ring-2 ring-primary/15 bg-gradient-to-b from-violet-50/90 to-surface"
+              ? "ring-2 ring-primary/15 bg-gradient-to-b from-violet-50/90 to-surface dark:from-violet-950/20 dark:to-surface"
               : "opacity-95 hover:opacity-100"
           }`}
         >

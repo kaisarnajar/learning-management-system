@@ -30,7 +30,7 @@ export function GradeList({ courseId, baseUrl, grades }: GradeListProps) {
       </div>
 
       {grades.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-border">
+        <div className="text-center py-12 bg-surface rounded-lg border border-border">
           <p className="text-muted">No grade cards found for this course.</p>
         </div>
       ) : (

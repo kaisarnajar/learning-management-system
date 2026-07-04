@@ -15,7 +15,7 @@ export default async function ProfileLayout({ children }: { children: React.Reac
 
 
   return (
-    <div className="bg-[#F8FAFC] min-h-screen pb-12 pt-6">
+    <div className="bg-background min-h-screen pb-12 pt-6">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {!session.user.emailVerified && (
           <div className="mb-8">

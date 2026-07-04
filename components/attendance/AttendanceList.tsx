@@ -29,7 +29,7 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
       </div>
 
       {dates.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-border">
+        <div className="text-center py-12 bg-surface rounded-lg border border-border">
           <p className="text-muted">No attendance records found for this course.</p>
         </div>
       ) : (
@@ -64,9 +64,9 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
                       {new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(record.date))}
                     </td>
                     <td className="px-4 py-3 text-muted">
-                      <span className="text-emerald-600 font-semibold">{present}</span> 
-                      <span className="text-gray-400 mx-1">/</span> 
-                      <span className="text-rose-600">{absent} absent</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{present}</span> 
+                      <span className="text-muted mx-1">/</span> 
+                      <span className="text-rose-600 dark:text-rose-400">{absent} absent</span>
                     </td>
                     <td className="px-4 py-3 text-muted">
                       {total}

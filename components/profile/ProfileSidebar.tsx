@@ -94,7 +94,7 @@ export function ProfileSidebar({ unreadCount = 0 }: { unreadCount?: number }) {
                 className={`relative flex shrink-0 snap-start items-center rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-300 ease-out md:justify-start md:rounded-lg md:px-3 md:py-2 md:font-medium ${
                   active
                     ? "scale-[1.02] bg-primary text-white shadow-md shadow-primary/25 md:scale-100 md:shadow-sm"
-                    : "text-foreground/70 hover:scale-[1.02] hover:bg-surface-hover hover:text-foreground md:text-foreground md:hover:scale-100 md:hover:bg-accent-muted/50"
+                    : "text-foreground/70 hover:scale-[1.02] hover:bg-surface-muted-hover hover:text-foreground md:text-foreground md:hover:scale-100 md:hover:bg-accent-muted/50"
                 }`}
               >
                 <Icon className={`mr-2 hidden h-4 w-4 md:block ${active ? "text-white" : "text-muted group-hover:text-foreground"}`} />

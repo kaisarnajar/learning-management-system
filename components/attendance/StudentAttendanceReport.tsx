@@ -64,7 +64,7 @@ export function StudentAttendanceReport({
         )}
       </div>
 
-      <div className="bg-white p-6 rounded-lg border border-border flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
+      <div className="bg-surface p-6 rounded-lg border border-border flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
         <div>
           <h2 className="text-lg font-semibold text-foreground">{courseTitle}</h2>
           <p className="text-muted text-sm mt-1">Detailed performance summary.</p>
@@ -75,15 +75,15 @@ export function StudentAttendanceReport({
             <div className="text-xs text-muted uppercase tracking-wide">Sessions</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-emerald-600">{present}</div>
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{present}</div>
             <div className="text-xs text-muted uppercase tracking-wide">Present</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-rose-600">{absent}</div>
+            <div className="text-2xl font-bold text-rose-600 dark:text-rose-400">{absent}</div>
             <div className="text-xs text-muted uppercase tracking-wide">Absent</div>
           </div>
           <div className="pl-6 border-l border-border">
-            <div className={`text-2xl font-bold ${percentage >= 75 ? "text-emerald-600" : "text-amber-600"}`}>
+            <div className={`text-2xl font-bold ${percentage >= 75 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
               {percentage}%
             </div>
             <div className="text-xs text-muted uppercase tracking-wide">Rate</div>
@@ -92,13 +92,13 @@ export function StudentAttendanceReport({
       </div>
 
       {records.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-border">
+        <div className="text-center py-12 bg-surface rounded-lg border border-border">
           <p className="text-muted">No attendance records found for this student yet.</p>
         </div>
       ) : (
-        <div className="bg-white border border-border rounded-lg overflow-hidden shadow-sm">
+        <div className="bg-surface border border-border rounded-lg overflow-hidden shadow-sm">
           <table className="min-w-full divide-y divide-border">
-            <thead className="bg-gray-50">
+            <thead className="bg-surface-muted">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                   Date
@@ -108,9 +108,9 @@ export function StudentAttendanceReport({
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-border">
+            <tbody className="bg-surface divide-y divide-border">
               {records.map((record) => (
-                <tr key={record.id} className="hover:bg-gray-50">
+                <tr key={record.id} className="hover:bg-surface-muted-hover transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                     {new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(
                       new Date(record.attendance.date),
@@ -118,11 +118,11 @@ export function StudentAttendanceReport({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     {record.isPresent ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-bg text-success-text">
                         Present
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-destructive-bg text-destructive-text">
                         Absent
                       </span>
                     )}

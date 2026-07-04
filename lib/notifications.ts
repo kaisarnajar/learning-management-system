@@ -89,7 +89,7 @@ export function notificationTypeClass(type: StudentNotificationType): string {
     case "PERSONAL_MESSAGE":
       return "bg-info-bg text-info-text";
     case "COURSE_ANNOUNCEMENT":
-      return "bg-sky-100 text-sky-800";
+      return "bg-sky-100 dark:bg-sky-950/30 text-sky-800 dark:text-sky-300";
     case "SITE_ANNOUNCEMENT":
       return "bg-warning-bg text-warning-text";
     default:

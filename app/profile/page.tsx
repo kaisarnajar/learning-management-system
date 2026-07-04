@@ -32,7 +32,7 @@ export default async function ProfilePage({
       {/* Personalized Google sign-in welcome banner */}
       {source === "google" && !profileComplete && (
         <div
-          className="rounded-lg border border-blue-200 border-l-4 border-l-blue-500 bg-blue-50 px-4 py-4 text-sm sm:px-5"
+          className="rounded-lg border border-blue-200 dark:border-blue-900/50 border-l-4 border-l-blue-500 bg-blue-50 dark:bg-blue-950/20 px-4 py-4 text-sm sm:px-5"
           role="status"
         >
           <div className="flex items-start gap-3">
@@ -44,15 +44,15 @@ export default async function ProfilePage({
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
             </svg>
             <div>
-              <p className="font-semibold text-blue-900">
+              <p className="font-semibold text-blue-900 dark:text-blue-200">
                 Welcome! You signed in with Google.
               </p>
-              <p className="mt-1 text-blue-800/90">
+              <p className="mt-1 text-blue-800/90 dark:text-blue-300">
                 Your email is verified automatically. Please fill in the required profile details
                 below — the academy needs them before you can enroll in any course.
               </p>
               {callbackUrl && (
-                <p className="mt-1.5 text-blue-700/80 text-xs">
+                <p className="mt-1.5 text-blue-700/80 dark:text-blue-400 text-xs">
                   You&apos;ll be taken to your destination once your profile is complete.
                 </p>
               )}
@@ -77,7 +77,7 @@ export default async function ProfilePage({
 
       {complete === "1" && profileComplete && (
         <div
-          className="rounded-lg border border-violet-200 border-l-4 border-l-violet-500 bg-info-bg px-4 py-4 text-sm text-info-text sm:px-5"
+          className="rounded-lg border border-violet-200 dark:border-violet-900/50 border-l-4 border-l-violet-500 bg-info-bg px-4 py-4 text-sm text-info-text sm:px-5"
           role="status"
         >
           <p className="font-semibold">Your profile is complete</p>

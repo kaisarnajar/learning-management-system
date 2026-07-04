@@ -72,7 +72,7 @@ export function StudentGradeReport({
         )}
       </div>
 
-      <div className="bg-white p-6 rounded-lg border border-border flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
+      <div className="bg-surface p-6 rounded-lg border border-border flex flex-col md:flex-row justify-between items-center gap-4 shadow-sm">
         <div>
           <h2 className="text-lg font-semibold text-foreground">{courseTitle}</h2>
           <p className="text-muted text-sm mt-1">Detailed performance summary.</p>
@@ -83,15 +83,15 @@ export function StudentGradeReport({
             <div className="text-xs text-muted uppercase tracking-wide">Exams</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-emerald-600">{totalMarksObtained}</div>
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{totalMarksObtained}</div>
             <div className="text-xs text-muted uppercase tracking-wide">Obtained</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-gray-700">{totalMaxMarks}</div>
+            <div className="text-2xl font-bold text-foreground">{totalMaxMarks}</div>
             <div className="text-xs text-muted uppercase tracking-wide">Max</div>
           </div>
           <div className="pl-6 border-l border-border">
-            <div className={`text-2xl font-bold ${percentage >= 40 ? "text-emerald-600" : "text-rose-600"}`}>
+            <div className={`text-2xl font-bold ${percentage >= 40 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
               {percentage}%
             </div>
             <div className="text-xs text-muted uppercase tracking-wide">Percentage</div>
@@ -100,13 +100,13 @@ export function StudentGradeReport({
       </div>
 
       {records.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-lg border border-border">
+        <div className="text-center py-12 bg-surface rounded-lg border border-border">
           <p className="text-muted">No grade records found for this student yet.</p>
         </div>
       ) : (
-        <div className="bg-white border border-border rounded-lg overflow-hidden shadow-sm">
+        <div className="bg-surface border border-border rounded-lg overflow-hidden shadow-sm">
           <table className="min-w-full divide-y divide-border">
-            <thead className="bg-gray-50">
+            <thead className="bg-surface-muted">
               <tr>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                   Exam Title
@@ -119,9 +119,9 @@ export function StudentGradeReport({
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-border">
+            <tbody className="bg-surface divide-y divide-border">
               {records.map((record) => (
-                <tr key={record.id} className="hover:bg-gray-50">
+                <tr key={record.id} className="hover:bg-surface-muted-hover transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
                     {record.grade.title}
                   </td>
@@ -131,8 +131,8 @@ export function StudentGradeReport({
                     )}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <span className="font-semibold text-emerald-600">{record.marksObtained}</span>
-                    <span className="text-gray-400 mx-1">/</span>
+                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">{record.marksObtained}</span>
+                    <span className="text-muted mx-1">/</span>
                     <span className="text-muted">{record.grade.maxMarks}</span>
                   </td>
                 </tr>

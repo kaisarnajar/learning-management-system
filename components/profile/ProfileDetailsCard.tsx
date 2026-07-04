@@ -47,7 +47,7 @@ export function ProfileDetailsCard({
   return (
     <div className="w-full space-y-6">
       {/* Top User Card */}
-      <div className="rounded-2xl border border-border bg-white p-6 shadow-sm sm:p-8">
+      <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
           <div className="shrink-0">
             {image ? (
@@ -101,7 +101,7 @@ export function ProfileDetailsCard({
 
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Email */}
-          <div className="flex items-start gap-4 rounded-xl border border-border bg-white p-4 shadow-sm">
+          <div className="flex items-start gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm">
             <div className="mt-0.5 rounded-lg border border-border p-2 text-muted">
               <Mail className="h-5 w-5" />
             </div>
@@ -112,7 +112,7 @@ export function ProfileDetailsCard({
           </div>
 
           {/* WhatsApp */}
-          <div className="flex items-start gap-4 rounded-xl border border-border bg-white p-4 shadow-sm">
+          <div className="flex items-start gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm">
             <div className="mt-0.5 rounded-lg border border-border p-2 text-muted">
               <Phone className="h-5 w-5" />
             </div>
@@ -123,7 +123,7 @@ export function ProfileDetailsCard({
           </div>
 
           {/* Father's Name */}
-          <div className="flex items-start gap-4 rounded-xl border border-border bg-white p-4 shadow-sm">
+          <div className="flex items-start gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm">
             <div className="mt-0.5 rounded-lg border border-border p-2 text-muted">
               <User className="h-5 w-5" />
             </div>
@@ -134,7 +134,7 @@ export function ProfileDetailsCard({
           </div>
 
           {/* DOB */}
-          <div className="flex items-start gap-4 rounded-xl border border-border bg-white p-4 shadow-sm">
+          <div className="flex items-start gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm">
             <div className="mt-0.5 rounded-lg border border-border p-2 text-muted">
               <Calendar className="h-5 w-5" />
             </div>
@@ -147,7 +147,7 @@ export function ProfileDetailsCard({
           </div>
 
           {/* Occupation */}
-          <div className="flex items-start gap-4 rounded-xl border border-border bg-white p-4 shadow-sm">
+          <div className="flex items-start gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm">
             <div className="mt-0.5 rounded-lg border border-border p-2 text-muted">
               <Briefcase className="h-5 w-5" />
             </div>
@@ -160,7 +160,7 @@ export function ProfileDetailsCard({
           </div>
 
           {/* Address */}
-          <div className="flex items-start gap-4 rounded-xl border border-border bg-white p-4 shadow-sm">
+          <div className="flex items-start gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm">
             <div className="mt-0.5 rounded-lg border border-border p-2 text-muted">
               <MapPin className="h-5 w-5" />
             </div>

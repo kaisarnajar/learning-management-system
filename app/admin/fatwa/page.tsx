@@ -121,7 +121,7 @@ export default async function AdminFatwaPage({
                   <td className="px-4 py-3 font-medium text-foreground">{q.title}</td>
                   <td className="px-4 py-3 text-muted">{q.category}</td>
                   <td className="px-4 py-3 font-medium text-foreground">{q.askerName}</td>
-                  <td className="px-4 py-3 text-muted">{q.askerEmail}</td>
+                  <td className="px-4 py-3 text-muted">{q.askerEmail === "anonymous@darsequranacademy.org" ? "N/A" : q.askerEmail}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass(q)}`}

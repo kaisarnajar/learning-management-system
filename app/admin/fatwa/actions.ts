@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/auth-actions";
 import { getFatwaPublicUrl, resolveFatwaFeaturedUpdate } from "@/lib/fatwa";
-import { sendFatwaAnswerEmail, sendFatwaStatusTeacherEmail } from "@/lib/email";
+import { sendFatwaAnswerEmail, sendFatwaStatusTeacherEmail, type EmailSendResult } from "@/lib/email";
 import { prisma } from "@/lib/prisma";
 import { fatwaAnswerSchema } from "@/lib/validations";
 import { withDbErrorHandling } from "@/lib/db-error";
@@ -63,12 +63,17 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
   revalidatePath(`/admin/fatwa/${id}`);
 
   const fatwaUrl = getFatwaPublicUrl(id);
-  const emailResult = await sendFatwaAnswerEmail({
-    to: existing.askerEmail,
-    askerName: existing.askerName,
-    questionTitle: existing.title,
-    fatwaUrl,
-  });
+  const isAnonymous = existing.askerEmail === "anonymous@darsequranacademy.org" || existing.askerName === "Anonymous";
+
+  let emailResult: EmailSendResult = { sent: false, skipped: true };
+  if (!isAnonymous) {
+    emailResult = await sendFatwaAnswerEmail({
+      to: existing.askerEmail,
+      askerName: existing.askerName,
+      questionTitle: existing.title,
+      fatwaUrl,
+    });
+  }
 
   if (wasPending && existing.answeredById) {
     const teacherUser = await withDbErrorHandling(() => prisma.user.findUnique({ where: { id: existing.answeredById! } }), "Database operation failed");
@@ -84,7 +89,9 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
   }
 
   const savedParams = new URLSearchParams({ saved: "1" });
-  if (!emailResult.sent) {
+  if (isAnonymous) {
+    savedParams.set("email", "anonymous");
+  } else if (!emailResult.sent) {
     savedParams.set("email", emailResult.skipped ? "skipped" : "failed");
   }
 

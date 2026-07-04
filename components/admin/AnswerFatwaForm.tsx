@@ -26,7 +26,7 @@ export function AnswerFatwaForm({ question, featuredCount, action, rejectAction 
         <p className="mt-2 whitespace-pre-wrap text-muted">{question.question}</p>
         <p className="mt-3 text-xs text-muted">
           {question.category}
-          {question.askerName !== "Anonymous" && ` · ${question.askerName} · ${question.askerEmail}`}
+          {question.askerName !== "Anonymous" && ` · ${question.askerName} · ${question.askerEmail === "anonymous@darsequranacademy.org" ? "N/A" : question.askerEmail}`}
         </p>
       </div>
 

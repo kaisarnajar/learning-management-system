@@ -86,7 +86,7 @@ export function MarkShippedModal({ orderId }: { orderId: string }) {
       <button 
         type="button" 
         onClick={() => setIsOpen(true)}
-        className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light transition-colors"
+        className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-light transition-colors"
       >
         Mark as Shipped
       </button>
@@ -228,7 +228,7 @@ function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "defau
                  if (result?.error) addToast(result.error, "error");
                }}
                trigger={
-                  <button type="button" className="rounded-md border border-border bg-surface-muted px-3 py-1.5 text-xs font-semibold text-muted hover:bg-surface-muted-hover transition-colors">Refund</button>
+                  <button type="button" className="rounded-md border border-border bg-surface-muted px-4 py-2 text-sm font-semibold text-muted hover:bg-surface-muted-hover transition-colors">Refund</button>
                }
             />
           </div>

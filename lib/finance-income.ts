@@ -62,3 +62,14 @@ export async function getIncomeTotal(filters: FinanceFilters): Promise<number> {
 
   return result._sum.amountInrPaise ?? 0;
 }
+
+export async function getIncomeRecordsAll(
+  filters: FinanceFilters,
+): Promise<Prisma.PaymentRecordGetPayload<{ include: typeof incomeInclude }>[]> {
+  const where = buildIncomeWhere(filters);
+  return withDbErrorHandling(() => prisma.paymentRecord.findMany({
+      where,
+      include: incomeInclude,
+      orderBy: { paidAt: "desc" },
+    }), "Database operation failed");
+}

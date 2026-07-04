@@ -94,13 +94,27 @@ export default async function AdminBookstoreFinancePage({
 
         {view === "sales" ? (
           <section className="space-y-4">
-            <ListSearchForm
-              action="/admin/finance/bookstore"
-              query={filters.q}
-              placeholder="Search by book title or author"
-              preserveParams={searchPreserveParams}
-              totalCount={filters.q ? totalCount : undefined}
-            />
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex-1">
+                <ListSearchForm
+                  action="/admin/finance/bookstore"
+                  query={filters.q}
+                  placeholder="Search by book title or author"
+                  preserveParams={searchPreserveParams}
+                  totalCount={filters.q ? totalCount : undefined}
+                />
+              </div>
+              <a
+                href={`/api/admin/finance/export?${new URLSearchParams({
+                  ...searchPreserveParams,
+                  type: "book_sales",
+                  ...(filters.q ? { q: filters.q } : {}),
+                }).toString()}`}
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-5 py-2 text-sm font-semibold text-foreground hover:bg-accent-muted/50 whitespace-nowrap"
+              >
+                Export to Excel
+              </a>
+            </div>
 
             <div className="overflow-x-auto rounded-lg border border-border bg-surface">
               <BookstoreSalesTable records={salesData!.items} />
@@ -116,13 +130,27 @@ export default async function AdminBookstoreFinancePage({
           </section>
         ) : (
           <section className="space-y-4">
-            <ListSearchForm
-              action="/admin/finance/bookstore"
-              query={filters.q}
-              placeholder="Search by order ID, customer name, or email"
-              preserveParams={searchPreserveParams}
-              totalCount={filters.q ? totalCount : undefined}
-            />
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex-1">
+                <ListSearchForm
+                  action="/admin/finance/bookstore"
+                  query={filters.q}
+                  placeholder="Search by order ID, customer name, or email"
+                  preserveParams={searchPreserveParams}
+                  totalCount={filters.q ? totalCount : undefined}
+                />
+              </div>
+              <a
+                href={`/api/admin/finance/export?${new URLSearchParams({
+                  ...searchPreserveParams,
+                  type: "book_orders",
+                  ...(filters.q ? { q: filters.q } : {}),
+                }).toString()}`}
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-5 py-2 text-sm font-semibold text-foreground hover:bg-accent-muted/50 whitespace-nowrap"
+              >
+                Export to Excel
+              </a>
+            </div>
 
             <div className="overflow-x-auto rounded-lg border border-border bg-surface">
               <BookstoreOrdersTable records={ordersData!.items} />

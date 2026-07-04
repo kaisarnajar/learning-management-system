@@ -12,6 +12,7 @@ import { Pagination } from "@/components/shared/Pagination";
 import { getAllCourses } from "@/lib/courses";
 import { getExpensesPaginated, getExpenseTotal } from "@/lib/finance-expenses";
 import {
+  buildFinanceQueryString,
   buildFinanceSearchPreserveParams,
   parseFinanceFilters,
   type FinanceSearchParams,
@@ -120,6 +121,12 @@ export default async function AdminFinancePage({
         {filters.tab === "income" ? (
           <section className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <a
+                href={`/api/admin/finance/export${buildFinanceQueryString(filters, { tab: "income" }) || "?"}&type=income`.replace("?&", "?")}
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-5 py-2 text-sm font-semibold text-foreground hover:bg-accent-muted/50"
+              >
+                Export to Excel
+              </a>
               <Link
                 href="/admin/transactions?tab=payments"
                 className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
@@ -163,6 +170,12 @@ export default async function AdminFinancePage({
         ) : (
           <section className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+              <a
+                href={`/api/admin/finance/export${buildFinanceQueryString(filters, { tab: "expenses" }) || "?"}&type=expenses`.replace("?&", "?")}
+                className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-5 py-2 text-sm font-semibold text-foreground hover:bg-accent-muted/50"
+              >
+                Export to Excel
+              </a>
               <Link
                 href="/admin/transactions?tab=expenses"
                 className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"

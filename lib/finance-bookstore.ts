@@ -243,3 +243,105 @@ export async function getBookOrderFinancePaginated(
 
   return { items, totalCount };
 }
+
+export async function getBookSalesAll(q?: string): Promise<BookSalesRecord[]> {
+  const where: Prisma.BookWhereInput = q ? buildSearchOr(["title", "author"], [], q) : {};
+
+  const books = await withDbErrorHandling(() => prisma.book.findMany({
+      where,
+      include: {
+        orderItems: {
+          where: {
+            order: { status: { in: ["APPROVED", "SHIPPED"] } },
+          },
+        },
+      },
+      orderBy: { title: "asc" },
+    }), "Database operation failed");
+
+  return books.map((book) => {
+    let quantitySold = 0;
+    let revenuePaise = 0;
+
+    for (const item of book.orderItems) {
+      quantitySold += item.quantity;
+      revenuePaise += item.quantity * item.priceAtPurchaseInrPaise;
+    }
+
+    const remainingStock = book.inventoryPurchased - quantitySold;
+    const costOfGoodsSold = quantitySold * book.purchasePriceInrPaise;
+    const profitPaise = revenuePaise - costOfGoodsSold;
+
+    return {
+      id: book.id,
+      title: book.title,
+      author: book.author,
+      purchasePriceInrPaise: book.purchasePriceInrPaise,
+      sellingPriceInrPaise: book.priceInrPaise,
+      quantityPurchased: book.inventoryPurchased,
+      quantitySold,
+      remainingStock,
+      revenuePaise,
+      profitPaise,
+    };
+  });
+}
+
+export async function getBookOrderFinanceAll(
+  filters: Pick<FinanceFilters, "from" | "to" | "q">,
+): Promise<BookOrderFinanceRecord[]> {
+  const dateWhere = filters.from || filters.to ? { createdAt: financePaidAtWhere(filters) } : {};
+  
+  const searchWhere: Prisma.BookOrderWhereInput = filters.q
+    ? {
+        OR: [
+          { user: { name: { contains: filters.q, mode: "insensitive" } } },
+          { user: { email: { contains: filters.q, mode: "insensitive" } } },
+          { upiTransactionId: { contains: filters.q, mode: "insensitive" } },
+          { id: { contains: filters.q, mode: "insensitive" } },
+        ],
+      }
+    : {};
+
+  const where: Prisma.BookOrderWhereInput = {
+    AND: [dateWhere, searchWhere],
+  };
+
+  const orders = await withDbErrorHandling(() => prisma.bookOrder.findMany({
+      where,
+      include: {
+        user: { select: { name: true, email: true } },
+        items: {
+          include: {
+            book: { select: { purchasePriceInrPaise: true } },
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+    }), "Database operation failed");
+
+  return orders.map((order) => {
+    let profitContributionPaise = 0;
+
+    if (order.status === "APPROVED" || order.status === "SHIPPED") {
+      for (const item of order.items) {
+        const itemRevenue = item.quantity * item.priceAtPurchaseInrPaise;
+        const itemCost = item.quantity * (item.book?.purchasePriceInrPaise || 0);
+        profitContributionPaise += (itemRevenue - itemCost);
+      }
+    }
+
+    return {
+      id: order.id,
+      orderDate: order.createdAt,
+      customerName: order.user?.name || "Unknown",
+      customerEmail: order.user?.email || "No email",
+      deliveryAddress: order.deliveryAddress,
+      deliveryPinCode: order.deliveryPinCode,
+      deliveryPhoneNumber: order.deliveryPhoneNumber,
+      status: order.status,
+      totalAmountPaise: order.totalAmountInrPaise,
+      profitContributionPaise,
+    };
+  });
+}

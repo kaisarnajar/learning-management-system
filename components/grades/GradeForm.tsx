@@ -108,7 +108,7 @@ export function GradeForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="bg-white p-6 rounded-lg border border-border flex flex-col md:flex-row gap-4 justify-between items-end">
+      <div className="bg-surface p-6 rounded-lg border border-border flex flex-col md:flex-row gap-4 justify-between items-end">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
           <div>
             <label htmlFor="exam-title" className={labelClassName}>Exam Title:</label>
@@ -154,22 +154,22 @@ export function GradeForm({
         </div>
       )}
 
-      <div className="bg-white border border-border rounded-lg overflow-hidden">
+      <div className="bg-surface border border-border rounded-lg overflow-hidden">
         <table className="min-w-full divide-y divide-border">
-          <thead className="bg-gray-50">
+          <thead className="bg-surface-muted">
             <tr>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                 Roll No
               </th>
-              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                 Student Name
               </th>
-              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-muted uppercase tracking-wider">
                 Marks Obtained
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-border">
+          <tbody className="bg-surface divide-y divide-border">
             {students.length === 0 ? (
               <tr>
                 <td colSpan={3} className="px-6 py-8 text-center text-muted">
@@ -181,7 +181,7 @@ export function GradeForm({
                 const mark = gradesState[student.id];
                 
                 return (
-                  <tr key={student.id} className="hover:bg-gray-50">
+                  <tr key={student.id} className="hover:bg-surface-muted-hover transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
                       {student.rollNumber ?? "N/A"}
                     </td>

@@ -41,9 +41,9 @@ export function AttendanceView({ courseId, baseUrl, date, records }: AttendanceV
         </div>
       </div>
 
-      <div className="bg-white border border-border rounded-lg overflow-hidden shadow-sm">
+      <div className="bg-surface border border-border rounded-lg overflow-hidden shadow-sm">
         <table className="min-w-full divide-y divide-border">
-          <thead className="bg-gray-50">
+          <thead className="bg-surface-muted">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-muted uppercase tracking-wider">
                 Roll No
@@ -56,7 +56,7 @@ export function AttendanceView({ courseId, baseUrl, date, records }: AttendanceV
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-border">
+          <tbody className="bg-surface divide-y divide-border">
             {records.length === 0 ? (
               <tr>
                 <td colSpan={3} className="px-6 py-8 text-center text-muted">
@@ -65,7 +65,7 @@ export function AttendanceView({ courseId, baseUrl, date, records }: AttendanceV
               </tr>
             ) : (
               records.map((record, i) => (
-                <tr key={i} className="hover:bg-gray-50">
+                <tr key={i} className="hover:bg-surface-muted-hover transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
                     {record.rollNumber ?? "N/A"}
                   </td>
@@ -75,11 +75,11 @@ export function AttendanceView({ courseId, baseUrl, date, records }: AttendanceV
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     {record.isPresent ? (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-success-bg text-success-text">
                         Present
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-rose-100 text-rose-800">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-destructive-bg text-destructive-text">
                         Absent
                       </span>
                     )}

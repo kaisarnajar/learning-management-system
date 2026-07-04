@@ -18,11 +18,11 @@ export default async function TeacherNewAttendancePage({
       <div className="flex items-center gap-4">
         <Link
           href={`/teacher/courses/${id}/attendance`}
-          className="p-2 text-gray-500 hover:text-gray-900 bg-white rounded-full hover:bg-gray-100 transition-colors border border-gray-200 shadow-sm"
+          className="p-2 text-muted hover:text-foreground bg-surface rounded-full hover:bg-accent-muted/50 transition-colors border border-border shadow-sm"
         >
           <ArrowLeftIcon className="w-5 h-5" />
         </Link>
-        <h1 className="text-2xl font-bold text-gray-900">Mark New Attendance</h1>
+        <h1 className="text-2xl font-bold text-foreground">Mark New Attendance</h1>
       </div>
 
       <AttendanceForm

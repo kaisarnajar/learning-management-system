@@ -5,16 +5,16 @@ import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 
 const features = [
   {
-    title: "After Isha Salah",
+    title: "Flexible Class Schedule",
     description:
-      "Classes are generally after Isha salah, so you can work during the day and manage your prayers properly.",
+      "Learn without disrupting your daily routine. Our classes are designed to fit around your work, studies, and family commitments.",
     icon: (
       <svg className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden>
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
           strokeWidth={1.5}
-          d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+          d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
         />
       </svg>
     ),

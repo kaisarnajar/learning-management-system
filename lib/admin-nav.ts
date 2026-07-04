@@ -43,7 +43,12 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: "/admin/fatwa", label: "Fatwa" },
       { href: "/admin/library", label: "Digital Library" },
       { href: "/admin/daily-inspiration", label: "Verse & Hadith" },
-      { href: "/admin/bookstore", label: "Bookstore" },
+    ],
+  },
+  {
+    title: "Bookstore",
+    links: [
+      { href: "/admin/bookstore", label: "Books" },
       { href: "/admin/bookstore/orders", label: "Book Orders" },
     ],
   },

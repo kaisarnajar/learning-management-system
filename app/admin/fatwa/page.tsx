@@ -112,7 +112,7 @@ export default async function AdminFatwaPage({
                 <th className="px-4 py-3 font-medium">Status</th>
                 <th className="px-4 py-3 font-medium">Homepage</th>
                 <th className="px-4 py-3 font-medium">Submitted</th>
-                <th className="px-4 py-3 font-medium" />
+                <th className="w-[1%] whitespace-nowrap px-4 py-3 font-medium" />
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -139,22 +139,22 @@ export default async function AdminFatwaPage({
                       year: "numeric",
                     })}
                   </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap items-center justify-end gap-2">
+                  <td className="whitespace-nowrap px-4 py-3">
+                    <div className="flex items-center justify-end gap-2">
                       {q.approvalStatus === "PENDING" ? (
                         <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
                           Review
                         </Link>
                       ) : q.answer ? (
                         <>
-                          <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
-                            Edit
-                          </Link>
                           {q.approvalStatus === "APPROVED" && (
                             <Link href={`/fatwa/${q.id}`} className="font-medium text-primary hover:underline" target="_blank">
                               View
                             </Link>
                           )}
+                          <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
+                            Edit
+                          </Link>
                         </>
                       ) : (
                         <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">

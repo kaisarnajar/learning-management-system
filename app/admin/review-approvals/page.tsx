@@ -68,7 +68,7 @@ export default async function AdminReviewApprovalsPage({
 
   return (
     <div>
-      <h1 className="font-serif text-2xl font-bold text-primary">Review approvals</h1>
+      <h1 className="font-serif text-2xl font-bold text-primary">Review</h1>
       <p className="mt-1 text-sm text-muted">
         Approve student reviews before they can appear on the homepage. Removing from the homepage does not
         delete a review — manage all approved reviews below.

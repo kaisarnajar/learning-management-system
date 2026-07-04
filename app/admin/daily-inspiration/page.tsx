@@ -117,6 +117,12 @@ export default async function AdminDailyInspirationPage({
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap items-center justify-end gap-3">
                         <Link
+                          href={`/admin/daily-inspiration/${item.id}`}
+                          className="font-medium text-primary hover:underline"
+                        >
+                          View
+                        </Link>
+                        <Link
                           href={`/admin/daily-inspiration/${item.id}/edit`}
                           className="font-medium text-primary hover:underline"
                         >

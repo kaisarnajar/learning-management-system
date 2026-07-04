@@ -21,7 +21,7 @@ export default async function AdminReviewDetailPage({
   return (
     <div>
       <Link href="/admin/review-approvals" className="text-sm text-primary hover:underline">
-        ← Back to review approvals
+        ← Back to review
       </Link>
 
       <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">

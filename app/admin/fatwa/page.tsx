@@ -141,9 +141,26 @@ export default async function AdminFatwaPage({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center justify-end gap-2">
-                      <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
-                        {q.approvalStatus === "PENDING" ? "Review" : q.answer ? "View" : "Answer"}
-                      </Link>
+                      {q.approvalStatus === "PENDING" ? (
+                        <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
+                          Review
+                        </Link>
+                      ) : q.answer ? (
+                        <>
+                          <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
+                            Edit
+                          </Link>
+                          {q.approvalStatus === "APPROVED" && (
+                            <Link href={`/fatwa/${q.id}`} className="font-medium text-primary hover:underline" target="_blank">
+                              View
+                            </Link>
+                          )}
+                        </>
+                      ) : (
+                        <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
+                          Answer
+                        </Link>
+                      )}
                       <DeleteActionButton action={deleteFatwa.bind(null, q.id)} itemName={q.title} className="text-sm font-medium text-destructive-text hover:underline" />
                     </div>
                   </td>

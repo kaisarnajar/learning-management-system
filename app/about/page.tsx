@@ -229,6 +229,10 @@ export default async function AboutPage() {
                   <span className="text-gold mt-0.5">•</span>
                   <span><strong>Qazi Muhammad Imran</strong><br/><span className="opacity-80">Shaykh-ul-Hadith, Darul Uloom Bilalya</span></span>
                 </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-gold mt-0.5">•</span>
+                  <span><strong>Mufti Abdur Rashid Qasmi</strong><br/><span className="opacity-80">Mohtamim Darul Uloom Shutloo Rafiabad</span></span>
+                </li>
               </ul>
             </div>
 

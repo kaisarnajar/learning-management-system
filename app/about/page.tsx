@@ -272,12 +272,9 @@ export default async function AboutPage() {
 
           <div className="mt-16 text-center motion-safe:animate-fade-up" style={{ animationDelay: '450ms', animationFillMode: 'both' }}>
             <div className="mx-auto max-w-3xl text-lg text-muted">
-              <span className="font-semibold text-foreground bg-gold/10 px-4 py-2 rounded-full border border-gold/20 inline-block mb-3 text-sm sm:text-base">
+              <span className="font-semibold text-foreground bg-gold/10 px-4 py-2 rounded-full border border-gold/20 inline-block text-sm sm:text-base">
                 Website Developed by <strong className="text-primary font-bold">Kaisar Ahmad Najar</strong>
               </span>
-              <p className="text-base sm:text-lg">
-                Designed, developed, and maintained by Software Developer / Full Stack Engineer.
-              </p>
             </div>
           </div>
 

@@ -68,7 +68,7 @@ export default async function AdminTransactionsPage({
         })}
       </nav>
 
-      <div className="mt-8 max-w-2xl">
+      <div className="mt-8 w-full">
         {tab === "payments" ? (
           <RecordPaymentForm
             courses={courses.map((c) => ({ id: c.id, title: c.title }))}

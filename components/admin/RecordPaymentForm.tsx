@@ -63,42 +63,42 @@ export function RecordPaymentForm({ courses }: RecordPaymentFormProps) {
         <p className="rounded-md bg-info-bg px-4 py-3 text-sm text-info-text">{state.success}</p>
       )}
 
-      <div>
-        <label htmlFor="email" className={labelClassName}>
-          Registered account email
-        </label>
-        <input
-          id="email"
-          name="email"
-          type="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onBlur={() => runLookup(email)}
-          placeholder="student@example.com"
-          className={`${inputClassName} mt-1`}
-        />
-        {lookupError && (
-          <p className="mt-2 rounded-md bg-warning-bg px-3 py-2 text-sm text-warning-text" role="alert">
-            {lookupError}
-          </p>
-        )}
-      </div>
-
-      <div>
-        <label className={labelClassName}>Name (from account)</label>
-        <p
-          className={`mt-1 rounded-md border border-border bg-background/60 px-3 py-2.5 text-sm ${
-            linkedName ? "font-medium text-foreground" : "text-muted"
-          }`}
-        >
-          {lookupLoading
-            ? "Checking account…"
-            : linkedName || "Enter an email above to load the account name."}
-        </p>
-      </div>
-
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div>
+          <label htmlFor="email" className={labelClassName}>
+            Registered account email
+          </label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            onBlur={() => runLookup(email)}
+            placeholder="student@example.com"
+            className={`${inputClassName} mt-1`}
+          />
+          {lookupError && (
+            <p className="mt-2 rounded-md bg-warning-bg px-3 py-2 text-sm text-warning-text" role="alert">
+              {lookupError}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label className={labelClassName}>Name (from account)</label>
+          <p
+            className={`mt-1 rounded-md border border-border bg-background/60 px-3 py-2.5 text-sm ${
+              linkedName ? "font-medium text-foreground" : "text-muted"
+            }`}
+          >
+            {lookupLoading
+              ? "Checking account…"
+              : linkedName || "Enter an email above to load the account name."}
+          </p>
+        </div>
+
         <div>
           <label htmlFor="amountInr" className={labelClassName}>
             Amount (₹)
@@ -114,6 +114,7 @@ export function RecordPaymentForm({ courses }: RecordPaymentFormProps) {
             className={inputClassName}
           />
         </div>
+
         <div>
           <label htmlFor="paidAt" className={labelClassName}>
             Payment date
@@ -127,34 +128,34 @@ export function RecordPaymentForm({ courses }: RecordPaymentFormProps) {
             className={inputClassName}
           />
         </div>
-      </div>
 
-      <div>
-        <label htmlFor="paymentType" className={labelClassName}>
-          Type
-        </label>
-        <select id="paymentType" name="paymentType" className={inputClassName} defaultValue="monthly" required>
-          <option value="monthly">Monthly Fee</option>
-          <option value="quarterly">Quarterly Fee</option>
-          <option value="half_yearly">Half Yearly Fee</option>
-          <option value="yearly">Yearly Fee</option>
-          <option value="enrollment">Enrollment Fee</option>
-          <option value="manual">Other</option>
-        </select>
-      </div>
+        <div>
+          <label htmlFor="paymentType" className={labelClassName}>
+            Type
+          </label>
+          <select id="paymentType" name="paymentType" className={inputClassName} defaultValue="monthly" required>
+            <option value="monthly">Monthly Fee</option>
+            <option value="quarterly">Quarterly Fee</option>
+            <option value="half_yearly">Half Yearly Fee</option>
+            <option value="yearly">Yearly Fee</option>
+            <option value="enrollment">Enrollment Fee</option>
+            <option value="manual">Other</option>
+          </select>
+        </div>
 
-      <div>
-        <label htmlFor="courseId" className={labelClassName}>
-          Course (optional)
-        </label>
-        <select id="courseId" name="courseId" className={inputClassName} defaultValue="">
-          <option value="">— General / not course-specific —</option>
-          {courses.map((course) => (
-            <option key={course.id} value={course.id}>
-              {course.title}
-            </option>
-          ))}
-        </select>
+        <div>
+          <label htmlFor="courseId" className={labelClassName}>
+            Course (optional)
+          </label>
+          <select id="courseId" name="courseId" className={inputClassName} defaultValue="">
+            <option value="">— General / not course-specific —</option>
+            {courses.map((course) => (
+              <option key={course.id} value={course.id}>
+                {course.title}
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <SubmitButton

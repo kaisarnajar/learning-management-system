@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
-import { approveStudentReview, rejectStudentReview } from "@/app/admin/review-approvals/actions";
+import { approveStudentReview, rejectStudentReview, deleteStudentReview } from "@/app/admin/review-approvals/actions";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { StarRating } from "@/components/reviews/StarRating";
 import type { StudentReviewWithUser } from "@/lib/student-reviews";
 
@@ -22,9 +23,11 @@ import { useToast } from "@/components/shared/ToastProvider";
 
 function ReviewActions({
   reviewId,
+  reviewerName,
   pending = false,
 }: {
   reviewId: string;
+  reviewerName: string;
   pending?: boolean;
 }) {
   const { addToast } = useToast();
@@ -39,6 +42,13 @@ function ReviewActions({
       >
         Edit
       </Link>
+      {!pending && (
+        <DeleteActionButton
+          action={deleteStudentReview.bind(null, reviewId)}
+          itemName={`review by ${reviewerName}`}
+          className="font-medium text-destructive-text hover:underline"
+        />
+      )}
       {pending && (
         <>
           <ConfirmationModal title="Approve Review" description="Approve this review and display it on the public course page?" actionLabel="Approve" variant="primary" onConfirm={async () => { const result = await approveStudentReview(reviewId, false); if (result?.error) addToast(result.error, "error"); }} trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>} />
@@ -104,7 +114,11 @@ export function ReviewTable({
             )}
             <td className="px-4 py-3 text-muted">{formatDate(review.createdAt)}</td>
             <td className="whitespace-nowrap px-4 py-3">
-              <ReviewActions reviewId={review.id} pending={pendingActions} />
+              <ReviewActions
+                reviewId={review.id}
+                reviewerName={review.user.name ?? review.user.email}
+                pending={pendingActions}
+              />
             </td>
           </tr>
         ))}

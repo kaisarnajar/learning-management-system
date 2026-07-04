@@ -146,3 +146,20 @@ export async function saveApprovedReviewHomepageSetting(
 
   redirect("/admin/review-approvals?saved=1");
 }
+
+export async function deleteStudentReview(
+  reviewId: string,
+): Promise<{ error?: string }> {
+  await requireAdmin();
+
+  try {
+    await prisma.studentReview.delete({
+      where: { id: reviewId },
+    });
+    revalidateReviewPaths(reviewId);
+    return {};
+  } catch (err) {
+    console.error("Failed to delete review:", err);
+    return { error: "Failed to delete review." };
+  }
+}

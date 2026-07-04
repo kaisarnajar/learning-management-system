@@ -73,7 +73,7 @@ export async function StudentTestimonials() {
         </div>
 
         {reviews.length > 0 ? (
-          <ul className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-8">
+          <ul className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:gap-8">
             {reviews.map((item) => (
               <TestimonialCard key={item.id} item={item} />
             ))}

@@ -13,7 +13,7 @@ function studentReviewSearchWhere(searchQuery?: string) {
   );
 }
 
-export const HOMEPAGE_FEATURED_REVIEWS_MAX = 6;
+export const HOMEPAGE_FEATURED_REVIEWS_MAX = 4;
 
 export type StudentReviewWithUser = StudentReview & {
   user: Pick<User, "id" | "name" | "email">;

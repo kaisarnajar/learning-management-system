@@ -35,6 +35,7 @@ export type FinanceExpenseFilters = {
 export type FinanceFilters = FinanceDateRange & FinanceIncomeFilters & FinanceExpenseFilters & {
   tab: FinanceTab;
   q?: string;
+  onlyManual?: boolean;
 };
 
 export type FinanceSearchParams = {

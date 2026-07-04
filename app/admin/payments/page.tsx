@@ -144,11 +144,11 @@ export default async function AdminPaymentApprovalsPage({
       : Promise.resolve({ items: [], totalCount: 0 }),
     // Manually added transactions tab
     isManualTransactions
-      ? getIncomeRecordsPaginated({ ...financeFilters, q: q ?? undefined }, requestedPage, pageSize)
+      ? getIncomeRecordsPaginated({ ...financeFilters, onlyManual: true, q: q ?? undefined }, requestedPage, pageSize)
       : Promise.resolve({ items: [], totalCount: 0 }),
     // Manually added expenses tab
     isManualExpenses
-      ? getExpensesPaginated({ ...financeFilters, q: q ?? undefined }, requestedPage, pageSize)
+      ? getExpensesPaginated({ ...financeFilters, onlyManual: true, q: q ?? undefined }, requestedPage, pageSize)
       : Promise.resolve({ items: [], totalCount: 0 }),
   ]);
 

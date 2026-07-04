@@ -23,13 +23,18 @@ function expenseSearchWhere(q?: string) {
 function buildExpenseWhere(filters: FinanceFilters) {
   const paidAt = financePaidAtWhere(filters);
 
-  const base = {
+  const base: Prisma.ExpenseWhereInput = {
     ...(filters.category ? { category: filters.category } : {}),
     ...(isTeacherExpenseFilterRelevant(filters.category) && filters.teacherId
       ? { teacherId: filters.teacherId }
       : {}),
     ...(paidAt ? { paidAt } : {}),
   };
+
+  if (filters.onlyManual) {
+    // Currently, all Expense records in the system are manually entered by the admin.
+    // This block is defined for consistency and future-proofing.
+  }
 
   return andWhere(Object.keys(base).length > 0 ? base : undefined, expenseSearchWhere(filters.q));
 }

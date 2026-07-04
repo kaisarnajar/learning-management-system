@@ -21,12 +21,16 @@ function incomeSearchWhere(q?: string) {
 function buildIncomeWhere(filters: FinanceFilters) {
   const paidAt = financePaidAtWhere(filters);
 
-  const base = {
+  const base: Prisma.PaymentRecordWhereInput = {
     ...(filters.courseId ? { courseId: filters.courseId } : {}),
     ...(filters.studentId ? { userId: filters.studentId } : {}),
     paymentType: filters.paymentType ? filters.paymentType : { not: "book_purchase" },
     ...(paidAt ? { paidAt } : {}),
   };
+
+  if (filters.onlyManual) {
+    base.submission = null;
+  }
 
   return andWhere(Object.keys(base).length > 0 ? base : undefined, incomeSearchWhere(filters.q));
 }

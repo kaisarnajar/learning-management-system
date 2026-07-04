@@ -4,6 +4,7 @@ import { ACADEMY_LOCATION, getAcademyLocationEmbedUrl } from "@/lib/academy-loca
 import { formatWhatsAppForDisplay, getSocialLinksSettings } from "@/lib/social-links";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { Source_Serif_4 } from "next/font/google";
+import { indoPakArabic } from "@/lib/fonts/indo-pak-arabic";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
@@ -95,9 +96,21 @@ export default async function AboutPage() {
             </div>
           </div>
           
-          <div className="mt-12 text-center motion-safe:animate-fade-up" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
-            <blockquote className="italic text-lg text-primary border-l-4 border-[#cca72f] pl-4 py-2 bg-accent-muted/10 rounded-r-lg">
-              &quot;And who is better in speech than one who calls to Allah, does righteousness, and says, &apos;Indeed, I am of the Muslims.&apos;&quot; <br/><span className="text-sm font-semibold">— (Qur&apos;an 41:33)</span>
+          <div className="mt-12 motion-safe:animate-fade-up" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
+            <blockquote className="text-center border-l-4 border-[#cca72f] pl-4 py-4 bg-accent-muted/10 rounded-r-lg">
+              <p
+                className={`${indoPakArabic.className} indo-pak-arabic text-2xl sm:text-3xl leading-relaxed text-primary mb-3`}
+                dir="rtl"
+                lang="ar"
+              >
+                وَمَنْ أَحْسَنُ قَوْلًا مِّمَّن دَعَا إِلَى اللَّهِ وَعَمِلَ صَالِحًا وَقَالَ إِنَّنِي مِنَ الْمُسْلِمِينَ
+              </p>
+              <p className="italic text-base sm:text-lg text-primary">
+                &quot;And who is better in speech than one who calls to Allah, does righteousness, and says, &apos;Indeed, I am of the Muslims.&apos;&quot;
+              </p>
+              <cite className="not-italic block mt-2 text-xs sm:text-sm font-semibold text-[#cca72f] uppercase tracking-wider">
+                — (Qur&apos;an 41:33)
+              </cite>
             </blockquote>
           </div>
         </div>
@@ -207,12 +220,17 @@ export default async function AboutPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="text-center motion-safe:animate-fade-up">
             <SplitSectionTitle muted="Our" accent="Foundation" />
-            <p className="mx-auto mt-6 max-w-3xl text-lg text-muted">
-              Founded by Talib Ul Islam and established under the supervision of distinguished scholars.
-            </p>
+            <div className="mx-auto mt-6 max-w-3xl text-lg text-muted">
+              <span className="font-semibold text-foreground bg-gold/10 px-4 py-2 rounded-full border border-gold/20 inline-block mb-3 text-sm sm:text-base">
+                Founded by <strong className="text-primary font-bold">Talib Ul Islam</strong>
+              </span>
+              <p className="text-base sm:text-lg">
+                Established under the supervision of distinguished scholars.
+              </p>
+            </div>
           </div>
 
-          <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="mt-16 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <div className="card-elevated p-8 motion-safe:animate-fade-up" style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
               <h3 className={`${sourceSerif.className} text-xl font-semibold text-primary mb-4`}>Guidance & Supervision</h3>
               <p className="text-sm text-muted mb-4">Our scholarly guidance shapes the vision and direction of the organization:</p>
@@ -249,6 +267,31 @@ export default async function AboutPage() {
                 <li>• Mufti Asif Ah Qasmi</li>
                 <li>• Many other well-wishers</li>
               </ul>
+            </div>
+
+            <div className="card-elevated p-8 motion-safe:animate-fade-up" style={{ animationDelay: '450ms', animationFillMode: 'both' }}>
+              <h3 className={`${sourceSerif.className} text-xl font-semibold text-primary mb-4`}>Website Developed By</h3>
+              <p className="text-sm text-muted mb-4">Designed, developed, and maintained by:</p>
+              <div className="space-y-4 text-sm text-muted">
+                <div>
+                  <h4 className="font-semibold text-foreground text-base">Kaisar Ahmad Najar</h4>
+                  <p className="opacity-80">Software Developer / Full Stack Engineer</p>
+                </div>
+                <div className="space-y-2 pt-2 border-t border-border/60">
+                  <p className="flex items-center gap-2">
+                    <span className="font-medium text-foreground">Email:</span>
+                    <a href="mailto:kaisarnajar11114@gmail.com" className="text-primary hover:underline">
+                      kaisarnajar11114@gmail.com
+                    </a>
+                  </p>
+                  <p className="flex items-center gap-2">
+                    <span className="font-medium text-foreground">LinkedIn:</span>
+                    <a href="https://www.linkedin.com/in/kaisarnajar/" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                      linkedin.com/in/kaisarnajar
+                    </a>
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 

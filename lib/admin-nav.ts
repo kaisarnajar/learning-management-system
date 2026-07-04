@@ -50,7 +50,8 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
   {
     title: "Payments & Finance",
     links: [
-      { href: "/admin/payments", label: "Payments" },
+      { href: "/admin/payments", label: "Pending Payments" },
+      { href: "/admin/completed-payments", label: "Completed Payments" },
       { href: "/admin/receipts", label: "Payment Receipts" },
       { href: "/admin/finance", label: "Finance" },
       { href: "/admin/transactions", label: "Transactions" },

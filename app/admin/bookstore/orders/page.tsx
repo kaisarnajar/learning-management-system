@@ -7,7 +7,6 @@ import {
   getPendingBookOrdersPaginated,
   getApprovedBookOrdersPaginated,
   getCompletedBookOrdersPaginated,
-  getApprovedBookPaymentsPaginated,
 } from "@/lib/bookstore";
 import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
 import { parseSearchQuery } from "@/lib/text-search";
@@ -19,7 +18,7 @@ export const metadata: Metadata = {
   description: "Review and approve or decline book purchase orders submitted by students.",
 };
 
-function tabHref(status: "pending" | "approved" | "completed" | "payments") {
+function tabHref(status: "pending" | "approved" | "completed") {
   const params = new URLSearchParams();
   if (status !== "pending") params.set("status", status);
   const qs = params.toString();
@@ -42,7 +41,7 @@ export default async function AdminBookOrdersPage({
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
   const status =
-    params.status === "approved" || params.status === "completed" || params.status === "payments"
+    params.status === "approved" || params.status === "completed"
       ? params.status
       : "pending";
 
@@ -52,22 +51,19 @@ export default async function AdminBookOrdersPage({
 
   // We only fetch the active tab's items to optimize performance,
   // but we should fetch counts for all three if we want to show badges on tabs.
-  const [pendingResult, approvedResult, completedResult, paymentsResult] = await Promise.all([
+  const [pendingResult, approvedResult, completedResult] = await Promise.all([
     getPendingBookOrdersPaginated(status === "pending" ? requestedPage : 1, pageSize, q),
     getApprovedBookOrdersPaginated(status === "approved" ? requestedPage : 1, pageSize, q),
     getCompletedBookOrdersPaginated(status === "completed" ? requestedPage : 1, pageSize, q),
-    getApprovedBookPaymentsPaginated(status === "payments" ? requestedPage : 1, pageSize, q),
   ]);
 
   const pendingCount = pendingResult.totalCount;
   const approvedCount = approvedResult.totalCount;
   const completedCount = completedResult.totalCount;
-  const paymentsCount = paymentsResult.totalCount;
 
   const activeResult = 
     status === "pending" ? pendingResult 
     : status === "approved" ? approvedResult 
-    : status === "payments" ? paymentsResult
     : completedResult;
   
   const safePage = clampPage(requestedPage, activeResult.totalCount, pageSize);
@@ -106,7 +102,6 @@ export default async function AdminBookOrdersPage({
             { label: "Pending Approvals", value: "pending" as const, count: pendingCount },
             { label: "Approved Orders", value: "approved" as const, count: approvedCount },
             { label: "Completed Orders", value: "completed" as const, count: completedCount },
-            { label: "Approved Payments", value: "payments" as const, count: paymentsCount },
           ] as const
         ).map((item) => {
           const active = status === item.value;
@@ -209,30 +204,6 @@ export default async function AdminBookOrdersPage({
             params={params}
             page={safePage}
             totalCount={completedCount}
-            pageSize={pageSize}
-          />
-        </section>
-      )}
-
-      {status === "payments" && (
-        <section id="approved-payments" className="mt-6">
-          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-            <BookOrdersTable
-              orders={paymentsResult.items}
-              emptyMessage={
-                q
-                  ? "No payments match your search."
-                  : "No approved payments found."
-              }
-              showStatusColumn={true}
-              mode="payment_only"
-            />
-          </div>
-          <Pagination
-            basePath="/admin/bookstore/orders"
-            params={params}
-            page={safePage}
-            totalCount={paymentsCount}
             pageSize={pageSize}
           />
         </section>

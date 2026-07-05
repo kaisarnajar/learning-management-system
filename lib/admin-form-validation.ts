@@ -12,6 +12,7 @@ import {
   teacherAdminSchema,
   teacherBlogPostSchema,
   adminStudentSchema,
+  siteAnnouncementSchema,
 } from "@/lib/validations";
 import type { AnnouncementCategory } from "@prisma/client";
 

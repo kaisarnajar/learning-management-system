@@ -26,13 +26,7 @@ type SiteAnnouncementFormProps = {
   error?: string;
 };
 
-const ANNOUNCEMENT_FIELDS: (keyof SiteAnnouncementFormValues)[] = [
-  "title",
-  "body",
-  "location",
-  "eventDate",
-  "showOnHomepage",
-];
+
 
 export function SiteAnnouncementForm({
   action,
@@ -72,7 +66,14 @@ export function SiteAnnouncementForm({
       showOnHomepage: announcement?.showOnHomepage ?? false,
       published: announcement?.published ?? true,
     },
-    fields: ANNOUNCEMENT_FIELDS,
+    fields: [
+      "title",
+      "body",
+      "location",
+      "eventDate",
+      "showOnHomepage",
+      "published"
+    ],
     validate,
   });
 

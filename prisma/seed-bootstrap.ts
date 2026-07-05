@@ -67,6 +67,7 @@ export async function seedBootstrap(prisma: PrismaClient) {
         status,
         featuredOnHomepage: true,
         featuredAt,
+        feeFrequency: "MONTHLY",
       },
       update: {
         title: course.title,
@@ -80,6 +81,7 @@ export async function seedBootstrap(prisma: PrismaClient) {
         teacherId: course.teacherId,
         status,
         featuredOnHomepage: true,
+        feeFrequency: "MONTHLY",
       },
     });
   }
@@ -180,4 +182,28 @@ export async function seedBootstrap(prisma: PrismaClient) {
       bankBranch: "Srinagar Main Branch",
     },
   });
+
+  const shippingSlabs = [
+    { id: "slab-1", minWeightGrams: 0, maxWeightGrams: 500, chargeInrPaise: 5000 },
+    { id: "slab-2", minWeightGrams: 501, maxWeightGrams: 1000, chargeInrPaise: 8000 },
+    { id: "slab-3", minWeightGrams: 1001, maxWeightGrams: 2000, chargeInrPaise: 12000 },
+    { id: "slab-4", minWeightGrams: 2001, maxWeightGrams: 5000, chargeInrPaise: 25000 },
+  ];
+
+  for (const slab of shippingSlabs) {
+    await prisma.shippingChargeSlab.upsert({
+      where: { id: slab.id },
+      create: {
+        id: slab.id,
+        minWeightGrams: slab.minWeightGrams,
+        maxWeightGrams: slab.maxWeightGrams,
+        chargeInrPaise: slab.chargeInrPaise,
+      },
+      update: {
+        minWeightGrams: slab.minWeightGrams,
+        maxWeightGrams: slab.maxWeightGrams,
+        chargeInrPaise: slab.chargeInrPaise,
+      },
+    });
+  }
 }

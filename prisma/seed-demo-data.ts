@@ -232,10 +232,12 @@ async function seedDemoEnrollment(
       courseId: enrollment.courseId,
       status: enrollment.status,
       completedAt,
+      rollNumber: Number.parseInt(studentId, 10),
     },
     update: {
       status: enrollment.status,
       completedAt,
+      rollNumber: Number.parseInt(studentId, 10),
     },
   });
 
@@ -262,12 +264,12 @@ async function seedCompletedCourseScenario(prisma: PrismaClient) {
       courseId,
       status: "completed",
       completedAt: new Date("2026-05-01T12:00:00.000Z"),
-      
+      rollNumber: Number.parseInt(studentId, 10),
     },
     update: {
       status: "completed",
       completedAt: new Date("2026-05-01T12:00:00.000Z"),
-      
+      rollNumber: Number.parseInt(studentId, 10),
     },
   });
 
@@ -380,6 +382,7 @@ export async function seedDemoData(prisma: PrismaClient) {
         address: student.address,
         whatsapp: student.whatsapp,
         password: hashedPassword,
+        registrationNumber: "DQ-2026-00" + student.id,
       },
       update: {
         email,
@@ -390,6 +393,7 @@ export async function seedDemoData(prisma: PrismaClient) {
         address: student.address,
         whatsapp: student.whatsapp,
         password: hashedPassword,
+        registrationNumber: "DQ-2026-00" + student.id,
       },
     });
 

@@ -30,6 +30,8 @@ function statusBadge(published: boolean, showOnHomepage: boolean) {
   return { label: "Published", className: "bg-success-bg text-success-text" };
 }
 
+import { adminActionButtonClassName } from "@/lib/form";
+
 async function AdminAnnouncementsList({ params, q }: { params: PageParams; q?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
   const { items: announcements, totalCount } = await getAllSiteAnnouncementsForAdminPaginated(
@@ -105,17 +107,17 @@ async function AdminAnnouncementsList({ params, q }: { params: PageParams; q?: s
                           href={`/announcements/${item.id}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-sm text-muted hover:text-primary"
+                          className={adminActionButtonClassName}
                         >
                           View
                         </Link>
                         <Link
                           href={`/admin/announcements/${item.id}/edit`}
-                          className="font-medium text-primary hover:underline"
+                          className={adminActionButtonClassName}
                         >
                           Edit
                         </Link>
-                        <DeleteActionButton action={deleteSiteAnnouncement.bind(null, item.id)} itemName={item.title} className="text-sm font-medium text-destructive-text hover:underline" />
+                        <DeleteActionButton action={deleteSiteAnnouncement.bind(null, item.id)} itemName={item.title} />
                       </div>
                     </td>
                   </tr>

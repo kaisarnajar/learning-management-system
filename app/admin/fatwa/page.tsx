@@ -41,6 +41,8 @@ type PageParams = {
   q?: string;
 };
 
+import { adminActionButtonClassName } from "@/lib/form";
+
 async function AdminFatwaList({ params, q }: { params: PageParams; q?: string }) {
   const filter = (params.filter as FatwaAdminFilter) || undefined;
   const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
@@ -142,26 +144,26 @@ async function AdminFatwaList({ params, q }: { params: PageParams; q?: string })
                   <td className="whitespace-nowrap px-4 py-3">
                     <div className="flex items-center justify-end gap-2">
                       {q.approvalStatus === "PENDING" ? (
-                        <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
+                        <Link href={`/admin/fatwa/${q.id}`} className={adminActionButtonClassName}>
                           Review
                         </Link>
                       ) : q.answer ? (
                         <>
                           {q.approvalStatus === "APPROVED" && (
-                            <Link href={`/fatwa/${q.id}`} className="font-medium text-primary hover:underline" target="_blank">
+                            <Link href={`/fatwa/${q.id}`} className={adminActionButtonClassName} target="_blank">
                               View
                             </Link>
                           )}
-                          <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
+                          <Link href={`/admin/fatwa/${q.id}`} className={adminActionButtonClassName}>
                             Edit
                           </Link>
                         </>
                       ) : (
-                        <Link href={`/admin/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
+                        <Link href={`/admin/fatwa/${q.id}`} className={adminActionButtonClassName}>
                           Answer
                         </Link>
                       )}
-                      <DeleteActionButton action={deleteFatwa.bind(null, q.id)} itemName={q.title} className="text-sm font-medium text-destructive-text hover:underline" />
+                      <DeleteActionButton action={deleteFatwa.bind(null, q.id)} itemName={q.title} />
                     </div>
                   </td>
                 </tr>

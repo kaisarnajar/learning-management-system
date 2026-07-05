@@ -5,6 +5,8 @@ import { ConfirmationModal } from "./ConfirmationModal";
 import { useToast } from "@/components/shared/ToastProvider";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
+import { adminDestructiveButtonClassName } from "@/lib/form";
+
 export function DeleteActionButton({
   action,
   title = "Delete",
@@ -25,7 +27,7 @@ export function DeleteActionButton({
   const router = useRouter();
   const { addToast } = useToast();
   
-  const defaultClass = "rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60";
+  const defaultClass = adminDestructiveButtonClassName;
   const buttonClass = className || defaultClass;
 
   const trigger = (

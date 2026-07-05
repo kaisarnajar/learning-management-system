@@ -10,6 +10,8 @@ import { useToast } from "@/components/shared/ToastProvider";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 
+import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/lib/form";
+
 export function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
 }
@@ -86,7 +88,7 @@ export function MarkShippedModal({ orderId }: { orderId: string }) {
       <button 
         type="button" 
         onClick={() => setIsOpen(true)}
-        className="rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-light transition-colors"
+        className={adminActionButtonClassName}
       >
         Mark as Shipped
       </button>
@@ -169,7 +171,7 @@ function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "defau
                  if (result?.error) addToast(result.error, "error");
                }}
                trigger={
-                  <button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>
+                  <button type="button" className={adminActionButtonClassName}>Approve</button>
                }
             />
             <ConfirmationModal
@@ -182,7 +184,7 @@ function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "defau
                  if (result?.error) addToast(result.error, "error");
                }}
                trigger={
-                  <button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Decline</button>
+                  <button type="button" className={adminDestructiveButtonClassName}>Decline</button>
                }
             />
           </div>
@@ -228,7 +230,7 @@ function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "defau
                  if (result?.error) addToast(result.error, "error");
                }}
                trigger={
-                  <button type="button" className="rounded-md border border-border bg-surface-muted px-4 py-2 text-sm font-semibold text-muted hover:bg-surface-muted-hover transition-colors">Refund</button>
+                  <button type="button" className={adminDestructiveButtonClassName}>Refund</button>
                }
             />
           </div>
@@ -252,7 +254,7 @@ function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "defau
              if (result?.error) addToast(result.error, "error");
            }}
            trigger={
-              <button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">
+              <button type="button" className={adminDestructiveButtonClassName}>
                  Delete
               </button>
            }

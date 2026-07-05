@@ -3,6 +3,12 @@ export const inputClassName =
 
 export const labelClassName = "block text-sm font-medium text-foreground";
 
+export const adminActionButtonClassName =
+  "inline-flex min-h-9 items-center justify-center rounded-md border border-primary bg-primary/5 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors disabled:opacity-60";
+
+export const adminDestructiveButtonClassName =
+  "inline-flex min-h-9 items-center justify-center rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg/85 transition-colors disabled:opacity-60";
+
 export function rupeesToPaise(rupees: number): number {
   return Math.round(rupees * 100);
 }

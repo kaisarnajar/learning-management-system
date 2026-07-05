@@ -6,6 +6,8 @@ import { getCoursePricingFromCourse } from "@/lib/course-pricing";
 import { getFeeFrequencyLabel } from "@/lib/fee-frequency";
 import type { CourseWithTeacher } from "@/lib/courses";
 
+import { adminActionButtonClassName } from "@/lib/form";
+
 export function AdminCoursesTable({
   courses,
   enrollmentCounts,
@@ -64,14 +66,14 @@ export function AdminCoursesTable({
                 <div className="flex items-center justify-end gap-3">
                   <Link
                     href={`/admin/courses/${course.id}/students`}
-                    className="font-medium text-primary hover:underline"
+                    className={adminActionButtonClassName}
                   >
                     View
                   </Link>
-                  <Link href={`/admin/courses/${course.id}/edit`} className="font-medium text-primary hover:underline">
+                  <Link href={`/admin/courses/${course.id}/edit`} className={adminActionButtonClassName}>
                     Edit
                   </Link>
-                  <DeleteActionButton action={deleteCourse.bind(null, course.id)} itemName={course.title} warningMessage={studentCount > 0 ? `This course can't be deleted because ${studentCount} student${studentCount === 1 ? "" : "s"} ${studentCount === 1 ? "is" : "are"} enrolled.` : undefined} className="text-sm font-medium text-destructive-text hover:underline" />
+                  <DeleteActionButton action={deleteCourse.bind(null, course.id)} itemName={course.title} warningMessage={studentCount > 0 ? `This course can't be deleted because ${studentCount} student${studentCount === 1 ? "" : "s"} ${studentCount === 1 ? "is" : "are"} enrolled.` : undefined} />
                 </div>
               </td>
             </tr>

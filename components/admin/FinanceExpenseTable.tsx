@@ -57,7 +57,7 @@ export function FinanceExpenseTable({ expenses, returnQuery, basePath = "/admin/
             <td className="px-4 py-3 font-medium text-destructive-text">{formatPrice(expense.amountInrPaise)}</td>
             <td className="px-4 py-3 text-muted">{expense.description ?? "—"}</td>
             <td className="px-4 py-3">
-              <DeleteActionButton action={deleteExpenseById.bind(null, expense.id, returnQuery, basePath)} itemName="expense" className="text-sm font-medium text-destructive-text hover:underline" />
+              <DeleteActionButton action={deleteExpenseById.bind(null, expense.id, returnQuery, basePath)} itemName="expense" />
             </td>
           </tr>
         ))}

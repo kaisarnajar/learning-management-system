@@ -4,6 +4,8 @@ import { deleteTeacher } from "@/app/admin/teachers/actions";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { type Teacher } from "@prisma/client";
 
+import { adminActionButtonClassName } from "@/lib/form";
+
 export function AdminTeachersTable({ teachers }: { teachers: Teacher[] }) {
   return (
     <table className="w-full min-w-[760px] text-left text-sm">
@@ -35,17 +37,17 @@ export function AdminTeachersTable({ teachers }: { teachers: Teacher[] }) {
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <Link
                   href={`/admin/teachers/${teacher.id}`}
-                  className="font-medium text-primary hover:underline"
+                  className={adminActionButtonClassName}
                 >
                   View
                 </Link>
                 <Link
                   href={`/admin/teachers/${teacher.id}/edit`}
-                  className="font-medium text-primary hover:underline"
+                  className={adminActionButtonClassName}
                 >
                   Edit
                 </Link>
-                <DeleteActionButton action={deleteTeacher.bind(null, teacher.id)} itemName={teacher.name ?? teacher.email} className="text-sm font-medium text-destructive-text hover:underline" />
+                <DeleteActionButton action={deleteTeacher.bind(null, teacher.id)} itemName={teacher.name ?? teacher.email} />
               </div>
             </td>
           </tr>

@@ -32,6 +32,8 @@ type PageParams = {
   q?: string;
 };
 
+import { adminActionButtonClassName } from "@/lib/form";
+
 async function AdminBookstoreList({ params, q }: { params: PageParams; q?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
   const { items: books, totalCount } = await getAllBooksPaginated(requestedPage, pageSize, q);
@@ -107,13 +109,13 @@ async function AdminBookstoreList({ params, q }: { params: PageParams; q?: strin
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <Link
                         href={`/admin/bookstore/${book.id}`}
-                        className="font-medium text-primary hover:underline"
+                        className={adminActionButtonClassName}
                       >
                         View
                       </Link>
                       <Link
                         href={`/admin/bookstore/${book.id}/edit`}
-                        className="font-medium text-primary hover:underline"
+                        className={adminActionButtonClassName}
                       >
                         Edit
                       </Link>

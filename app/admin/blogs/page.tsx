@@ -29,6 +29,8 @@ function statusBadge(post: Pick<BlogPost, "approvalStatus" | "published">) {
   };
 }
 
+import { adminActionButtonClassName } from "@/lib/form";
+
 async function AdminBlogsList({ params, q }: { params: PageParams; q?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
   const { items: posts, totalCount } = await getAllBlogPostsForAdminPaginated(
@@ -99,18 +101,18 @@ async function AdminBlogsList({ params, q }: { params: PageParams; q?: string })
                             href={`/blog/${post.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm text-muted hover:text-primary"
+                            className={adminActionButtonClassName}
                           >
                             View
                           </Link>
                         )}
                         <Link
                           href={`/admin/blogs/${post.id}/edit`}
-                          className="font-medium text-primary hover:underline"
+                          className={adminActionButtonClassName}
                         >
                           Edit
                         </Link>
-                        <DeleteActionButton action={deleteBlogPost.bind(null, post.id)} itemName={post.title} className="text-sm font-medium text-destructive-text hover:underline" />
+                        <DeleteActionButton action={deleteBlogPost.bind(null, post.id)} itemName={post.title} />
                       </div>
                     </td>
                   </tr>

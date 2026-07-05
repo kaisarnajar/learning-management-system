@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
+import { adminActionButtonClassName } from "@/lib/form";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
@@ -162,7 +163,7 @@ export default async function AdminTeacherDetailPage({
                     <td className="px-4 py-3 text-right">
                       <Link
                         href={`/admin/courses/${course.id}/edit`}
-                        className="font-medium text-primary hover:underline"
+                        className={adminActionButtonClassName}
                       >
                         Edit course
                       </Link>

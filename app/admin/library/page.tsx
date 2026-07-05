@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteLibraryItemAction } from "@/app/admin/library/actions";
+import { adminActionButtonClassName } from "@/lib/form";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
@@ -90,17 +91,17 @@ async function AdminLibraryList({ params, q }: { params: PageParams; q?: string 
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <Link
                         href={`/admin/library/${item.id}`}
-                        className="font-medium text-primary hover:underline"
+                        className={adminActionButtonClassName}
                       >
                         View
                       </Link>
                       <Link
                         href={`/admin/library/${item.id}/edit`}
-                        className="font-medium text-primary hover:underline"
+                        className={adminActionButtonClassName}
                       >
                         Edit
                       </Link>
-                      <DeleteActionButton action={deleteLibraryItemAction.bind(null, item.id, "list")} itemName={item.title} className="text-sm font-medium text-destructive-text hover:underline" />
+                      <DeleteActionButton action={deleteLibraryItemAction.bind(null, item.id, "list")} itemName={item.title} />
                     </div>
                   </td>
                 </tr>

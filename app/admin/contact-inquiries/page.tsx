@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteContactInquiryById as deleteContactInquiry } from "@/app/admin/contact-inquiries/actions";
+import { adminActionButtonClassName } from "@/lib/form";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { getAllContactInquiriesPaginated } from "@/lib/contact-inquiries";
@@ -138,17 +139,17 @@ export default async function AdminContactInquiriesPage({
                     <div className="flex flex-wrap items-center justify-end gap-2">
                       <Link
                         href={`/admin/contact-inquiries/${inquiry.id}`}
-                        className="font-medium text-primary hover:underline"
+                        className={adminActionButtonClassName}
                       >
                         View
                       </Link>
                       <Link
                         href={`/admin/contact-inquiries/${inquiry.id}/reply`}
-                        className="font-medium text-primary hover:underline"
+                        className={adminActionButtonClassName}
                       >
                         {inquiry.reply ? "Edit" : "Reply"}
                       </Link>
-                      <DeleteActionButton action={deleteContactInquiry.bind(null, inquiry.id)} itemName={`${inquiry.name} (${inquiry.email})`} className="text-sm font-medium text-destructive-text hover:underline" />
+                      <DeleteActionButton action={deleteContactInquiry.bind(null, inquiry.id)} itemName={`${inquiry.name} (${inquiry.email})`} />
                     </div>
                   </td>
                 </tr>

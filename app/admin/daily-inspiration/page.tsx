@@ -24,6 +24,8 @@ type PageParams = {
   q?: string;
 };
 
+import { adminActionButtonClassName } from "@/lib/form";
+
 async function AdminDailyInspirationList({ params, q }: { params: PageParams; q?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
   const [{ items, totalCount }, homepageId] = await Promise.all([
@@ -101,17 +103,17 @@ async function AdminDailyInspirationList({ params, q }: { params: PageParams; q?
                       <div className="flex flex-wrap items-center justify-end gap-3">
                         <Link
                           href={`/admin/daily-inspiration/${item.id}`}
-                          className="font-medium text-primary hover:underline"
+                          className={adminActionButtonClassName}
                         >
                           View
                         </Link>
                         <Link
                           href={`/admin/daily-inspiration/${item.id}/edit`}
-                          className="font-medium text-primary hover:underline"
+                          className={adminActionButtonClassName}
                         >
                           Edit
                         </Link>
-                        <DeleteActionButton action={deleteDailyInspiration.bind(null, item.id)} itemName={item.kind} className="text-sm font-medium text-destructive-text hover:underline" />
+                        <DeleteActionButton action={deleteDailyInspiration.bind(null, item.id)} itemName={item.kind} />
                       </div>
                     </td>
                   </tr>

@@ -3,6 +3,8 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteStudentUser as deleteStudent } from "@/app/admin/students/actions";
 import { type User } from "@prisma/client";
 
+import { adminActionButtonClassName } from "@/lib/form";
+
 export function AdminStudentsTable({ students }: { students: User[] }) {
   return (
     <table className="w-full min-w-[640px] text-left text-sm">
@@ -32,17 +34,17 @@ export function AdminStudentsTable({ students }: { students: User[] }) {
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <Link
                   href={`/admin/students/${student.id}`}
-                  className="font-medium text-primary hover:underline"
+                  className={adminActionButtonClassName}
                 >
                   View
                 </Link>
                 <Link
                   href={`/admin/students/${student.id}/edit`}
-                  className="font-medium text-primary hover:underline"
+                  className={adminActionButtonClassName}
                 >
                   Edit
                 </Link>
-                <DeleteActionButton action={deleteStudent.bind(null, student.id)} itemName={student.name ?? student.email} className="text-sm font-medium text-destructive-text hover:underline" />
+                <DeleteActionButton action={deleteStudent.bind(null, student.id)} itemName={student.name ?? student.email} />
               </div>
             </td>
           </tr>

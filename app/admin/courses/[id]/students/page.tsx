@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/lib/form";
 
 
 
@@ -101,13 +102,13 @@ export default async function CourseStudentsPage({
                     <div className="flex items-center justify-end gap-3">
                       <Link
                         href={`/admin/courses/${id}/attendance/student/${enrollment.id}`}
-                        className="font-medium text-primary hover:underline"
+                        className={adminActionButtonClassName}
                       >
                         Attendance
                       </Link>
                       <Link
                         href={`/admin/courses/${id}/grades/student/${enrollment.id}`}
-                        className="font-medium text-primary hover:underline"
+                        className={adminActionButtonClassName}
                       >
                         Grade Card
                       </Link>
@@ -118,7 +119,7 @@ export default async function CourseStudentsPage({
                         actionLabel="Remove" 
                         variant="destructive" 
                         onConfirm={async () => { "use server"; const result = await removeEnrollmentFromCourse(enrollment.id, id); if (result?.error) throw new Error(result.error); }} 
-                        trigger={<button type="button" className="text-sm font-medium text-destructive-text hover:underline">Remove</button>} 
+                        trigger={<button type="button" className={adminDestructiveButtonClassName}>Remove</button>} 
                       />
                     </div>
                   </td>

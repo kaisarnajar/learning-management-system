@@ -9,9 +9,9 @@ import {
   dailyInspirationSchema,
   libraryItemSchema,
   paymentSettingsSchema,
-  siteAnnouncementSchema,
   teacherAdminSchema,
   teacherBlogPostSchema,
+  adminStudentSchema,
 } from "@/lib/validations";
 import type { AnnouncementCategory } from "@prisma/client";
 
@@ -187,19 +187,8 @@ export function validateBookForm(values: BookFormValues): FormValidationResult {
   );
 }
 
-const studentSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  fatherName: z.string().min(2, "Father's name is required"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  occupation: z.string().min(1, "Occupation is required"),
-  address: z.string().min(5, "Address is required"),
-  whatsapp: z.string().min(5, "WhatsApp is required"),
-});
-
-export type StudentFormValues = z.infer<typeof studentSchema>;
+export type StudentFormValues = z.infer<typeof adminStudentSchema>;
 
 export function validateStudentForm(values: StudentFormValues): FormValidationResult {
-  return zodResultToFormValidation(studentSchema.safeParse(values));
+  return zodResultToFormValidation(adminStudentSchema.safeParse(values));
 }
-
-

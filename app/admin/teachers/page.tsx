@@ -10,19 +10,23 @@ import { parseSearchQuery } from "@/lib/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { AdminTeachersTable } from "@/components/admin/AdminTeachersTable";
 
-export default async function AdminTeachersPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ deleted?: string; created?: string; saved?: string; page?: string; q?: string }>;
-}) {
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
+import { Suspense } from "react";
+
+type PageParams = {
+  deleted?: string;
+  created?: string;
+  saved?: string;
+  page?: string;
+  q?: string;
+};
+
+async function AdminTeachersList({ params, q }: { params: PageParams; q?: string }) {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
   const { items: teachers, totalCount } = await getAllTeachersPaginated(requestedPage, pageSize, q);
   const page = clampPage(requestedPage, totalCount, pageSize);
 
   return (
-    <div>
+    <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-bold text-primary">Teachers</h1>
@@ -39,9 +43,7 @@ export default async function AdminTeachersPage({
       </div>
 
       <ActionToast trigger={params.created === "1"} paramName="created" message="Teacher created." variant="info" />
-
       <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Teacher deleted." variant="info" />
-
       <ActionToast trigger={params.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
 
       <div className="mt-6">
@@ -65,11 +67,44 @@ export default async function AdminTeachersPage({
 
       <Pagination
         basePath="/admin/teachers"
-        params={params}
+        params={params as any}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}
       />
+    </>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-primary">Teachers</h1>
+          <div className="mt-1 h-4 w-48 rounded bg-border/40 animate-pulse" />
+        </div>
+        <div className="h-11 w-32 rounded-md bg-border/40 animate-pulse" />
+      </div>
+      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
+      <div className="mt-4 h-[400px] w-full rounded-lg bg-border/40 animate-pulse" />
+    </>
+  );
+}
+
+export default async function AdminTeachersPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
+
+  return (
+    <div>
+      <Suspense fallback={<TableSkeleton />}>
+        <AdminTeachersList params={params} q={q} />
+      </Suspense>
     </div>
   );
 }

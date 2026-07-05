@@ -409,3 +409,13 @@ export const slabSchema = z.object({
   message: "Maximum weight must be greater than minimum weight.",
   path: ["maxWeightGrams"]
 });
+
+export const adminStudentSchema = z.object({
+  name: z.string().min(2, "Name is required"),
+  fatherName: z.string().min(2, "Father's name is required"),
+  dateOfBirth: z.string().min(1, "Date of birth is required"),
+  occupation: z.string().min(1, "Occupation is required"),
+  address: z.string().min(5, "Address is required"),
+  whatsapp: z.string().min(5, "WhatsApp is required"),
+});
+

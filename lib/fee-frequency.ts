@@ -90,15 +90,8 @@ export function getFeeFrequencyPaymentType(freq?: string | null): string {
   return resolveOption(freq).paymentType;
 }
 
-export function getFeeFrequencyMultiplier(freq?: string | null): number {
-  return resolveOption(freq).multiplier;
-}
 
 export function isOneTimeFee(freq?: string | null): boolean {
   return resolveOption(freq).value === "ONE_TIME";
 }
 
-/** Returns true for any recurring fee type (everything except ONE_TIME). */
-export function isRecurringFee(freq?: string | null): boolean {
-  return !isOneTimeFee(freq);
-}

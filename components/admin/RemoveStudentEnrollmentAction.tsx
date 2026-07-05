@@ -4,6 +4,8 @@ import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
 import { useToast } from "@/components/shared/ToastProvider";
 
+import { adminDestructiveButtonClassName } from "@/lib/form";
+
 export function RemoveStudentEnrollmentAction({
   studentNameOrEmail,
   enrollmentId,
@@ -25,7 +27,7 @@ export function RemoveStudentEnrollmentAction({
         if (result?.error) addToast(result.error, "error"); 
         else addToast("Enrollment removed successfully.", "success");
       }} 
-      trigger={<button type="button" className="text-sm font-medium text-destructive-text hover:underline">Remove</button>} 
+      trigger={<button type="button" className={adminDestructiveButtonClassName}>Remove</button>} 
     />
   );
 }

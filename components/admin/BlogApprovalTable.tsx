@@ -6,6 +6,8 @@ import { approveBlogPost, rejectBlogPost } from "@/app/admin/blog-approvals/acti
 import type { BlogPostWithImages } from "@/lib/blogs";
 import { useToast } from "@/components/shared/ToastProvider";
 
+import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/lib/form";
+
 export function BlogApprovalTable({
   pendingPosts,
 }: {
@@ -42,13 +44,13 @@ export function BlogApprovalTable({
               <div className="flex items-center justify-end gap-2">
                 <Link
                   href={`/admin/blog-approvals/${post.id}`}
-                  className="font-medium text-primary hover:underline"
+                  className={adminActionButtonClassName}
                 >
                   View
                 </Link>
                 <Link
                   href={`/admin/blogs/${post.id}/edit`}
-                  className="font-medium text-primary hover:underline"
+                  className={adminActionButtonClassName}
                 >
                   Edit
                 </Link>
@@ -61,7 +63,7 @@ export function BlogApprovalTable({
                     const result = await approveBlogPost(post.id); 
                     if (result?.error) addToast(result.error, "error"); 
                   }} 
-                  trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>} 
+                  trigger={<button type="button" className={adminActionButtonClassName}>Approve</button>} 
                 />
                 <ConfirmationModal 
                   title="Reject Blog Post" 
@@ -72,7 +74,7 @@ export function BlogApprovalTable({
                     const result = await rejectBlogPost(post.id); 
                     if (result?.error) addToast(result.error, "error"); 
                   }} 
-                  trigger={<button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Reject</button>} 
+                  trigger={<button type="button" className={adminDestructiveButtonClassName}>Reject</button>} 
                 />
               </div>
             </td>

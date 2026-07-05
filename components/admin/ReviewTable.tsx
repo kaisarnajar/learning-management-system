@@ -21,6 +21,8 @@ function ReviewName({ review }: { review: StudentReviewWithUser }) {
 
 import { useToast } from "@/components/shared/ToastProvider";
 
+import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/lib/form";
+
 function ReviewActions({
   reviewId,
   reviewerName,
@@ -33,12 +35,12 @@ function ReviewActions({
   const { addToast } = useToast();
   return (
     <div className="flex items-center justify-end gap-2">
-      <Link href={`/admin/review-approvals/${reviewId}`} className="font-medium text-primary hover:underline">
+      <Link href={`/admin/review-approvals/${reviewId}`} className={adminActionButtonClassName}>
         View
       </Link>
       <Link
         href={`/admin/review-approvals/${reviewId}/edit`}
-        className="font-medium text-primary hover:underline"
+        className={adminActionButtonClassName}
       >
         Edit
       </Link>
@@ -46,13 +48,12 @@ function ReviewActions({
         <DeleteActionButton
           action={deleteStudentReview.bind(null, reviewId)}
           itemName={`review by ${reviewerName}`}
-          className="font-medium text-destructive-text hover:underline"
         />
       )}
       {pending && (
         <>
-          <ConfirmationModal title="Approve Review" description="Approve this review and display it on the public course page?" actionLabel="Approve" variant="primary" onConfirm={async () => { const result = await approveStudentReview(reviewId, false); if (result?.error) addToast(result.error, "error"); }} trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light disabled:opacity-60">Approve</button>} />
-          <ConfirmationModal title="Reject Review" description="Reject this review and mark it as declined?" actionLabel="Reject" variant="destructive" onConfirm={async () => { const result = await rejectStudentReview(reviewId); if (result?.error) addToast(result.error, "error"); }} trigger={<button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Reject</button>} />
+          <ConfirmationModal title="Approve Review" description="Approve this review and display it on the public course page?" actionLabel="Approve" variant="primary" onConfirm={async () => { const result = await approveStudentReview(reviewId, false); if (result?.error) addToast(result.error, "error"); }} trigger={<button type="button" className={adminActionButtonClassName}>Approve</button>} />
+          <ConfirmationModal title="Reject Review" description="Reject this review and mark it as declined?" actionLabel="Reject" variant="destructive" onConfirm={async () => { const result = await rejectStudentReview(reviewId); if (result?.error) addToast(result.error, "error"); }} trigger={<button type="button" className={adminDestructiveButtonClassName}>Reject</button>} />
         </>
       )}
     </div>

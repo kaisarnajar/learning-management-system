@@ -18,6 +18,8 @@ type AdminCourseAnnouncementCardProps = {
   deleteAction: (courseId: string, announcementId: string) => Promise<void>;
 };
 
+import { adminActionButtonClassName } from "@/lib/form";
+
 export function AdminCourseAnnouncementCard({
   courseId,
   announcementId,
@@ -44,7 +46,7 @@ export function AdminCourseAnnouncementCard({
         <div className="flex shrink-0 items-center gap-3">
           <Link
             href={`/admin/courses/${courseId}/announcements/${announcementId}/edit`}
-            className="text-sm font-medium text-primary hover:underline"
+            className={adminActionButtonClassName}
           >
             Edit
           </Link>

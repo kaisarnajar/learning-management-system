@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
+
 import { Pagination } from "@/components/shared/Pagination";
 import { formatPrice, getAllCourses } from "@/lib/courses";
 import { requireUser } from "@/lib/auth-actions";

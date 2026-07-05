@@ -460,6 +460,7 @@ export async function seedDemoBulkBookOrders(prisma: PrismaClient) {
         notes: index % 3 === 0 ? "Please ship soon." : null,
         createdAt,
         updatedAt: createdAt,
+        shippingChargeInrPaise: 5000,
         items: {
           create: itemsData.map(({ id, bookId, quantity, priceAtPurchaseInrPaise, createdAt: itemCreatedAt }) => ({
             id,
@@ -476,6 +477,7 @@ export async function seedDemoBulkBookOrders(prisma: PrismaClient) {
         paymentMethod: "upi",
         upiTransactionId: `DEMOUPI${index}000${index}`,
         notes: index % 3 === 0 ? "Please ship soon." : null,
+        shippingChargeInrPaise: 5000,
       },
     });
 
@@ -540,6 +542,7 @@ export async function seedDemoBulkBooks(prisma: PrismaClient) {
         featuredAt: featuredOnHomepage ? createdAt : null,
         createdAt,
         updatedAt: createdAt,
+        weightInGrams: 250,
       },
       update: {
         title: `Bulk Demo Book ${index}: Studies in Islam`,
@@ -550,6 +553,7 @@ export async function seedDemoBulkBooks(prisma: PrismaClient) {
         published,
         featuredOnHomepage,
         featuredAt: featuredOnHomepage ? createdAt : null,
+        weightInGrams: 250,
       },
     });
   }
@@ -673,6 +677,8 @@ export async function seedDemoBulk(prisma: PrismaClient) {
   await seedDemoBulkLibraryItems(prisma);
   await seedDemoBulkStudentReviews(prisma);
   await seedDemoBulkBlogPosts(prisma);
+    await seedDemoAttendance(prisma);
+    await seedDemoGrades(prisma);
 }
 
 export async function logDemoTableCounts(prisma: PrismaClient) {
@@ -699,10 +705,81 @@ export async function logDemoTableCounts(prisma: PrismaClient) {
     prisma.book.count().then((n) => ["Book", n] as const),
     prisma.bookOrder.count().then((n) => ["BookOrder", n] as const),
     prisma.bookOrderItem.count().then((n) => ["BookOrderItem", n] as const),
+    prisma.courseAttendance.count().then((n) => ["CourseAttendance", n] as const),
+    prisma.courseAttendanceRecord.count().then((n) => ["CourseAttendanceRecord", n] as const),
+    prisma.courseGrade.count().then((n) => ["CourseGrade", n] as const),
+    prisma.courseGradeRecord.count().then((n) => ["CourseGradeRecord", n] as const),
   ]);
 
   console.log("Demo table row counts:");
   for (const [table, count] of counts) {
     console.log(`  ${table}: ${count}`);
+  }
+}
+
+
+
+export async function seedDemoAttendance(prisma: PrismaClient) {
+  const courses = await prisma.course.findMany({ select: { id: true } });
+  let count = 1;
+  for (const course of courses) {
+    const enrollments = await prisma.enrollment.findMany({ where: { courseId: course.id }, select: { id: true } });
+    if (enrollments.length === 0) continue;
+    const date = new Date('2026-03-01T00:00:00.000Z');
+    const sheetId = `seed-demo-attendance-${course.id}`;
+    await prisma.courseAttendance.upsert({
+      where: { id: sheetId },
+      create: {
+        id: sheetId,
+        courseId: course.id,
+        date,
+      },
+      update: { date },
+    });
+    for (const enrollment of enrollments) {
+      await prisma.courseAttendanceRecord.upsert({
+        where: { attendanceId_enrollmentId: { attendanceId: sheetId, enrollmentId: enrollment.id } },
+        create: {
+          attendanceId: sheetId,
+          enrollmentId: enrollment.id,
+          isPresent: count % 5 !== 0,
+        },
+        update: { isPresent: count % 5 !== 0 },
+      });
+      count++;
+    }
+  }
+}
+
+export async function seedDemoGrades(prisma: PrismaClient) {
+  const courses = await prisma.course.findMany({ select: { id: true } });
+  let count = 1;
+  for (const course of courses) {
+    const enrollments = await prisma.enrollment.findMany({ where: { courseId: course.id }, select: { id: true } });
+    if (enrollments.length === 0) continue;
+    const gradeId = `seed-demo-grade-${course.id}`;
+    await prisma.courseGrade.upsert({
+      where: { id: gradeId },
+      create: {
+        id: gradeId,
+        courseId: course.id,
+        title: 'Midterm Exam',
+        date: new Date('2026-03-15T00:00:00.000Z'),
+        maxMarks: 100,
+      },
+      update: { title: 'Midterm Exam' },
+    });
+    for (const enrollment of enrollments) {
+      await prisma.courseGradeRecord.upsert({
+        where: { gradeId_enrollmentId: { gradeId, enrollmentId: enrollment.id } },
+        create: {
+          gradeId,
+          enrollmentId: enrollment.id,
+          marksObtained: 45 + (count % 55),
+        },
+        update: { marksObtained: 45 + (count % 55) },
+      });
+      count++;
+    }
   }
 }

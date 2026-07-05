@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { getAdminEmails } from "../lib/admin";
 import {
   demoAdminUserId,
   demoStudentUserId,
@@ -35,6 +36,7 @@ export async function seedDemoBooks(prisma: PrismaClient) {
         published: book.published,
         createdAt,
         updatedAt: createdAt,
+        weightInGrams: 300,
       },
       update: {
         title: book.title,
@@ -43,6 +45,7 @@ export async function seedDemoBooks(prisma: PrismaClient) {
         priceInrPaise: book.priceInrPaise,
         status: book.status,
         published: book.published,
+        weightInGrams: 300,
       },
     });
   }
@@ -197,8 +200,10 @@ export async function seedDemoContent(prisma: PrismaClient) {
     const repliedAt = replied
       ? new Date(createdAt.getTime() + 86_400_000)
       : null;
-    const repliedById = item.repliedByAdminIndex
-      ? demoAdminUserId(item.repliedByAdminIndex)
+    
+    const hasAdmin = getAdminEmails().length > 0;
+    const repliedById = (item.repliedByAdminIndex !== undefined && hasAdmin)
+      ? demoAdminUserId(0)
       : null;
 
     await prisma.contactInquiry.upsert({

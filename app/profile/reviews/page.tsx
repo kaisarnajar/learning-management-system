@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteStudentReview } from "@/app/profile/reviews/actions";
+import { adminActionButtonClassName } from "@/lib/form";
 import { StudentReviewForm } from "@/components/profile/StudentReviewForm";
 import { StarRating } from "@/components/reviews/StarRating";
 import { Pagination } from "@/components/shared/Pagination";
@@ -134,13 +135,13 @@ export default async function ProfileReviewsPage({
                         {editable && (
                           <Link
                             href={`/profile/reviews?edit=${review.id}`}
-                            className="text-sm font-medium text-primary hover:underline"
+                            className={adminActionButtonClassName}
                           >
                             Edit
                           </Link>
                         )}
                         {deletable && (
-                          <DeleteActionButton action={deleteStudentReview.bind(null, review.id)} itemName={`review for ${review.course ?? "academy"}`} className="text-sm font-medium text-destructive-text hover:underline" />
+                          <DeleteActionButton action={deleteStudentReview.bind(null, review.id)} itemName={`review for ${review.course ?? "academy"}`} />
                         )}
                       </div>
                     )}

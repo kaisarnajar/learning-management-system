@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteTeacherBlogPost } from "@/app/teacher/(portal)/blogs/actions";
+import { adminActionButtonClassName } from "@/lib/form";
 import { Pagination } from "@/components/shared/Pagination";
 import { requireTeacher } from "@/lib/auth-actions";
 import {
@@ -105,7 +106,7 @@ export default async function TeacherBlogsPage({
                             href={`/blog/${post.id}`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-sm text-muted hover:text-primary"
+                            className={adminActionButtonClassName}
                           >
                             View
                           </Link>
@@ -113,13 +114,13 @@ export default async function TeacherBlogsPage({
                         {editable && (
                           <Link
                             href={`/teacher/blogs/${post.id}/edit`}
-                            className="font-medium text-primary hover:underline"
+                            className={adminActionButtonClassName}
                           >
                             Edit
                           </Link>
                         )}
                         {deletable && (
-                          <DeleteActionButton action={deleteTeacherBlogPost.bind(null, post.id)} itemName={post.title} className="text-sm font-medium text-destructive-text hover:underline" />
+                          <DeleteActionButton action={deleteTeacherBlogPost.bind(null, post.id)} itemName={post.title} />
                         )}
                       </div>
                     </td>

@@ -35,7 +35,7 @@ export default async function EditTeacherBlogPage({
       </Link>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <h1 className="font-serif text-2xl font-bold text-primary">Edit blog post</h1>
-        <DeleteActionButton action={deleteTeacherBlogPost.bind(null, post.id)} itemName={post.title} onSuccessRedirect="/teacher/blogs" className="text-sm font-medium text-destructive-text hover:underline" />
+        <DeleteActionButton action={deleteTeacherBlogPost.bind(null, post.id)} itemName={post.title} onSuccessRedirect="/teacher/blogs" />
       </div>
 
       <div className="mt-8">

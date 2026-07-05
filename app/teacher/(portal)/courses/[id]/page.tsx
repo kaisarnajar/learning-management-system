@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { adminActionButtonClassName } from "@/lib/form";
 import { Pagination } from "@/components/shared/Pagination";
 import { requireTeacher } from "@/lib/auth-actions";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
@@ -55,19 +56,19 @@ export default async function TeacherCourseStudentsPage({
                     <div className="flex flex-wrap items-center justify-end gap-3">
                       <Link
                         href={`/teacher/courses/${id}/attendance/student/${enrollment.id}`}
-                        className="font-medium text-primary hover:underline"
+                        className={adminActionButtonClassName}
                       >
                         Attendance
                       </Link>
                       <Link
                         href={`/teacher/courses/${id}/students/${enrollment.id}`}
-                        className="font-medium text-primary hover:underline"
+                        className={adminActionButtonClassName}
                       >
                         View
                       </Link>
                       <Link
                         href={`/teacher/courses/${id}/students/${enrollment.id}/announcements`}
-                        className="font-medium text-primary hover:underline"
+                        className={adminActionButtonClassName}
                       >
                         Message
                       </Link>

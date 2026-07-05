@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { adminActionButtonClassName } from "@/lib/form";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { getTeacherFatwaQuestionsPaginated, type FatwaAdminFilter } from "@/lib/fatwa";
@@ -130,7 +131,7 @@ export default async function TeacherFatwaPage({
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap items-center justify-end gap-2">
-                      <Link href={`/teacher/fatwa/${q.id}`} className="font-medium text-primary hover:underline">
+                      <Link href={`/teacher/fatwa/${q.id}`} className={adminActionButtonClassName}>
                         {q.answer ? "View/Edit" : "Answer"}
                       </Link>
                     </div>

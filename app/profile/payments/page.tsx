@@ -21,10 +21,13 @@ function tabHref(type: TabType) {
   return qs ? `/profile/payments?${qs}` : "/profile/payments";
 }
 
-type PageParams = { submitted?: string; declined?: string; page?: string; tab?: string };
+type PageParams = {
+ submitted?: string; declined?: string; page?: string; tab?: string
+  [key: string]: string | undefined;
+};
 
 async function PaymentsContent({ params, userId }: { params: PageParams; userId: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
+  const { page: requestedPage, pageSize } = parsePaginationParams(params);
   
   const validTabs: TabType[] = ["pending", "history"];
   const currentTab: TabType = validTabs.includes(params.tab as TabType) ? (params.tab as TabType) : "pending";
@@ -167,7 +170,7 @@ async function PaymentsContent({ params, userId }: { params: PageParams; userId:
 
           <Pagination
             basePath="/profile/payments"
-            params={params as any}
+            params={params}
             page={page}
             totalCount={paymentTotalCount}
             pageSize={pageSize}

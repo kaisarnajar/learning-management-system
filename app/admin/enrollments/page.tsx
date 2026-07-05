@@ -25,17 +25,19 @@ function tabHref(type: TabType) {
 import { Suspense } from "react";
 
 type PageParams = {
+
   type?: string;
   page?: string;
   q?: string;
   approved?: string;
   rejected?: string;
+  [key: string]: string | undefined;
 };
 
 async function AdminEnrollmentsList({ params, q }: { params: PageParams; q?: string }) {
   const validTypes: TabType[] = ["free_requests", "paid_awaiting"];
   const type: TabType = validTypes.includes(params.type as TabType) ? (params.type as TabType) : "free_requests";
-  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
+  const { page: requestedPage, pageSize } = parsePaginationParams(params);
 
   const [courses, freeResult, paidResult] = await Promise.all([
     getAllCourses(),
@@ -154,7 +156,7 @@ async function AdminEnrollmentsList({ params, q }: { params: PageParams; q?: str
 
         <Pagination
           basePath="/admin/enrollments"
-          params={params as any}
+          params={params}
           page={safePage}
           totalCount={activeResult.totalCount}
           pageSize={pageSize}

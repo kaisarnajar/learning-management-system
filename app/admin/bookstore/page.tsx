@@ -25,17 +25,19 @@ function formatPrice(paise: number): string {
 import { Suspense } from "react";
 
 type PageParams = {
+
   created?: string;
   updated?: string;
   deleted?: string;
   page?: string;
   q?: string;
+  [key: string]: string | undefined;
 };
 
 import { adminActionButtonClassName } from "@/lib/form";
 
 async function AdminBookstoreList({ params, q }: { params: PageParams; q?: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
+  const { page: requestedPage, pageSize } = parsePaginationParams(params);
   const { items: books, totalCount } = await getAllBooksPaginated(requestedPage, pageSize, q);
   const page = clampPage(requestedPage, totalCount, pageSize);
 
@@ -129,7 +131,7 @@ async function AdminBookstoreList({ params, q }: { params: PageParams; q?: strin
         )}
       </div>
 
-      <Pagination basePath="/admin/bookstore" params={params as any} page={page} totalCount={totalCount} pageSize={pageSize} />
+      <Pagination basePath="/admin/bookstore" params={params} page={page} totalCount={totalCount} pageSize={pageSize} />
     </>
   );
 }

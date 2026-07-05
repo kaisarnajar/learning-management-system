@@ -14,7 +14,6 @@ import {
   adminStudentSchema,
   siteAnnouncementSchema,
 } from "@/lib/validations";
-import type { AnnouncementCategory } from "@prisma/client";
 
 export type SiteAnnouncementFormValues = z.infer<typeof siteAnnouncementSchema>;
 

@@ -36,7 +36,7 @@ export async function GET(request: Request) {
 
   const filters = parseFinanceFilters(urlParams);
 
-  let sheetData: Record<string, any>[] = [];
+  let sheetData: Record<string, unknown>[] = [];
   let filename = "export.xlsx";
 
   try {
@@ -109,7 +109,7 @@ export async function GET(request: Request) {
         "Content-Disposition": `attachment; filename="${filename}"`,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error("Failed to export finance report:", error);
     return NextResponse.json({ error: "Failed to generate Excel export." }, { status: 500 });
   }

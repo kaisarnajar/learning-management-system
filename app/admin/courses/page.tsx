@@ -10,16 +10,18 @@ import { AdminCoursesTable } from "@/components/admin/AdminCoursesTable";
 import { Suspense } from "react";
 
 type PageParams = {
+
   deleted?: string;
   created?: string;
   saved?: string;
   deleteError?: string;
   page?: string;
   q?: string;
+  [key: string]: string | undefined;
 };
 
 async function AdminCoursesList({ params, q }: { params: PageParams; q?: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
+  const { page: requestedPage, pageSize } = parsePaginationParams(params);
   const [{ items: courses, totalCount }, enrollmentCounts] = await Promise.all([
     getAllCoursesPaginated(requestedPage, pageSize, q),
     getEnrollmentCountsByCourse(),
@@ -49,7 +51,7 @@ async function AdminCoursesList({ params, q }: { params: PageParams; q?: string 
 
       <Pagination
         basePath="/admin/courses"
-        params={params as any}
+        params={params}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}

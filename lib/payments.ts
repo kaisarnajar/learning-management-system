@@ -9,7 +9,6 @@ import { getFeeFrequencyPaymentType } from "@/lib/fee-frequency";
 import {
   MONTHLY_PAYMENT_PENDING,
   MONTHLY_PAYMENT_APPROVED,
-  PAYMENT_TYPE_MONTHLY,
   PAYMENT_TYPE_ENROLLMENT,
 } from "@/lib/monthly-payment-status";
 import { createCoursePaymentSubmission } from "@/lib/payment-submission";
@@ -60,7 +59,7 @@ export async function processMonthlyPayment(
   paymentMethod: string | null,
   upiTransactionId: string | null,
   screenshotFile: File | null,
-  paymentType?: string // kept for backward compat but now ignored — derived from course
+  _paymentType?: string // kept for backward compat but now ignored — derived from course
 ) {
   const course = await getCourseById(courseId);
   if (!course) return { error: "Course not found.", status: 404 };

@@ -16,12 +16,14 @@ import { ActionToast } from "@/components/shared/ToastProvider";
 import { Suspense } from "react";
 
 type PageParams = {
+
   posted?: string;
   saved?: string;
   deleted?: string;
   error?: string;
   page?: string;
   q?: string;
+  [key: string]: string | undefined;
 };
 
 function statusBadge(published: boolean, showOnHomepage: boolean) {
@@ -33,7 +35,7 @@ function statusBadge(published: boolean, showOnHomepage: boolean) {
 import { adminActionButtonClassName } from "@/lib/form";
 
 async function AdminAnnouncementsList({ params, q }: { params: PageParams; q?: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
+  const { page: requestedPage, pageSize } = parsePaginationParams(params);
   const { items: announcements, totalCount } = await getAllSiteAnnouncementsForAdminPaginated(
     requestedPage,
     pageSize,
@@ -130,7 +132,7 @@ async function AdminAnnouncementsList({ params, q }: { params: PageParams; q?: s
 
       <Pagination
         basePath="/admin/announcements"
-        params={params as any}
+        params={params}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}

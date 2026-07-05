@@ -19,10 +19,13 @@ export const metadata: Metadata = {
 
 import { Suspense } from "react";
 
-type PageParams = { page?: string; q?: string };
+type PageParams = {
+ page?: string; q?: string
+  [key: string]: string | undefined;
+};
 
 async function BookstoreList({ params, q }: { params: PageParams; q?: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params as any, {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params, {
     pageSize: GRID_PAGE_SIZE,
   });
 
@@ -94,7 +97,7 @@ async function BookstoreList({ params, q }: { params: PageParams; q?: string }) 
       </div>
 
       <div className="mt-16 motion-safe:animate-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
-        <Pagination basePath="/bookstore" params={params as any} page={page} totalCount={totalCount} pageSize={pageSize} />
+        <Pagination basePath="/bookstore" params={params} page={page} totalCount={totalCount} pageSize={pageSize} />
       </div>
     </>
   );

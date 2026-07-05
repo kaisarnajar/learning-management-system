@@ -1,6 +1,3 @@
-import Link from "next/link";
-import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { deleteStudentUser as deleteStudent } from "@/app/admin/students/actions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { clampPage, parsePaginationParams } from "@/lib/pagination";
@@ -12,13 +9,15 @@ import { AdminStudentsTable } from "@/components/admin/AdminStudentsTable";
 import { Suspense } from "react";
 
 type PageParams = {
+
   deleted?: string;
   page?: string;
   q?: string;
+  [key: string]: string | undefined;
 };
 
 async function AdminStudentsList({ params, q }: { params: PageParams; q?: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
+  const { page: requestedPage, pageSize } = parsePaginationParams(params);
   const { items: students, totalCount } = await getStudentUsersPaginated(requestedPage, pageSize, q);
   const page = clampPage(requestedPage, totalCount, pageSize);
 
@@ -45,7 +44,7 @@ async function AdminStudentsList({ params, q }: { params: PageParams; q?: string
 
       <Pagination
         basePath="/admin/students"
-        params={params as any}
+        params={params}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}

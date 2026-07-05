@@ -7,7 +7,7 @@ import { useCart } from "@/components/bookstore/CartProvider";
 
 import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";
 import { ActionToast } from "@/components/shared/ToastProvider";
-import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
+
 
 type OrderItem = {
   id: string;

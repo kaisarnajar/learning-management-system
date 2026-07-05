@@ -13,12 +13,15 @@ import { getPendingEnrollmentFeeSubmissionMap } from "@/lib/monthly-payments";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
 import { formatRollNumber } from "@/lib/roll-numbers";
 import { ActionToast } from "@/components/shared/ToastProvider";
-import { getFeeFrequencyLabel } from "@/lib/fee-frequency";
 
-type PageParams = { declined?: string; page?: string };
+
+type PageParams = {
+ declined?: string; page?: string
+  [key: string]: string | undefined;
+};
 
 async function CoursesContent({ params, userId }: { params: PageParams; userId: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params as any, {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params, {
     pageSize: GRID_PAGE_SIZE,
   });
 
@@ -165,7 +168,7 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
 
       <Pagination
         basePath="/profile/courses"
-        params={params as any}
+        params={params}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}

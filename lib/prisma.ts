@@ -28,7 +28,11 @@ function createPrismaClient() {
       ],
     });
 
-    (client as any).$on("query", (e: any) => {
+    type QueryClient = typeof client & {
+      $on(event: "query", callback: (event: Prisma.QueryEvent) => void): void;
+    };
+
+    (client as unknown as QueryClient).$on("query", (e) => {
       console.log(`[Prisma Query] [${e.duration}ms] ${e.query}`);
       if (e.params && e.params !== "[]") {
         console.log(`  Params: ${e.params}`);

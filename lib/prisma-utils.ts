@@ -5,17 +5,15 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/paginatio
  * A generic helper to handle the common pattern of running `count` and `findMany` sequentially
  * with page clamping.
  */
-export async function paginateQuery<T, W = any>(
+export async function paginateQuery<T>(
   model: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     findMany: (args: any) => Promise<T[]>;
-    count: (args: { where?: W }) => Promise<number>;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    count: (args: { where?: any }) => Promise<number>;
   },
-  args: {
-    where?: W;
-    orderBy?: any;
-    include?: any;
-    select?: any;
-  },
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  args: any,
   page: number,
   pageSize: number
 ): Promise<PaginatedResult<T>> {

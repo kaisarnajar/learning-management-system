@@ -16,18 +16,20 @@ import { ActionToast } from "@/components/shared/ToastProvider";
 import { Suspense } from "react";
 
 type PageParams = {
+
   posted?: string;
   saved?: string;
   deleted?: string;
   error?: string;
   page?: string;
   q?: string;
+  [key: string]: string | undefined;
 };
 
 import { adminActionButtonClassName } from "@/lib/form";
 
 async function AdminDailyInspirationList({ params, q }: { params: PageParams; q?: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
+  const { page: requestedPage, pageSize } = parsePaginationParams(params);
   const [{ items, totalCount }, homepageId] = await Promise.all([
     getAllDailyInspirationsForAdminPaginated(requestedPage, pageSize, q),
     getHomepageDailyInspirationId(),
@@ -126,7 +128,7 @@ async function AdminDailyInspirationList({ params, q }: { params: PageParams; q?
 
       <Pagination
         basePath="/admin/daily-inspiration"
-        params={params as any}
+        params={params}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}

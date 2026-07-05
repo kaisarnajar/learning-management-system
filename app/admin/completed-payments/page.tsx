@@ -1,4 +1,4 @@
-﻿import type { Metadata } from "next";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { PaymentApprovalsTable } from "@/components/admin/PaymentApprovalsTable";
 import { ManualTransactionsTable } from "@/components/admin/ManualTransactionsTable";
@@ -218,7 +218,12 @@ export default async function AdminCompletedPaymentsPage({
           ) : (
             <FinanceExpenseTable
               expenses={activeExpenseResult.items}
-              returnQuery={(({ type: _type, deleted: _del, ...rest }) => rest)(params)}
+              returnQuery={(() => {
+                const rest = { ...params };
+                delete rest.type;
+                delete rest.deleted;
+                return rest;
+              })()}
               basePath="/admin/completed-payments"
             />
           )}

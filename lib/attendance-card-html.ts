@@ -51,7 +51,7 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
       data.records.slice(page1Count)
     ];
   } else {
-    let remaining = [...data.records];
+    const remaining = [...data.records];
     pagesRecords.push(remaining.splice(0, 22));
     while (remaining.length > 0) {
       if (remaining.length <= 20) {

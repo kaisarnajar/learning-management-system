@@ -53,8 +53,8 @@ function DashboardLinkCard({ link }: { link: DashboardLink }) {
 }
 
 export default async function AdminDashboardPage() {
-  const session = await requireAdmin();
-  const isDeveloper = session.user.role === "DEVELOPER";
+  await requireAdmin();
+
 
   const [
     announcementCount,

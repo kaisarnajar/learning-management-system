@@ -14,12 +14,14 @@ import { ActionToast } from "@/components/shared/ToastProvider";
 import { Suspense } from "react";
 
 type PageParams = {
+
   posted?: string;
   saved?: string;
   deleted?: string;
   error?: string;
   page?: string;
   q?: string;
+  [key: string]: string | undefined;
 };
 
 function statusBadge(post: Pick<BlogPost, "approvalStatus" | "published">) {
@@ -32,7 +34,7 @@ function statusBadge(post: Pick<BlogPost, "approvalStatus" | "published">) {
 import { adminActionButtonClassName } from "@/lib/form";
 
 async function AdminBlogsList({ params, q }: { params: PageParams; q?: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
+  const { page: requestedPage, pageSize } = parsePaginationParams(params);
   const { items: posts, totalCount } = await getAllBlogPostsForAdminPaginated(
     requestedPage,
     pageSize,
@@ -125,7 +127,7 @@ async function AdminBlogsList({ params, q }: { params: PageParams; q?: string })
 
       <Pagination
         basePath="/admin/blogs"
-        params={params as any}
+        params={params}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}

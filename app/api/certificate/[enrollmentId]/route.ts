@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
 import { getCourseById } from "@/lib/courses";
-import { getCertificateFilename, canDownloadCertificate, generateCertificatePdf } from "@/lib/certificate";
+import { getCertificateFilename, generateCertificatePdf } from "@/lib/certificate";
 import { prisma } from "@/lib/prisma";
 import { withDbErrorHandling } from "@/lib/db-error";
 

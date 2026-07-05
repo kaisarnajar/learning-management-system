@@ -1,5 +1,4 @@
 import {
-  dailyInspirationHomeTitle,
   type DailyInspirationRecord,
 } from "@/lib/daily-inspiration";
 import { Source_Serif_4 } from "next/font/google";

@@ -95,7 +95,7 @@ export async function getPublishedBlogPostsPaginated(
     where,
     orderBy: { createdAt: "desc" },
     include: blogPostPublicInclude,
-  } as any, page, pageSize) as unknown as Promise<PaginatedResult<BlogPostWithImages>>;
+  }, page, pageSize) as unknown as Promise<PaginatedResult<BlogPostWithImages>>;
 }
 
 export async function getPublishedBlogPostById(id: string) {
@@ -123,7 +123,7 @@ export async function getAllBlogPostsForAdminPaginated(
     where,
     orderBy: { createdAt: "desc" },
     include: blogPostAdminInclude,
-  } as any, page, pageSize) as unknown as Promise<PaginatedResult<BlogPostWithImages>>;
+  }, page, pageSize) as unknown as Promise<PaginatedResult<BlogPostWithImages>>;
 }
 
 export async function getBlogPostForAdmin(id: string) {
@@ -149,7 +149,7 @@ export async function getTeacherBlogPostsPaginated(
       images: { orderBy: { sortOrder: "asc" } },
       createdBy: { select: { name: true, email: true } },
     },
-  } as any, page, pageSize) as unknown as Promise<PaginatedResult<BlogPostWithImages>>;
+  }, page, pageSize) as unknown as Promise<PaginatedResult<BlogPostWithImages>>;
 }
 
 export async function getBlogPostForTeacher(id: string, userId: string) {

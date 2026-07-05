@@ -34,18 +34,20 @@ function statusClass(q: { answer: string | null; approvalStatus: string }) {
 import { Suspense } from "react";
 
 type PageParams = {
+
   filter?: string;
   saved?: string;
   deleted?: string;
   page?: string;
   q?: string;
+  [key: string]: string | undefined;
 };
 
 import { adminActionButtonClassName } from "@/lib/form";
 
 async function AdminFatwaList({ params, q }: { params: PageParams; q?: string }) {
   const filter = (params.filter as FatwaAdminFilter) || undefined;
-  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
+  const { page: requestedPage, pageSize } = parsePaginationParams(params);
   const { items: questions, totalCount } = await getAllFatwaQuestionsPaginated(
     requestedPage,
     pageSize,
@@ -175,7 +177,7 @@ async function AdminFatwaList({ params, q }: { params: PageParams; q?: string })
 
       <Pagination
         basePath="/admin/fatwa"
-        params={params as any}
+        params={params}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}

@@ -97,7 +97,7 @@ export async function getEnrollmentsForCoursePaginated(
         select: { id: true, name: true, email: true },
       },
     },
-  } as any, page, pageSize) as unknown as Promise<PaginatedResult<CourseEnrollmentWithUser>>;
+  }, page, pageSize) as unknown as Promise<PaginatedResult<CourseEnrollmentWithUser>>;
 }
 
 /** Active roster for in-progress courses; completed roster when the course is completed. */
@@ -129,7 +129,7 @@ export async function getCourseRosterEnrollmentsPaginated(
         select: { id: true, name: true, email: true },
       },
     },
-  } as any, page, pageSize) as unknown as Promise<PaginatedResult<CourseEnrollmentWithUser>>;
+  }, page, pageSize) as unknown as Promise<PaginatedResult<CourseEnrollmentWithUser>>;
 }
 
 export async function getEnrollmentCountsByCourse(): Promise<Map<string, number>> {
@@ -184,7 +184,7 @@ export async function getPendingFreeEnrollmentApprovalsPaginated(
         select: { id: true, name: true, email: true },
       },
     },
-  } as any, page, pageSize) as unknown as Promise<PaginatedResult<PendingEnrollmentWithUser>>;
+  }, page, pageSize) as unknown as Promise<PaginatedResult<PendingEnrollmentWithUser>>;
 }
 
 export async function getAwaitingEnrollmentFeeEnrollmentsPaginated(
@@ -203,7 +203,7 @@ export async function getAwaitingEnrollmentFeeEnrollmentsPaginated(
         select: { id: true, name: true, email: true },
       },
     },
-  } as any, page, pageSize) as unknown as Promise<PaginatedResult<PendingEnrollmentWithUser>>;
+  }, page, pageSize) as unknown as Promise<PaginatedResult<PendingEnrollmentWithUser>>;
 }
 
 export async function getPendingEnrollmentApprovalCount(): Promise<number> {

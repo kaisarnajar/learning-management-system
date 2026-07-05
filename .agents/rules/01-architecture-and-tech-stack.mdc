@@ -18,7 +18,7 @@ globs: ["**/*.ts", "**/*.tsx", "app/**/*"]
 - `components/`: UI components broken down by feature area (`site/`, `admin/`, `auth/`, `shared/`, etc.).
 - `lib/`: Core business logic, utilities, authentication, Prisma client, emails, payments, and validations. Do not put React components in `lib/`.
 - `prisma/`: PostgreSQL schema, migrations, and seeders.
-- `public/`: Static assets. `public/uploads/` is used for user-generated files (receipts, certificates, blog images).
+- `public/`: Static assets. User-generated files are uploaded directly to Cloudflare R2 and are NOT stored here.
 - `scripts/`: Build and maintenance utility scripts.
 
 ## Core Architectural Patterns

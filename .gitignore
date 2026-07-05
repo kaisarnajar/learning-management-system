@@ -35,33 +35,8 @@ yarn-error.log*
 !.env.example
 
 
-# user-uploaded payment screenshots
-/public/uploads/payments/*
-!/public/uploads/payments/.gitkeep
-
-# course announcement materials
-/public/uploads/announcements/*
-!/public/uploads/announcements/.gitkeep
-
-# academy site announcement photos
-/public/uploads/site-announcements/*
-!/public/uploads/site-announcements/.gitkeep
-
-# admin-uploaded completion certificates
-/public/uploads/certificates/*
-!/public/uploads/certificates/.gitkeep
-
-# bookstore uploads
-/public/uploads/books/*
-!/public/uploads/books/.gitkeep
-
-# blog uploads
-/public/uploads/blogs/*
-!/public/uploads/blogs/.gitkeep
-
-# library uploads
-/public/uploads/library/*
-!/public/uploads/library/.gitkeep
+# local demo uploads
+/public/uploads/
 
 # vercel
 .vercel

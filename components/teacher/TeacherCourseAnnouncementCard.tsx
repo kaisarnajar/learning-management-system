@@ -4,6 +4,7 @@ import { AnnouncementCategoryBadge } from "@/components/announcements/Announceme
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteCourseAnnouncement } from "@/lib/course-announcement-actions";
 import { formatAnnouncementDate } from "@/lib/announcements";
+import { adminActionButtonClassName } from "@/lib/form";
 
 type TeacherCourseAnnouncementCardProps = {
   courseId: string;
@@ -58,7 +59,7 @@ export function TeacherCourseAnnouncementCard({
         </div>
         {canManage && (
           <div className="flex shrink-0 items-center gap-3">
-            <Link href={editHref} className="text-sm font-medium text-primary hover:underline">
+            <Link href={editHref} className={adminActionButtonClassName}>
               Edit
             </Link>
             <DeleteActionButton

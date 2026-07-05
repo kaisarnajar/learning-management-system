@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteCourseAttendance } from "@/app/actions/attendance";
+import { adminActionButtonClassName } from "@/lib/form";
 
 export type AttendanceListProps = {
   courseId: string;
@@ -75,13 +76,13 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
                       <div className="flex items-center justify-end gap-3">
                         <Link
                           href={`${baseUrl}/${courseId}/attendance/${dateStrFormatted}`}
-                          className="font-medium text-primary hover:underline"
+                          className={adminActionButtonClassName}
                         >
                           View
                         </Link>
                         <Link
                           href={`${baseUrl}/${courseId}/attendance/${dateStrFormatted}/edit`}
-                          className="font-medium text-primary hover:underline"
+                          className={adminActionButtonClassName}
                         >
                           Edit
                         </Link>
@@ -90,7 +91,6 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
                             await deleteCourseAttendance(courseId, new Date(record.date));
                           }}
                           itemName={`Attendance for ${new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(record.date))}`}
-                          className="text-sm font-medium text-destructive-text hover:underline"
                         />
                       </div>
                     </td>

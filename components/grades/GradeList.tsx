@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteCourseGrade } from "@/app/actions/grades";
+import { adminActionButtonClassName } from "@/lib/form";
 
 export type GradeListProps = {
   courseId: string;
@@ -68,7 +69,7 @@ export function GradeList({ courseId, baseUrl, grades }: GradeListProps) {
                       <div className="flex items-center justify-end gap-3">
                         <Link
                           href={`${baseUrl}/${courseId}/grades/${grade.id}/edit`}
-                          className="font-medium text-primary hover:underline"
+                          className={adminActionButtonClassName}
                         >
                           Edit
                         </Link>
@@ -77,7 +78,6 @@ export function GradeList({ courseId, baseUrl, grades }: GradeListProps) {
                             await deleteCourseGrade(courseId, grade.id);
                           }}
                           itemName={`Grade Card "${grade.title}"`}
-                          className="text-sm font-medium text-destructive-text hover:underline"
                         />
                       </div>
                     </td>

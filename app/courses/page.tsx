@@ -18,29 +18,91 @@ export const metadata: Metadata = {
   description: "View and enroll in upcoming courses at Darse Quran Academy.",
 };
 
+import { Suspense } from "react";
+
+type PageParams = { page?: string; q?: string };
+
+async function PublicCoursesList({ params, q, userId }: { params: PageParams; q?: string; userId?: string }) {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params as any, {
+    pageSize: GRID_PAGE_SIZE,
+  });
+
+  const [
+    { items: courses, totalCount },
+    enrollmentMap,
+    pendingEnrollmentPaymentCourses,
+    profileComplete
+  ] = await Promise.all([
+    getPublicCoursesPaginated(requestedPage, pageSize, q),
+    userId ? getUserCourseEnrollmentMap(userId) : Promise.resolve(new Map()),
+    userId ? getPendingEnrollmentFeeSubmissionMap(userId) : Promise.resolve(new Set<string>()),
+    userId ? isUserProfileComplete(userId) : Promise.resolve(true),
+  ]);
+
+  const page = clampPage(requestedPage, totalCount, pageSize);
+
+  if (totalCount === 0) {
+    return (
+      <p className="col-span-full py-12 text-center text-lg text-muted motion-safe:animate-fade-up">No courses available at the moment.</p>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        {courses.map((course, index) => {
+          const enrollment = enrollmentMap.get(course.id);
+          const animationDelay = `${(index % GRID_PAGE_SIZE) * 100}ms`;
+          return (
+            <div 
+              key={course.id} 
+              className="h-full motion-safe:animate-fade-up"
+              style={{ animationDelay, animationFillMode: 'both' }}
+            >
+              <CourseCard
+                course={course}
+                isEnrolled={enrollment?.status === "active" || enrollment?.status === "completed"}
+                enrollmentStatus={enrollment?.status ?? null}
+                enrollmentId={enrollment?.id ?? null}
+                profileComplete={profileComplete}
+                hasPendingEnrollmentPayment={pendingEnrollmentPaymentCourses.has(course.id)}
+              />
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-16 motion-safe:animate-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
+        <Pagination
+          basePath="/courses"
+          params={params as any}
+          page={page}
+          totalCount={totalCount}
+          pageSize={pageSize}
+        />
+      </div>
+    </>
+  );
+}
+
+function CoursesSkeleton() {
+  return (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div key={i} className="h-[400px] w-full rounded-2xl bg-border/40 animate-pulse" />
+      ))}
+    </div>
+  );
+}
+
 export default async function CoursesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string; q?: string }>;
+  searchParams: Promise<PageParams>;
 }) {
   const params = await searchParams;
   const session = await auth();
-  const { page: requestedPage, pageSize } = parsePaginationParams(params, {
-    pageSize: GRID_PAGE_SIZE,
-  });
   const q = parseSearchQuery(params.q);
-  const { items: courses, totalCount } = await getPublicCoursesPaginated(requestedPage, pageSize, q);
-  const page = clampPage(requestedPage, totalCount, pageSize);
-
-  const enrollmentMap = session?.user?.id
-    ? await getUserCourseEnrollmentMap(session.user.id)
-    : new Map();
-  const pendingEnrollmentPaymentCourses = session?.user?.id
-    ? await getPendingEnrollmentFeeSubmissionMap(session.user.id)
-    : new Set<string>();
-  const profileComplete = session?.user?.id
-    ? await isUserProfileComplete(session.user.id)
-    : true;
 
   return (
     <>
@@ -72,47 +134,12 @@ export default async function CoursesPage({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {totalCount === 0 ? (
-              <p className="col-span-full py-12 text-center text-lg text-muted motion-safe:animate-fade-up">No courses available at the moment.</p>
-            ) : (
-              courses.map((course, index) => {
-                const enrollment = enrollmentMap.get(course.id);
-                // Stagger animations based on index for a cascading effect
-                const animationDelay = `${(index % GRID_PAGE_SIZE) * 100}ms`;
-                return (
-                  <div 
-                    key={course.id} 
-                    className="h-full motion-safe:animate-fade-up"
-                    style={{ animationDelay, animationFillMode: 'both' }}
-                  >
-                    <CourseCard
-                      course={course}
-                      isEnrolled={enrollment?.status === "active" || enrollment?.status === "completed"}
-                      enrollmentStatus={enrollment?.status ?? null}
-                      enrollmentId={enrollment?.id ?? null}
-                      profileComplete={profileComplete}
-                      hasPendingEnrollmentPayment={pendingEnrollmentPaymentCourses.has(course.id)}
-                    />
-                  </div>
-                );
-              })
-            )}
-          </div>
-
-          {totalCount > 0 && (
-            <div className="mt-16 motion-safe:animate-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
-              <Pagination
-                basePath="/courses"
-                params={params}
-                page={page}
-                totalCount={totalCount}
-                pageSize={pageSize}
-              />
-            </div>
-          )}
+          <Suspense fallback={<CoursesSkeleton />}>
+            <PublicCoursesList params={params} q={q} userId={session?.user?.id} />
+          </Suspense>
         </div>
       </section>
     </>
   );
 }
+

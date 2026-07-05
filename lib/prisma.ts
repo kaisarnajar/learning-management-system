@@ -16,6 +16,28 @@ function prismaSchemaIsCurrent(): boolean {
 }
 
 function createPrismaClient() {
+  const logQueries = process.env.PRISMA_LOG_QUERIES === "true";
+
+  if (logQueries) {
+    const client = new PrismaClient({
+      log: [
+        { level: "query", emit: "event" },
+        { level: "info", emit: "stdout" },
+        { level: "warn", emit: "stdout" },
+        { level: "error", emit: "stdout" },
+      ],
+    });
+
+    (client as any).$on("query", (e: any) => {
+      console.log(`[Prisma Query] [${e.duration}ms] ${e.query}`);
+      if (e.params && e.params !== "[]") {
+        console.log(`  Params: ${e.params}`);
+      }
+    });
+
+    return client;
+  }
+
   return new PrismaClient();
 }
 

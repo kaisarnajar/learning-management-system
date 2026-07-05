@@ -17,16 +17,14 @@ export const metadata: Metadata = {
     "Browse and purchase physical Islamic books from Darse Quran Academy. Add books to your cart and submit your order for approval.",
 };
 
-export default async function BookstorePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ page?: string; q?: string }>;
-}) {
-  const params = await searchParams;
-  const { page: requestedPage, pageSize } = parsePaginationParams(params, {
+import { Suspense } from "react";
+
+type PageParams = { page?: string; q?: string };
+
+async function BookstoreList({ params, q }: { params: PageParams; q?: string }) {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params as any, {
     pageSize: GRID_PAGE_SIZE,
   });
-  const q = parseSearchQuery(params.q);
 
   const { items: books, totalCount } = await getPublishedBooksPaginated(
     requestedPage,
@@ -34,6 +32,97 @@ export default async function BookstorePage({
     q,
   );
   const page = clampPage(requestedPage, totalCount, pageSize);
+
+  if (totalCount === 0) {
+    return (
+      <div className="motion-safe:animate-fade-up flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface py-20 text-center">
+        <svg
+          className="h-16 w-16 text-muted/40"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1.2}
+          aria-hidden
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+          />
+        </svg>
+        <p className="mt-4 font-serif text-lg font-semibold text-foreground">
+          No books available yet
+        </p>
+        <p className="mt-1 text-sm text-muted">
+          Check back soon — we&apos;re adding our book catalog.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="motion-safe:animate-fade-up mb-6 flex items-center justify-between">
+        <p className="text-sm text-muted">
+          {totalCount} {totalCount === 1 ? "book" : "books"} available
+        </p>
+        <Link
+          href="/profile/cart"
+          className="btn-gold-solid inline-flex items-center justify-center gap-2 min-h-11 rounded-full px-5 py-2 text-sm font-semibold shadow-md transition-colors"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+          </svg>
+          View Cart
+          <CartCount />
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {books.map((book, index) => {
+          const animationDelay = `${(index % GRID_PAGE_SIZE) * 100}ms`;
+          return (
+            <div 
+              key={book.id}
+              className="motion-safe:animate-fade-up h-full"
+              style={{ animationDelay, animationFillMode: 'both' }}
+            >
+              <BookCard book={book} />
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="mt-16 motion-safe:animate-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
+        <Pagination basePath="/bookstore" params={params as any} page={page} totalCount={totalCount} pageSize={pageSize} />
+      </div>
+    </>
+  );
+}
+
+function BookstoreSkeleton() {
+  return (
+    <>
+      <div className="mb-6 flex items-center justify-between">
+        <div className="h-4 w-28 rounded bg-border/40 animate-pulse" />
+        <div className="h-10 w-28 rounded-full bg-border/40 animate-pulse" />
+      </div>
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+          <div key={i} className="h-72 w-full rounded-xl bg-border/40 animate-pulse" />
+        ))}
+      </div>
+    </>
+  );
+}
+
+export default async function BookstorePage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
 
   return (
     <>
@@ -66,67 +155,9 @@ export default async function BookstorePage({
           </div>
 
           <div className="mx-auto max-w-7xl">
-            {totalCount === 0 ? (
-              <div className="motion-safe:animate-fade-up flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-surface py-20 text-center">
-                <svg
-                  className="h-16 w-16 text-muted/40"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={1.2}
-                  aria-hidden
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
-                  />
-                </svg>
-                <p className="mt-4 font-serif text-lg font-semibold text-foreground">
-                  No books available yet
-                </p>
-                <p className="mt-1 text-sm text-muted">
-                  Check back soon — we&apos;re adding our book catalog.
-                </p>
-              </div>
-            ) : (
-              <>
-                <div className="motion-safe:animate-fade-up mb-6 flex items-center justify-between">
-                  <p className="text-sm text-muted">
-                    {totalCount} {totalCount === 1 ? "book" : "books"} available
-                  </p>
-                  <Link
-                    href="/profile/cart"
-                    className="btn-gold-solid inline-flex items-center justify-center gap-2 min-h-11 rounded-full px-5 py-2 text-sm font-semibold shadow-md transition-colors"
-                  >
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    View Cart
-                    <CartCount />
-                  </Link>
-                </div>
-
-                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                  {books.map((book, index) => {
-                    const animationDelay = `${(index % GRID_PAGE_SIZE) * 100}ms`;
-                    return (
-                      <div 
-                        key={book.id}
-                        className="motion-safe:animate-fade-up h-full"
-                        style={{ animationDelay, animationFillMode: 'both' }}
-                      >
-                        <BookCard book={book} />
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="mt-16 motion-safe:animate-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
-                  <Pagination basePath="/bookstore" params={params} page={page} totalCount={totalCount} pageSize={pageSize} />
-                </div>
-              </>
-            )}
+            <Suspense fallback={<BookstoreSkeleton />}>
+              <BookstoreList params={params} q={q} />
+            </Suspense>
           </div>
         </div>
       </section>

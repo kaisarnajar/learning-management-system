@@ -22,28 +22,29 @@ function tabHref(type: TabType) {
   return qs ? `/admin/enrollments?${qs}` : "/admin/enrollments";
 }
 
-export default async function AdminEnrollmentsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ type?: string; page?: string; q?: string; approved?: string; rejected?: string; }>;
-}) {
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
-  
+import { Suspense } from "react";
+
+type PageParams = {
+  type?: string;
+  page?: string;
+  q?: string;
+  approved?: string;
+  rejected?: string;
+};
+
+async function AdminEnrollmentsList({ params, q }: { params: PageParams; q?: string }) {
   const validTypes: TabType[] = ["free_requests", "paid_awaiting"];
   const type: TabType = validTypes.includes(params.type as TabType) ? (params.type as TabType) : "free_requests";
+  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
 
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
-
-  // We only fetch full paginated data for the active tab, and just count/minimal data for inactive ones.
   const [courses, freeResult, paidResult] = await Promise.all([
     getAllCourses(),
     type === "free_requests" 
       ? getPendingFreeEnrollmentApprovalsPaginated(requestedPage, pageSize, q)
-      : getPendingFreeEnrollmentApprovalsPaginated(1, 1, q), // minimal for count
+      : getPendingFreeEnrollmentApprovalsPaginated(1, 1, q),
     type === "paid_awaiting"
       ? getAwaitingEnrollmentFeeEnrollmentsPaginated(requestedPage, pageSize, q)
-      : getAwaitingEnrollmentFeeEnrollmentsPaginated(1, 1, q), // minimal for count
+      : getAwaitingEnrollmentFeeEnrollmentsPaginated(1, 1, q),
   ]);
 
   const freeTotalCount = freeResult.totalCount;
@@ -61,13 +62,7 @@ export default async function AdminEnrollmentsPage({
   ];
 
   return (
-    <div>
-      <h1 className="font-serif text-2xl font-bold text-primary">Course enrollments</h1>
-      <p className="mt-1 text-sm text-muted">
-        Approve free enrollment requests here. Paid courses are activated after you verify the
-        enrollment fee under Payments.
-      </p>
-
+    <>
       <nav className="mt-8 flex flex-wrap gap-2" aria-label="Enrollment type">
         {tabs.map((item) => {
           const active = type === item.value;
@@ -87,7 +82,7 @@ export default async function AdminEnrollmentsPage({
               {item.showBadge && item.count > 0 && (
                 <span
                   className={`ml-2 inline-flex h-5 items-center justify-center rounded-full px-2 text-xs font-semibold ${
-                    active ? "bg-white/20 text-white" : "bg-warning-bg text-warning-text"
+                    active ? "bg-white/25 text-white" : "bg-warning-bg text-warning-text"
                   }`}
                 >
                   {item.count}
@@ -97,9 +92,6 @@ export default async function AdminEnrollmentsPage({
           );
         })}
       </nav>
-
-      <ActionToast trigger={params.approved === "1"} paramName="approved" message="Enrollment approved. The student has been notified by email — if they don't see it, ask them to check their Spam/Junk folder." variant="success" />
-      <ActionToast trigger={params.rejected === "1"} paramName="rejected" message="Enrollment rejected. The student has been notified by email — if they don't see it, ask them to check their Spam/Junk folder." variant="warning" />
 
       <div className="mt-6">
         <ListSearchForm
@@ -162,7 +154,7 @@ export default async function AdminEnrollmentsPage({
 
         <Pagination
           basePath="/admin/enrollments"
-          params={params}
+          params={params as any}
           page={safePage}
           totalCount={activeResult.totalCount}
           pageSize={pageSize}
@@ -172,6 +164,45 @@ export default async function AdminEnrollmentsPage({
       <section className="mt-16 border-t border-border pt-10">
         <AdminEnrollUserForm courses={enrollableCourses} />
       </section>
+    </>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <>
+      <div className="mt-8 flex gap-2">
+        <div className="h-10 w-48 rounded-full bg-border/40 animate-pulse" />
+        <div className="h-10 w-48 rounded-full bg-border/40 animate-pulse" />
+      </div>
+      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
+      <div className="mt-8 h-[400px] w-full rounded-lg bg-border/40 animate-pulse" />
+    </>
+  );
+}
+
+export default async function AdminEnrollmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
+
+  return (
+    <div>
+      <h1 className="font-serif text-2xl font-bold text-primary">Course enrollments</h1>
+      <p className="mt-1 text-sm text-muted">
+        Approve free enrollment requests here. Paid courses are activated after you verify the
+        enrollment fee under Payments.
+      </p>
+
+      <ActionToast trigger={params.approved === "1"} paramName="approved" message="Enrollment approved. The student has been notified by email — if they don't see it, ask them to check their Spam/Junk folder." variant="success" />
+      <ActionToast trigger={params.rejected === "1"} paramName="rejected" message="Enrollment rejected. The student has been notified by email — if they don't see it, ask them to check their Spam/Junk folder." variant="warning" />
+
+      <Suspense fallback={<TableSkeleton />}>
+        <AdminEnrollmentsList params={params} q={q} />
+      </Suspense>
     </div>
   );
 }

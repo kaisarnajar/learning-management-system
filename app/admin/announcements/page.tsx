@@ -13,20 +13,25 @@ import { parseSearchQuery } from "@/lib/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
+import { Suspense } from "react";
+
+type PageParams = {
+  posted?: string;
+  saved?: string;
+  deleted?: string;
+  error?: string;
+  page?: string;
+  q?: string;
+};
+
 function statusBadge(published: boolean, showOnHomepage: boolean) {
   if (!published) return { label: "Draft", className: "bg-surface-muted-hover text-muted" };
   if (showOnHomepage) return { label: "Home + Public", className: "bg-info-bg text-info-text" };
   return { label: "Published", className: "bg-success-bg text-success-text" };
 }
 
-export default async function AdminAnnouncementsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ posted?: string; saved?: string; deleted?: string; error?: string; page?: string; q?: string }>;
-}) {
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
+async function AdminAnnouncementsList({ params, q }: { params: PageParams; q?: string }) {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
   const { items: announcements, totalCount } = await getAllSiteAnnouncementsForAdminPaginated(
     requestedPage,
     pageSize,
@@ -35,36 +40,7 @@ export default async function AdminAnnouncementsPage({
   const page = clampPage(requestedPage, totalCount, pageSize);
 
   return (
-    <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Announcements</h1>
-          <p className="mt-1 text-sm text-muted">
-            Academy-wide news — events, scholar visits, masjid programs, and more. Up to{" "}
-            {HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX} published items can be featured on the homepage; all
-            published items appear on the public Announcements page.
-          </p>
-        </div>
-        <Link
-          href="/admin/announcements/new"
-          className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-light"
-        >
-          New announcement
-        </Link>
-      </div>
-
-      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Announcement created." variant="info" />
-      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Announcement updated." variant="info" />
-      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Announcement deleted." variant="info" />
-      {params.error === "notfound" && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Announcement not found.</p>
-      )}
-      {params.error && params.error !== "notfound" && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
-          {decodeURIComponent(params.error)}
-        </p>
-      )}
-
+    <>
       <div className="mt-6">
         <ListSearchForm
           action="/admin/announcements"
@@ -152,11 +128,67 @@ export default async function AdminAnnouncementsPage({
 
       <Pagination
         basePath="/admin/announcements"
-        params={params}
+        params={params as any}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}
       />
+    </>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <>
+      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
+      <div className="mt-4 h-[400px] w-full rounded-lg bg-border/40 animate-pulse" />
+    </>
+  );
+}
+
+export default async function AdminAnnouncementsPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
+
+  return (
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-primary">Announcements</h1>
+          <p className="mt-1 text-sm text-muted">
+            Academy-wide news — events, scholar visits, masjid programs, and more. Up to{" "}
+            {HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX} published items can be featured on the homepage; all
+            published items appear on the public Announcements page.
+          </p>
+        </div>
+        <Link
+          href="/admin/announcements/new"
+          className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-light"
+        >
+          New announcement
+        </Link>
+      </div>
+
+      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Announcement created." variant="info" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Announcement updated." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Announcement deleted." variant="info" />
+      {params.error === "notfound" && (
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Announcement not found.</p>
+      )}
+      {params.error && params.error !== "notfound" && (
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
+          {decodeURIComponent(params.error)}
+        </p>
+      )}
+
+      <Suspense fallback={<TableSkeleton />}>
+        <AdminAnnouncementsList params={params} q={q} />
+      </Suspense>
     </div>
   );
 }
+

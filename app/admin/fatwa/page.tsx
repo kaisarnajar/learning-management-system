@@ -31,15 +31,19 @@ function statusClass(q: { answer: string | null; approvalStatus: string }) {
   return "bg-surface-alt text-muted";
 }
 
-export default async function AdminFatwaPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ filter?: string; saved?: string; deleted?: string; page?: string; q?: string }>;
-}) {
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
+import { Suspense } from "react";
+
+type PageParams = {
+  filter?: string;
+  saved?: string;
+  deleted?: string;
+  page?: string;
+  q?: string;
+};
+
+async function AdminFatwaList({ params, q }: { params: PageParams; q?: string }) {
   const filter = (params.filter as FatwaAdminFilter) || undefined;
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
+  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
   const { items: questions, totalCount } = await getAllFatwaQuestionsPaginated(
     requestedPage,
     pageSize,
@@ -49,7 +53,7 @@ export default async function AdminFatwaPage({
   const page = clampPage(requestedPage, totalCount, pageSize);
 
   return (
-    <div>
+    <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-bold text-primary">Fatwa Q&A</h1>
@@ -81,10 +85,6 @@ export default async function AdminFatwaPage({
           })}
         </nav>
       </div>
-
-      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Answer saved and notification sent (or logged if SMTP is not configured)." variant="info" />
-
-      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Question deleted." variant="info" />
 
       <div className="mt-6">
         <ListSearchForm
@@ -173,11 +173,52 @@ export default async function AdminFatwaPage({
 
       <Pagination
         basePath="/admin/fatwa"
-        params={params}
+        params={params as any}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}
       />
+    </>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-primary">Fatwa Q&A</h1>
+          <div className="mt-1 h-4 w-24 rounded bg-border/40 animate-pulse" />
+        </div>
+        <div className="flex gap-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-10 w-20 rounded-full bg-border/40 animate-pulse" />
+          ))}
+        </div>
+      </div>
+      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
+      <div className="mt-4 h-[400px] w-full rounded-lg bg-border/40 animate-pulse" />
+    </>
+  );
+}
+
+export default async function AdminFatwaPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
+
+  return (
+    <div>
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Answer saved and notification sent (or logged if SMTP is not configured)." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Question deleted." variant="info" />
+
+      <Suspense fallback={<TableSkeleton />}>
+        <AdminFatwaList params={params} q={q} />
+      </Suspense>
     </div>
   );
 }
+

@@ -22,37 +22,23 @@ function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
 }
 
-export default async function AdminBookstorePage({
-  searchParams,
-}: {
-  searchParams: Promise<{ created?: string; updated?: string; deleted?: string; page?: string; q?: string }>;
-}) {
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
-  
+import { Suspense } from "react";
+
+type PageParams = {
+  created?: string;
+  updated?: string;
+  deleted?: string;
+  page?: string;
+  q?: string;
+};
+
+async function AdminBookstoreList({ params, q }: { params: PageParams; q?: string }) {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
   const { items: books, totalCount } = await getAllBooksPaginated(requestedPage, pageSize, q);
   const page = clampPage(requestedPage, totalCount, pageSize);
 
   return (
-    <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Bookstore</h1>
-          <p className="mt-1 text-sm text-muted">{totalCount} total</p>
-        </div>
-        <Link
-          href="/admin/bookstore/new"
-          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
-        >
-          Add book
-        </Link>
-      </div>
-
-      <ActionToast trigger={params.created === "1"} paramName="created" message="Book created." variant="info" />
-      <ActionToast trigger={params.updated === "1"} paramName="updated" message="Changes saved." variant="info" />
-      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Book deleted." variant="info" />
-
+    <>
       <div className="mt-6">
         <ListSearchForm
           action="/admin/bookstore"
@@ -141,7 +127,50 @@ export default async function AdminBookstorePage({
         )}
       </div>
 
-      <Pagination basePath="/admin/bookstore" params={params} page={page} totalCount={totalCount} pageSize={pageSize} />
+      <Pagination basePath="/admin/bookstore" params={params as any} page={page} totalCount={totalCount} pageSize={pageSize} />
+    </>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <>
+      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
+      <div className="mt-4 h-[400px] w-full rounded-lg bg-border/40 animate-pulse" />
+    </>
+  );
+}
+
+export default async function AdminBookstorePage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
+
+  return (
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-primary">Bookstore</h1>
+        </div>
+        <Link
+          href="/admin/bookstore/new"
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
+        >
+          Add book
+        </Link>
+      </div>
+
+      <ActionToast trigger={params.created === "1"} paramName="created" message="Book created." variant="info" />
+      <ActionToast trigger={params.updated === "1"} paramName="updated" message="Changes saved." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Book deleted." variant="info" />
+
+      <Suspense fallback={<TableSkeleton />}>
+        <AdminBookstoreList params={params} q={q} />
+      </Suspense>
     </div>
   );
 }
+

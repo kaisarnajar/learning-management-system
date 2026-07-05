@@ -11,38 +11,23 @@ import { parseSearchQuery } from "@/lib/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
-export default async function AdminLibraryPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ deleted?: string; created?: string; saved?: string; page?: string; q?: string }>;
-}) {
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
+import { Suspense } from "react";
+
+type PageParams = {
+  deleted?: string;
+  created?: string;
+  saved?: string;
+  page?: string;
+  q?: string;
+};
+
+async function AdminLibraryList({ params, q }: { params: PageParams; q?: string }) {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
   const { items, totalCount } = await getAllLibraryItemsPaginated(requestedPage, pageSize, q);
   const page = clampPage(requestedPage, totalCount, pageSize);
 
   return (
-    <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Library</h1>
-          <p className="mt-1 text-sm text-muted">{totalCount} total</p>
-        </div>
-        <Link
-          href="/admin/library/new"
-          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
-        >
-          Add item
-        </Link>
-      </div>
-
-      <ActionToast trigger={params.created === "1"} paramName="created" message="Item created." variant="info" />
-
-      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Item deleted." variant="info" />
-
-      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
-
+    <>
       <div className="mt-6">
         <ListSearchForm
           action="/admin/library"
@@ -127,11 +112,54 @@ export default async function AdminLibraryPage({
 
       <Pagination
         basePath="/admin/library"
-        params={params}
+        params={params as any}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}
       />
+    </>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <>
+      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
+      <div className="mt-4 h-[400px] w-full rounded-lg bg-border/40 animate-pulse" />
+    </>
+  );
+}
+
+export default async function AdminLibraryPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
+
+  return (
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-primary">Library</h1>
+        </div>
+        <Link
+          href="/admin/library/new"
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
+        >
+          Add item
+        </Link>
+      </div>
+
+      <ActionToast trigger={params.created === "1"} paramName="created" message="Item created." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Item deleted." variant="info" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
+
+      <Suspense fallback={<TableSkeleton />}>
+        <AdminLibraryList params={params} q={q} />
+      </Suspense>
     </div>
   );
 }
+

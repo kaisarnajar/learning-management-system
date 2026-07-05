@@ -11,6 +11,17 @@ import type { BlogPost } from "@prisma/client";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
+import { Suspense } from "react";
+
+type PageParams = {
+  posted?: string;
+  saved?: string;
+  deleted?: string;
+  error?: string;
+  page?: string;
+  q?: string;
+};
+
 function statusBadge(post: Pick<BlogPost, "approvalStatus" | "published">) {
   return {
     label: blogApprovalStatusLabel(post.approvalStatus, post.published),
@@ -18,14 +29,8 @@ function statusBadge(post: Pick<BlogPost, "approvalStatus" | "published">) {
   };
 }
 
-export default async function AdminBlogsPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ posted?: string; saved?: string; deleted?: string; error?: string; page?: string; q?: string }>;
-}) {
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
+async function AdminBlogsList({ params, q }: { params: PageParams; q?: string }) {
+  const { page: requestedPage, pageSize } = parsePaginationParams(params as any);
   const { items: posts, totalCount } = await getAllBlogPostsForAdminPaginated(
     requestedPage,
     pageSize,
@@ -34,29 +39,7 @@ export default async function AdminBlogsPage({
   const page = clampPage(requestedPage, totalCount, pageSize);
 
   return (
-    <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Blogs</h1>
-          <p className="mt-1 text-sm text-muted">
-            Write articles or review teacher submissions in Blog approvals.
-          </p>
-        </div>
-        <Link
-          href="/admin/blogs/new"
-          className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-light"
-        >
-          New blog post
-        </Link>
-      </div>
-
-      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Blog post created." variant="info" />
-      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Blog post updated." variant="info" />
-      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Blog post deleted." variant="info" />
-      {params.error === "notfound" && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Blog post not found.</p>
-      )}
-
+    <>
       <div className="mt-6">
         <ListSearchForm
           action="/admin/blogs"
@@ -140,11 +123,60 @@ export default async function AdminBlogsPage({
 
       <Pagination
         basePath="/admin/blogs"
-        params={params}
+        params={params as any}
         page={page}
         totalCount={totalCount}
         pageSize={pageSize}
       />
+    </>
+  );
+}
+
+function TableSkeleton() {
+  return (
+    <>
+      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
+      <div className="mt-4 h-[400px] w-full rounded-lg bg-border/40 animate-pulse" />
+    </>
+  );
+}
+
+export default async function AdminBlogsPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
+
+  return (
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-primary">Blogs</h1>
+          <p className="mt-1 text-sm text-muted">
+            Write articles or review teacher submissions in Blog approvals.
+          </p>
+        </div>
+        <Link
+          href="/admin/blogs/new"
+          className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-light"
+        >
+          New blog post
+        </Link>
+      </div>
+
+      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Blog post created." variant="info" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Blog post updated." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Blog post deleted." variant="info" />
+      {params.error === "notfound" && (
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Blog post not found.</p>
+      )}
+
+      <Suspense fallback={<TableSkeleton />}>
+        <AdminBlogsList params={params} q={q} />
+      </Suspense>
     </div>
   );
 }
+

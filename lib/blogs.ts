@@ -103,7 +103,14 @@ export async function getPublishedBlogPostById(id: string) {
       where: { id, ...BLOG_PUBLIC_WHERE },
       include: {
         images: { orderBy: { sortOrder: "asc" } },
-        createdBy: { select: { name: true } },
+        createdBy: { select: { name: true, image: true, email: true } },
+        likes: true,
+        comments: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            user: { select: { name: true, image: true, email: true } },
+          },
+        },
       },
     }), "Database operation failed");
 }

@@ -4,6 +4,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Section } from "@/components/site/Section";
 import { formatBlogDate, getPublishedBlogPostById } from "@/lib/blogs";
+import { auth } from "@/lib/auth";
+import { isAdminSession } from "@/lib/admin";
+import { BlogEngagement } from "./BlogEngagement";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -21,9 +24,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BlogDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const post = await getPublishedBlogPostById(id);
+  const [post, session] = await Promise.all([
+    getPublishedBlogPostById(id),
+    auth(),
+  ]);
 
   if (!post) notFound();
+
+  const currentUserId = session?.user?.id;
+  const isAdmin = isAdminSession(session);
+  const initialHasLiked = currentUserId ? (post as any).likes?.some((like: any) => like.userId === currentUserId) : false;
+
 
   return (
     <Section>
@@ -74,6 +85,15 @@ export default async function BlogDetailPage({ params }: PageProps) {
             ))}
           </div>
         )}
+
+        <BlogEngagement
+          blogPostId={post.id}
+          initialLikeCount={(post as any).likes?.length || 0}
+          initialHasLiked={initialHasLiked}
+          initialComments={(post as any).comments || []}
+          currentUserId={currentUserId}
+          isAdmin={isAdmin}
+        />
       </article>
     </Section>
   );

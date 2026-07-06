@@ -9,6 +9,7 @@ import { Section } from "@/components/site/Section";
 import { auth } from "@/lib/auth";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { CourseThumbnail } from "@/components/courses/CourseThumbnail";
+import { CourseShareButton } from "@/components/courses/CourseShareButton";
 import { getCourseLevelClass } from "@/lib/course-display";
 import { getPublicCourseById } from "@/lib/courses";
 import { getUserCourseEnrollmentMap } from "@/lib/enrollments";
@@ -57,14 +58,17 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
       <article className="mx-auto mt-6 max-w-2xl">
         <CourseThumbnail category={course.category} size="lg" className="rounded-lg" />
 
-        <div className="mt-6 flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-gold">
-            {course.category}
-          </span>
-          <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${levelClass}`}>
-            {course.level}
-          </span>
-          <CourseStatusBadge status={course.status} />
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gold">
+              {course.category}
+            </span>
+            <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${levelClass}`}>
+              {course.level}
+            </span>
+            <CourseStatusBadge status={course.status} />
+          </div>
+          <CourseShareButton courseTitle={course.title} />
         </div>
 
         <h1 className="mt-3 text-2xl font-bold text-foreground sm:text-3xl">{course.title}</h1>

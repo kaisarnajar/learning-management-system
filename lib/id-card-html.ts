@@ -1,5 +1,5 @@
 import { resolveUserRole } from "@/lib/teacher-auth";
-import { generatePdfFromHtml, loadStandardPdfAssets, wrapHtmlForPdf } from "@/lib/pdf-generator";
+import { generatePdfFromHtml, loadStandardPdfAssets, loadProfilePictureAsBase64, wrapHtmlForPdf } from "@/lib/pdf-generator";
 import { BRAND_CONFIG } from "@/config/brand";
 
 

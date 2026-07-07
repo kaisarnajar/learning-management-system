@@ -17,11 +17,36 @@ Built entirely as a **White-Label** solution, you can spin up a production-ready
 
 ## White-Label Configuration
 
-To deploy this application for your own academy, you **do not** need to edit the UI components or business logic. All configuration is centralized:
+To deploy this application for your own academy, you **do not** need to edit the UI components or business logic. All customization is centralized in a few configuration files:
 
-1. **Brand Settings**: Edit `config/brand.ts` to set your academy's name, website URL, SEO templates, support emails, and social links.
-2. **Assets**: Edit `config/assets.ts` to map your specific logos, favicons, and default cover images.
-3. **Business Rules**: Edit the files in `config/constants/` (e.g., `payments.ts`, `file.ts`, `business.ts`) to configure your supported currencies, max upload limits, and status mappings.
+### 1. Brand Profile (`config/brand.ts`)
+This is the single source of truth for your academy's identity. Update this file to change:
+- `name`: Your Academy Name (e.g. "My Online Academy")
+- `shortName`: Used for mobile layouts and tiny spaces
+- `websiteUrl`: The primary domain for canonical links and emails
+- `contact`: Your support emails and phone numbers
+- `socialLinks`: URLs to your YouTube, Facebook, and Instagram
+- `seo`: Default metadata templates for search engines
+
+### 2. Digital Assets (`config/assets.ts`)
+Replace the standard asset URLs in this file to match your academy's files:
+- `logoUrl` / `faviconUrl`: Your primary branding images
+- `defaultCoverImage`: The placeholder image used for courses without covers
+- `pdfAssets`: The URLs for your **Seal/Stamp**, **CEO Signature**, and **Custom Fonts** used when generating Certificates, ID Cards, and Receipts.
+
+### 3. Business Rules (`config/constants/`)
+Configure the core operational logic of the platform by editing the files in this directory:
+- `payments.ts`: Update currency (`INR`, `USD`), payment types, and Stripe configurations.
+- `file.ts`: Update max upload sizes and supported PDF/Image extensions.
+- `business.ts`: Set rules like minimum grade requirements, grace periods, or attendance policies.
+
+### 4. UI Design System (`app/globals.css` & `services/pdf-generator.ts`)
+To rebrand the colors and visual layout of the application:
+1. **Web App:** Open `app/globals.css` and update the `--color-brand-primary` and `--color-brand-gold` hex values under the `@theme inline` block.
+2. **PDF Documents:** Open `services/pdf-generator.ts`. Inside the `wrapHtmlForPdf` function, update the `tailwind.config` JavaScript object to ensure generated PDFs use your custom hex colors.
+
+### 5. Database Seed (`prisma/seed-demo.ts`)
+If you intend to use the demo seed script (`npm run db:seed:demo`) to populate the database with a full catalog of test data, you can optionally edit this file to generate dummy data specific to your own syllabus.
 
 ## Setup & Local Development
 

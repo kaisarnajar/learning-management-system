@@ -92,13 +92,30 @@ If you intend to use the demo seed script (`npm run db:seed:demo`) to populate t
 - `/utils`: Helper functions, validation schemas, and formatting utilities.
 - `/prisma`: Database schemas and initialization seeding tools.
 
-## Production Deployment
+## Recommended Production Deployment Stack
 
-This application is designed to be easily deployed to **Vercel**:
-1. Connect your GitHub repository to Vercel.
-2. Ensure the Build Command is `prisma generate && next build`.
-3. Map all environment variables from your `.env` to Vercel's environment variables.
-4. Deploy!
+This application is architected to run on a modern, serverless edge stack. We recommend the following infrastructure for the best performance and easiest setup:
+
+### 1. Frontend & Backend: Vercel
+Vercel provides seamless hosting for Next.js App Router applications.
+- **Setup:** Connect your GitHub repository to Vercel.
+- **Build Command:** `npx prisma generate && next build`
+- **Environment:** Copy all variables from your `.env` into Vercel's Environment Variables settings.
+
+### 2. Database: Neon DB (Serverless PostgreSQL)
+Neon provides a scalable, serverless Postgres database that works perfectly with Vercel and Prisma.
+- **Setup:** Create a free project on [Neon.tech](https://neon.tech/).
+- **Connections:** Use the pooled connection string for `DATABASE_URL` and the direct connection string for `DIRECT_URL`.
+
+### 3. File Storage & Uploads: Cloudflare R2
+Cloudflare R2 provides an AWS S3-compatible object storage with zero egress fees, perfect for storing student avatars, PDF certificates, and course assets.
+- **Setup:** Create a bucket in Cloudflare R2.
+- **Credentials:** Generate an R2 API Token and fill in the `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, and `R2_SECRET_ACCESS_KEY` in your `.env`.
+
+### 4. Domain Name Registration: SolarSquare
+To put your academy on a custom domain (e.g. `youracademy.com`):
+- **Setup:** Purchase your desired domain name from SolarSquare (or any preferred registrar like Squarespace, GoDaddy, or Namecheap).
+- **DNS:** Once purchased, follow Vercel's domain settings to update your DNS records and point the domain to your Vercel deployment.
 
 ## License
 MIT License.

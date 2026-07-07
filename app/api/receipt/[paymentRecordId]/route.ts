@@ -5,7 +5,7 @@ import { BRAND_CONFIG } from "@/config/brand";
 import { getCourseById } from "@/lib/courses";
 import { prepareReceiptData } from "@/lib/payment-receipt";
 import { renderReceiptToHtml } from "@/lib/receipt-html";
-import { generatePdfFromHtml } from "@/lib/pdf-generator";
+import { generatePdfFromHtml, wrapHtmlForPdf } from "@/lib/pdf-generator";
 import { getPaymentRecordById } from "@/lib/payments";
 
 export async function GET(
@@ -41,32 +41,7 @@ export async function GET(
   const componentHtml = renderReceiptToHtml(receiptData);
 
   // 5. Wrap in isolated HTML document with Tailwind CDN
-  const fullHtml = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <script src="https://cdn.tailwindcss.com"></script>
-      <style>
-        @media print {
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        }
-        body { 
-          font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-          background: white !important;
-          margin: 0;
-        }
-        /* Ensure SVGs inside base64 img tags or anywhere scale properly */
-        img { max-width: 100%; height: auto; }
-      </style>
-    </head>
-    <body>
-      <div class="p-8 flex justify-center min-h-screen">
-        ${componentHtml}
-      </div>
-    </body>
-    </html>
-  `;
+  const fullHtml = wrapHtmlForPdf(componentHtml, { landscape: false });
 
   try {
     const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false });

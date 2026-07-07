@@ -1,9 +1,6 @@
-import { PROCESS_IMAGE_SCRIPT } from "./html-scripts";
 import { resolveUserRole } from "@/lib/teacher-auth";
-import { generatePdfFromHtml } from "@/lib/pdf-generator";
-import fs from "fs/promises";
+import { generatePdfFromHtml, loadStandardPdfAssets, wrapHtmlForPdf } from "@/lib/pdf-generator";
 import { BRAND_CONFIG } from "@/config/brand";
-import { ASSET_LOCAL_PATHS } from "@/config/assets";
 
 
 export function renderIdCardToHtml(data: {
@@ -46,29 +43,6 @@ export function renderIdCardToHtml(data: {
   }
 
   return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    ${data.base64Font ? `
-    @font-face {
-      font-family: 'IndoPak';
-      src: url('${data.base64Font}') format('woff2');
-      font-weight: 400;
-      font-style: normal;
-    }
-    ` : ""}
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: 'Inter', sans-serif;
-    }
-  </style>
-</head>
-<body>
   <div>
     <div
       class="w-pdf-id-width h-pdf-id-height relative overflow-hidden bg-surface-cream text-brand-primary box-border border-pdf-md border-brand-primary rounded-pdf-lg shadow-2xl"
@@ -212,11 +186,7 @@ export function renderIdCardToHtml(data: {
 
     </div>
   </div>
-  <script>
-    ${PROCESS_IMAGE_SCRIPT}
-  </script>
-</body>
-</html>
+
   `;
 }
 
@@ -232,61 +202,9 @@ export async function generateIdCardPdf(user: {
 }): Promise<Buffer> {
   const targetRole = await resolveUserRole(user.email);
 
-  // Load static assets
-  let base64Logo = "";
-  let base64Signature = "";
-  let base64Stamp = "";
-  let base64Font = "";
-  
-  try {
-    const logoPath = ASSET_LOCAL_PATHS.logo;
-    const sigPath = ASSET_LOCAL_PATHS.signature;
-    const stampPath = ASSET_LOCAL_PATHS.stamp;
-    const fontPath = path.join(process.cwd(), "public", "fonts", "indopak-nastaleeq.woff2");
-    
-    const [logoBytes, sigBytes, stampBytes, fontBytes] = await Promise.all([
-      fs.readFile(logoPath).catch(() => null),
-      fs.readFile(sigPath).catch(() => null),
-      fs.readFile(stampPath).catch(() => null),
-      fs.readFile(fontPath).catch(() => null),
-    ]);
-    
-    if (logoBytes) base64Logo = `data:image/png;base64,${logoBytes.toString('base64')}`;
-    if (sigBytes) base64Signature = `data:image/png;base64,${sigBytes.toString('base64')}`;
-    if (stampBytes) base64Stamp = `data:image/png;base64,${stampBytes.toString('base64')}`;
-    if (fontBytes) base64Font = `data:font/woff2;charset=utf-8;base64,${fontBytes.toString('base64')}`;
-  } catch (e) {
-    console.error("Could not load local images:", e);
-  }
+  const { base64Logo, base64Signature, base64Stamp, base64Font } = await loadStandardPdfAssets();
 
-  // Load profile picture if exists
-  let base64ProfilePic = "";
-  if (user.image) {
-    try {
-      let imageUrl = user.image;
-      if (imageUrl.startsWith("http")) {
-        // Upgrade Google profile picture resolution
-        if (imageUrl.includes("googleusercontent.com")) {
-          imageUrl = imageUrl.replace(/=s\d+-c/g, "=s1000-c");
-        }
-        
-        const res = await fetch(imageUrl, { cache: "no-store" });
-        if (res.ok) {
-          const buffer = await res.arrayBuffer();
-          const mimeType = res.headers.get("content-type") || "image/jpeg";
-          base64ProfilePic = `data:${mimeType};base64,${Buffer.from(buffer).toString('base64')}`;
-        }
-      } else if (imageUrl.startsWith("/")) {
-        // Local upload
-        const imgPath = path.join(process.cwd(), "public", imageUrl);
-        const bytes = await fs.readFile(imgPath);
-        const ext = path.extname(imgPath).substring(1) || "jpeg";
-        base64ProfilePic = `data:image/${ext};base64,${bytes.toString('base64')}`;
-      }
-    } catch (e) {
-      console.error("Could not load profile picture:", e);
-    }
-  }
+  const base64ProfilePic = await loadProfilePictureAsBase64(user.image);
 
   const dobFormatted = user.dateOfBirth 
     ? user.dateOfBirth.toLocaleDateString("en-IN", {
@@ -312,7 +230,7 @@ export async function generateIdCardPdf(user: {
     role: targetRole,
   };
 
-  const htmlString = renderIdCardToHtml(data);
+  const htmlString = wrapHtmlForPdf(renderIdCardToHtml(data), { base64Font });
   const pdfBuffer = await generatePdfFromHtml(htmlString, { 
     width: "1011px", 
     height: "638px" 

@@ -1,9 +1,7 @@
-import fs from "fs/promises";
 import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-links";
 import { getAcademySettings } from "@/lib/academy-settings";
 import { renderCertificateToHtml } from "@/lib/certificate-html";
-import { generatePdfFromHtml } from "@/lib/pdf-generator";
-import { ASSET_LOCAL_PATHS } from "@/config/assets";
+import { generatePdfFromHtml, loadStandardPdfAssets, wrapHtmlForPdf } from "@/lib/pdf-generator";
 
 
 export function getCertificateFilename(courseTitle: string, enrollmentId: string): string {
@@ -36,24 +34,7 @@ export async function generateCertificatePdf(params: CertificatePdfParams): Prom
     getAcademySettings(),
   ]);
 
-  let base64Logo = "";
-  let base64Signature = "";
-  let base64Stamp = "";
-  try {
-    const logoPath = ASSET_LOCAL_PATHS.logo;
-    const sigPath = ASSET_LOCAL_PATHS.signature;
-    const stampPath = ASSET_LOCAL_PATHS.stamp;
-    const [logoBytes, sigBytes, stampBytes] = await Promise.all([
-      fs.readFile(logoPath).catch(() => null),
-      fs.readFile(sigPath).catch(() => null),
-      fs.readFile(stampPath).catch(() => null),
-    ]);
-    if (logoBytes) base64Logo = `data:image/png;base64,${logoBytes.toString("base64")}`;
-    if (sigBytes) base64Signature = `data:image/png;base64,${sigBytes.toString("base64")}`;
-    if (stampBytes) base64Stamp = `data:image/png;base64,${stampBytes.toString("base64")}`;
-  } catch (e) {
-    console.error("[certificate-pdf] Could not load images:", e);
-  }
+  const { base64Logo, base64Signature, base64Stamp } = await loadStandardPdfAssets();
 
   const certData = {
     studentName: params.studentName,
@@ -72,23 +53,7 @@ export async function generateCertificatePdf(params: CertificatePdfParams): Prom
   };
 
   const componentHtml = renderCertificateToHtml(certData);
-  const fullHtml = `
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet" />
-      <script src="https://cdn.tailwindcss.com"></script>
-      <style>
-        @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; } }
-        @page { size: A4 landscape; margin: 0; }
-        body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: white !important; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        img { max-width: 100%; height: auto; }
-      </style>
-    </head>
-    <body>${componentHtml}</body>
-    </html>
-  `;
+  const fullHtml = wrapHtmlForPdf(componentHtml, { landscape: true });
 
   return await generatePdfFromHtml(fullHtml, {
     format: "A4",

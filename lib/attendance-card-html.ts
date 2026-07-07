@@ -1,13 +1,10 @@
-import { PROCESS_IMAGE_SCRIPT } from "./html-scripts";
-import { generatePdfFromHtml } from "@/lib/pdf-generator";
+import { generatePdfFromHtml, loadStandardPdfAssets, wrapHtmlForPdf } from "@/lib/pdf-generator";
 import { prisma } from "@/lib/prisma";
-import fs from "fs/promises";
 import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-links";
 import { getAcademySettings } from "@/lib/academy-settings";
 import { BRAND_CONFIG } from "@/config/brand";
 import { AUTHORITY_SIGNATURE } from "@/lib/academy-contact";
 import { formatRollNumber } from "@/lib/roll-numbers";
-import { ASSET_LOCAL_PATHS } from "@/config/assets";
 
 
 export type AttendanceCardRecordData = {
@@ -216,48 +213,8 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
   }).join('\n');
 
   return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    @page {
-      size: A4;
-      margin: 0;
-    }
-    *, ::before, ::after {
-      box-sizing: border-box;
-    }
-    body {
-      font-family: 'Inter', sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #ffffff;
-      -webkit-print-color-adjust: exact;
-    }
-    .page-container {
-      width: 210mm;
-      height: 297mm;
-      box-sizing: border-box;
-      padding: 10mm;
-      page-break-after: always;
-      background-color: #ffffff;
-      position: relative;
-    }
-    .page-container:last-child {
-      page-break-after: avoid;
-    }
-  </style>
-</head>
-<body>
   ${pagesHtml}
-  <script>
-    ${PROCESS_IMAGE_SCRIPT}
-  </script>
-</body>
-</html>
+
   `;
 }
 
@@ -310,27 +267,7 @@ export async function generateAttendanceCardPdf(enrollmentId: string): Promise<B
   const attendancePercentage = totalClasses === 0 ? 0 : Math.round((totalPresent / totalClasses) * 100);
 
   // Load static assets
-  let base64Logo = "";
-  let base64Signature = "";
-  let base64Stamp = "";
-
-  try {
-    const logoPath = ASSET_LOCAL_PATHS.logo;
-    const sigPath = ASSET_LOCAL_PATHS.signature;
-    const stampPath = ASSET_LOCAL_PATHS.stamp;
-
-    const [logoBytes, sigBytes, stampBytes] = await Promise.all([
-      fs.readFile(logoPath).catch(() => null),
-      fs.readFile(sigPath).catch(() => null),
-      fs.readFile(stampPath).catch(() => null),
-    ]);
-
-    if (logoBytes) base64Logo = `data:image/png;base64,${logoBytes.toString("base64")}`;
-    if (sigBytes) base64Signature = `data:image/png;base64,${sigBytes.toString("base64")}`;
-    if (stampBytes) base64Stamp = `data:image/png;base64,${stampBytes.toString("base64")}`;
-  } catch (e) {
-    console.error("[attendance-card-html] Could not load local assets:", e);
-  }
+  const { base64Logo, base64Signature, base64Stamp, base64Font } = await loadStandardPdfAssets();
 
   const [socialLinks, academySettings] = await Promise.all([
     getSocialLinksSettings(),
@@ -373,7 +310,7 @@ export async function generateAttendanceCardPdf(enrollmentId: string): Promise<B
     authorityDesignation: AUTHORITY_SIGNATURE.designation
   };
 
-  const html = renderAttendanceCardToHtml(data);
+  const html = wrapHtmlForPdf(renderAttendanceCardToHtml(data), { base64Font });
   const pdfBuffer = await generatePdfFromHtml(html, {
     format: "A4",
     landscape: false

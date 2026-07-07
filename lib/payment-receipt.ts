@@ -1,11 +1,10 @@
 import { prisma } from "@/lib/prisma";
-import fs from "fs/promises";
 import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-links";
 import { getAcademySettings } from "@/lib/academy-settings";
 import { INVOICE_TERMS, AUTHORITY_SIGNATURE } from "@/lib/academy-contact";
 import { ReceiptData } from "@/types/receipt";
 import { incomePaymentTypeLabel } from "@/lib/monthly-payment-status";
-import { ASSET_LOCAL_PATHS } from "@/config/assets";
+import { loadStandardPdfAssets } from "@/lib/pdf-generator";
 
 
 export function getReceiptFilename(courseTitle: string, paymentRecordId: string): string {
@@ -15,36 +14,6 @@ export function getReceiptFilename(courseTitle: string, paymentRecordId: string)
     .replace(/^-|-$/g, "")
     .slice(0, 30);
   return `invoice-${slug || "payment"}-${paymentRecordId.slice(0, 8)}.pdf`;
-}
-
-export type ReceiptAssets = {
-  base64Logo: string;
-  base64Signature: string;
-  base64Stamp: string;
-};
-
-export async function loadReceiptAssets(): Promise<ReceiptAssets> {
-  let base64Logo = "";
-  let base64Signature = "";
-  let base64Stamp = "";
-  try {
-    const logoPath = ASSET_LOCAL_PATHS.logo;
-    const sigPath = ASSET_LOCAL_PATHS.signature;
-    const stampPath = ASSET_LOCAL_PATHS.stamp;
-    
-    const [logoBytes, sigBytes, stampBytes] = await Promise.all([
-      fs.readFile(logoPath).catch(() => null),
-      fs.readFile(sigPath).catch(() => null),
-      fs.readFile(stampPath).catch(() => null),
-    ]);
-    
-    if (logoBytes) base64Logo = `data:image/png;base64,${logoBytes.toString("base64")}`;
-    if (sigBytes) base64Signature = `data:image/png;base64,${sigBytes.toString("base64")}`;
-    if (stampBytes) base64Stamp = `data:image/png;base64,${stampBytes.toString("base64")}`;
-  } catch (e) {
-    console.error("[payment-receipt] Could not load images:", e);
-  }
-  return { base64Logo, base64Signature, base64Stamp };
 }
 
 export type ReceiptRecordInput = {
@@ -109,7 +78,7 @@ export async function prepareReceiptData(
   const [socialLinks, academySettings, assets] = await Promise.all([
     getSocialLinksSettings(),
     getAcademySettings(),
-    loadReceiptAssets(),
+    loadStandardPdfAssets(),
   ]);
 
   const invoiceNumber = options?.invoiceNumberOverride || record.invoiceNumber || "";

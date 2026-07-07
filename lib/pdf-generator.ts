@@ -2,6 +2,10 @@ import puppeteer from "puppeteer";
 import puppeteerCore from "puppeteer-core";
 import chromium from "@sparticuz/chromium-min";
 import { getChromiumExecutablePath } from "@/lib/chromium";
+import fs from "fs/promises";
+import path from "path";
+import { ASSET_LOCAL_PATHS } from "@/config/assets";
+import { PROCESS_IMAGE_SCRIPT } from "@/lib/html-scripts";
 
 export type PdfOptions = {
   format?: "A4" | "A3" | "Letter";
@@ -118,4 +122,117 @@ export async function generatePdfFromHtml(
   } finally {
     await browser.close();
   }
+}
+
+// ---------------------------------------------------------------------------
+// Centralized Asset & HTML Framework
+// ---------------------------------------------------------------------------
+
+/**
+ * Loads the standard logo, signature, stamp, and custom font as base64 strings.
+ * Centralizes the boilerplate used across all 5 PDF generators.
+ */
+export async function loadStandardPdfAssets() {
+  let base64Logo = "";
+  let base64Signature = "";
+  let base64Stamp = "";
+  let base64Font = "";
+  
+  try {
+    const fontPath = path.join(process.cwd(), "public", "fonts", "indopak-nastaleeq.woff2");
+    
+    const [logoBytes, sigBytes, stampBytes, fontBytes] = await Promise.all([
+      fs.readFile(ASSET_LOCAL_PATHS.logo).catch(() => null),
+      fs.readFile(ASSET_LOCAL_PATHS.signature).catch(() => null),
+      fs.readFile(ASSET_LOCAL_PATHS.stamp).catch(() => null),
+      fs.readFile(fontPath).catch(() => null),
+    ]);
+    
+    if (logoBytes) base64Logo = `data:image/png;base64,${logoBytes.toString('base64')}`;
+    if (sigBytes) base64Signature = `data:image/png;base64,${sigBytes.toString('base64')}`;
+    if (stampBytes) base64Stamp = `data:image/png;base64,${stampBytes.toString('base64')}`;
+    if (fontBytes) base64Font = `data:font/woff2;charset=utf-8;base64,${fontBytes.toString('base64')}`;
+  } catch (e) {
+    console.error("[pdf-generator] Could not load local standard assets:", e);
+  }
+
+  return { base64Logo, base64Signature, base64Stamp, base64Font };
+}
+
+/**
+ * Normalizes a user profile image URL to a base64 string, handling Google upscaling
+ * and local file reading automatically.
+ */
+export async function loadProfilePictureAsBase64(imageUrl: string | null | undefined): Promise<string> {
+  if (!imageUrl) return "";
+
+  try {
+    if (imageUrl.startsWith("http")) {
+      let upgradedUrl = imageUrl;
+      if (upgradedUrl.includes("googleusercontent.com")) {
+        upgradedUrl = upgradedUrl.replace(/=s\d+-c/g, "=s1000-c");
+      }
+      
+      const res = await fetch(upgradedUrl, { cache: "no-store" });
+      if (res.ok) {
+        const buffer = await res.arrayBuffer();
+        const mimeType = res.headers.get("content-type") || "image/jpeg";
+        return `data:${mimeType};base64,${Buffer.from(buffer).toString('base64')}`;
+      }
+    } else if (imageUrl.startsWith("/")) {
+      const imgPath = path.join(process.cwd(), "public", imageUrl);
+      const bytes = await fs.readFile(imgPath);
+      const ext = path.extname(imgPath).substring(1) || "jpeg";
+      return `data:image/${ext};base64,${bytes.toString('base64')}`;
+    }
+  } catch (e) {
+    console.error("[pdf-generator] Could not load profile picture:", e);
+  }
+  return "";
+}
+
+/**
+ * Standardized HTML wrapper that injects Tailwind, fonts, and base styling.
+ */
+export function wrapHtmlForPdf(
+  bodyContent: string, 
+  options?: { base64Font?: string; landscape?: boolean }
+) {
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:wght@400;600;700&family=Scheherazade+New:wght@400;700&family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    ${options?.base64Font ? `
+    @font-face {
+      font-family: 'IndoPak';
+      src: url('${options.base64Font}') format('woff2');
+      font-weight: 400;
+      font-style: normal;
+    }
+    ` : ""}
+    @media print { 
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; } 
+    }
+    ${options?.landscape ? "@page { size: A4 landscape; margin: 0; }" : ""}
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      ${options?.landscape ? "background: white !important; display: flex; justify-content: center; align-items: center; min-height: 100vh;" : ""}
+    }
+    img { max-width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+  ${bodyContent}
+  <script>
+    ${PROCESS_IMAGE_SCRIPT}
+  </script>
+</body>
+</html>
+  `;
 }

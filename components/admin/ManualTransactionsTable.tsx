@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { formatPrice } from "@/lib/courses";
-import { incomePaymentTypeLabel } from "@/lib/monthly-payment-status";
+import { formatPrice } from "@/services/courses";
+import { incomePaymentTypeLabel } from "@/services/monthly-payment-status";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteManualPaymentRecord } from "@/app/admin/payments/actions";

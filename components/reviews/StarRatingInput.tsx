@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { REVIEW_RATING_MAX } from "@/lib/review-rating";
-import { labelClassName } from "@/lib/form";
+import { REVIEW_RATING_MAX } from "@/services/review-rating";
+import { labelClassName } from "@/utils/form";
 
 type StarRatingInputProps = {
   name?: string;

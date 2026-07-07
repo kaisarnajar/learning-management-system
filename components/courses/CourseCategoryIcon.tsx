@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { getFlaticonCourseIcon } from "@/lib/flaticon-course-icons";
+import { getFlaticonCourseIcon } from "@/utils/flaticon-course-icons";
 
 type CourseCategoryIconProps = {
   category: string;

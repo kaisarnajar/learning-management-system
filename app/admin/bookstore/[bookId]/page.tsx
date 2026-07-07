@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { getBookById } from "@/lib/bookstore";
+import { getBookById } from "@/services/bookstore";
 import { deleteBookFromProfile } from "@/app/admin/bookstore/actions";
 
 function formatPrice(paise: number): string {

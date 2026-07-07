@@ -1,5 +1,5 @@
-import { requireAdmin } from "@/lib/auth-actions";
-import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/services/auth-actions";
+import { prisma } from "@/utils/prisma";
 import { GenerateCertificateForm } from "@/components/admin/certificates/GenerateCertificateForm";
 import Link from "next/link";
 

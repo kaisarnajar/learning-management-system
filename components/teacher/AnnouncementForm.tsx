@@ -7,11 +7,11 @@ import { useCallback, useRef, useState } from "react";
 import {
   type CourseAnnouncementFormValues,
   validateCourseAnnouncementForm,
-} from "@/lib/admin-form-validation";
-import { ANNOUNCEMENT_CATEGORIES, announcementCategoryLabels } from "@/lib/announcements";
-import { labelClassName } from "@/lib/form";
-import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
-import { useZodForm } from "@/lib/use-zod-form";
+} from "@/services/admin-form-validation";
+import { ANNOUNCEMENT_CATEGORIES, announcementCategoryLabels } from "@/services/announcements";
+import { labelClassName } from "@/utils/form";
+import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
+import { useZodForm } from "@/utils/use-zod-form";
 
 type AnnouncementFormProps = {
   action: (formData: FormData) => Promise<void>;

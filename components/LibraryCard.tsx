@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { LibraryItem } from "@/lib/library";
+import type { LibraryItem } from "@/services/library";
 
 type LibraryCardProps = {
   item: LibraryItem & { imagePath?: string | null };

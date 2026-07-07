@@ -2,21 +2,21 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
-import { sendPaymentDeclinedEmail } from "@/lib/email";
-import { AWAITING_ENROLLMENT_FEE } from "@/lib/enrollment-status";
-import { getRosterEnrollmentStatusForCourse } from "@/lib/enrollments";
+import { requireAdmin } from "@/services/auth-actions";
+import { sendPaymentDeclinedEmail } from "@/services/email";
+import { AWAITING_ENROLLMENT_FEE } from "@/services/enrollment-status";
+import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
 import {
   MONTHLY_PAYMENT_APPROVED,
   MONTHLY_PAYMENT_DECLINED,
   MONTHLY_PAYMENT_PENDING,
   PAYMENT_TYPE_ENROLLMENT,
-} from "@/lib/monthly-payment-status";
-import { prisma } from "@/lib/prisma";
-import { getCourseById } from "@/lib/courses";
-import { notifyPaymentApproved, revalidateNotificationPaths } from "@/lib/notifications";
-import { withDbErrorHandling } from "@/lib/db-error";
-import { getAppBaseUrl } from "@/lib/password-reset";
+} from "@/services/monthly-payment-status";
+import { prisma } from "@/utils/prisma";
+import { getCourseById } from "@/services/courses";
+import { notifyPaymentApproved, revalidateNotificationPaths } from "@/services/notifications";
+import { withDbErrorHandling } from "@/utils/db-error";
+import { getAppBaseUrl } from "@/services/password-reset";
 
 function revalidatePaymentPaths(userId: string, courseId?: string | null) {
   const paths = [
@@ -128,7 +128,7 @@ export async function confirmMonthlyPayment(
         select: { id: true },
       });
       if (enrollment) {
-        const { assignRollNumber } = await import("@/lib/roll-numbers");
+        const { assignRollNumber } = await import("@/services/roll-numbers");
         await assignRollNumber(enrollment.id, submission.courseId);
       }
     }

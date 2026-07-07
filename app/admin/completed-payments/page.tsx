@@ -6,19 +6,19 @@ import { FinanceExpenseTable } from "@/components/admin/FinanceExpenseTable";
 import { BookOrdersTable } from "@/components/admin/BookOrdersTable";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { getAllCourses } from "@/lib/courses";
+import { getAllCourses } from "@/services/courses";
 import {
   getApprovedEnrollmentFeePaymentsPaginated,
   getApprovedMonthlyPaymentsPaginated,
-} from "@/lib/monthly-payments";
-import { getIncomeRecordsPaginated } from "@/lib/finance-income";
-import { getExpensesPaginated } from "@/lib/finance-expenses";
-import { parseFinanceFilters } from "@/lib/finance-filters";
-import { getApprovedBookPaymentsPaginated } from "@/lib/bookstore";
-import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+} from "@/services/monthly-payments";
+import { getIncomeRecordsPaginated } from "@/services/finance-income";
+import { getExpensesPaginated } from "@/services/finance-expenses";
+import { parseFinanceFilters } from "@/services/finance-filters";
+import { getApprovedBookPaymentsPaginated } from "@/services/bookstore";
+import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
-import type { FinanceSearchParams } from "@/lib/finance-filters";
+import type { FinanceSearchParams } from "@/services/finance-filters";
 
 export const metadata: Metadata = {
   title: "Completed Payments — Admin",

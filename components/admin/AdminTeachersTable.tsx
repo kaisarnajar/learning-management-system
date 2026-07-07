@@ -4,7 +4,7 @@ import { deleteTeacher } from "@/app/admin/teachers/actions";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { type Teacher } from "@prisma/client";
 
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 
 export function AdminTeachersTable({ teachers }: { teachers: Teacher[] }) {
   return (

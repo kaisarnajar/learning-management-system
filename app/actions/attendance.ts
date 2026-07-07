@@ -1,12 +1,12 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { isAdminSession } from "@/lib/admin";
-import { getTeacherForSession } from "@/lib/teacher-auth";
+import { prisma } from "@/utils/prisma";
+import { auth } from "@/services/auth";
+import { isAdminSession } from "@/services/admin";
+import { getTeacherForSession } from "@/services/teacher-auth";
 import { revalidatePath } from "next/cache";
-import { generateAttendanceCardPdf } from "@/lib/attendance-card-html";
-import { sendAttendanceCardEmail } from "@/lib/email";
+import { generateAttendanceCardPdf } from "@/utils/attendance-card-html";
+import { sendAttendanceCardEmail } from "@/services/email";
 import {
   type AttendanceRecordInput,
   getCourseAttendanceDatesFromDb,
@@ -16,7 +16,7 @@ import {
   getStudentAttendanceRecordsFromDb,
   deleteCourseAttendanceFromDb,
   getStudentAttendanceReportFromDb
-} from "@/lib/attendance";
+} from "@/services/attendance";
 
 /** Helper to authorize Admin or the assigned Teacher of the course */
 async function authorizeCourseAttendanceManagement(courseId: string) {

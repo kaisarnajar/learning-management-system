@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { Section } from "@/components/site/Section";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
 import { AddToCartButton } from "@/components/bookstore/AddToCartButton";
-import { getBookById } from "@/lib/bookstore";
+import { getBookById } from "@/services/bookstore";
 
 type BookPageProps = {
   params: Promise<{ bookId: string }>;

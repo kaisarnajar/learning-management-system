@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { ADMIN_NAV_GROUPS, ADMIN_NAV_LINKS } from "@/lib/admin-nav";
+import { ADMIN_NAV_GROUPS, ADMIN_NAV_LINKS } from "@/services/admin-nav";
 import { BRAND_CONFIG } from "@/config/brand";
 
 const DEVELOPER_NAV_GROUPS = ADMIN_NAV_GROUPS;

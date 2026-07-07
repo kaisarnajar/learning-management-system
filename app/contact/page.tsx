@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { BRAND_CONFIG } from "@/config/brand";
 import { ContactForm } from "@/components/contact/ContactForm";
-import { auth } from "@/lib/auth";
+import { auth } from "@/services/auth";
 import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });

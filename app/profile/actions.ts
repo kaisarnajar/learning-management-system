@@ -2,14 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth-actions";
-import { buildStoredProfileWhatsApp } from "@/lib/countries";
-import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/services/auth-actions";
+import { buildStoredProfileWhatsApp } from "@/services/countries";
+import { prisma } from "@/utils/prisma";
 import { Occupation } from "@prisma/client";
-import { profileUpdateSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
-import { saveProfileImage, validateProfileImage, deleteProfileImage } from "@/lib/profile-upload";
-import { getUserProfile } from "@/lib/profile";
+import { profileUpdateSchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
+import { saveProfileImage, validateProfileImage, deleteProfileImage } from "@/services/profile-upload";
+import { getUserProfile } from "@/services/profile";
 
 export type ProfileUpdateState = {
   error?: string;
@@ -87,7 +87,7 @@ export async function updateProfile(
   );
 
   if (isNowComplete && !currentProfile?.registrationNumber) {
-    const { generateNextRegistrationNumber } = await import("@/lib/registration");
+    const { generateNextRegistrationNumber } = await import("@/services/registration");
     // Registration year is when the user account was created
     const registrationYear = currentProfile?.createdAt?.getFullYear() ?? new Date().getFullYear();
     updateData.registrationNumber = await generateNextRegistrationNumber(registrationYear);

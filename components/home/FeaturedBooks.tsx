@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BookCard } from "@/components/bookstore/BookCard";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
-import { getFeaturedHomepageBooks } from "@/lib/bookstore";
+import { getFeaturedHomepageBooks } from "@/services/bookstore";
 
 export async function FeaturedBooks() {
   const books = await getFeaturedHomepageBooks();

@@ -1,14 +1,14 @@
 import Link from "next/link";
 
 import { Pagination } from "@/components/shared/Pagination";
-import { formatPrice, getAllCourses } from "@/lib/courses";
-import { requireUser } from "@/lib/auth-actions";
+import { formatPrice, getAllCourses } from "@/services/courses";
+import { requireUser } from "@/services/auth-actions";
 import {
   monthlyPaymentStatusClass,
   monthlyPaymentStatusLabel,
-} from "@/lib/monthly-payment-status";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { getPaymentRecordsForUserPaginated, getPaymentSubmissionsForUser } from "@/lib/payments";
+} from "@/services/monthly-payment-status";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { getPaymentRecordsForUserPaginated, getPaymentSubmissionsForUser } from "@/services/payments";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { Suspense } from "react";
 

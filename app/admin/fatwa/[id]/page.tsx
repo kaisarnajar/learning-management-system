@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { AnswerFatwaForm } from "@/components/admin/AnswerFatwaForm";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { answerFatwaQuestion, deleteFatwaQuestionForm, rejectFatwaQuestion } from "@/app/admin/fatwa/actions";
-import { getFeaturedHomepageFatwaCount, getFatwaQuestionById } from "@/lib/fatwa";
+import { getFeaturedHomepageFatwaCount, getFatwaQuestionById } from "@/services/fatwa";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { isAdminSession } from "@/lib/admin";
-import { getCourseById } from "@/lib/courses";
-import { getCertificateFilename, generateCertificatePdf } from "@/lib/certificate";
-import { prisma } from "@/lib/prisma";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { auth } from "@/services/auth";
+import { isAdminSession } from "@/services/admin";
+import { getCourseById } from "@/services/courses";
+import { getCertificateFilename, generateCertificatePdf } from "@/services/certificate";
+import { prisma } from "@/utils/prisma";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 export async function GET(
   request: Request,

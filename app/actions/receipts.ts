@@ -1,17 +1,17 @@
 "use server";
 
-import { auth } from "@/lib/auth";
+import { auth } from "@/services/auth";
 import { BRAND_CONFIG } from "@/config/brand";
 import { revalidatePath } from "next/cache";
 
 import { PAYMENTS } from "@/config/constants/payments";
-import { isAdminSession } from "@/lib/admin";
-import { prisma } from "@/lib/prisma";
-import { sendReceiptEmail } from "@/lib/email";
-import { generatePdfFromHtml } from "@/lib/pdf-generator";
-import { renderReceiptToHtml } from "@/lib/receipt-html";
-import { prepareReceiptData } from "@/lib/payment-receipt";
-import { getCourseById } from "@/lib/courses";
+import { isAdminSession } from "@/services/admin";
+import { prisma } from "@/utils/prisma";
+import { sendReceiptEmail } from "@/services/email";
+import { generatePdfFromHtml } from "@/services/pdf-generator";
+import { renderReceiptToHtml } from "@/utils/receipt-html";
+import { prepareReceiptData } from "@/services/payment-receipt";
+import { getCourseById } from "@/services/courses";
 import crypto from "crypto";
 
 export async function generateReceipt(paymentRecordId: string, includeGst: boolean) {

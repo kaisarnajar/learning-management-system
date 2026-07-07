@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth-actions";
+import { requireAdmin } from "@/services/auth-actions";
 import { getAttendanceRecordsForDate } from "@/app/actions/attendance";
 import { AttendanceView } from "@/components/attendance/AttendanceView";
 import { notFound } from "next/navigation";

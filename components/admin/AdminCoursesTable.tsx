@@ -2,11 +2,11 @@ import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteCourse } from "@/app/admin/courses/actions";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
-import { getCoursePricingFromCourse } from "@/lib/course-pricing";
-import { getFeeFrequencyLabel } from "@/lib/fee-frequency";
-import type { CourseWithTeacher } from "@/lib/courses";
+import { getCoursePricingFromCourse } from "@/services/course-pricing";
+import { getFeeFrequencyLabel } from "@/services/fee-frequency";
+import type { CourseWithTeacher } from "@/services/courses";
 
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 
 export function AdminCoursesTable({
   courses,

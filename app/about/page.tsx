@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ACADEMY_LOCATION, getAcademyLocationEmbedUrl } from "@/lib/academy-location";
-import { formatWhatsAppForDisplay, getSocialLinksSettings } from "@/lib/social-links";
+import { ACADEMY_LOCATION, getAcademyLocationEmbedUrl } from "@/services/academy-location";
+import { formatWhatsAppForDisplay, getSocialLinksSettings } from "@/services/social-links";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { Source_Serif_4 } from "next/font/google";
-import { indoPakArabic } from "@/lib/fonts/indo-pak-arabic";
+import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 

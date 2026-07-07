@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { generateVerificationToken } from "@/lib/tokens";
-import { sendVerificationEmail } from "@/lib/email";
+import { auth } from "@/services/auth";
+import { prisma } from "@/utils/prisma";
+import { generateVerificationToken } from "@/services/tokens";
+import { sendVerificationEmail } from "@/services/email";
 
 export async function POST(request: Request) {
   try {

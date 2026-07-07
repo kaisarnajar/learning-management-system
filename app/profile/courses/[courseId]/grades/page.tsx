@@ -1,8 +1,8 @@
-import { requireUser } from "@/lib/auth-actions";
+import { requireUser } from "@/services/auth-actions";
 import { getStudentGradeRecords } from "@/app/actions/grades";
 import { StudentGradeReport } from "@/components/grades/StudentGradeReport";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { auth } from "@/services/auth";
+import { prisma } from "@/utils/prisma";
 
 export default async function StudentCourseGradePage({
   params,

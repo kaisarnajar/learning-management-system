@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
-import { PAYMENT_SETTINGS_ID } from "@/lib/payment-settings";
-import { prisma } from "@/lib/prisma";
-import { paymentSettingsSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { requireAdmin } from "@/services/auth-actions";
+import { PAYMENT_SETTINGS_ID } from "@/services/payment-settings";
+import { prisma } from "@/utils/prisma";
+import { paymentSettingsSchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 function revalidatePaymentSettingsPaths() {
   const paths = [

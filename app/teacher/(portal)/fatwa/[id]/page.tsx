@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireTeacher } from "@/lib/auth-actions";
-import { getFatwaQuestionById } from "@/lib/fatwa";
+import { requireTeacher } from "@/services/auth-actions";
+import { getFatwaQuestionById } from "@/services/fatwa";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { submitTeacherFatwaAnswer } from "@/app/teacher/(portal)/fatwa/actions";
 import { AnswerTeacherFatwaForm } from "@/components/teacher/AnswerTeacherFatwaForm";

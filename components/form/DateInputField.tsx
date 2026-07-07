@@ -1,5 +1,5 @@
-import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
-import { labelClassName } from "@/lib/form";
+import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
+import { labelClassName } from "@/utils/form";
 
 type DateInputFieldProps = {
   id: string;

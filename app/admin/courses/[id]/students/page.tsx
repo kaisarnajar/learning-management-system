@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/utils/form";
 
 
 
@@ -9,11 +9,11 @@ import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { Pagination } from "@/components/shared/Pagination";
 import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
-import { getCourseById } from "@/lib/courses";
-import { getCourseRosterEnrollmentsPaginated } from "@/lib/enrollments";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { formatRollNumber } from "@/lib/roll-numbers";
-import { parseSearchQuery } from "@/lib/text-search";
+import { getCourseById } from "@/services/courses";
+import { getCourseRosterEnrollmentsPaginated } from "@/services/enrollments";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { formatRollNumber } from "@/services/roll-numbers";
+import { parseSearchQuery } from "@/utils/text-search";
 
 export default async function CourseStudentsPage({
   params,

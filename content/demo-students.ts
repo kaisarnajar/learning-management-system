@@ -1,4 +1,4 @@
-import type { OccupationValue } from "../lib/occupations";
+import type { OccupationValue } from '../services/occupations';
 import { courses } from "./courses";
 
 /** Shared password for all demo student accounts (local / QA only). */

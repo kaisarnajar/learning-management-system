@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth-actions";
-import { prisma } from "@/lib/prisma";
-import { slabSchema } from "@/lib/validations";
+import { requireAdmin } from "@/services/auth-actions";
+import { prisma } from "@/utils/prisma";
+import { slabSchema } from "@/utils/validations";
 
 export async function createShippingSlab(formData: FormData) {
   await requireAdmin();

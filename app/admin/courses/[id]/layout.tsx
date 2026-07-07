@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AdminCourseNav } from "@/components/admin/AdminCourseNav";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
-import { requireAdmin } from "@/lib/auth-actions";
-import { getCourseById } from "@/lib/courses";
+import { requireAdmin } from "@/services/auth-actions";
+import { getCourseById } from "@/services/courses";
 
 export default async function AdminCourseLayout({
   children,

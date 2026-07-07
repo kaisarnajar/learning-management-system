@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookForm } from "@/components/admin/BookForm";
 import { updateBook } from "@/app/admin/bookstore/actions";
-import { getBookById, getFeaturedHomepageBookCount } from "@/lib/bookstore";
+import { getBookById, getFeaturedHomepageBookCount } from "@/services/bookstore";
 
 export const metadata: Metadata = {
   title: "Edit Book — Admin",

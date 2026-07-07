@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
-import { prisma } from "@/lib/prisma";
-import { dailyInspirationSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { requireAdmin } from "@/services/auth-actions";
+import { prisma } from "@/utils/prisma";
+import { dailyInspirationSchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 function adminListPath(suffix = "") {
   return `/admin/daily-inspiration${suffix}`;

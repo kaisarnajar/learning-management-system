@@ -1,4 +1,4 @@
-import { requireTeacher } from "@/lib/auth-actions";
+import { requireTeacher } from "@/services/auth-actions";
 import { getAttendanceRecordsForDate } from "@/app/actions/attendance";
 import { AttendanceView } from "@/components/attendance/AttendanceView";
 import { notFound } from "next/navigation";

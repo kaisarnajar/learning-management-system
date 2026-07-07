@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getGeneratedReceiptsPaginated } from "@/lib/receipts-admin";
+import { getGeneratedReceiptsPaginated } from "@/services/receipts-admin";
 import { AdminReceiptsTable } from "@/components/admin/receipts/AdminReceiptsTable";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";

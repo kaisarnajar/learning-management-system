@@ -4,9 +4,9 @@ import { updateTeacherBlogPost } from "@/app/teacher/(portal)/blogs/actions";
 import { BlogPostForm } from "@/components/admin/BlogPostForm";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteTeacherBlogPost } from "@/app/teacher/(portal)/blogs/actions";
-import { requireTeacher } from "@/lib/auth-actions";
-import { canTeacherEditBlogPost } from "@/lib/blog-approval";
-import { getBlogPostForTeacher } from "@/lib/blogs";
+import { requireTeacher } from "@/services/auth-actions";
+import { canTeacherEditBlogPost } from "@/services/blog-approval";
+import { getBlogPostForTeacher } from "@/services/blogs";
 
 export default async function EditTeacherBlogPage({
   params,

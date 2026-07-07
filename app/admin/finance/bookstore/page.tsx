@@ -8,13 +8,13 @@ import { Pagination } from "@/components/shared/Pagination";
 import {
   parseFinanceFilters,
   type FinanceSearchParams,
-} from "@/lib/finance-filters";
+} from "@/services/finance-filters";
 import {
   getBookstoreFinanceSummary,
   getBookSalesPaginated,
   getBookOrderFinancePaginated,
-} from "@/lib/finance-bookstore";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
+} from "@/services/finance-bookstore";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import Link from "next/link";
 
 export default async function AdminBookstoreFinancePage({

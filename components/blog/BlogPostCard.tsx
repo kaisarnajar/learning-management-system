@@ -1,5 +1,5 @@
-import type { BlogPostWithImages } from "@/lib/blogs";
-import { formatBlogAuthorName, formatBlogDate } from "@/lib/blogs";
+import type { BlogPostWithImages } from "@/services/blogs";
+import { formatBlogAuthorName, formatBlogDate } from "@/services/blogs";
 import Image from "next/image";
 import Link from "next/link";
 

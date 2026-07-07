@@ -4,7 +4,7 @@ import { CoursePricingDisplay } from "@/components/courses/CoursePricingDisplay"
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
 import { CourseTeacherInfo } from "@/components/courses/CourseTeacherInfo";
 import { CourseThumbnail } from "@/components/courses/CourseThumbnail";
-import type { CourseWithTeacher } from "@/lib/courses";
+import type { CourseWithTeacher } from "@/services/courses";
 
 type FeaturedCoursesProps = {
   courses: CourseWithTeacher[];

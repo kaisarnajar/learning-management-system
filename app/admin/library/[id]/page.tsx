@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { deleteLibraryItemAction } from "@/app/admin/library/actions";
-import { getLibraryItemById } from "@/lib/library";
+import { getLibraryItemById } from "@/services/library";
 
 export default async function AdminLibraryDetailPage({
   params,

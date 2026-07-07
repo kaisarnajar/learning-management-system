@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { requireAdmin } from "@/lib/auth-actions";
-import { prisma } from "@/lib/prisma";
+import { requireAdmin } from "@/services/auth-actions";
+import { prisma } from "@/utils/prisma";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteShippingSlab } from "./actions";
 import { ShippingSlabForm } from "@/components/admin/ShippingSlabForm";

@@ -2,15 +2,15 @@ import Link from "next/link";
 import { PaymentApprovalsTable } from "@/components/admin/PaymentApprovalsTable";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { getAllCourses } from "@/lib/courses";
+import { getAllCourses } from "@/services/courses";
 import {
   getPendingEnrollmentFeePaymentsPaginated,
   getPendingMonthlyPaymentsPaginated,
-} from "@/lib/monthly-payments";
-import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+} from "@/services/monthly-payments";
+import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
-import type { FinanceSearchParams } from "@/lib/finance-filters";
+import type { FinanceSearchParams } from "@/services/finance-filters";
 
 
 type TabType = "enrollment_pending" | "monthly_pending";

@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth-actions";
+import { requireUser } from "@/services/auth-actions";
 import { getStudentAttendanceRecords } from "@/app/actions/attendance";
 
 export default async function StudentCourseAttendancePage({

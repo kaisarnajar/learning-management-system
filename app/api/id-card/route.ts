@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { withDbErrorHandling } from "@/lib/db-error";
-import { generateIdCardPdf } from "@/lib/id-card-html";
-import { isAdminSession } from "@/lib/admin";
+import { auth } from "@/services/auth";
+import { prisma } from "@/utils/prisma";
+import { withDbErrorHandling } from "@/utils/db-error";
+import { generateIdCardPdf } from "@/utils/id-card-html";
+import { isAdminSession } from "@/services/admin";
 
 export const dynamic = "force-dynamic";
 

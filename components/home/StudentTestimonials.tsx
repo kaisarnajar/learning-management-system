@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { Session } from "next-auth";
 import { StarRating } from "@/components/reviews/StarRating";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
-import { auth } from "@/lib/auth";
-import type { HomepageReview } from "@/lib/student-reviews";
-import { getFeaturedHomepageReviews } from "@/lib/student-reviews";
+import { auth } from "@/services/auth";
+import type { HomepageReview } from "@/services/student-reviews";
+import { getFeaturedHomepageReviews } from "@/services/student-reviews";
 
 function getWriteReviewHref(session: Session | null) {
   if (session?.user?.id && session.user.role !== "TEACHER") {

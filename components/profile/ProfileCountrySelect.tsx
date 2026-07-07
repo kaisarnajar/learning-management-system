@@ -6,8 +6,8 @@ import {
   PROFILE_COUNTRIES,
   getProfileCountryOrDefault,
   type ProfileCountryCode,
-} from "@/lib/countries";
-import { inputClassName } from "@/lib/form";
+} from "@/services/countries";
+import { inputClassName } from "@/utils/form";
 
 type ProfileCountrySelectProps = {
   id: string;

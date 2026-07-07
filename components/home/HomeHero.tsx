@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { indoPakArabic } from "@/lib/fonts/indo-pak-arabic";
+import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
 import { Source_Serif_4 } from "next/font/google";
 import { BRAND_CONFIG } from "@/config/brand";
 

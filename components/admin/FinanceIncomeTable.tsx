@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { formatPrice } from "@/lib/courses";
-import { incomePaymentTypeLabel } from "@/lib/monthly-payment-status";
+import { formatPrice } from "@/services/courses";
+import { incomePaymentTypeLabel } from "@/services/monthly-payment-status";
 
 type IncomeRecord = {
   id: string;

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { LibraryForm } from "@/components/admin/LibraryForm";
 import { deleteLibraryItemAction, updateLibraryItem } from "@/app/admin/library/actions";
-import { getFeaturedHomepageLibraryCount, getLibraryItemById } from "@/lib/library";
+import { getFeaturedHomepageLibraryCount, getLibraryItemById } from "@/services/library";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

@@ -1,17 +1,17 @@
 import Link from "next/link";
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
 import { Pagination } from "@/components/shared/Pagination";
-import { requireUser } from "@/lib/auth-actions";
+import { requireUser } from "@/services/auth-actions";
 import { Suspense } from "react";
 
 import {
   AWAITING_ENROLLMENT_FEE,
   PENDING_ENROLLMENT_APPROVAL,
-} from "@/lib/enrollment-status";
-import { enrollmentStatusLabel, getUserEnrollmentsPaginated } from "@/lib/enrollments";
-import { getPendingEnrollmentFeeSubmissionMap } from "@/lib/monthly-payments";
-import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { formatRollNumber } from "@/lib/roll-numbers";
+} from "@/services/enrollment-status";
+import { enrollmentStatusLabel, getUserEnrollmentsPaginated } from "@/services/enrollments";
+import { getPendingEnrollmentFeeSubmissionMap } from "@/services/monthly-payments";
+import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { formatRollNumber } from "@/services/roll-numbers";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
@@ -35,7 +35,7 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
   const page = clampPage(requestedPage, totalCount, pageSize);
 
   const courseIds = [...new Set(enrollments.map((e) => e.courseId))];
-  const courseMap = await import("@/lib/courses").then((m) => m.getCoursesByIds(courseIds));
+  const courseMap = await import("@/services/courses").then((m) => m.getCoursesByIds(courseIds));
 
   const enrollmentRows = enrollments.map((enrollment) => ({
     enrollment,

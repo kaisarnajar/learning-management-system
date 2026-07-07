@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { getAllTeachersPaginated } from "@/lib/teachers";
-import { parseSearchQuery } from "@/lib/text-search";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { getAllTeachersPaginated } from "@/services/teachers";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { AdminTeachersTable } from "@/components/admin/AdminTeachersTable";
 

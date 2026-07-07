@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 
-import { getBlogPostForAdmin } from "@/lib/blogs";
+import { getBlogPostForAdmin } from "@/services/blogs";
 import { BlogApprovalActions } from "@/components/admin/BlogApprovalActions";
 import Image from "next/image";
 

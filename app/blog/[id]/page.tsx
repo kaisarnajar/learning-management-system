@@ -3,9 +3,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Section } from "@/components/site/Section";
-import { formatBlogDate, getPublishedBlogPostById } from "@/lib/blogs";
-import { auth } from "@/lib/auth";
-import { isAdminSession } from "@/lib/admin";
+import { formatBlogDate, getPublishedBlogPostById } from "@/services/blogs";
+import { auth } from "@/services/auth";
+import { isAdminSession } from "@/services/admin";
 import { BlogEngagement } from "./BlogEngagement";
 
 type PageProps = {

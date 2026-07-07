@@ -4,9 +4,9 @@
 import { BlogApprovalTable } from "@/components/admin/BlogApprovalTable";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { getPendingBlogPostsForAdminPaginated } from "@/lib/blog-approval";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+import { getPendingBlogPostsForAdminPaginated } from "@/services/blog-approval";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CourseForm } from "@/components/admin/CourseForm";
 import { updateCourse } from "@/app/admin/courses/actions";
-import { getCourseById, getFeaturedHomepageCourseCount } from "@/lib/courses";
-import { getAllTeachers } from "@/lib/teachers";
+import { getCourseById, getFeaturedHomepageCourseCount } from "@/services/courses";
+import { getAllTeachers } from "@/services/teachers";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

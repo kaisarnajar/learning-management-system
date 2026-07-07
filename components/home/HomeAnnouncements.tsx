@@ -5,7 +5,7 @@ import { BRAND_CONFIG } from "@/config/brand";
 import {
   getHomepageSiteAnnouncements,
   HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX,
-} from "@/lib/site-announcements";
+} from "@/services/site-announcements";
 
 export async function HomeAnnouncements() {
   const announcements = await getHomepageSiteAnnouncements(HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX);

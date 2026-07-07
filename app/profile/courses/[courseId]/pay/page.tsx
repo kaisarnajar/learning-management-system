@@ -2,13 +2,13 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { MonthlyPaymentForm } from "@/components/payment/MonthlyPaymentForm";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
-import { requireUser } from "@/lib/auth-actions";
-import { getMonthlyFeePaise } from "@/lib/course-pricing";
-import { formatPrice, getCourseById } from "@/lib/courses";
-import { prisma } from "@/lib/prisma";
-import { isUpiConfigured } from "@/lib/upi";
-import { withDbErrorHandling } from "@/lib/db-error";
-import { getFeeFrequencyLabel, getFeeFrequencySuffix } from "@/lib/fee-frequency";
+import { requireUser } from "@/services/auth-actions";
+import { getMonthlyFeePaise } from "@/services/course-pricing";
+import { formatPrice, getCourseById } from "@/services/courses";
+import { prisma } from "@/utils/prisma";
+import { isUpiConfigured } from "@/services/upi";
+import { withDbErrorHandling } from "@/utils/db-error";
+import { getFeeFrequencyLabel, getFeeFrequencySuffix } from "@/services/fee-frequency";
 
 export default async function PayFeePage({
   params,

@@ -8,12 +8,12 @@ import { signIn } from "next-auth/react";
 import { useCallback, useState } from "react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
-import { authContinueUrl, getPostLoginPath } from "@/lib/auth-redirect";
-import { useZodForm } from "@/lib/use-zod-form";
+import { authContinueUrl, getPostLoginPath } from "@/services/auth-redirect";
+import { useZodForm } from "@/utils/use-zod-form";
 import { z } from "zod";
-import { zodResultToFormValidation } from "@/lib/form-validation";
-import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
-import { labelClassName } from "@/lib/form";
+import { zodResultToFormValidation } from "@/utils/form-validation";
+import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
+import { labelClassName } from "@/utils/form";
 
 const loginSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),

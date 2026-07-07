@@ -4,12 +4,12 @@ import { deleteSiteAnnouncement } from "@/app/admin/announcements/actions";
 import { ToggleHomepageAnnouncementButton } from "@/components/admin/ToggleHomepageAnnouncementButton";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import {
   getAllSiteAnnouncementsForAdminPaginated,
   HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX,
-} from "@/lib/site-announcements";
-import { parseSearchQuery } from "@/lib/text-search";
+} from "@/services/site-announcements";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
@@ -32,7 +32,7 @@ function statusBadge(published: boolean, showOnHomepage: boolean) {
   return { label: "Published", className: "bg-success-bg text-success-text" };
 }
 
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 
 async function AdminAnnouncementsList({ params, q }: { params: PageParams; q?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params);

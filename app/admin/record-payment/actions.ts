@@ -1,13 +1,13 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth-actions";
-import { getCourseById } from "@/lib/courses";
-import { rupeesToPaise } from "@/lib/form";
-import { notifyPaymentApproved } from "@/lib/notifications";
-import { prisma } from "@/lib/prisma";
-import { paymentRecordSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { requireAdmin } from "@/services/auth-actions";
+import { getCourseById } from "@/services/courses";
+import { rupeesToPaise } from "@/utils/form";
+import { notifyPaymentApproved } from "@/services/notifications";
+import { prisma } from "@/utils/prisma";
+import { paymentRecordSchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
 import { redirect } from "next/navigation";
 import { previewStudentAccountForEnrollment } from "@/app/admin/enrollments/actions";
 

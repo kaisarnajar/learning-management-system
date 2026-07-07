@@ -2,17 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
-import { syncEnrollmentsWithCourseStatus } from "@/lib/completion";
-import { resolveCourseFeaturedUpdate } from "@/lib/courses";
-import { prisma } from "@/lib/prisma";
-import { getDefaultFeesForLevel } from "@/lib/course-pricing";
-import { uniqueSlug } from "@/lib/slug";
-import { getCourseStartDateFromForm } from "@/lib/course-start-date";
-import { courseSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { requireAdmin } from "@/services/auth-actions";
+import { syncEnrollmentsWithCourseStatus } from "@/services/completion";
+import { resolveCourseFeaturedUpdate } from "@/services/courses";
+import { prisma } from "@/utils/prisma";
+import { getDefaultFeesForLevel } from "@/services/course-pricing";
+import { uniqueSlug } from "@/utils/slug";
+import { getCourseStartDateFromForm } from "@/services/course-start-date";
+import { courseSchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
 
-import { executeServerAction } from "@/lib/action-utils";
+import { executeServerAction } from "@/utils/action-utils";
 
 function parseCourseForm(formData: FormData) {
   const level = String(formData.get("level") ?? "Beginner");

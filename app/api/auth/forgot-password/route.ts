@@ -1,8 +1,8 @@
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { NextResponse } from "next/server";
-import { sendPasswordResetEmail } from "@/lib/email";
-import { buildPasswordResetUrl, createPasswordResetToken } from "@/lib/password-reset";
-import { forgotPasswordSchema } from "@/lib/validations";
+import { sendPasswordResetEmail } from "@/services/email";
+import { buildPasswordResetUrl, createPasswordResetToken } from "@/services/password-reset";
+import { forgotPasswordSchema } from "@/utils/validations";
 
 const GENERIC_SUCCESS =
   "If an account with that email exists and uses a password, we sent reset instructions. Please check your Inbox. If you don't see it, check your Spam/Junk folder as well.";

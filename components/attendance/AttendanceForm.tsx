@@ -4,8 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { saveCourseAttendance } from "@/app/actions/attendance";
-import type { AttendanceRecordInput } from "@/lib/attendance";
-import { inputClassName, labelClassName } from "@/lib/form";
+import type { AttendanceRecordInput } from "@/services/attendance";
+import { inputClassName, labelClassName } from "@/utils/form";
 
 export type StudentForAttendance = {
   id: string;

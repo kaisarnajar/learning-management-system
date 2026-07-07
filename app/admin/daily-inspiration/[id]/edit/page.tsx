@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { updateDailyInspiration } from "@/app/admin/daily-inspiration/actions";
 import { DailyInspirationForm } from "@/components/admin/DailyInspirationForm";
-import { getDailyInspirationForAdmin } from "@/lib/daily-inspiration";
+import { getDailyInspirationForAdmin } from "@/services/daily-inspiration";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

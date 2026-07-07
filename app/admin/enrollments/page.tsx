@@ -3,14 +3,14 @@ import { AdminEnrollUserForm } from "@/components/admin/AdminEnrollUserForm";
 import { EnrollmentRequestsTable } from "@/components/admin/EnrollmentRequestsTable";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { isCourseEnrollmentOpen } from "@/lib/course-status";
-import { getAllCourses } from "@/lib/courses";
+import { isCourseEnrollmentOpen } from "@/services/course-status";
+import { getAllCourses } from "@/services/courses";
 import {
   getAwaitingEnrollmentFeeEnrollmentsPaginated,
   getPendingFreeEnrollmentApprovalsPaginated,
-} from "@/lib/enrollments";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+} from "@/services/enrollments";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 type TabType = "free_requests" | "paid_awaiting";

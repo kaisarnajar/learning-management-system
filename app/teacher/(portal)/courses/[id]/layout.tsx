@@ -3,8 +3,8 @@ import { notFound } from "next/navigation";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
 import { TeacherCourseNav } from "@/components/teacher/TeacherCourseNav";
-import { requireTeacher } from "@/lib/auth-actions";
-import { getTeacherCourseForPortal } from "@/lib/teacher-portal";
+import { requireTeacher } from "@/services/auth-actions";
+import { getTeacherCourseForPortal } from "@/services/teacher-portal";
 
 export default async function TeacherCourseLayout({
   children,

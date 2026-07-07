@@ -6,15 +6,15 @@ import { CoursePricingDisplay } from "@/components/courses/CoursePricingDisplay"
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
 import { CourseTeacherInfo } from "@/components/courses/CourseTeacherInfo";
 import { Section } from "@/components/site/Section";
-import { auth } from "@/lib/auth";
+import { auth } from "@/services/auth";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { CourseThumbnail } from "@/components/courses/CourseThumbnail";
 import { CourseShareButton } from "@/components/courses/CourseShareButton";
-import { getCourseLevelClass } from "@/lib/course-display";
-import { getPublicCourseById } from "@/lib/courses";
-import { getUserCourseEnrollmentMap } from "@/lib/enrollments";
-import { hasPendingEnrollmentFeeSubmission } from "@/lib/monthly-payments";
-import { isUserProfileComplete } from "@/lib/profile";
+import { getCourseLevelClass } from "@/services/course-display";
+import { getPublicCourseById } from "@/services/courses";
+import { getUserCourseEnrollmentMap } from "@/services/enrollments";
+import { hasPendingEnrollmentFeeSubmission } from "@/services/monthly-payments";
+import { isUserProfileComplete } from "@/services/profile";
 
 type CoursePageProps = {
   params: Promise<{ id: string }>;

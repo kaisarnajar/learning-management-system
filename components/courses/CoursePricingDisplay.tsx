@@ -2,8 +2,8 @@ import {
   formatEnrollmentFeeLabel,
   getCoursePricingFromCourse,
   type CourseFeeSource,
-} from "@/lib/course-pricing";
-import { getFeeFrequencyLabel, getFeeFrequencySuffix } from "@/lib/fee-frequency";
+} from "@/services/course-pricing";
+import { getFeeFrequencyLabel, getFeeFrequencySuffix } from "@/services/fee-frequency";
 
 type CourseFeeSourceWithFreq = CourseFeeSource & {
   feeFrequency?: string | null;

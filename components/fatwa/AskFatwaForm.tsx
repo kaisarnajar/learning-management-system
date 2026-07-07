@@ -4,14 +4,14 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import { useCallback, useEffect, useActionState, useRef, useState } from "react";
 import { useToast } from "@/components/shared/ToastProvider";
 import { submitFatwaQuestion, type SubmitFatwaState } from "@/app/fatwa/actions";
-import { getFatwaCategoryOptions } from "@/lib/fatwa";
-import { labelClassName } from "@/lib/form";
-import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
+import { getFatwaCategoryOptions } from "@/services/fatwa";
+import { labelClassName } from "@/utils/form";
+import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
 import {
   type AskFatwaFormValues,
   validateAskFatwaForm,
-} from "@/lib/profile-form-validation";
-import { useZodForm } from "@/lib/use-zod-form";
+} from "@/services/profile-form-validation";
+import { useZodForm } from "@/utils/use-zod-form";
 
 
 type AskFatwaFormProps = {

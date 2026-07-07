@@ -3,9 +3,9 @@ import { BRAND_CONFIG } from "@/config/brand";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
-import { getPublishedBlogPostsPaginated } from "@/lib/blogs";
-import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+import { getPublishedBlogPostsPaginated } from "@/services/blogs";
+import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });

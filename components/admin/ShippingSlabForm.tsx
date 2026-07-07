@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 import { createShippingSlab } from "@/app/admin/shipping-charges/actions";
-import { labelClassName } from "@/lib/form";
-import { formFieldInputClass } from "@/lib/form-validation";
+import { labelClassName } from "@/utils/form";
+import { formFieldInputClass } from "@/utils/form-validation";
 
 export function ShippingSlabForm() {
   const [loading, setLoading] = useState(false);

@@ -1,5 +1,5 @@
-import { formatPrice } from "@/lib/courses";
-import type { BookSalesRecord } from "@/lib/finance-bookstore";
+import { formatPrice } from "@/services/courses";
+import type { BookSalesRecord } from "@/services/finance-bookstore";
 import Link from "next/link";
 
 type BookstoreSalesTableProps = {

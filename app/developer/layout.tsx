@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { DeveloperSidebar } from "@/components/developer/DeveloperSidebar";
-import { requireDeveloper } from "@/lib/auth-actions";
+import { requireDeveloper } from "@/services/auth-actions";
 
 export const dynamic = "force-dynamic";
 

@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { StudentForm } from "@/components/admin/StudentForm";
 import { updateStudentUserForm } from "@/app/admin/students/actions";
-import { getStudentUserById } from "@/lib/students";
+import { getStudentUserById } from "@/services/students";
 
 export default async function EditStudentPage({
   params,

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
 
-import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";
+import { bookOrderStatusLabel, bookOrderStatusClass } from "@/services/bookstore";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

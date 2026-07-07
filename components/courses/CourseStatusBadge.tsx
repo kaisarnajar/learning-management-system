@@ -1,5 +1,5 @@
 import type { CourseStatus } from "@prisma/client";
-import { courseStatusBadgeClass, courseStatusLabel } from "@/lib/course-status";
+import { courseStatusBadgeClass, courseStatusLabel } from "@/services/course-status";
 
 export function CourseStatusBadge({ status }: { status: CourseStatus }) {
   return (

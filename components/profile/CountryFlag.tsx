@@ -1,4 +1,4 @@
-import { getCountryFlagUrl } from "@/lib/countries";
+import { getCountryFlagUrl } from "@/services/countries";
 
 type CountryFlagProps = {
   code: string;

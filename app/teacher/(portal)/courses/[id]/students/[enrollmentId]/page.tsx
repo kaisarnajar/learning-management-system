@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireTeacher } from "@/lib/auth-actions";
-import { enrollmentStatusClass, enrollmentStatusLabel } from "@/lib/enrollments";
-import { formatDateOfBirthDisplay, occupationLabel } from "@/lib/profile";
-import { getTeacherEnrollmentInCourse } from "@/lib/teacher-portal";
+import { requireTeacher } from "@/services/auth-actions";
+import { enrollmentStatusClass, enrollmentStatusLabel } from "@/services/enrollments";
+import { formatDateOfBirthDisplay, occupationLabel } from "@/services/profile";
+import { getTeacherEnrollmentInCourse } from "@/services/teacher-portal";
 
 export default async function TeacherStudentDetailPage({
   params,

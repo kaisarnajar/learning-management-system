@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireUser } from "@/lib/auth-actions";
+import { requireUser } from "@/services/auth-actions";
 import {
   getNotificationById,
   notificationTypeClass,
   notificationTypeLabel,
-} from "@/lib/notifications";
+} from "@/services/notifications";
 
 function formatFullTime(date: Date): string {
   return date.toLocaleString("en-IN", {

@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
-import { deleteBlogImageFile } from "@/lib/blog-upload";
-import { addImagesToPost, getRemoveImageIds, parseBlogForm, removeBlogImages } from "@/lib/blog-mutations";
-import { isTeacherSubmittedBlog } from "@/lib/blog-approval";
-import { resolveBlogFeaturedUpdate } from "@/lib/blogs";
-import { prisma } from "@/lib/prisma";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { requireAdmin } from "@/services/auth-actions";
+import { deleteBlogImageFile } from "@/services/blog-upload";
+import { addImagesToPost, getRemoveImageIds, parseBlogForm, removeBlogImages } from "@/services/blog-mutations";
+import { isTeacherSubmittedBlog } from "@/services/blog-approval";
+import { resolveBlogFeaturedUpdate } from "@/services/blogs";
+import { prisma } from "@/utils/prisma";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 function adminListPath(suffix = "") {
   return `/admin/blogs${suffix}`;

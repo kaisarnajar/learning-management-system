@@ -3,9 +3,9 @@ import { BRAND_CONFIG } from "@/config/brand";
 import { TeacherCard } from "@/components/TeacherCard";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
-import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
-import { getPublishedTeachersPaginated } from "@/lib/teachers";
+import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
+import { getPublishedTeachersPaginated } from "@/services/teachers";
 import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });

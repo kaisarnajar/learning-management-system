@@ -5,8 +5,8 @@ import { CourseDurationDisplay } from "@/components/courses/CourseDurationDispla
 import { CourseTeacherInfo } from "@/components/courses/CourseTeacherInfo";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { CourseThumbnail } from "@/components/courses/CourseThumbnail";
-import { getCourseLevelClass } from "@/lib/course-display";
-import type { CourseWithTeacher } from "@/lib/courses";
+import { getCourseLevelClass } from "@/services/course-display";
+import type { CourseWithTeacher } from "@/services/courses";
 
 type CourseCardProps = {
   course: CourseWithTeacher;

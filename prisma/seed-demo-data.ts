@@ -1,8 +1,8 @@
 import { hash } from "bcryptjs";
 import type { PrismaClient } from "@prisma/client";
-import { getAdminEmails } from "../lib/admin";
+import { getAdminEmails } from '../services/admin';
 
-import { syncEnrollmentsWithCourseStatus } from "../lib/completion";
+import { syncEnrollmentsWithCourseStatus } from '../services/completion';
 import { courses } from "../content/courses";
 import {
   DEMO_ADMIN_PASSWORD,
@@ -16,13 +16,13 @@ import { DEMO_TEACHER_PASSWORD, teachers } from "../content/teachers";
 import {
   buildEnrollmentFeeLabel,
   buildMonthlyFeeLabel,
-} from "../lib/monthly-payments";
+} from '../services/monthly-payments';
 import {
   EXPENSE_CATEGORY_MARKETING,
   EXPENSE_CATEGORY_SOFTWARE_TOOLS,
   EXPENSE_CATEGORY_TEACHER_SALARY,
   EXPENSE_CATEGORY_WEBSITE_HOSTING,
-} from "../lib/expense-categories";
+} from '../services/expense-categories';
 import {
   MONTHLY_PAYMENT_APPROVED,
   MONTHLY_PAYMENT_DECLINED,
@@ -30,7 +30,7 @@ import {
   PAYMENT_TYPE_ENROLLMENT,
   PAYMENT_TYPE_MANUAL,
   PAYMENT_TYPE_MONTHLY,
-} from "../lib/monthly-payment-status";
+} from '../services/monthly-payment-status';
 import {
   demoAdminUserId,
   demoEnrollmentId,

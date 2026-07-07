@@ -6,8 +6,8 @@ import { recordExpense, type RecordExpenseState } from "@/app/admin/record-expen
 import {
   EXPENSE_CATEGORY_OPTIONS,
   EXPENSE_CATEGORY_TEACHER_SALARY,
-} from "@/lib/expense-categories";
-import { inputClassName, labelClassName } from "@/lib/form";
+} from "@/services/expense-categories";
+import { inputClassName, labelClassName } from "@/utils/form";
 
 type RecordExpenseFormProps = {
   teachers: { id: string; name: string }[];

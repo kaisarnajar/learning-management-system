@@ -13,10 +13,10 @@ import {
   getProfileCountryOrDefault,
   parseStoredProfileWhatsApp,
   type ProfileCountryCode,
-} from "@/lib/countries";
-import { inputClassName, labelClassName } from "@/lib/form";
-import { OCCUPATION_OPTIONS } from "@/lib/profile";
-import { profileUpdateSchema } from "@/lib/validations";
+} from "@/services/countries";
+import { inputClassName, labelClassName } from "@/utils/form";
+import { OCCUPATION_OPTIONS } from "@/services/profile";
+import { profileUpdateSchema } from "@/utils/validations";
 
 type ProfileFormProps = {
   name: string | null;

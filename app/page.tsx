@@ -12,8 +12,8 @@ import { HeroWave } from "@/components/home/HeroWave";
 import { HomeHero } from "@/components/home/HomeHero";
 import { LearnAccordion } from "@/components/home/LearnAccordion";
 import { StudentTestimonials } from "@/components/home/StudentTestimonials";
-import { getFeaturedHomepageCourses } from "@/lib/courses";
-import { getHomepageDailyInspiration } from "@/lib/daily-inspiration";
+import { getFeaturedHomepageCourses } from "@/services/courses";
+import { getHomepageDailyInspiration } from "@/services/daily-inspiration";
 
 export default async function HomePage() {
   const [featuredCourses, dailyInspiration] = await Promise.all([

@@ -2,8 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth-actions";
-import { markAllNotificationsRead, markNotificationRead } from "@/lib/notifications";
+import { requireUser } from "@/services/auth-actions";
+import { markAllNotificationsRead, markNotificationRead } from "@/services/notifications";
 
 export async function viewNotification(notificationId: string) {
   const session = await requireUser();

@@ -1,14 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin } from "@/lib/auth-actions";
+import { requireAdmin } from "@/services/auth-actions";
 import {
   buildFinanceQueryString,
   parseFinanceFilters,
   type FinanceSearchParams,
-} from "@/lib/finance-filters";
-import { prisma } from "@/lib/prisma";
-import { withDbErrorHandling } from "@/lib/db-error";
+} from "@/services/finance-filters";
+import { prisma } from "@/utils/prisma";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 function revalidateFinancePaths() {
   revalidatePath("/admin/finance");

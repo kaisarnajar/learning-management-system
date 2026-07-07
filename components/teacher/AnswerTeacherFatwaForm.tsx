@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 import type { FatwaQuestion } from "@prisma/client";
-import { labelClassName } from "@/lib/form";
+import { labelClassName } from "@/utils/form";
 import { RichTextEditor } from "@/components/shared/RichTextEditor";
 
 type AnswerTeacherFatwaFormProps = {

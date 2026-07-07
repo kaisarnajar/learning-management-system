@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { generateCertificate } from "@/app/actions/certificates";
 import { SubmitButton } from "@/components/shared/SubmitButton";
-import { labelClassName, inputClassName } from "@/lib/form";
+import { labelClassName, inputClassName } from "@/utils/form";
 import { useToast } from "@/components/shared/ToastProvider";
 
 type EnrollmentItem = {

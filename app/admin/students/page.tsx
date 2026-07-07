@@ -1,8 +1,8 @@
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { getStudentUsersPaginated } from "@/lib/students";
-import { parseSearchQuery } from "@/lib/text-search";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { getStudentUsersPaginated } from "@/services/students";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { AdminStudentsTable } from "@/components/admin/AdminStudentsTable";
 

@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth-actions";
+import { requireAdmin } from "@/services/auth-actions";
 import { getCourseGradeCards } from "@/app/actions/grades";
 import { GradeList } from "@/components/grades/GradeList";
 

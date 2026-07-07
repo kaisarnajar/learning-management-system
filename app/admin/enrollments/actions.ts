@@ -2,22 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
+import { requireAdmin } from "@/services/auth-actions";
 
-import { getCourseById } from "@/lib/courses";
-import { canApproveEnrollment, canRejectEnrollment } from "@/lib/enrollment-status";
-import { getRosterEnrollmentStatusForCourse } from "@/lib/enrollments";
+import { getCourseById } from "@/services/courses";
+import { canApproveEnrollment, canRejectEnrollment } from "@/services/enrollment-status";
+import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
 import {
   notifyEnrollmentApproved,
   notifyEnrollmentRejected,
-} from "@/lib/notifications";
-import { prisma } from "@/lib/prisma";
+} from "@/services/notifications";
+import { prisma } from "@/utils/prisma";
 import {
   lookupStudentAccountForEnrollment,
   normalizeStudentEmail,
-} from "@/lib/student-admin";
-import { adminEnrollUserSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
+} from "@/services/student-admin";
+import { adminEnrollUserSchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 function revalidateEnrollmentPaths(courseId: string) {
   const paths = [
@@ -93,7 +93,7 @@ export async function approveEnrollmentRequest(
   });
 
   if (getRosterEnrollmentStatusForCourse(course.status) === "active") {
-    const { assignRollNumber } = await import("@/lib/roll-numbers");
+    const { assignRollNumber } = await import("@/services/roll-numbers");
     await assignRollNumber(enrollmentId, courseId);
   }
 
@@ -185,7 +185,7 @@ export async function adminEnrollUser(
     }), "Database operation failed");
 
   if (status === "active") {
-    const { assignRollNumber } = await import("@/lib/roll-numbers");
+    const { assignRollNumber } = await import("@/services/roll-numbers");
     await assignRollNumber(upserted.id, course.id);
   }
 

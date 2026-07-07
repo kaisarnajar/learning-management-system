@@ -1,9 +1,9 @@
 "use server";
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { generateIdCardPdf } from "@/lib/id-card-html";
-import { sendIdCardEmail } from "@/lib/email";
+import { auth } from "@/services/auth";
+import { prisma } from "@/utils/prisma";
+import { generateIdCardPdf } from "@/utils/id-card-html";
+import { sendIdCardEmail } from "@/services/email";
 
 export async function sendIdCardToEmailAction(targetUserId?: string): Promise<{ success?: boolean; error?: string }> {
   try {

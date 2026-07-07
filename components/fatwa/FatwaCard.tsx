@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { FatwaQuestion } from "@prisma/client";
-import { excerpt } from "@/lib/fatwa";
+import { excerpt } from "@/services/fatwa";
 
 type FatwaCardProps = {
   fatwa: FatwaQuestion;

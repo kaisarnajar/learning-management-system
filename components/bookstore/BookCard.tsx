@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
 import { AddToCartButton } from "@/components/bookstore/AddToCartButton";
-import type { BookWithDetails } from "@/lib/bookstore";
+import type { BookWithDetails } from "@/services/bookstore";
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;

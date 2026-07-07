@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { TeacherSidebar } from "@/components/teacher/TeacherSidebar";
-import { requireTeacher } from "@/lib/auth-actions";
+import { requireTeacher } from "@/services/auth-actions";
 
 export const dynamic = "force-dynamic";
 

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { BRAND_CONFIG } from "@/config/brand";
 import { ProfileSidebar } from "@/components/profile/ProfileSidebar";
 import { VerificationBanner } from "@/components/auth/VerificationBanner";
-import { requireUser } from "@/lib/auth-actions";
-import { getUnreadNotificationCount } from "@/lib/notifications";
+import { requireUser } from "@/services/auth-actions";
+import { getUnreadNotificationCount } from "@/services/notifications";
 
 export const metadata: Metadata = {
   title: "My Profile",

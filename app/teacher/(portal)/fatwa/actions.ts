@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireTeacher } from "@/lib/auth-actions";
-import { sendFatwaSubmissionAdminEmail } from "@/lib/email";
-import { prisma } from "@/lib/prisma";
-import { fatwaAnswerSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { requireTeacher } from "@/services/auth-actions";
+import { sendFatwaSubmissionAdminEmail } from "@/services/email";
+import { prisma } from "@/utils/prisma";
+import { fatwaAnswerSchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 export async function submitTeacherFatwaAnswer(id: string, formData: FormData) {
   const { session, teacher } = await requireTeacher();

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteContactInquiryById as deleteContactInquiry } from "@/app/admin/contact-inquiries/actions";
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { getAllContactInquiriesPaginated } from "@/lib/contact-inquiries";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+import { getAllContactInquiriesPaginated } from "@/services/contact-inquiries";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

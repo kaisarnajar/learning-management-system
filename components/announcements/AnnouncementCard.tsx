@@ -1,7 +1,7 @@
 import type { AnnouncementCategory } from "@prisma/client";
 import { AnnouncementAttachment } from "@/components/announcements/AnnouncementAttachment";
 import { AnnouncementCategoryBadge } from "@/components/announcements/AnnouncementCategoryBadge";
-import { formatAnnouncementDate } from "@/lib/announcements";
+import { formatAnnouncementDate } from "@/services/announcements";
 
 type AnnouncementCardProps = {
   category: AnnouncementCategory;

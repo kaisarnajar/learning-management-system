@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
 import { DeveloperSidebar } from "@/components/developer/DeveloperSidebar";
-import { requireAdmin } from "@/lib/auth-actions";
+import { requireAdmin } from "@/services/auth-actions";
 
 export const dynamic = "force-dynamic";
 

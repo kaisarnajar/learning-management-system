@@ -2,16 +2,16 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
+import { requireAdmin } from "@/services/auth-actions";
 import {
   deriveTeacherInitials,
   lookupTeacherAccount,
   normalizeTeacherEmail,
-} from "@/lib/teacher-admin";
-import { prisma } from "@/lib/prisma";
-import { uniqueSlug } from "@/lib/slug";
-import { teacherAdminSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
+} from "@/services/teacher-admin";
+import { prisma } from "@/utils/prisma";
+import { uniqueSlug } from "@/utils/slug";
+import { teacherAdminSchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 function parseTeacherForm(formData: FormData) {
   return teacherAdminSchema.safeParse({

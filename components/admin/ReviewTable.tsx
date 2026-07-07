@@ -6,7 +6,7 @@ import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { approveStudentReview, rejectStudentReview, deleteStudentReview } from "@/app/admin/review-approvals/actions";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { StarRating } from "@/components/reviews/StarRating";
-import type { StudentReviewWithUser } from "@/lib/student-reviews";
+import type { StudentReviewWithUser } from "@/services/student-reviews";
 
 function formatDate(date: Date) {
   return new Date(date).toLocaleDateString("en-IN", {
@@ -22,7 +22,7 @@ function ReviewName({ review }: { review: StudentReviewWithUser }) {
 
 import { useToast } from "@/components/shared/ToastProvider";
 
-import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/utils/form";
 
 function ReviewActions({
   reviewId,

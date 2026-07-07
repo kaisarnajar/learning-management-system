@@ -2,13 +2,13 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { EnrollmentPaymentForm } from "@/components/payment/EnrollmentPaymentForm";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
-import { requireUser } from "@/lib/auth-actions";
-import { getRegistrationFeePaise } from "@/lib/course-pricing";
-import { formatPrice, getCourseById } from "@/lib/courses";
-import { hasPendingEnrollmentFeeSubmission } from "@/lib/monthly-payments";
-import { prisma } from "@/lib/prisma";
-import { isUpiConfigured } from "@/lib/upi";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { requireUser } from "@/services/auth-actions";
+import { getRegistrationFeePaise } from "@/services/course-pricing";
+import { formatPrice, getCourseById } from "@/services/courses";
+import { hasPendingEnrollmentFeeSubmission } from "@/services/monthly-payments";
+import { prisma } from "@/utils/prisma";
+import { isUpiConfigured } from "@/services/upi";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 export default async function PayEnrollmentFeePage({
   params,

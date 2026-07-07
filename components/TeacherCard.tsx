@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { Teacher } from "@/lib/teachers";
+import type { Teacher } from "@/services/teachers";
 
 type TeacherCardProps = {
   teacher: Teacher;

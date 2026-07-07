@@ -7,16 +7,16 @@ import { DateInputField } from "@/components/form/DateInputField";
 import {
   type CourseFormValues,
   validateCourseForm,
-} from "@/lib/admin-form-validation";
-import { getCourseCategoryOptions } from "@/lib/course-categories";
-import { getCourseStartDateInputValue } from "@/lib/course-start-date";
-import { HOMEPAGE_FEATURED_COURSES_MAX } from "@/lib/courses";
-import { getCoursePricingFromCourse, getDefaultFeesForLevel } from "@/lib/course-pricing";
-import { COURSE_STATUS_OPTIONS } from "@/lib/course-status";
-import { FEE_FREQUENCY_OPTIONS, getFeeFrequencyOption } from "@/lib/fee-frequency";
-import { labelClassName } from "@/lib/form";
-import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
-import { useZodForm } from "@/lib/use-zod-form";
+} from "@/services/admin-form-validation";
+import { getCourseCategoryOptions } from "@/services/course-categories";
+import { getCourseStartDateInputValue } from "@/services/course-start-date";
+import { HOMEPAGE_FEATURED_COURSES_MAX } from "@/services/courses";
+import { getCoursePricingFromCourse, getDefaultFeesForLevel } from "@/services/course-pricing";
+import { COURSE_STATUS_OPTIONS } from "@/services/course-status";
+import { FEE_FREQUENCY_OPTIONS, getFeeFrequencyOption } from "@/services/fee-frequency";
+import { labelClassName } from "@/utils/form";
+import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
+import { useZodForm } from "@/utils/use-zod-form";
 
 type CourseFormProps = {
   course?: Course;

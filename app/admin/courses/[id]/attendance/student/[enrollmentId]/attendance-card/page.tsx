@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth-actions";
+import { requireAdmin } from "@/services/auth-actions";
 import { getStudentAttendanceReport } from "@/app/actions/attendance";
 import { AttendanceCardPreview } from "@/components/attendance/AttendanceCardPreview";
 import Link from "next/link";

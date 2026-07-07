@@ -9,18 +9,18 @@ import { FinanceSummaryCards } from "@/components/admin/FinanceSummaryCards";
 import { FinanceTabs } from "@/components/admin/FinanceTabs";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { getAllCourses } from "@/lib/courses";
-import { getExpensesPaginated, getExpenseTotal } from "@/lib/finance-expenses";
+import { getAllCourses } from "@/services/courses";
+import { getExpensesPaginated, getExpenseTotal } from "@/services/finance-expenses";
 import {
   buildFinanceQueryString,
   buildFinanceSearchPreserveParams,
   parseFinanceFilters,
   type FinanceSearchParams,
-} from "@/lib/finance-filters";
-import { getIncomeRecordsPaginated, getIncomeTotal } from "@/lib/finance-income";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { getStudentUsers } from "@/lib/students";
-import { getAllTeachers } from "@/lib/teachers";
+} from "@/services/finance-filters";
+import { getIncomeRecordsPaginated, getIncomeTotal } from "@/services/finance-income";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { getStudentUsers } from "@/services/students";
+import { getAllTeachers } from "@/services/teachers";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

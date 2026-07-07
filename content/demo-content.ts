@@ -1,5 +1,5 @@
 import type { AnnouncementCategory, BlogApprovalStatus, DailyInspirationKind, BookStatus } from "@prisma/client";
-import type { FatwaCategory } from "@/lib/fatwa";
+import type { FatwaCategory } from '@/services/fatwa';
 
 export type DemoSiteAnnouncement = {
   id: string;

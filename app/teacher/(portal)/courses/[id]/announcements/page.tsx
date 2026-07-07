@@ -2,14 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { TeacherCourseAnnouncementCard } from "@/components/teacher/TeacherCourseAnnouncementCard";
 import { Pagination } from "@/components/shared/Pagination";
-import { requireTeacher } from "@/lib/auth-actions";
+import { requireTeacher } from "@/services/auth-actions";
 import {
   canTeacherManageCourseAnnouncement,
   getAnnouncementAuthorName,
   getCourseWideAnnouncementsForCoursePaginated,
-} from "@/lib/announcements";
-import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { getTeacherCourseForPortal } from "@/lib/teacher-portal";
+} from "@/services/announcements";
+import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { getTeacherCourseForPortal } from "@/services/teacher-portal";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

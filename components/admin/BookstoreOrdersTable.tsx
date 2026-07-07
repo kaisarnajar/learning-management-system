@@ -1,6 +1,6 @@
-import { formatPrice } from "@/lib/courses";
-import type { BookOrderFinanceRecord } from "@/lib/finance-bookstore";
-import { bookOrderStatusClass, bookOrderStatusLabel } from "@/lib/bookstore";
+import { formatPrice } from "@/services/courses";
+import type { BookOrderFinanceRecord } from "@/services/finance-bookstore";
+import { bookOrderStatusClass, bookOrderStatusLabel } from "@/services/bookstore";
 import Link from "next/link";
 
 type BookstoreOrdersTableProps = {

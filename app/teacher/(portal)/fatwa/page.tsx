@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { getTeacherFatwaQuestionsPaginated, type FatwaAdminFilter } from "@/lib/fatwa";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
-import { requireTeacher } from "@/lib/auth-actions";
+import { getTeacherFatwaQuestionsPaginated, type FatwaAdminFilter } from "@/services/fatwa";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
+import { requireTeacher } from "@/services/auth-actions";
 
 function filterHref(filter: FatwaAdminFilter | undefined, q?: string) {
   const params = new URLSearchParams();

@@ -3,9 +3,9 @@ import { BRAND_CONFIG } from "@/config/brand";
 import { SiteAnnouncementCard } from "@/components/announcements/SiteAnnouncementCard";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
-import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
-import { getPublishedSiteAnnouncementsPaginated } from "@/lib/site-announcements";
+import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
+import { getPublishedSiteAnnouncementsPaginated } from "@/services/site-announcements";
 import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });

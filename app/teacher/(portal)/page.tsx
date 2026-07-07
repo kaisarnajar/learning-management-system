@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { Pagination } from "@/components/shared/Pagination";
-import { requireTeacher } from "@/lib/auth-actions";
+import { requireTeacher } from "@/services/auth-actions";
 import { CourseThumbnail } from "@/components/courses/CourseThumbnail";
 import { CourseDurationDisplay } from "@/components/courses/CourseDurationDisplay";
-import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { getCoursesForTeacherPaginated, getTeacherDashboardStats } from "@/lib/teacher-portal";
+import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { getCoursesForTeacherPaginated, getTeacherDashboardStats } from "@/services/teacher-portal";
 
 export default async function TeacherDashboardPage({
   searchParams,

@@ -13,7 +13,7 @@ import {
   formatWhatsAppForDisplay,
   getConfiguredSocialNetworkLinks,
   getSocialLinksSettings,
-} from "@/lib/social-links";
+} from "@/services/social-links";
 import { BRAND_CONFIG } from "@/config/brand";
 import { CREDITS_CONFIG } from "@/config/credits";
 

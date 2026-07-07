@@ -2,17 +2,17 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireTeacher } from "@/lib/auth-actions";
-import { canTeacherDeleteBlogPost, canTeacherEditBlogPost } from "@/lib/blog-approval";
+import { requireTeacher } from "@/services/auth-actions";
+import { canTeacherDeleteBlogPost, canTeacherEditBlogPost } from "@/services/blog-approval";
 import {
   addImagesToPost,
   getRemoveImageIds,
   parseTeacherBlogForm,
   removeBlogImages,
-} from "@/lib/blog-mutations";
-import { getBlogPostForTeacher } from "@/lib/blogs";
-import { deleteBlogImageFile } from "@/lib/blog-upload";
-import { prisma } from "@/lib/prisma";
+} from "@/services/blog-mutations";
+import { getBlogPostForTeacher } from "@/services/blogs";
+import { deleteBlogImageFile } from "@/services/blog-upload";
+import { prisma } from "@/utils/prisma";
 
 function teacherListPath(suffix = "") {
   return `/teacher/blogs${suffix}`;

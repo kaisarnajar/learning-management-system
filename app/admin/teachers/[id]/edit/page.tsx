@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { TeacherForm } from "@/components/admin/TeacherForm";
 import { deleteTeacher, updateTeacher } from "@/app/admin/teachers/actions";
-import { getTeacherById } from "@/lib/teachers";
+import { getTeacherById } from "@/services/teachers";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

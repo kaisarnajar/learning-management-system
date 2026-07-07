@@ -4,7 +4,7 @@ import Link from "next/link";
 import { AskFatwaForm } from "@/components/fatwa/AskFatwaForm";
 import { PageHeader } from "@/components/site/PageHeader";
 import { Section } from "@/components/site/Section";
-import { auth } from "@/lib/auth";
+import { auth } from "@/services/auth";
 
 export const metadata: Metadata = {
   title: "Ask a Question",

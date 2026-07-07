@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { createBlogPost } from "@/app/admin/blogs/actions";
 import { BlogPostForm } from "@/components/admin/BlogPostForm";
-import { getFeaturedHomepageBlogCount, HOMEPAGE_FEATURED_BLOGS_MAX } from "@/lib/blogs";
+import { getFeaturedHomepageBlogCount, HOMEPAGE_FEATURED_BLOGS_MAX } from "@/services/blogs";
 
 export default async function NewBlogPostPage({
   searchParams,

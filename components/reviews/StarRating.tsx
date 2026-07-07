@@ -1,4 +1,4 @@
-import { REVIEW_RATING_MAX } from "@/lib/review-rating";
+import { REVIEW_RATING_MAX } from "@/services/review-rating";
 
 type StarRatingProps = {
   rating: number;

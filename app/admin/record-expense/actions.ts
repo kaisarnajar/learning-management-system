@@ -2,12 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
-import { EXPENSE_CATEGORY_TEACHER_SALARY } from "@/lib/expense-categories";
-import { rupeesToPaise } from "@/lib/form";
-import { prisma } from "@/lib/prisma";
-import { expenseSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { requireAdmin } from "@/services/auth-actions";
+import { EXPENSE_CATEGORY_TEACHER_SALARY } from "@/services/expense-categories";
+import { rupeesToPaise } from "@/utils/form";
+import { prisma } from "@/utils/prisma";
+import { expenseSchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 export type RecordExpenseState = {
   error?: string;

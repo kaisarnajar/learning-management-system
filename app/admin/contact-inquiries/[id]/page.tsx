@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteContactInquiryForm } from "@/app/admin/contact-inquiries/actions";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { getContactInquiryById } from "@/lib/contact-inquiries";
+import { getContactInquiryById } from "@/services/contact-inquiries";
 
 function statusLabel(reply: string | null) {
   return reply ? "Replied" : "Pending";

@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { ensureAuth } from "@/lib/auth-utils";
-import { prisma } from "@/lib/prisma";
-import { isAdminSession } from "@/lib/admin";
+import { ensureAuth } from "@/utils/auth-utils";
+import { prisma } from "@/utils/prisma";
+import { isAdminSession } from "@/services/admin";
 
 export async function toggleLike(blogPostId: string) {
   const { session, error } = await ensureAuth();

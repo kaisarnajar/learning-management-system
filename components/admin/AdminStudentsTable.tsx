@@ -3,7 +3,7 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteStudentUser as deleteStudent } from "@/app/admin/students/actions";
 import { type User } from "@prisma/client";
 
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 
 export function AdminStudentsTable({ students }: { students: User[] }) {
   return (

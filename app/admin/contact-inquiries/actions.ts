@@ -2,11 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
-import { sendContactInquiryReplyEmail } from "@/lib/email";
-import { prisma } from "@/lib/prisma";
-import { contactInquiryReplySchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { requireAdmin } from "@/services/auth-actions";
+import { sendContactInquiryReplyEmail } from "@/services/email";
+import { prisma } from "@/utils/prisma";
+import { contactInquiryReplySchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 export async function replyToContactInquiry(id: string, formData: FormData) {
   const session = await requireAdmin();

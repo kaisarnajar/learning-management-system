@@ -3,7 +3,7 @@ import { BRAND_CONFIG } from "@/config/brand";
 import Link from "next/link";
 import { BookForm } from "@/components/admin/BookForm";
 import { createBook } from "@/app/admin/bookstore/actions";
-import { getFeaturedHomepageBookCount } from "@/lib/bookstore";
+import { getFeaturedHomepageBookCount } from "@/services/bookstore";
 
 export const metadata: Metadata = {
   title: "Add Book — Admin",

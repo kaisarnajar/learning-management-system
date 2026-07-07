@@ -1,17 +1,17 @@
 import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteTeacherBlogPost } from "@/app/teacher/(portal)/blogs/actions";
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 import { Pagination } from "@/components/shared/Pagination";
-import { requireTeacher } from "@/lib/auth-actions";
+import { requireTeacher } from "@/services/auth-actions";
 import {
   blogApprovalStatusClass,
   blogApprovalStatusLabel,
   canTeacherDeleteBlogPost,
   canTeacherEditBlogPost,
-} from "@/lib/blog-approval";
-import { getTeacherBlogPostsPaginated } from "@/lib/blogs";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
+} from "@/services/blog-approval";
+import { getTeacherBlogPostsPaginated } from "@/services/blogs";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

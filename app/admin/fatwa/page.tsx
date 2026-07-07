@@ -3,9 +3,9 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteFatwaQuestion as deleteFatwa } from "@/app/admin/fatwa/actions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { getAllFatwaQuestionsPaginated, type FatwaAdminFilter } from "@/lib/fatwa";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+import { getAllFatwaQuestionsPaginated, type FatwaAdminFilter } from "@/services/fatwa";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
@@ -43,7 +43,7 @@ type PageParams = {
   [key: string]: string | undefined;
 };
 
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 
 async function AdminFatwaList({ params, q }: { params: PageParams; q?: string }) {
   const filter = (params.filter as FatwaAdminFilter) || undefined;

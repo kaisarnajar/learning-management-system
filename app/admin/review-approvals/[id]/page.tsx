@@ -5,7 +5,7 @@ import { notFound } from "next/navigation";
 import { ReviewDetailActions } from "@/components/admin/ReviewDetailActions";
 
 import { StarRating } from "@/components/reviews/StarRating";
-import { reviewStatusClass, reviewStatusLabel, getStudentReviewForAdmin } from "@/lib/student-reviews";
+import { reviewStatusClass, reviewStatusLabel, getStudentReviewForAdmin } from "@/services/student-reviews";
 
 export default async function AdminReviewDetailPage({
   params,

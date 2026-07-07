@@ -8,18 +8,18 @@ import { RemoveStudentEnrollmentAction } from "@/components/admin/RemoveStudentE
 
 import { Pagination } from "@/components/shared/Pagination";
 import { deleteStudentUserForm } from "@/app/admin/students/actions";
-import { formatPrice, getAllCourses } from "@/lib/courses";
-import { enrollmentStatusClass, enrollmentStatusLabel } from "@/lib/enrollments";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { getPaymentRecordsForUserPaginated } from "@/lib/payments";
+import { formatPrice, getAllCourses } from "@/services/courses";
+import { enrollmentStatusClass, enrollmentStatusLabel } from "@/services/enrollments";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { getPaymentRecordsForUserPaginated } from "@/services/payments";
 import {
   formatDateOfBirthDisplay,
   occupationLabel,
   isUserProfileComplete,
-} from "@/lib/profile";
-import { formatRollNumber } from "@/lib/roll-numbers";
-import { getStudentUserById } from "@/lib/students";
-import { getInitialsFromName } from "@/lib/student-reviews";
+} from "@/services/profile";
+import { formatRollNumber } from "@/services/roll-numbers";
+import { getStudentUserById } from "@/services/students";
+import { getInitialsFromName } from "@/services/student-reviews";
 import { ExternalLink } from "lucide-react";
 
 export default async function AdminStudentDetailPage({

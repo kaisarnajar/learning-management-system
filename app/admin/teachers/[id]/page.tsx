@@ -1,15 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { deleteTeacherFromProfile } from "@/app/admin/teachers/actions";
-import { getEnrollmentCountsByCourse } from "@/lib/enrollments";
-import { getTeacherById } from "@/lib/teachers";
-import { getCoursesForTeacher } from "@/lib/teacher-portal";
-import { getInitialsFromName } from "@/lib/student-reviews";
+import { getEnrollmentCountsByCourse } from "@/services/enrollments";
+import { getTeacherById } from "@/services/teachers";
+import { getCoursesForTeacher } from "@/services/teacher-portal";
+import { getInitialsFromName } from "@/services/student-reviews";
 
 export default async function AdminTeacherDetailPage({
   params,

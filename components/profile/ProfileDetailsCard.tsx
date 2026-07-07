@@ -1,12 +1,12 @@
 import type { Occupation } from "@prisma/client";
 import Image from "next/image";
-import { getInitialsFromName } from "@/lib/student-reviews";
-import { occupationLabel, formatDateOfBirthDisplay } from "@/lib/profile";
+import { getInitialsFromName } from "@/services/student-reviews";
+import { occupationLabel, formatDateOfBirthDisplay } from "@/services/profile";
 import {
   getProfileCountryOrDefault,
   parseStoredProfileWhatsApp,
   formatProfileDialCode,
-} from "@/lib/countries";
+} from "@/services/countries";
 import { Mail, Phone, MapPin, Calendar, Briefcase, User } from "lucide-react";
 
 type ProfileDetailsCardProps = {

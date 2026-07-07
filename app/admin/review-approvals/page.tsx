@@ -2,14 +2,14 @@ import Link from "next/link";
 import { ReviewTable } from "@/components/admin/ReviewTable";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import {
   HOMEPAGE_FEATURED_REVIEWS_MAX,
   getApprovedStudentReviewsForAdminPaginated,
   getFeaturedHomepageReviewCount,
   getPendingStudentReviewsForAdminPaginated,
-} from "@/lib/student-reviews";
-import { parseSearchQuery } from "@/lib/text-search";
+} from "@/services/student-reviews";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

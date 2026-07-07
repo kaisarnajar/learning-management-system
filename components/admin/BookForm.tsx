@@ -6,11 +6,11 @@ import { useCallback, useRef, useState } from "react";
 import {
   validateBookForm,
   type BookFormValues,
-} from "@/lib/admin-form-validation";
-import { type BookWithDetails, HOMEPAGE_FEATURED_BOOKS_MAX } from "@/lib/bookstore";
-import { useZodForm } from "@/lib/use-zod-form";
-import { labelClassName } from "@/lib/form";
-import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
+} from "@/services/admin-form-validation";
+import { type BookWithDetails, HOMEPAGE_FEATURED_BOOKS_MAX } from "@/services/bookstore";
+import { useZodForm } from "@/utils/use-zod-form";
+import { labelClassName } from "@/utils/form";
+import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
 
 type BookFormProps = {
   book?: BookWithDetails & { featuredOnHomepage?: boolean };

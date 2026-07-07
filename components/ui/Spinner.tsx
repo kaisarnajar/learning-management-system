@@ -1,5 +1,5 @@
 import { Loader2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/utils";
 
 export interface SpinnerProps extends React.SVGAttributes<SVGSVGElement> {
   size?: "sm" | "md" | "lg" | "xl";

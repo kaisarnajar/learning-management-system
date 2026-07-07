@@ -2,15 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
+import { requireAdmin } from "@/services/auth-actions";
 import {
   notifyBookOrderApproved,
   notifyBookOrderDeclined,
   notifyBookOrderShipped,
   notifyBookOrderRefunded,
-} from "@/lib/notifications";
-import { prisma } from "@/lib/prisma";
-import { withDbErrorHandling } from "@/lib/db-error";
+} from "@/services/notifications";
+import { prisma } from "@/utils/prisma";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 function revalidateOrderPaths(userId: string) {
   const paths = [

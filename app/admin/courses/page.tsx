@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { getAllCoursesPaginated } from "@/lib/courses";
-import { getEnrollmentCountsByCourse } from "@/lib/enrollments";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+import { getAllCoursesPaginated } from "@/services/courses";
+import { getEnrollmentCountsByCourse } from "@/services/enrollments";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { AdminCoursesTable } from "@/components/admin/AdminCoursesTable";
 import { Suspense } from "react";

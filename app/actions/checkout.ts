@@ -1,16 +1,16 @@
 "use server";
 
-import { ensureAuth } from "@/lib/auth-utils";
-import { isCourseEnrollmentOpen } from "@/lib/course-status";
-import { getRegistrationFeePaise } from "@/lib/course-pricing";
-import { getCourseById } from "@/lib/courses";
+import { ensureAuth } from "@/utils/auth-utils";
+import { isCourseEnrollmentOpen } from "@/services/course-status";
+import { getRegistrationFeePaise } from "@/services/course-pricing";
+import { getCourseById } from "@/services/courses";
 import {
   AWAITING_ENROLLMENT_FEE,
   PENDING_ENROLLMENT_APPROVAL,
-} from "@/lib/enrollment-status";
-import { isUserProfileComplete, PROFILE_COMPLETE_REDIRECT } from "@/lib/profile";
-import { prisma } from "@/lib/prisma";
-import { isUpiConfigured } from "@/lib/upi";
+} from "@/services/enrollment-status";
+import { isUserProfileComplete, PROFILE_COMPLETE_REDIRECT } from "@/services/profile";
+import { prisma } from "@/utils/prisma";
+import { isUpiConfigured } from "@/services/upi";
 
 export async function submitCheckout(courseId: string) {
   const { session, error: authError } = await ensureAuth();

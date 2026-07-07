@@ -2,13 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
-import { resolveLibraryFeaturedUpdate } from "@/lib/library";
-import { deleteLibraryImage, saveLibraryImage, validateLibraryImage } from "@/lib/library-upload";
-import { prisma } from "@/lib/prisma";
-import { uniqueSlug } from "@/lib/slug";
-import { libraryItemSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { requireAdmin } from "@/services/auth-actions";
+import { resolveLibraryFeaturedUpdate } from "@/services/library";
+import { deleteLibraryImage, saveLibraryImage, validateLibraryImage } from "@/services/library-upload";
+import { prisma } from "@/utils/prisma";
+import { uniqueSlug } from "@/utils/slug";
+import { libraryItemSchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 function parseLibraryForm(formData: FormData) {
   const pdfUrl = formData.get("pdfUrl");

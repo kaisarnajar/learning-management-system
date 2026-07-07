@@ -4,7 +4,7 @@ import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
 import { useToast } from "@/components/shared/ToastProvider";
 
-import { adminDestructiveButtonClassName } from "@/lib/form";
+import { adminDestructiveButtonClassName } from "@/utils/form";
 
 export function RemoveStudentEnrollmentAction({
   studentNameOrEmail,

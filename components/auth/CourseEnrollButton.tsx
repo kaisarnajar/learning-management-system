@@ -6,12 +6,12 @@ import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { submitCheckout } from "@/app/actions/checkout";
 
-import { getCourseEnrollmentClosedMessage } from "@/lib/course-status";
+import { getCourseEnrollmentClosedMessage } from "@/services/course-status";
 import {
   AWAITING_ENROLLMENT_FEE,
   PENDING_ENROLLMENT_APPROVAL,
-} from "@/lib/enrollment-status";
-import { PROFILE_COMPLETE_REDIRECT } from "@/lib/profile";
+} from "@/services/enrollment-status";
+import { PROFILE_COMPLETE_REDIRECT } from "@/services/profile";
 
 type CourseEnrollButtonProps = {
   courseId: string;

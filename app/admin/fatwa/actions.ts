@@ -2,12 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
-import { getFatwaPublicUrl, resolveFatwaFeaturedUpdate } from "@/lib/fatwa";
-import { sendFatwaAnswerEmail, sendFatwaStatusTeacherEmail, type EmailSendResult } from "@/lib/email";
-import { prisma } from "@/lib/prisma";
-import { fatwaAnswerSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { requireAdmin } from "@/services/auth-actions";
+import { getFatwaPublicUrl, resolveFatwaFeaturedUpdate } from "@/services/fatwa";
+import { sendFatwaAnswerEmail, sendFatwaStatusTeacherEmail, type EmailSendResult } from "@/services/email";
+import { prisma } from "@/utils/prisma";
+import { fatwaAnswerSchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 export async function answerFatwaQuestion(id: string, formData: FormData) {
   const session = await requireAdmin();

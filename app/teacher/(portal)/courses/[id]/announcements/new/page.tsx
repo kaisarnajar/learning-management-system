@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createCourseAnnouncement } from "@/lib/course-announcement-actions";
+import { createCourseAnnouncement } from "@/services/course-announcement-actions";
 import { AnnouncementForm } from "@/components/teacher/AnnouncementForm";
-import { requireTeacher } from "@/lib/auth-actions";
-import { getTeacherCourseForPortal } from "@/lib/teacher-portal";
+import { requireTeacher } from "@/services/auth-actions";
+import { getTeacherCourseForPortal } from "@/services/teacher-portal";
 
 export default async function NewCourseAnnouncementPage({
   params,

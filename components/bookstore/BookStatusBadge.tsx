@@ -1,6 +1,6 @@
 "use client";
 
-import { bookStatusLabel, bookStatusClass } from "@/lib/bookstore";
+import { bookStatusLabel, bookStatusClass } from "@/services/bookstore";
 import type { BookStatus } from "@prisma/client";
 
 export function BookStatusBadge({ status }: { status: BookStatus }) {

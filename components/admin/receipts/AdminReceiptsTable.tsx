@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AdminReceiptEntry } from "@/lib/receipts-admin";
+import { AdminReceiptEntry } from "@/services/receipts-admin";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteReceipt } from "@/app/actions/receipts";
 import { useToast } from "@/components/shared/ToastProvider";

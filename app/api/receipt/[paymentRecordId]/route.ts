@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { isAdminSession } from "@/lib/admin";
+import { auth } from "@/services/auth";
+import { isAdminSession } from "@/services/admin";
 import { BRAND_CONFIG } from "@/config/brand";
-import { getCourseById } from "@/lib/courses";
-import { prepareReceiptData } from "@/lib/payment-receipt";
-import { renderReceiptToHtml } from "@/lib/receipt-html";
-import { generatePdfFromHtml, wrapHtmlForPdf } from "@/lib/pdf-generator";
-import { getPaymentRecordById } from "@/lib/payments";
+import { getCourseById } from "@/services/courses";
+import { prepareReceiptData } from "@/services/payment-receipt";
+import { renderReceiptToHtml } from "@/utils/receipt-html";
+import { generatePdfFromHtml, wrapHtmlForPdf } from "@/services/pdf-generator";
+import { getPaymentRecordById } from "@/services/payments";
 
 export async function GET(
   _request: Request,

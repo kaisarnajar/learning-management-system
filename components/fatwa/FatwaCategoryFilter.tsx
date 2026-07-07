@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FATWA_CATEGORIES, type FatwaCategory } from "@/lib/fatwa";
+import { FATWA_CATEGORIES, type FatwaCategory } from "@/services/fatwa";
 
 type FatwaCategoryFilterProps = {
   activeCategory?: string;

@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { deleteAdminCourseAnnouncement } from "@/lib/course-announcement-actions";
+import { deleteAdminCourseAnnouncement } from "@/services/course-announcement-actions";
 import { AdminCourseAnnouncementCard } from "@/components/admin/AdminCourseAnnouncementCard";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { requireAdmin } from "@/lib/auth-actions";
-import { getAnnouncementAuthorName, getCourseWideAnnouncementsForCoursePaginated } from "@/lib/announcements";
-import { getCourseById } from "@/lib/courses";
-import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+import { requireAdmin } from "@/services/auth-actions";
+import { getAnnouncementAuthorName, getCourseWideAnnouncementsForCoursePaginated } from "@/services/announcements";
+import { getCourseById } from "@/services/courses";
+import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

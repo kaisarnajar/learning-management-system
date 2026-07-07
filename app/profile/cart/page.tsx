@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { CartPageClient } from "@/components/bookstore/CartPageClient";
-import { requireUser } from "@/lib/auth-actions";
-import { getBookOrdersForUser } from "@/lib/bookstore";
+import { requireUser } from "@/services/auth-actions";
+import { getBookOrdersForUser } from "@/services/bookstore";
 
 export const metadata: Metadata = {
   title: "My Cart",

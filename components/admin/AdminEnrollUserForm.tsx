@@ -7,7 +7,7 @@ import {
   previewStudentAccountForEnrollment,
   type AdminEnrollUserState,
 } from "@/app/admin/enrollments/actions";
-import { inputClassName, labelClassName } from "@/lib/form";
+import { inputClassName, labelClassName } from "@/utils/form";
 import type { Course } from "@prisma/client";
 
 type AdminEnrollUserFormProps = {

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteCourseAttendance } from "@/app/actions/attendance";
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 
 export type AttendanceListProps = {
   courseId: string;

@@ -9,7 +9,7 @@ import {
   EXPENSE_CATEGORY_SOFTWARE_TOOLS,
   EXPENSE_CATEGORY_TEACHER_SALARY,
   EXPENSE_CATEGORY_WEBSITE_HOSTING,
-} from "../lib/expense-categories";
+} from '../services/expense-categories';
 import { demoStudentUserId, demoTeacherUserId } from "./seed-helpers";
 import { writeDemoPngFile } from "./seed-demo-assets";
 

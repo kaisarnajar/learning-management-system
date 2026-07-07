@@ -1,4 +1,4 @@
-import { buildWhatsAppHref, getSocialLinksSettings } from "@/lib/social-links";
+import { buildWhatsAppHref, getSocialLinksSettings } from "@/services/social-links";
 
 export async function WhatsAppButton() {
   const settings = await getSocialLinksSettings();

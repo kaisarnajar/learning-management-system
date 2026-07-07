@@ -7,9 +7,9 @@ import {
   getPendingBookOrdersPaginated,
   getApprovedBookOrdersPaginated,
   getCompletedBookOrdersPaginated,
-} from "@/lib/bookstore";
-import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+} from "@/services/bookstore";
+import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

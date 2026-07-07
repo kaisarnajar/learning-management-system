@@ -8,9 +8,9 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteBook } from "@/app/admin/bookstore/actions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { getAllBooksPaginated } from "@/lib/bookstore";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+import { getAllBooksPaginated } from "@/services/bookstore";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
@@ -35,7 +35,7 @@ type PageParams = {
   [key: string]: string | undefined;
 };
 
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 
 async function AdminBookstoreList({ params, q }: { params: PageParams; q?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params);

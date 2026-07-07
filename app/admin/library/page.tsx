@@ -2,13 +2,13 @@ import Link from "next/link";
 import Image from "next/image";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteLibraryItemAction } from "@/app/admin/library/actions";
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { getAllLibraryItemsPaginated } from "@/lib/library";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+import { getAllLibraryItemsPaginated } from "@/services/library";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

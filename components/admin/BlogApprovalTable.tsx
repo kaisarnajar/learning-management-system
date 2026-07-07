@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { approveBlogPost, rejectBlogPost } from "@/app/admin/blog-approvals/actions";
-import type { BlogPostWithImages } from "@/lib/blogs";
+import type { BlogPostWithImages } from "@/services/blogs";
 import { useToast } from "@/components/shared/ToastProvider";
 
-import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/utils/form";
 
 export function BlogApprovalTable({
   pendingPosts,

@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BookCheckoutClient } from "@/components/bookstore/BookCheckoutClient";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
-import { prisma } from "@/lib/prisma";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { prisma } from "@/utils/prisma";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;

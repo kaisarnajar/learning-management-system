@@ -1,6 +1,6 @@
 import type { PrismaClient } from "@prisma/client";
-import { getDefaultFeesForLevel } from "../lib/course-pricing";
-import { PAYMENT_SETTINGS_ID } from "../lib/payment-settings";
+import { getDefaultFeesForLevel } from '../services/course-pricing';
+import { PAYMENT_SETTINGS_ID } from '../services/payment-settings';
 
 import { courses } from "../content/courses";
 const libraryItems = [

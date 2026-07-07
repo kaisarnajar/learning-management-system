@@ -2,15 +2,15 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth-actions";
-import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/services/auth-actions";
+import { prisma } from "@/utils/prisma";
 import {
   canStudentDeleteReview,
   canStudentEditReview,
   getStudentReviewForUser,
-} from "@/lib/student-reviews";
-import { studentReviewSchema } from "@/lib/validations";
-import { withDbErrorHandling } from "@/lib/db-error";
+} from "@/services/student-reviews";
+import { studentReviewSchema } from "@/utils/validations";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 function reviewsPath(suffix = "") {
   return `/profile/reviews${suffix}`;

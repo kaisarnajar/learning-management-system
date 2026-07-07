@@ -1,4 +1,4 @@
-import { requireAdmin } from "@/lib/auth-actions";
+import { requireAdmin } from "@/services/auth-actions";
 import { getEnrolledStudentsForGrades, getGradeRecordsForGradeId } from "@/app/actions/grades";
 import { GradeForm } from "@/components/grades/GradeForm";
 import { notFound } from "next/navigation";

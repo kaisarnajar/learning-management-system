@@ -5,13 +5,13 @@ import { useCallback } from "react";
 import { useActionState } from "react";
 import { submitContactInquiry, type SubmitContactInquiryState } from "@/app/contact/actions";
 
-import { labelClassName } from "@/lib/form";
-import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
+import { labelClassName } from "@/utils/form";
+import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
 import {
   type ContactInquiryFormValues,
   validateContactInquiryForm,
-} from "@/lib/profile-form-validation";
-import { useZodForm } from "@/lib/use-zod-form";
+} from "@/services/profile-form-validation";
+import { useZodForm } from "@/utils/use-zod-form";
 
 type ContactFormProps = {
   defaultName?: string;

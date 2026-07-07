@@ -6,8 +6,8 @@ import {
   buildUpiPaymentUrlFromSettings,
   buildUpiVpaUrlFromSettings,
   generateUpiQrDataUrl,
-} from "@/lib/upi";
-import { getPaymentSettings, isUpiConfiguredFromSettings, toBankDetails } from "@/lib/payment-settings";
+} from "@/services/upi";
+import { getPaymentSettings, isUpiConfiguredFromSettings, toBankDetails } from "@/services/payment-settings";
 
 type PaymentDetailsPanelProps = {
   /** Enrollment payment: fixed amount and reference for QR and bank transfer. */

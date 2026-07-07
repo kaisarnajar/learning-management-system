@@ -4,8 +4,8 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { saveCourseGrade } from "@/app/actions/grades";
-import type { GradeRecordInput } from "@/lib/grades";
-import { inputClassName, labelClassName } from "@/lib/form";
+import type { GradeRecordInput } from "@/services/grades";
+import { inputClassName, labelClassName } from "@/utils/form";
 
 export type StudentForGrades = {
   id: string;

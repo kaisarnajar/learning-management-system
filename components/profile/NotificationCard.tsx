@@ -2,7 +2,7 @@ import type { StudentNotification, StudentNotificationType } from "@prisma/clien
 import {
   notificationTypeClass,
   notificationTypeLabel,
-} from "@/lib/notifications";
+} from "@/services/notifications";
 import { viewNotification } from "@/app/profile/notifications/actions";
 
 function formatRelativeTime(date: Date): string {

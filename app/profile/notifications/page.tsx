@@ -2,9 +2,9 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import Link from "next/link";
 import { NotificationList } from "@/components/profile/NotificationList";
 import { Pagination } from "@/components/shared/Pagination";
-import { requireUser } from "@/lib/auth-actions";
-import { getNotificationsForUserPaginated, getUnreadNotificationCount } from "@/lib/notifications";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
+import { requireUser } from "@/services/auth-actions";
+import { getNotificationsForUserPaginated, getUnreadNotificationCount } from "@/services/notifications";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { markAllNotificationsReadAction } from "./actions";
 
 export default async function ProfileNotificationsPage({

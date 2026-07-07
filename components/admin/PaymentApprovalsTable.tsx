@@ -7,9 +7,9 @@ import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { confirmMonthlyPayment, declineMonthlyPayment, deleteApprovedPayment } from "@/app/admin/payments/actions";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
-import { formatPrice } from "@/lib/courses";
-import type { CoursePaymentSubmissionWithUser } from "@/lib/monthly-payments";
-import { MONTHLY_PAYMENT_APPROVED } from "@/lib/monthly-payment-status";
+import { formatPrice } from "@/services/courses";
+import type { CoursePaymentSubmissionWithUser } from "@/services/monthly-payments";
+import { MONTHLY_PAYMENT_APPROVED } from "@/services/monthly-payment-status";
 import { useToast } from "@/components/shared/ToastProvider";
 
 type PaymentApprovalsTableProps = {

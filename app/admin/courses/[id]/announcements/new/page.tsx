@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { createAdminCourseAnnouncement } from "@/lib/course-announcement-actions";
+import { createAdminCourseAnnouncement } from "@/services/course-announcement-actions";
 import { AnnouncementForm } from "@/components/teacher/AnnouncementForm";
-import { requireAdmin } from "@/lib/auth-actions";
-import { getCourseById } from "@/lib/courses";
+import { requireAdmin } from "@/services/auth-actions";
+import { getCourseById } from "@/services/courses";
 
 export default async function AdminNewCourseAnnouncementPage({
   params,

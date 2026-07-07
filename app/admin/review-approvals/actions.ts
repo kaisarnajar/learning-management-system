@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
-import { prisma } from "@/lib/prisma";
-import { HOMEPAGE_FEATURED_REVIEWS_MAX, getFeaturedHomepageReviewCount } from "@/lib/student-reviews";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { requireAdmin } from "@/services/auth-actions";
+import { prisma } from "@/utils/prisma";
+import { HOMEPAGE_FEATURED_REVIEWS_MAX, getFeaturedHomepageReviewCount } from "@/services/student-reviews";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 function revalidateReviewPaths(reviewId?: string) {
   revalidatePath("/");

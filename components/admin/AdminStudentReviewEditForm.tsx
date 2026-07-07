@@ -9,7 +9,7 @@ import {
   saveApprovedReviewHomepageSetting,
 } from "@/app/admin/review-approvals/actions";
 import { StarRating } from "@/components/reviews/StarRating";
-import { HOMEPAGE_FEATURED_REVIEWS_MAX } from "@/lib/student-reviews";
+import { HOMEPAGE_FEATURED_REVIEWS_MAX } from "@/services/student-reviews";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import type { StudentReviewStatus } from "@prisma/client";

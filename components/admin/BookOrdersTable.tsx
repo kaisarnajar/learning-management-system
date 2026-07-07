@@ -2,15 +2,15 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import type { BookOrderWithItems } from "@/lib/bookstore";
+import type { BookOrderWithItems } from "@/services/bookstore";
 import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrderRefunded, deleteBookOrder } from "@/app/admin/bookstore/orders/actions";
-import { bookOrderStatusLabel, bookOrderStatusClass } from "@/lib/bookstore";
+import { bookOrderStatusLabel, bookOrderStatusClass } from "@/services/bookstore";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { useToast } from "@/components/shared/ToastProvider";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 
-import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/utils/form";
 
 export function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;

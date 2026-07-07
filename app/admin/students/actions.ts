@@ -2,10 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { isAdminEmail } from "@/lib/admin";
-import { requireAdmin } from "@/lib/auth-actions";
-import { prisma } from "@/lib/prisma";
-import { withDbErrorHandling } from "@/lib/db-error";
+import { isAdminEmail } from "@/services/admin";
+import { requireAdmin } from "@/services/auth-actions";
+import { prisma } from "@/utils/prisma";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 function revalidateStudentPaths(courseIds: string[] = []) {
   revalidatePath("/admin/students");
@@ -54,7 +54,7 @@ export async function deleteStudentUserForm(id: string) {
   redirect("/admin/students?deleted=1");
 }
 
-import { validateStudentForm, type StudentFormValues } from "@/lib/admin-form-validation";
+import { validateStudentForm, type StudentFormValues } from "@/services/admin-form-validation";
 import type { Occupation } from "@prisma/client";
 
 function parseStudentForm(formData: FormData): StudentFormValues {

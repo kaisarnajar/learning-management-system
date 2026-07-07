@@ -5,7 +5,7 @@ import { SiteAnnouncementForm } from "@/components/admin/SiteAnnouncementForm";
 import {
   getFeaturedHomepageAnnouncementCount,
   HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX,
-} from "@/lib/site-announcements";
+} from "@/services/site-announcements";
 
 export default async function NewSiteAnnouncementPage({
   searchParams,

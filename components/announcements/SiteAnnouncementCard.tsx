@@ -1,6 +1,6 @@
 import Link from "next/link";
-import type { SiteAnnouncementPublic } from "@/lib/site-announcements";
-import { formatSiteAnnouncementDate } from "@/lib/site-announcements";
+import type { SiteAnnouncementPublic } from "@/services/site-announcements";
+import { formatSiteAnnouncementDate } from "@/services/site-announcements";
 
 type SiteAnnouncementCardProps = {
   announcement: SiteAnnouncementPublic;

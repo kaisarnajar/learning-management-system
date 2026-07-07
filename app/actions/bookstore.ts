@@ -1,9 +1,9 @@
 "use server";
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { validatePaymentScreenshot, savePaymentScreenshot } from "@/lib/payment-upload";
-import { bookstoreCheckoutSchema } from "@/lib/validations";
+import { auth } from "@/services/auth";
+import { prisma } from "@/utils/prisma";
+import { validatePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
+import { bookstoreCheckoutSchema } from "@/utils/validations";
 
 export async function submitBookOrder(formData: FormData) {
   const session = await auth();

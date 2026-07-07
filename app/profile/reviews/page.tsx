@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteStudentReview } from "@/app/profile/reviews/actions";
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 import { StudentReviewForm } from "@/components/profile/StudentReviewForm";
 import { StarRating } from "@/components/reviews/StarRating";
 import { Pagination } from "@/components/shared/Pagination";
 import { createStudentReview, updateStudentReview } from "@/app/profile/reviews/actions";
-import { requireUser } from "@/lib/auth-actions";
-import { clampPage, GRID_PAGE_SIZE, parsePaginationParams } from "@/lib/pagination";
-import { prisma } from "@/lib/prisma";
+import { requireUser } from "@/services/auth-actions";
+import { clampPage, GRID_PAGE_SIZE, parsePaginationParams } from "@/utils/pagination";
+import { prisma } from "@/utils/prisma";
 import {
   canStudentDeleteReview,
   canStudentEditReview,
@@ -16,8 +16,8 @@ import {
   getStudentReviewsForUserPaginated,
   reviewStatusClass,
   reviewStatusLabel,
-} from "@/lib/student-reviews";
-import { withDbErrorHandling } from "@/lib/db-error";
+} from "@/services/student-reviews";
+import { withDbErrorHandling } from "@/utils/db-error";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

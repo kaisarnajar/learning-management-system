@@ -3,7 +3,7 @@ import {
   buildFinanceQueryString,
   FINANCE_DATE_PRESETS,
   type FinanceFilters,
-} from "@/lib/finance-filters";
+} from "@/services/finance-filters";
 
 type FinanceDateFilterProps = {
   filters: FinanceFilters;

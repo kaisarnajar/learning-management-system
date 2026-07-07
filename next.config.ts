@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { MAX_BLOG_IMAGE_BYTES, MAX_BLOG_IMAGES } from "./lib/blog-limits";
+import { MAX_BLOG_IMAGE_BYTES, MAX_BLOG_IMAGES } from "./services/blog-limits";
 
 const r2Domain = process.env.R2_PUBLIC_URL 
   ? new URL(process.env.R2_PUBLIC_URL).hostname 

@@ -3,11 +3,11 @@
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
-import { formatInputDateValue } from "@/lib/form-date";
-import { notifyAllStudentsOfSiteAnnouncement } from "@/lib/notifications";
-import { enforceHomepageAnnouncementLimit, resolveAnnouncementFeaturedUpdate, getSiteAnnouncementById } from "@/lib/site-announcements";
-import { siteAnnouncementSchema } from "@/lib/validations";
+import { requireAdmin } from "@/services/auth-actions";
+import { formatInputDateValue } from "@/utils/form-date";
+import { notifyAllStudentsOfSiteAnnouncement } from "@/services/notifications";
+import { enforceHomepageAnnouncementLimit, resolveAnnouncementFeaturedUpdate, getSiteAnnouncementById } from "@/services/site-announcements";
+import { siteAnnouncementSchema } from "@/utils/validations";
 import {
   addImagesToAnnouncement,
   getRemoveAnnouncementImageIds,
@@ -16,8 +16,8 @@ import {
   updateSiteAnnouncementRecord,
   toggleSiteAnnouncementHomepageRecord,
   deleteSiteAnnouncementRecord
-} from "@/lib/site-announcement-mutations";
-import { deleteAnnouncementImageFile } from "@/lib/site-announcement-upload";
+} from "@/services/site-announcement-mutations";
+import { deleteAnnouncementImageFile } from "@/services/site-announcement-upload";
 
 function adminListPath(query = "") {
   return `/admin/announcements${query}`;

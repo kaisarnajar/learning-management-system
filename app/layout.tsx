@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Poppins, Amiri } from "next/font/google";
-import { indoPakArabic } from "@/lib/fonts/indo-pak-arabic";
+import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
 import { CartProvider } from "@/components/bookstore/CartProvider";
 import { SessionProvider } from "@/components/providers/SessionProvider";
 import { ToastProvider } from "@/components/shared/ToastProvider";

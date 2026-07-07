@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { updateCourseAnnouncement } from "@/lib/course-announcement-actions";
+import { updateCourseAnnouncement } from "@/services/course-announcement-actions";
 import { AnnouncementForm } from "@/components/teacher/AnnouncementForm";
-import { requireTeacher } from "@/lib/auth-actions";
-import { canTeacherManageCourseAnnouncement, getAnnouncementForCourse } from "@/lib/announcements";
-import { getTeacherCourseForPortal } from "@/lib/teacher-portal";
+import { requireTeacher } from "@/services/auth-actions";
+import { canTeacherManageCourseAnnouncement, getAnnouncementForCourse } from "@/services/announcements";
+import { getTeacherCourseForPortal } from "@/services/teacher-portal";
 
 export default async function EditCourseAnnouncementPage({
   params,

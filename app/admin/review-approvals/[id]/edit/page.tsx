@@ -6,7 +6,7 @@ import {
   HOMEPAGE_FEATURED_REVIEWS_MAX,
   getFeaturedHomepageReviewCount,
   getStudentReviewForAdmin,
-} from "@/lib/student-reviews";
+} from "@/services/student-reviews";
 
 export default async function AdminReviewEditPage({
   params,

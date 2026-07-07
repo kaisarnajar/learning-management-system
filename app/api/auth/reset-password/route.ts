@@ -1,9 +1,9 @@
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
-import { consumePasswordResetToken } from "@/lib/password-reset";
-import { prisma } from "@/lib/prisma";
-import { resetPasswordSchema } from "@/lib/validations";
+import { consumePasswordResetToken } from "@/services/password-reset";
+import { prisma } from "@/utils/prisma";
+import { resetPasswordSchema } from "@/utils/validations";
 
 export async function POST(request: Request) {
   try {

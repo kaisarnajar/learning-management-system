@@ -2,9 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { fatwaQuestionSchema } from "@/lib/validations";
+import { auth } from "@/services/auth";
+import { prisma } from "@/utils/prisma";
+import { fatwaQuestionSchema } from "@/utils/validations";
 
 export type SubmitFatwaState = {
   error?: string;

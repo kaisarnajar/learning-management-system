@@ -1,8 +1,8 @@
 import {
   INCOME_PAYMENT_TYPES,
   incomePaymentTypeLabel,
-} from "@/lib/monthly-payment-status";
-import type { FinanceFilters } from "@/lib/finance-filters";
+} from "@/services/monthly-payment-status";
+import type { FinanceFilters } from "@/services/finance-filters";
 
 type FinanceIncomeFiltersProps = {
   filters: FinanceFilters;

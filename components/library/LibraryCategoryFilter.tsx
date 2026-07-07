@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LIBRARY_TOPICS, type LibraryTopic } from "@/lib/library-options";
+import { LIBRARY_TOPICS, type LibraryTopic } from "@/services/library-options";
 
 type LibraryCategoryFilterProps = {
   activeCategory?: string;

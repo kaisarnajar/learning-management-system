@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { getAdminEmails } from "../lib/admin";
+import { getAdminEmails } from '../services/admin';
 import {
   demoAdminUserId,
   demoStudentUserId,

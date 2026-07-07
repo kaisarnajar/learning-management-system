@@ -1,4 +1,4 @@
-import { formatPrice } from "@/lib/courses";
+import { formatPrice } from "@/services/courses";
 
 type FinanceSummaryCardsProps = {
   incomeTotal: number;

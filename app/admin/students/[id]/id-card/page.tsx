@@ -1,10 +1,10 @@
-import { requireAdmin } from "@/lib/auth-actions";
-import { getStudentUserById } from "@/lib/students";
+import { requireAdmin } from "@/services/auth-actions";
+import { getStudentUserById } from "@/services/students";
 import { notFound } from "next/navigation";
 import { IdCardPreview } from "@/components/profile/IdCardPreview";
 import Link from "next/link";
 import { PageHeader } from "@/components/site/PageHeader";
-import { isUserProfileComplete } from "@/lib/profile";
+import { isUserProfileComplete } from "@/services/profile";
 
 export default async function AdminStudentIdCardPage({
   params,

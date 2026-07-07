@@ -7,9 +7,9 @@ import {
   dailyInspirationKindLabel,
   getAllDailyInspirationsForAdminPaginated,
   getHomepageDailyInspirationId,
-} from "@/lib/daily-inspiration";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+} from "@/services/daily-inspiration";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
@@ -26,7 +26,7 @@ type PageParams = {
   [key: string]: string | undefined;
 };
 
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 
 async function AdminDailyInspirationList({ params, q }: { params: PageParams; q?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params);

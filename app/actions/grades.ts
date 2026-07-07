@@ -1,12 +1,12 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { isAdminSession } from "@/lib/admin";
-import { getTeacherForSession } from "@/lib/teacher-auth";
+import { prisma } from "@/utils/prisma";
+import { auth } from "@/services/auth";
+import { isAdminSession } from "@/services/admin";
+import { getTeacherForSession } from "@/services/teacher-auth";
 import { revalidatePath } from "next/cache";
-import { generateGradeCardPdf } from "@/lib/grade-card-html";
-import { sendGradeCardEmail } from "@/lib/email";
+import { generateGradeCardPdf } from "@/utils/grade-card-html";
+import { sendGradeCardEmail } from "@/services/email";
 import {
   type GradeRecordInput,
   getCourseGradeCardsFromDb,
@@ -16,7 +16,7 @@ import {
   getStudentGradeRecordsFromDb,
   deleteCourseGradeFromDb,
   getStudentGradeReportFromDb,
-} from "@/lib/grades";
+} from "@/services/grades";
 
 /** Helper to authorize Admin or the assigned Teacher of the course */
 async function authorizeCourseGradeManagement(courseId: string) {

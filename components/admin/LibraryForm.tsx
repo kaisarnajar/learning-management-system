@@ -7,12 +7,12 @@ import { useCallback, useRef, useState } from "react";
 import {
   type LibraryFormValues,
   validateLibraryForm,
-} from "@/lib/admin-form-validation";
-import { HOMEPAGE_FEATURED_RESOURCES_MAX } from "@/lib/library";
-import { getLibraryLanguageOptions, getLibraryTopicOptions } from "@/lib/library-options";
-import { labelClassName } from "@/lib/form";
-import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
-import { useZodForm } from "@/lib/use-zod-form";
+} from "@/services/admin-form-validation";
+import { HOMEPAGE_FEATURED_RESOURCES_MAX } from "@/services/library";
+import { getLibraryLanguageOptions, getLibraryTopicOptions } from "@/services/library-options";
+import { labelClassName } from "@/utils/form";
+import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
+import { useZodForm } from "@/utils/use-zod-form";
 
 type LibraryFormProps = {
   item?: LibraryItem;

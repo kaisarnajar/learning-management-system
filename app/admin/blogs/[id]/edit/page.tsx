@@ -2,8 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { updateBlogPost } from "@/app/admin/blogs/actions";
 import { BlogPostForm } from "@/components/admin/BlogPostForm";
-import { isTeacherSubmittedBlog } from "@/lib/blog-approval";
-import { getBlogPostForAdmin, getFeaturedHomepageBlogCount } from "@/lib/blogs";
+import { isTeacherSubmittedBlog } from "@/services/blog-approval";
+import { getBlogPostForAdmin, getFeaturedHomepageBlogCount } from "@/services/blogs";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

@@ -2,13 +2,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AnnouncementCard } from "@/components/announcements/AnnouncementCard";
 import { Pagination } from "@/components/shared/Pagination";
-import { requireUser } from "@/lib/auth-actions";
+import { requireUser } from "@/services/auth-actions";
 import {
   getAnnouncementAuthorName,
   getAnnouncementsVisibleToStudentPaginated,
-} from "@/lib/announcements";
-import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { getStudentCourseForAnnouncements } from "@/lib/student-announcements";
+} from "@/services/announcements";
+import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { getStudentCourseForAnnouncements } from "@/services/student-announcements";
 
 export default async function StudentCourseAnnouncementsPage({
   params,

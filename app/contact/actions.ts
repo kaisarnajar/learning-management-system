@@ -1,10 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { normalizeContactPhone } from "@/lib/contact-inquiries";
-import { prisma } from "@/lib/prisma";
-import { contactInquirySchema } from "@/lib/validations";
+import { auth } from "@/services/auth";
+import { normalizeContactPhone } from "@/services/contact-inquiries";
+import { prisma } from "@/utils/prisma";
+import { contactInquirySchema } from "@/utils/validations";
 
 export type SubmitContactInquiryState = {
   error?: string;

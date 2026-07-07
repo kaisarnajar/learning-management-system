@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Section } from "@/components/site/Section";
-import { formatSiteAnnouncementDate, getSiteAnnouncementById } from "@/lib/site-announcements";
+import { formatSiteAnnouncementDate, getSiteAnnouncementById } from "@/services/site-announcements";
 
 type PageProps = {
   params: Promise<{ id: string }>;

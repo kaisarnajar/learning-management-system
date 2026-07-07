@@ -7,11 +7,11 @@ import { previewTeacherAccount } from "@/app/admin/teachers/actions";
 import {
   type TeacherFormValues,
   validateTeacherForm,
-} from "@/lib/admin-form-validation";
-import { deriveTeacherInitials } from "@/lib/teacher-admin";
-import { labelClassName } from "@/lib/form";
-import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
-import { useZodForm } from "@/lib/use-zod-form";
+} from "@/services/admin-form-validation";
+import { deriveTeacherInitials } from "@/services/teacher-admin";
+import { labelClassName } from "@/utils/form";
+import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
+import { useZodForm } from "@/utils/use-zod-form";
 
 type TeacherFormProps = {
   teacher?: Teacher;

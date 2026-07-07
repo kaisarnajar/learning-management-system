@@ -1,10 +1,10 @@
 "use server";
 
-import { ensureAuth } from "@/lib/auth-utils";
-import { processMonthlyPayment, processEnrollmentPayment } from "@/lib/payments";
-import { isUpiConfigured } from "@/lib/upi";
-import { monthlyPaymentSubmitSchema, enrollmentPaymentSubmitSchema } from "@/lib/validations";
-import { validatePaymentScreenshot } from "@/lib/payment-upload";
+import { ensureAuth } from "@/utils/auth-utils";
+import { processMonthlyPayment, processEnrollmentPayment } from "@/services/payments";
+import { isUpiConfigured } from "@/services/upi";
+import { monthlyPaymentSubmitSchema, enrollmentPaymentSubmitSchema } from "@/utils/validations";
+import { validatePaymentScreenshot } from "@/services/payment-upload";
 
 export async function submitMonthlyPayment(formData: FormData) {
   const { session, error: authError } = await ensureAuth();

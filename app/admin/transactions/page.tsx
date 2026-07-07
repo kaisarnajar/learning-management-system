@@ -2,8 +2,8 @@ import Link from "next/link";
 import { RecordPaymentForm } from "@/components/admin/RecordPaymentForm";
 import { RecordExpenseForm } from "@/components/admin/RecordExpenseForm";
 
-import { getAllCourses } from "@/lib/courses";
-import { getAllTeachers } from "@/lib/teachers";
+import { getAllCourses } from "@/services/courses";
+import { getAllTeachers } from "@/services/teachers";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 type TabType = "payments" | "expenses";

@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { deleteContactInquiryForm, replyToContactInquiry } from "@/app/admin/contact-inquiries/actions";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { ReplyContactInquiryForm } from "@/components/admin/ReplyContactInquiryForm";
-import { getContactInquiryById } from "@/lib/contact-inquiries";
+import { getContactInquiryById } from "@/services/contact-inquiries";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

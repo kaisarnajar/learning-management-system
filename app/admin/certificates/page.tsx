@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { getGeneratedCertificatesPaginated } from "@/lib/certificates-admin";
+import { getGeneratedCertificatesPaginated } from "@/services/certificates-admin";
 import { AdminCertificatesTable } from "@/components/admin/certificates/AdminCertificatesTable";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";

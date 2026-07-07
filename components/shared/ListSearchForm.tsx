@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SEARCH_PARAM } from "@/lib/text-search";
+import { SEARCH_PARAM } from "@/utils/text-search";
 
 type ListSearchFormProps = {
   action: string;

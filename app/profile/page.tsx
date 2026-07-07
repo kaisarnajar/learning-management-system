@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { ProfileSection } from "@/components/profile/ProfileSection";
-import { requireUser } from "@/lib/auth-actions";
+import { requireUser } from "@/services/auth-actions";
 import {
   isProfileComplete,
   userProfileSelect,
-} from "@/lib/profile";
-import { prisma } from "@/lib/prisma";
-import { withDbErrorHandling } from "@/lib/db-error";
+} from "@/services/profile";
+import { prisma } from "@/utils/prisma";
+import { withDbErrorHandling } from "@/utils/db-error";
 
 export default async function ProfilePage({
   searchParams,

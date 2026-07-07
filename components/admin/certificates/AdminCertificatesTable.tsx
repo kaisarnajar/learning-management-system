@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { AdminCertificateEntry } from "@/lib/certificates-admin";
+import { AdminCertificateEntry } from "@/services/certificates-admin";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteCertificate } from "@/app/actions/certificates";
 import { useToast } from "@/components/shared/ToastProvider";

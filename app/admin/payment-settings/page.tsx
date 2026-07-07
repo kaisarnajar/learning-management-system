@@ -1,6 +1,6 @@
 import { PaymentSettingsForm } from "@/components/admin/PaymentSettingsForm";
-import { requireAdmin } from "@/lib/auth-actions";
-import { getPaymentSettings } from "@/lib/payment-settings";
+import { requireAdmin } from "@/services/auth-actions";
+import { getPaymentSettings } from "@/services/payment-settings";
 import { updatePaymentSettings } from "./actions";
 import { ActionToast } from "@/components/shared/ToastProvider";
 

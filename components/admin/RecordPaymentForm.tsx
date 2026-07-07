@@ -4,7 +4,7 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import { useActionState, useState } from "react";
 import { recordStudentPayment, type RecordPaymentState } from "@/app/admin/record-payment/actions";
 import { previewStudentAccountForEnrollment } from "@/app/admin/enrollments/actions";
-import { inputClassName, labelClassName } from "@/lib/form";
+import { inputClassName, labelClassName } from "@/utils/form";
 import type { Course } from "@prisma/client";
 
 type RecordPaymentFormProps = {

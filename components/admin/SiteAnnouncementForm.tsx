@@ -8,13 +8,13 @@ import { DateInputField } from "@/components/form/DateInputField";
 import {
   type SiteAnnouncementFormValues,
   validateSiteAnnouncementForm,
-} from "@/lib/admin-form-validation";
-import { getFormDateInputValue } from "@/lib/form-date";
-import { labelClassName } from "@/lib/form";
-import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
-import { HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX } from "@/lib/site-announcements";
-import { MAX_ANNOUNCEMENT_IMAGES } from "@/lib/site-announcement-upload";
-import { useZodForm } from "@/lib/use-zod-form";
+} from "@/services/admin-form-validation";
+import { getFormDateInputValue } from "@/utils/form-date";
+import { labelClassName } from "@/utils/form";
+import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
+import { HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX } from "@/services/site-announcements";
+import { MAX_ANNOUNCEMENT_IMAGES } from "@/services/site-announcement-upload";
+import { useZodForm } from "@/utils/use-zod-form";
 
 type SiteAnnouncementFormProps = {
   action: (formData: FormData) => Promise<void>;

@@ -5,8 +5,8 @@ import {
   EXPENSE_CATEGORIES,
   EXPENSE_CATEGORY_TEACHER_SALARY,
   expenseCategoryLabel,
-} from "@/lib/expense-categories";
-import type { FinanceFilters } from "@/lib/finance-filters";
+} from "@/services/expense-categories";
+import type { FinanceFilters } from "@/services/finance-filters";
 
 type FinanceExpenseFiltersProps = {
   filters: FinanceFilters;

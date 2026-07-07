@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { buildPageHref, getTotalPages } from "@/lib/pagination";
+import { buildPageHref, getTotalPages } from "@/utils/pagination";
 
 type PaginationProps = {
   basePath: string;

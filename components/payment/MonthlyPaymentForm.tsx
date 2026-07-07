@@ -1,8 +1,8 @@
 "use client";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 
-import { getPaymentYearOptions } from "@/lib/monthly-payments";
-import { getFeeFrequencyOption, isOneTimeFee, getFeeFrequencyLabel } from "@/lib/fee-frequency";
+import { getPaymentYearOptions } from "@/services/monthly-payments";
+import { getFeeFrequencyOption, isOneTimeFee, getFeeFrequencyLabel } from "@/services/fee-frequency";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { submitMonthlyPayment } from "@/app/actions/payments";

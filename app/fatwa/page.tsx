@@ -5,9 +5,9 @@ import { FatwaCard } from "@/components/fatwa/FatwaCard";
 import { FatwaCategoryFilter } from "@/components/fatwa/FatwaCategoryFilter";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
-import { getAnsweredFatwasPaginated } from "@/lib/fatwa";
-import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+import { getAnsweredFatwasPaginated } from "@/services/fatwa";
+import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });

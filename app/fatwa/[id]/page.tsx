@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/site/PageHeader";
 import { Section } from "@/components/site/Section";
-import { getAnsweredFatwaById } from "@/lib/fatwa";
+import { getAnsweredFatwaById } from "@/services/fatwa";
 
 type FatwaDetailPageProps = {
   params: Promise<{ id: string }>;

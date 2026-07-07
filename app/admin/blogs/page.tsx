@@ -3,10 +3,10 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteBlogPost } from "@/app/admin/blogs/actions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
-import { blogApprovalStatusClass, blogApprovalStatusLabel } from "@/lib/blog-approval";
-import { getAllBlogPostsForAdminPaginated, isBlogPubliclyVisible } from "@/lib/blogs";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { parseSearchQuery } from "@/lib/text-search";
+import { blogApprovalStatusClass, blogApprovalStatusLabel } from "@/services/blog-approval";
+import { getAllBlogPostsForAdminPaginated, isBlogPubliclyVisible } from "@/services/blogs";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { parseSearchQuery } from "@/utils/text-search";
 import type { BlogPost } from "@prisma/client";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
@@ -31,7 +31,7 @@ function statusBadge(post: Pick<BlogPost, "approvalStatus" | "published">) {
   };
 }
 
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 
 async function AdminBlogsList({ params, q }: { params: PageParams; q?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params);

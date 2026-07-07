@@ -5,9 +5,9 @@ import { PageHeader } from "@/components/site/PageHeader";
 import { Section } from "@/components/site/Section";
 import { MarkdownText } from "@/components/shared/MarkdownText";
 import { Pagination } from "@/components/shared/Pagination";
-import { getPublicCoursesByTeacherIdPaginated } from "@/lib/courses";
-import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/lib/pagination";
-import { getPublishedTeacherById } from "@/lib/teachers";
+import { getPublicCoursesByTeacherIdPaginated } from "@/services/courses";
+import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
+import { getPublishedTeacherById } from "@/services/teachers";
 
 type TeacherPageProps = {
   params: Promise<{ id: string }>;

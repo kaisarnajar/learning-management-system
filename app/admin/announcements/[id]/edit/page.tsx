@@ -5,7 +5,7 @@ import { SiteAnnouncementForm } from "@/components/admin/SiteAnnouncementForm";
 import {
   getFeaturedHomepageAnnouncementCount,
   getSiteAnnouncementForAdmin,
-} from "@/lib/site-announcements";
+} from "@/services/site-announcements";
 
 export default async function EditSiteAnnouncementPage({
   params,

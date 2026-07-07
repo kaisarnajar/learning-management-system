@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { withDbErrorHandling } from "@/lib/db-error";
-import { generateGradeCardPdf } from "@/lib/grade-card-html";
-import { isAdminSession } from "@/lib/admin";
+import { auth } from "@/services/auth";
+import { prisma } from "@/utils/prisma";
+import { withDbErrorHandling } from "@/utils/db-error";
+import { generateGradeCardPdf } from "@/utils/grade-card-html";
+import { isAdminSession } from "@/services/admin";
 
 export const dynamic = "force-dynamic";
 

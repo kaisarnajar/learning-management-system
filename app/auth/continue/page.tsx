@@ -1,6 +1,6 @@
-import { auth } from "@/lib/auth";
-import { getPostLoginPath } from "@/lib/auth-redirect";
-import { isUserProfileComplete } from "@/lib/profile";
+import { auth } from "@/services/auth";
+import { getPostLoginPath } from "@/services/auth-redirect";
+import { isUserProfileComplete } from "@/services/profile";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";

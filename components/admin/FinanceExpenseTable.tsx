@@ -1,5 +1,5 @@
-import { expenseCategoryLabel } from "@/lib/expense-categories";
-import { formatPrice } from "@/lib/courses";
+import { expenseCategoryLabel } from "@/services/expense-categories";
+import { formatPrice } from "@/services/courses";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteExpenseById } from "@/app/admin/finance/actions";
 
@@ -12,7 +12,7 @@ type ExpenseRecord = {
   teacher: { id: string; name: string } | null;
 };
 
-import type { FinanceSearchParams } from "@/lib/finance-filters";
+import type { FinanceSearchParams } from "@/services/finance-filters";
 
 type FinanceExpenseTableProps = {
   expenses: ExpenseRecord[];

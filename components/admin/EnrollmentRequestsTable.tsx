@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { approveEnrollmentRequest, rejectEnrollmentRequest } from "@/app/admin/enrollments/actions";
-import type { PendingEnrollmentWithUser } from "@/lib/enrollments";
+import type { PendingEnrollmentWithUser } from "@/services/enrollments";
 import { useToast } from "@/components/shared/ToastProvider";
 
 export function EnrollmentRequestsTable({

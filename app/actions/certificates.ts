@@ -1,12 +1,12 @@
 "use server";
 
 
-import { auth } from "@/lib/auth";
-import { isAdminSession } from "@/lib/admin";
-import { prisma } from "@/lib/prisma";
-import { sendCertificateEmail } from "@/lib/email";
-import { getCertificateFilename, generateCertificatePdf } from "@/lib/certificate";
-import { getCourseById } from "@/lib/courses";
+import { auth } from "@/services/auth";
+import { isAdminSession } from "@/services/admin";
+import { prisma } from "@/utils/prisma";
+import { sendCertificateEmail } from "@/services/email";
+import { getCertificateFilename, generateCertificatePdf } from "@/services/certificate";
+import { getCourseById } from "@/services/courses";
 import crypto from "crypto";
 
 export async function generateCertificate(enrollmentId: string, certificateType: "APPRECIATION" | "COMPLETION", certificateGrade?: number) {

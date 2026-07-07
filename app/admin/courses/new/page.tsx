@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { CourseForm } from "@/components/admin/CourseForm";
 import { createCourse } from "@/app/admin/courses/actions";
-import { getFeaturedHomepageCourseCount } from "@/lib/courses";
-import { getAllTeachers } from "@/lib/teachers";
+import { getFeaturedHomepageCourseCount } from "@/services/courses";
+import { getAllTeachers } from "@/services/teachers";
 
 export default async function NewCoursePage({
   searchParams,

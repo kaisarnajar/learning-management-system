@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { LibraryForm } from "@/components/admin/LibraryForm";
 import { createLibraryItem } from "@/app/admin/library/actions";
-import { getFeaturedHomepageLibraryCount } from "@/lib/library";
+import { getFeaturedHomepageLibraryCount } from "@/services/library";
 
 export default async function NewLibraryPage({
   searchParams,

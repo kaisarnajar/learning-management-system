@@ -1,5 +1,5 @@
-import { formatPrice } from "@/lib/courses";
-import type { BookstoreFinanceSummary } from "@/lib/finance-bookstore";
+import { formatPrice } from "@/services/courses";
+import type { BookstoreFinanceSummary } from "@/services/finance-bookstore";
 
 export function BookstoreFinanceSummaryCards({ summary }: { summary: BookstoreFinanceSummary }) {
   const profitPositive = summary.totalProfitLossPaise >= 0;

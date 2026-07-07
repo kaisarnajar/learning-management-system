@@ -2,7 +2,7 @@ import type { AnnouncementCategory } from "@prisma/client";
 import Link from "next/link";
 import { AnnouncementCategoryBadge } from "@/components/announcements/AnnouncementCategoryBadge";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { formatAnnouncementDate } from "@/lib/announcements";
+import { formatAnnouncementDate } from "@/services/announcements";
 
 type AdminCourseAnnouncementCardProps = {
   courseId: string;
@@ -18,7 +18,7 @@ type AdminCourseAnnouncementCardProps = {
   deleteAction: (courseId: string, announcementId: string) => Promise<void>;
 };
 
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 
 export function AdminCourseAnnouncementCard({
   courseId,

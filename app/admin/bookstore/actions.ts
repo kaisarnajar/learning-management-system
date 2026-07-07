@@ -3,11 +3,11 @@
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/lib/auth-actions";
-import { saveBookImage, validateBookImage, deleteBookImage } from "@/lib/bookstore-upload";
-import { prisma } from "@/lib/prisma";
-import { resolveBookFeaturedUpdate } from "@/lib/bookstore";
-import { bookSchema } from "@/lib/validations";
+import { requireAdmin } from "@/services/auth-actions";
+import { saveBookImage, validateBookImage, deleteBookImage } from "@/services/bookstore-upload";
+import { prisma } from "@/utils/prisma";
+import { resolveBookFeaturedUpdate } from "@/services/bookstore";
+import { bookSchema } from "@/utils/validations";
 
 function parseBookForm(formData: FormData) {
   return bookSchema.safeParse({

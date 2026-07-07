@@ -2,9 +2,9 @@ import type { AnnouncementCategory } from "@prisma/client";
 import Link from "next/link";
 import { AnnouncementCategoryBadge } from "@/components/announcements/AnnouncementCategoryBadge";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { deleteCourseAnnouncement } from "@/lib/course-announcement-actions";
-import { formatAnnouncementDate } from "@/lib/announcements";
-import { adminActionButtonClassName } from "@/lib/form";
+import { deleteCourseAnnouncement } from "@/services/course-announcement-actions";
+import { formatAnnouncementDate } from "@/services/announcements";
+import { adminActionButtonClassName } from "@/utils/form";
 
 type TeacherCourseAnnouncementCardProps = {
   courseId: string;

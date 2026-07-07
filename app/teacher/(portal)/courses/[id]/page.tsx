@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { adminActionButtonClassName } from "@/lib/form";
+import { adminActionButtonClassName } from "@/utils/form";
 import { Pagination } from "@/components/shared/Pagination";
-import { requireTeacher } from "@/lib/auth-actions";
-import { clampPage, parsePaginationParams } from "@/lib/pagination";
-import { formatRollNumber } from "@/lib/roll-numbers";
-import { getTeacherCourseStudentsPaginated } from "@/lib/teacher-portal";
+import { requireTeacher } from "@/services/auth-actions";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { formatRollNumber } from "@/services/roll-numbers";
+import { getTeacherCourseStudentsPaginated } from "@/services/teacher-portal";
 
 export default async function TeacherCourseStudentsPage({
   params,

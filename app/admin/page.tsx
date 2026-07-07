@@ -1,18 +1,18 @@
 import Link from "next/link";
-import { ADMIN_DASHBOARD_LINK_HREFS, ADMIN_NAV_LINKS, ADMIN_NAV_GROUPS } from "@/lib/admin-nav";
-import { getPendingBlogApprovalCount } from "@/lib/blog-approval";
-import { getBookCount, getPendingBookOrderCount } from "@/lib/bookstore";
-import { getPendingContactInquiryCount } from "@/lib/contact-inquiries";
+import { ADMIN_DASHBOARD_LINK_HREFS, ADMIN_NAV_LINKS, ADMIN_NAV_GROUPS } from "@/services/admin-nav";
+import { getPendingBlogApprovalCount } from "@/services/blog-approval";
+import { getBookCount, getPendingBookOrderCount } from "@/services/bookstore";
+import { getPendingContactInquiryCount } from "@/services/contact-inquiries";
 import {
   getAwaitingEnrollmentFeeCount,
   getPendingEnrollmentApprovalCount,
-} from "@/lib/enrollments";
-import { getPendingStudentReviewCount } from "@/lib/student-reviews";
-import { getPendingPaymentCount } from "@/lib/monthly-payments";
-import { prisma } from "@/lib/prisma";
-import { getStudentCount } from "@/lib/students";
-import { withDbErrorHandling } from "@/lib/db-error";
-import { requireAdmin } from "@/lib/auth-actions";
+} from "@/services/enrollments";
+import { getPendingStudentReviewCount } from "@/services/student-reviews";
+import { getPendingPaymentCount } from "@/services/monthly-payments";
+import { prisma } from "@/utils/prisma";
+import { getStudentCount } from "@/services/students";
+import { withDbErrorHandling } from "@/utils/db-error";
+import { requireAdmin } from "@/services/auth-actions";
 
 type DashboardStat = {
   label: string;

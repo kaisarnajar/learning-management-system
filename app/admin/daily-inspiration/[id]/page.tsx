@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getDailyInspirationForAdmin, dailyInspirationKindLabel } from "@/lib/daily-inspiration";
+import { getDailyInspirationForAdmin, dailyInspirationKindLabel } from "@/services/daily-inspiration";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteDailyInspiration } from "@/app/admin/daily-inspiration/actions";
-import { indoPakArabic } from "@/lib/fonts/indo-pak-arabic";
+import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
 import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["400", "600"] });

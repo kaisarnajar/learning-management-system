@@ -1,5 +1,5 @@
 import type { AnnouncementCategory } from "@prisma/client";
-import { announcementCategoryLabels, announcementCategoryStyles } from "@/lib/announcements";
+import { announcementCategoryLabels, announcementCategoryStyles } from "@/services/announcements";
 
 export function AnnouncementCategoryBadge({ category }: { category: AnnouncementCategory }) {
   return (

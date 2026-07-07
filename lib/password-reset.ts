@@ -36,7 +36,7 @@ export async function createPasswordResetToken(email: string): Promise<string | 
   const normalized = normalizeAccountEmail(email);
   const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { email: normalized } }), "Database operation failed");
 
-  if (!user?.password) {
+  if (!user) {
     return null;
   }
 

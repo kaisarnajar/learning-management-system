@@ -36,15 +36,18 @@ export async function POST(request: Request) {
         debugLink = resetUrl;
       }
 
-      try {
-        await sendPasswordResetEmail({ to: email, resetUrl });
-      } catch (emailError) {
-        if (emailError && typeof emailError === "object" && "digest" in emailError && typeof emailError.digest === "string" && emailError.digest.startsWith("NEXT_REDIRECT")) { throw emailError; }
-        console.error("[forgot-password] SMTP send failed:", emailError);
+      const emailResult = await sendPasswordResetEmail({ to: email, resetUrl });
+      
+      if (!emailResult.sent && !emailResult.skipped) {
+        console.error("[forgot-password] SMTP send failed:", emailResult.error);
         console.info("[forgot-password] Reset link (use if email did not arrive):", resetUrl);
         if (process.env.NODE_ENV === "development") {
           debugLink = resetUrl;
         }
+        return NextResponse.json(
+          { error: "Failed to send reset email. Please try again later or contact support." },
+          { status: 500 },
+        );
       }
     }
 

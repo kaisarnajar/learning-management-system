@@ -1,4 +1,3 @@
-import { PROCESS_IMAGE_SCRIPT } from "./html-scripts";
 
 export function renderCertificateToHtml(data: {
   studentName: string;
@@ -183,9 +182,6 @@ export function renderCertificateToHtml(data: {
     class="absolute bottom-0 right-0 w-40 h-40 border-b-pdf-xl border-r-pdf-xl border-brand-primary"
   ></div>
 
-  <script>
-    ${PROCESS_IMAGE_SCRIPT}
-  </script>
 </div>
 `;
 }

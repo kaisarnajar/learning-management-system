@@ -1,5 +1,5 @@
 import { ReceiptData } from '@/types/receipt';
-import { PROCESS_IMAGE_SCRIPT } from "./html-scripts";
+
 import { BRAND_CONFIG } from "@/config/brand";
 
 export function renderReceiptToHtml(data: ReceiptData): string {
@@ -151,8 +151,6 @@ export function renderReceiptToHtml(data: ReceiptData): string {
         </div>
       </div>
     </div>
-    <script>
-      ${PROCESS_IMAGE_SCRIPT}
-    </script>
+
   `;
 }

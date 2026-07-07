@@ -213,8 +213,21 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
   }).join('\n');
 
   return `
-  ${pagesHtml}
-
+<style>
+  .page-container {
+    width: 210mm;
+    height: 297mm;
+    box-sizing: border-box;
+    padding: 10mm;
+    page-break-after: always;
+    background-color: #ffffff;
+    position: relative;
+  }
+  .page-container:last-child {
+    page-break-after: avoid;
+  }
+</style>
+${pagesHtml}
   `;
 }
 

@@ -50,23 +50,7 @@ export function getOverallGrade(percentage: number): string {
 
 export function renderGradeCardToHtml(data: GradeCardData): string {
   return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  
-  <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #ffffff;
-      -webkit-print-color-adjust: exact;
-    }
-  </style>
-</head>
-<body class="p-10">
+<div class="p-10 bg-white min-h-screen">
   <div class="max-w-4xl mx-auto border-pdf-thick border-brand-primary rounded-xl p-8 bg-surface-cream relative" style="min-height: 720px;">
     <!-- Watermark -->
     <div class="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
@@ -192,11 +176,9 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
             <p class="text-pdf-10 text-slate-500">${data.authorityDesignation}</p>
           </div>
         </div>
-      </div>
     </div>
   </div>
-
-  `;
+</div>  `;
 }
 
 export async function generateGradeCardPdf(enrollmentId: string): Promise<Buffer> {

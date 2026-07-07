@@ -1,10 +1,12 @@
-export const PAYMENT_TYPE_MONTHLY = "monthly" as const;
-export const PAYMENT_TYPE_QUARTERLY = "quarterly" as const;
-export const PAYMENT_TYPE_HALF_YEARLY = "half_yearly" as const;
-export const PAYMENT_TYPE_YEARLY = "yearly" as const;
-export const PAYMENT_TYPE_ONE_TIME = "one_time" as const;
-export const PAYMENT_TYPE_ENROLLMENT = "enrollment" as const;
-export const PAYMENT_TYPE_MANUAL = "manual" as const;
+import { PAYMENTS, PAYMENT_SUBMISSION_UI } from "@/config/constants/payments";
+
+export const PAYMENT_TYPE_MONTHLY = PAYMENTS.TYPES.MONTHLY_FEE;
+export const PAYMENT_TYPE_QUARTERLY = PAYMENTS.TYPES.QUARTERLY_FEE;
+export const PAYMENT_TYPE_HALF_YEARLY = PAYMENTS.TYPES.HALF_YEARLY_FEE;
+export const PAYMENT_TYPE_YEARLY = PAYMENTS.TYPES.YEARLY_FEE;
+export const PAYMENT_TYPE_ONE_TIME = PAYMENTS.TYPES.ONE_TIME;
+export const PAYMENT_TYPE_ENROLLMENT = PAYMENTS.TYPES.ENROLLMENT;
+export const PAYMENT_TYPE_MANUAL = PAYMENTS.TYPES.MANUAL;
 
 export const INCOME_PAYMENT_TYPES = [
   PAYMENT_TYPE_ENROLLMENT,
@@ -29,20 +31,18 @@ export function incomePaymentTypeLabel(type: string | null | undefined): string 
   return type ?? "Unknown";
 }
 
-export const MONTHLY_PAYMENT_PENDING = "pending_verification" as const;
-export const MONTHLY_PAYMENT_APPROVED = "approved" as const;
-export const MONTHLY_PAYMENT_DECLINED = "declined" as const;
+export const MONTHLY_PAYMENT_PENDING = PAYMENTS.SUBMISSION_STATUS.PENDING;
+export const MONTHLY_PAYMENT_APPROVED = PAYMENTS.SUBMISSION_STATUS.APPROVED;
+export const MONTHLY_PAYMENT_DECLINED = PAYMENTS.SUBMISSION_STATUS.REJECTED;
 
 export function monthlyPaymentStatusLabel(status: string): string {
-  if (status === MONTHLY_PAYMENT_PENDING) return "Awaiting verification";
-  if (status === MONTHLY_PAYMENT_APPROVED) return "Approved";
-  if (status === MONTHLY_PAYMENT_DECLINED) return "Declined — resubmit";
-  return status.replace(/_/g, " ");
+  return PAYMENT_SUBMISSION_UI[status]?.label || status.replace(/_/g, " ");
 }
 
 export function monthlyPaymentStatusClass(status: string): string {
-  if (status === MONTHLY_PAYMENT_APPROVED) return "bg-success-bg text-success-text";
-  if (status === MONTHLY_PAYMENT_PENDING) return "bg-warning-bg text-warning-text";
-  if (status === MONTHLY_PAYMENT_DECLINED) return "bg-destructive-bg text-destructive-text";
+  const variant = PAYMENT_SUBMISSION_UI[status]?.variant;
+  if (variant === "success") return "bg-success-bg text-success-text";
+  if (variant === "warning") return "bg-warning-bg text-warning-text";
+  if (variant === "destructive") return "bg-destructive-bg text-destructive-text";
   return "bg-surface-muted-hover text-muted";
 }

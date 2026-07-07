@@ -2,7 +2,8 @@ import { r2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from "@/lib/s3";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
 export const MAX_ANNOUNCEMENT_IMAGES = 5;
-export const MAX_ANNOUNCEMENT_IMAGE_BYTES = 5 * 1024 * 1024;
+import { FILE_CONFIG } from "@/config/constants/file";
+export const MAX_ANNOUNCEMENT_IMAGE_BYTES = FILE_CONFIG.MAX_IMAGE_SIZE_BYTES;
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 

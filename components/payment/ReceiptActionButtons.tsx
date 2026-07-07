@@ -6,6 +6,7 @@ import { generateReceipt } from "@/app/actions/receipts";
 import { useRouter } from "next/navigation";
 import { ActionButton } from "@/components/shared/ActionButton";
 import { useToast } from "@/components/shared/ToastProvider";
+import { PAYMENTS } from "@/config/constants/payments";
 
 interface ReceiptActionButtonsProps {
   paymentRecordId: string;
@@ -89,7 +90,7 @@ export function ReceiptActionButtons({
       >
         <h3 className="text-lg font-semibold text-foreground">Generate Receipt</h3>
         <p className="mt-2 text-sm text-muted">
-          Do you want to include GST at 18% inclusive?
+          Do you want to include GST at {PAYMENTS.GST_PERCENTAGE}% inclusive?
         </p>
         
         <div className="mt-6 flex justify-end gap-3">

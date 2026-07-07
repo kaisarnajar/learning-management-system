@@ -1,7 +1,8 @@
 import { r2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from "@/lib/s3";
 import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
-const MAX_IMAGE_BYTES = 2 * 1024 * 1024; // 2MB
+import { FILE_CONFIG } from "@/config/constants/file";
+const MAX_IMAGE_BYTES = FILE_CONFIG.MAX_AVATAR_SIZE_BYTES; // 2MB
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
 export function validateProfileImage(file: File | null): { error?: string } {

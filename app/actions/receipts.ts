@@ -2,6 +2,9 @@
 
 import { auth } from "@/lib/auth";
 import { BRAND_CONFIG } from "@/config/brand";
+import { revalidatePath } from "next/cache";
+
+import { PAYMENTS } from "@/config/constants/payments";
 import { isAdminSession } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { sendReceiptEmail } from "@/lib/email";
@@ -61,9 +64,9 @@ export async function generateReceipt(paymentRecordId: string, includeGst: boole
   const itemTotalPaise = record.amountInrPaise - shippingAmountPaise;
 
   if (includeGst) {
-    // Math logic based on user's specific inclusive rule
-    // "Total: ₹100, GST: ₹18, Fee: ₹82" => GST is exactly 18% of the item total amount.
-    gstAmount = Math.round(itemTotalPaise * 0.18);
+    // "Total: ₹100, GST: ₹18, Fee: ₹82" => GST is calculated from config
+    const gstRate = PAYMENTS.GST_PERCENTAGE / 100;
+    gstAmount = Math.round(itemTotalPaise * gstRate);
     baseAmount = itemTotalPaise - gstAmount;
   } else {
     baseAmount = itemTotalPaise;

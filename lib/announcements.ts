@@ -17,7 +17,8 @@ function courseAnnouncementWhere(
   );
 }
 
-export const ANNOUNCEMENT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+import { FILE_CONFIG } from "@/config/constants/file";
+export const ANNOUNCEMENT_MAX_UPLOAD_BYTES = FILE_CONFIG.MAX_ATTACHMENT_SIZE_BYTES;
 
 export function isAnnouncementAttachmentTooLarge(fileSizeBytes: number): boolean {
   return fileSizeBytes > ANNOUNCEMENT_MAX_UPLOAD_BYTES;

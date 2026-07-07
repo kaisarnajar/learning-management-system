@@ -6,6 +6,7 @@ import type { FatwaQuestion } from "@prisma/client";
 import { HOMEPAGE_FEATURED_FATWA_MAX } from "@/services/fatwa";
 import { labelClassName } from "@/utils/form";
 import { RichTextEditor } from "@/components/shared/RichTextEditor";
+import { BRAND_CONFIG } from "@/config/brand";
 
 type AnswerFatwaFormProps = {
   question: FatwaQuestion;
@@ -26,7 +27,7 @@ export function AnswerFatwaForm({ question, featuredCount, action, rejectAction 
         <p className="mt-2 whitespace-pre-wrap text-muted">{question.question}</p>
         <p className="mt-3 text-xs text-muted">
           {question.category}
-          {question.askerName !== "Anonymous" && ` · ${question.askerName} · ${question.askerEmail === "anonymous@darsequranacademy.org" ? "N/A" : question.askerEmail}`}
+          {question.askerName !== "Anonymous" && ` · ${question.askerName} · ${question.askerEmail === `anonymous@${new URL(BRAND_CONFIG.websiteUrl).hostname}` ? "N/A" : question.askerEmail}`}
         </p>
       </div>
 

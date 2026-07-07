@@ -1,6 +1,7 @@
 import { deliverMail, NotificationEmailBaseParams } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailButton, EmailFallbackLink } from "../components";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export async function sendEnrollmentApprovedEmail(
   params: NotificationEmailBaseParams & { courseTitle: string; courseUrl: string },
@@ -20,7 +21,7 @@ export async function sendEnrollmentApprovedEmail(
     "",
     "We pray this journey is deeply beneficial for you.",
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
@@ -52,7 +53,7 @@ export async function sendEnrollmentRejectedEmail(
     "",
     "If you believe this was a mistake or need clarification, please contact us.",
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `

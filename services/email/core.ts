@@ -57,7 +57,7 @@ export function getSenderEmail(): string {
   const raw =
     process.env.EMAIL_FROM?.trim() ||
     process.env.SMTP_USER?.trim() ||
-    "noreply@darsequranacademy.com";
+    `noreply@${new URL(BRAND_CONFIG.websiteUrl).hostname}`;
   const stripped = stripEnvQuotes(raw);
   const match = stripped.match(/<([^>]+)>/);
   return match ? match[1].trim() : stripped;

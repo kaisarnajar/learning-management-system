@@ -1,6 +1,7 @@
 import { deliverMail, EmailSendResult } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailInfoCard } from "../components";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export type CertificateEmailParams = {
   to: string;
@@ -27,23 +28,23 @@ export async function sendCertificateEmail(params: CertificateEmailParams): Prom
     `Assalamu Alaikum ${displayName},`,
     "",
     isCompletion
-      ? `Congratulations on successfully completing "${courseTitle}" at Darse Quran Academy!`
-      : `Thank you for your dedication and effort in "${courseTitle}" at Darse Quran Academy!`,
+      ? `Congratulations on successfully completing "${courseTitle}" at ${BRAND_CONFIG.name}!`
+      : `Thank you for your dedication and effort in "${courseTitle}" at ${BRAND_CONFIG.name}!`,
     "",
     `Your ${certLabel} (No. ${certificateNumber}) is attached to this email as a PDF.`,
     "",
     "We pray this certificate is a blessing and a recognition of your sincere efforts in seeking Islamic knowledge.",
     "",
     "Jazakallah Khair,",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
     ${
       isCompletion
-        ? `<p>Congratulations on successfully completing <strong>${courseTitle}</strong> at Darse Quran Academy! May Allah bless your efforts and make this knowledge a source of benefit for you and others.</p>`
-        : `<p>Thank you for your dedication and effort in <strong>${courseTitle}</strong> at Darse Quran Academy. Your commitment to Islamic education is truly appreciated.</p>`
+        ? `<p>Congratulations on successfully completing <strong>${courseTitle}</strong> at ${BRAND_CONFIG.name}! May Allah bless your efforts and make this knowledge a source of benefit for you and others.</p>`
+        : `<p>Thank you for your dedication and effort in <strong>${courseTitle}</strong> at ${BRAND_CONFIG.name}. Your commitment to Islamic education is truly appreciated.</p>`
     }
     ${EmailInfoCard({
       title: certLabel,
@@ -89,7 +90,7 @@ export async function sendIdCardEmail(params: IdCardEmailParams): Promise<EmailS
   const { to, studentName, pdfBuffer, pdfFilename } = params;
   const displayName = studentName || "Student";
 
-  const subject = `Your Digital ID Card — Darse Quran Academy`;
+  const subject = `Your Digital ID Card — ${BRAND_CONFIG.name}`;
   const preview = `Your official student ID card is attached to this email.`;
 
   const text = [
@@ -102,7 +103,7 @@ export async function sendIdCardEmail(params: IdCardEmailParams): Promise<EmailS
     "Please download and keep it for your records.",
     "",
     "Jazakallah Khair,",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
@@ -163,7 +164,7 @@ export async function sendGradeCardEmail(params: GradeCardEmailParams): Promise<
     "Please download and review it for your academic records.",
     "",
     "Jazakallah Khair,",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
@@ -224,7 +225,7 @@ export async function sendAttendanceCardEmail(params: AttendanceCardEmailParams)
     "Please download and review it for your academic records.",
     "",
     "Jazakallah Khair,",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `

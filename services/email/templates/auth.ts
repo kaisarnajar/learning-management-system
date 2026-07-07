@@ -1,6 +1,7 @@
 import { deliverMail, EmailSendResult } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailButton, EmailFallbackLink } from "../components";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export type VerificationEmailParams = {
   to: string;
@@ -10,13 +11,13 @@ export type VerificationEmailParams = {
 export async function sendVerificationEmail(params: VerificationEmailParams): Promise<EmailSendResult> {
   const { to, verificationUrl } = params;
 
-  const subject = "Verify your email address — Darse Quran Academy";
+  const subject = "Verify your email address — ${BRAND_CONFIG.name}";
   const preview = "Welcome! Please verify your email address to complete your registration.";
 
   const text = [
     "Assalamu Alaikum,",
     "",
-    "Thank you for registering at Darse Quran Academy.",
+    "Thank you for registering at ${BRAND_CONFIG.name}.",
     "",
     "Please verify your email address by clicking the link below:",
     verificationUrl,
@@ -25,12 +26,12 @@ export async function sendVerificationEmail(params: VerificationEmailParams): Pr
     "",
     "If you did not create an account, you can safely ignore this email.",
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
     <p>Assalamu Alaikum,</p>
-    <p>Thank you for registering at <strong>Darse Quran Academy</strong>.</p>
+    <p>Thank you for registering at <strong>${BRAND_CONFIG.name}</strong>.</p>
     <p>Please verify your email address by clicking the button below:</p>
     ${EmailButton({ href: verificationUrl, label: "Verify Email Address", color: "#3730a3" })}
     ${EmailFallbackLink({ href: verificationUrl })}
@@ -51,25 +52,25 @@ export type PasswordResetEmailParams = {
 export async function sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<EmailSendResult> {
   const { to, resetUrl } = params;
 
-  const subject = "Reset your password — Darse Quran Academy";
+  const subject = "Reset your password — ${BRAND_CONFIG.name}";
   const preview = "We received a request to reset your password. Click the link inside to choose a new one.";
 
   const text = [
     "Assalamu Alaikum,",
     "",
-    "We received a request to reset the password for your Darse Quran Academy account.",
+    "We received a request to reset the password for your ${BRAND_CONFIG.name} account.",
     "",
     "Use the link below to choose a new password. This link expires in one hour.",
     resetUrl,
     "",
     "If you did not request this, you can ignore this email.",
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
     <p>Assalamu Alaikum,</p>
-    <p>We received a request to reset the password for your <strong>Darse Quran Academy</strong> account.</p>
+    <p>We received a request to reset the password for your <strong>${BRAND_CONFIG.name}</strong> account.</p>
     <p>Click the button below to choose a new password. <strong>This link expires in one hour.</strong></p>
     ${EmailButton({ href: resetUrl, label: "Reset Password", color: "#3730a3" })}
     ${EmailFallbackLink({ href: resetUrl })}

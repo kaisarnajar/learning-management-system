@@ -7,6 +7,7 @@ import { sendFatwaSubmissionAdminEmail } from "@/services/email";
 import { prisma } from "@/utils/prisma";
 import { fatwaAnswerSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export async function submitTeacherFatwaAnswer(id: string, formData: FormData) {
   const { session, teacher } = await requireTeacher();
@@ -50,7 +51,7 @@ export async function submitTeacherFatwaAnswer(id: string, formData: FormData) {
   revalidatePath(`/teacher/fatwa/${id}`);
 
   if (isNewSubmission) {
-    const adminReviewUrl = `${process.env.NEXT_PUBLIC_APP_URL || "https://darsequranacademy.com"}/admin/fatwa/${id}`;
+    const adminReviewUrl = `${process.env.NEXT_PUBLIC_APP_URL || BRAND_CONFIG.websiteUrl}/admin/fatwa/${id}`;
     await sendFatwaSubmissionAdminEmail({
       teacherName: teacher.name,
       questionTitle: existing.title,

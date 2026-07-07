@@ -36,7 +36,7 @@ export const studentTestimonials: Testimonial[] = [
     course: "Arabic Basics",
     initials: "FJ",
     quote:
-      "I joined with very little Arabic. The lessons are clear, step by step, and rooted in proper scholarship. Darse Quran Academy is sincere about student progress.",
+      "I joined with very little Arabic. The lessons are clear, step by step, and rooted in proper scholarship. The Academy is sincere about student progress.",
     rating: 4,
   },
   {
@@ -72,7 +72,7 @@ export const studentTestimonials: Testimonial[] = [
   {
     id: "7",
     name: "Hafsa Nazir",
-    location: "Sopore, J&K",
+    location: "New York, USA",
     course: "Sisters Nazira",
     initials: "HN",
     quote:

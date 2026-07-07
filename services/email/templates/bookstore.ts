@@ -1,13 +1,14 @@
 import { deliverMail, NotificationEmailBaseParams } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailButton, EmailInfoCard } from "../components";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export async function sendBookOrderApprovedEmail(
   params: NotificationEmailBaseParams & { orderUrl: string; totalAmountStr: string },
 ) {
   const { to, studentName, orderUrl, totalAmountStr } = params;
   const displayName = studentName || "Student";
-  const subject = "Book order approved — Darse Quran Academy";
+  const subject = "Book order approved — ${BRAND_CONFIG.name}";
   const preview = `Your book order (${totalAmountStr}) has been approved and is being processed.`;
 
   const text = [
@@ -19,7 +20,7 @@ export async function sendBookOrderApprovedEmail(
     "View your order details here:",
     orderUrl,
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
@@ -39,7 +40,7 @@ export async function sendBookOrderDeclinedEmail(
 ) {
   const { to, studentName, orderUrl } = params;
   const displayName = studentName || "Student";
-  const subject = "Book order update — Darse Quran Academy";
+  const subject = "Book order update — ${BRAND_CONFIG.name}";
   const preview = "Your recent book order could not be approved. Please review your order details.";
 
   const text = [
@@ -51,7 +52,7 @@ export async function sendBookOrderDeclinedEmail(
     "View your order or contact us for more information:",
     orderUrl,
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
@@ -71,7 +72,7 @@ export async function sendBookOrderShippedEmail(
 ) {
   const { to, studentName, orderUrl, courierServiceName, trackingId } = params;
   const displayName = studentName || "Student";
-  const subject = "Your book order has shipped — Darse Quran Academy";
+  const subject = "Your book order has shipped — ${BRAND_CONFIG.name}";
   const preview = `Good news! Your book order has shipped via ${courierServiceName}. Tracking ID: ${trackingId}`;
 
   const text = [
@@ -86,7 +87,7 @@ export async function sendBookOrderShippedEmail(
     "View your order details here:",
     orderUrl,
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
@@ -115,7 +116,7 @@ export async function sendBookOrderRefundedEmail(
 ) {
   const { to, studentName, orderUrl } = params;
   const displayName = studentName || "Student";
-  const subject = "Book order refunded — Darse Quran Academy";
+  const subject = "Book order refunded — ${BRAND_CONFIG.name}";
   const preview = "Your book order has been canceled and your payment has been refunded.";
 
   const text = [
@@ -126,7 +127,7 @@ export async function sendBookOrderRefundedEmail(
     "View your order details here:",
     orderUrl,
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `

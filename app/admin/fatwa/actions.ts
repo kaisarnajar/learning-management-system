@@ -8,6 +8,7 @@ import { sendFatwaAnswerEmail, sendFatwaStatusTeacherEmail, type EmailSendResult
 import { prisma } from "@/utils/prisma";
 import { fatwaAnswerSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export async function answerFatwaQuestion(id: string, formData: FormData) {
   const session = await requireAdmin();
@@ -63,7 +64,7 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
   revalidatePath(`/admin/fatwa/${id}`);
 
   const fatwaUrl = getFatwaPublicUrl(id);
-  const isAnonymous = existing.askerEmail === "anonymous@darsequranacademy.org" || existing.askerName === "Anonymous";
+  const isAnonymous = existing.askerEmail === `anonymous@${new URL(BRAND_CONFIG.websiteUrl).hostname}` || existing.askerName === "Anonymous";
 
   let emailResult: EmailSendResult = { sent: false, skipped: true };
   if (!isAnonymous) {

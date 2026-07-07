@@ -3,7 +3,7 @@ import { MAX_BLOG_IMAGE_BYTES, MAX_BLOG_IMAGES } from "./services/blog-limits";
 
 const r2Domain = process.env.R2_PUBLIC_URL 
   ? new URL(process.env.R2_PUBLIC_URL).hostname 
-  : "cdn.darsequranacademy.com";
+  : "cdn.your-academy.com";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core"],

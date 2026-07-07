@@ -1,6 +1,7 @@
 import { deliverMail, EmailSendResult, NotificationEmailBaseParams } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailButton, EmailFallbackLink, EmailInfoCard } from "../components";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export async function sendPaymentApprovedEmail(
   params: NotificationEmailBaseParams & { courseTitle: string; paymentUrl: string },
@@ -13,13 +14,13 @@ export async function sendPaymentApprovedEmail(
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
-    `Your payment for "${courseTitle}" has been successfully verified by Darse Quran Academy.`,
+    `Your payment for "${courseTitle}" has been successfully verified by ${BRAND_CONFIG.name}.`,
     "",
     "You can view your payment details and download your receipt here:",
     paymentUrl,
     "",
     "Jazakallah Khair,",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
@@ -51,7 +52,7 @@ export async function sendPaymentDeclinedEmail(params: PaymentDeclinedEmailParam
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
-    `We could not verify your registration payment for "${courseTitle}" at Darse Quran Academy.`,
+    `We could not verify your registration payment for "${courseTitle}" at ${BRAND_CONFIG.name}.`,
     "",
     "Please submit your payment details again (UPI reference or bank transfer proof) using the link below:",
     paymentUrl,
@@ -60,12 +61,12 @@ export async function sendPaymentDeclinedEmail(params: PaymentDeclinedEmailParam
     "",
     "If you believe this was a mistake, please reply to this email or contact the academy.",
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>We could not verify your registration payment for <strong>${courseTitle}</strong> at Darse Quran Academy.</p>
+    <p>We could not verify your registration payment for <strong>${courseTitle}</strong> at ${BRAND_CONFIG.name}.</p>
     <p>Please submit your payment details again (UPI reference or bank transfer proof):</p>
     ${EmailButton({ href: paymentUrl, label: "Resubmit Payment", color: "#b91c1c" })}
     ${EmailFallbackLink({ href: paymentUrl })}
@@ -98,19 +99,19 @@ export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<Emai
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
-    `Thank you for your payment for "${courseTitle}" at Darse Quran Academy.`,
+    `Thank you for your payment for "${courseTitle}" at ${BRAND_CONFIG.name}.`,
     "",
     `Your payment receipt (${invoiceNumber}) for ${amountStr} is attached to this email as a PDF.`,
     "",
     "Please keep it for your records.",
     "",
     "Jazakallah Khair,",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>Thank you for your payment for <strong>${courseTitle}</strong> at Darse Quran Academy.</p>
+    <p>Thank you for your payment for <strong>${courseTitle}</strong> at ${BRAND_CONFIG.name}.</p>
     ${EmailInfoCard({
       title: "Payment Confirmed",
       items: [

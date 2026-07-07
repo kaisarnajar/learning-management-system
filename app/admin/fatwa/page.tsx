@@ -44,6 +44,7 @@ type PageParams = {
 };
 
 import { adminActionButtonClassName } from "@/utils/form";
+import { BRAND_CONFIG } from "@/config/brand";
 
 async function AdminFatwaList({ params, q }: { params: PageParams; q?: string }) {
   const filter = (params.filter as FatwaAdminFilter) || undefined;
@@ -125,7 +126,7 @@ async function AdminFatwaList({ params, q }: { params: PageParams; q?: string })
                   <td className="px-4 py-3 font-medium text-foreground">{q.title}</td>
                   <td className="px-4 py-3 text-muted">{q.category}</td>
                   <td className="px-4 py-3 font-medium text-foreground">{q.askerName}</td>
-                  <td className="px-4 py-3 text-muted">{q.askerEmail === "anonymous@darsequranacademy.org" ? "N/A" : q.askerEmail}</td>
+                  <td className="px-4 py-3 text-muted">{q.askerEmail === `anonymous@${new URL(BRAND_CONFIG.websiteUrl).hostname}` ? "N/A" : q.askerEmail}</td>
                   <td className="px-4 py-3">
                     <span
                       className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass(q)}`}

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import { fatwaQuestionSchema } from "@/utils/validations";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export type SubmitFatwaState = {
   error?: string;
@@ -24,7 +25,7 @@ export async function submitFatwaQuestion(
     title: formData.get("title"),
     question: formData.get("question"),
     askerName: isAnonymous ? "Anonymous" : formData.get("askerName"),
-    askerEmail: isAnonymous ? "anonymous@darsequranacademy.org" : formData.get("askerEmail"),
+    askerEmail: isAnonymous ? `anonymous@${new URL(BRAND_CONFIG.websiteUrl).hostname}` : formData.get("askerEmail"),
   });
 
   if (!parsed.success) {
@@ -32,7 +33,7 @@ export async function submitFatwaQuestion(
   }
 
   const askerName = isAnonymous ? "Anonymous" : (session?.user?.name?.trim() || parsed.data.askerName);
-  const askerEmail = isAnonymous ? "anonymous@darsequranacademy.org" : (session?.user?.email?.toLowerCase().trim() || parsed.data.askerEmail);
+  const askerEmail = isAnonymous ? `anonymous@${new URL(BRAND_CONFIG.websiteUrl).hostname}` : (session?.user?.email?.toLowerCase().trim() || parsed.data.askerEmail);
   const userId = isAnonymous ? null : (session?.user?.id ?? null);
 
   try {

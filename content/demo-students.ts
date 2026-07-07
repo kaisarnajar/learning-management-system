@@ -62,7 +62,7 @@ const DISTRICTS = [
   "Pulwama",
   "Shopian",
   "Budgam",
-  "Sopore",
+  "Seattle",
   "Kupwara",
   "Bandipora",
   "Ganderbal",
@@ -322,7 +322,7 @@ const manualDemoStudents: DemoStudent[] = [
     name: "Nida Rashid",
     fatherName: "Abdul Rashid",
     occupation: "STUDENT",
-    address: jk("Sopore"),
+    address: jk("Seattle"),
     whatsapp: "919900000007",
     dateOfBirth: "2003-06-14",
     enrollments: [
@@ -513,7 +513,7 @@ const manualDemoStudents: DemoStudent[] = [
     name: "Asiya Manzoor",
     fatherName: "Manzoor Ahmad",
     occupation: "UNEMPLOYED",
-    address: jk("Sopore"),
+    address: jk("Seattle"),
     whatsapp: "919900000017",
     dateOfBirth: "1999-09-07",
     enrollments: [

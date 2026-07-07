@@ -20,6 +20,7 @@ const libraryItems = [
 import { studentTestimonials } from "../content/testimonials";
 import { teachers } from "../content/teachers";
 import { seedCourseStatus } from "./seed-helpers";
+import { BRAND_CONFIG } from "../config/brand";
 
 /** Minimal bootstrap data: courses, teachers, library, homepage testimonials. */
 export async function seedBootstrap(prisma: PrismaClient) {
@@ -164,8 +165,8 @@ export async function seedBootstrap(prisma: PrismaClient) {
       id: PAYMENT_SETTINGS_ID,
       upiId: "darsequran.demo@oksbi",
       upiNumber: "9876543210",
-      upiPayeeName: "Darse Quran Academy",
-      bankAccountName: "Darse Quran Academy",
+      upiPayeeName: BRAND_CONFIG.name,
+      bankAccountName: BRAND_CONFIG.name,
       bankName: "State Bank of India",
       bankAccountNumber: "123456789012",
       bankIfsc: "SBIN0001234",
@@ -174,8 +175,8 @@ export async function seedBootstrap(prisma: PrismaClient) {
     update: {
       upiId: "darsequran.demo@oksbi",
       upiNumber: "9876543210",
-      upiPayeeName: "Darse Quran Academy",
-      bankAccountName: "Darse Quran Academy",
+      upiPayeeName: BRAND_CONFIG.name,
+      bankAccountName: BRAND_CONFIG.name,
       bankName: "State Bank of India",
       bankAccountNumber: "123456789012",
       bankIfsc: "SBIN0001234",

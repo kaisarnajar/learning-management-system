@@ -1,6 +1,7 @@
 import { deliverMail, EmailSendResult, NotificationEmailBaseParams } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailButton, EmailFallbackLink, EmailAlert, EmailHeading } from "../components";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export type FatwaAnswerEmailParams = {
   to: string;
@@ -19,12 +20,12 @@ export async function sendFatwaAnswerEmail(params: FatwaAnswerEmailParams): Prom
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
-    `Your question "${questionTitle}" has been answered on Darse Quran Academy.`,
+    `Your question "${questionTitle}" has been answered on ${BRAND_CONFIG.name}.`,
     "",
     "Read the answer here:",
     fatwaUrl,
     "",
-    "Darse Quran Academy — Fatwa Section",
+    "${BRAND_CONFIG.name} — Fatwa Section",
   ].join("\n");
 
   const bodyHtml = `
@@ -48,7 +49,7 @@ export type FatwaSubmissionAdminEmailParams = {
 export async function sendFatwaSubmissionAdminEmail(params: FatwaSubmissionAdminEmailParams): Promise<EmailSendResult> {
   const { teacherName, questionTitle, adminReviewUrl } = params;
   
-  const to = (process.env.ADMIN_EMAIL || "info@darsequranacademy.org").split(',')[0].trim();
+  const to = (process.env.ADMIN_EMAIL || BRAND_CONFIG.contact.email).split(',')[0].trim();
 
   const subject = `New Fatwa Reply Pending Approval — ${questionTitle}`;
   const preview = `Teacher ${teacherName} has submitted a reply to "${questionTitle}". It requires your approval.`;
@@ -61,7 +62,7 @@ export async function sendFatwaSubmissionAdminEmail(params: FatwaSubmissionAdmin
     "Please review and approve the answer here:",
     adminReviewUrl,
     "",
-    "Darse Quran Academy System",
+    "${BRAND_CONFIG.name} System",
   ].join("\n");
 
   const bodyHtml = `
@@ -103,7 +104,7 @@ export async function sendFatwaStatusTeacherEmail(params: FatwaStatusTeacherEmai
     "View the question here:",
     fatwaUrl,
     "",
-    "Darse Quran Academy System",
+    "${BRAND_CONFIG.name} System",
   ].join("\n");
 
   const bodyHtml = `
@@ -132,25 +133,25 @@ export async function sendContactInquiryReplyEmail(
   const { to, name, originalMessage, reply } = params;
   const displayName = name || "Reader";
 
-  const subject = "Reply from Darse Quran Academy";
+  const subject = "Reply from ${BRAND_CONFIG.name}";
   const preview = `Assalamu Alaikum ${displayName}, we have replied to your message.`;
 
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
-    "Thank you for contacting Darse Quran Academy. Here is our reply to your message:",
+    "Thank you for contacting ${BRAND_CONFIG.name}. Here is our reply to your message:",
     "",
     reply,
     "",
     "— Your original message —",
     originalMessage,
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>Thank you for contacting Darse Quran Academy. Here is our reply to your message:</p>
+    <p>Thank you for contacting ${BRAND_CONFIG.name}. Here is our reply to your message:</p>
     ${EmailAlert({ message: reply, type: "warning" })}
     <p style="font-size:13px;color:#6b7280;margin-top:24px;">Your original message:</p>
     <div style="font-size:13px;color:#6b7280;white-space:pre-wrap;padding:12px 16px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;">${originalMessage}</div>
@@ -184,7 +185,7 @@ export async function sendCourseAnnouncementEmail(
     "Read the full announcement here:",
     announcementUrl,
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
@@ -231,7 +232,7 @@ export async function sendPersonalMessageEmail(
     "View your messages here:",
     messageUrl,
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `
@@ -267,7 +268,7 @@ export async function sendSiteAnnouncementEmail(
     "Read more on our site:",
     announcementUrl,
     "",
-    "Darse Quran Academy",
+    "${BRAND_CONFIG.name}",
   ].join("\n");
 
   const bodyHtml = `

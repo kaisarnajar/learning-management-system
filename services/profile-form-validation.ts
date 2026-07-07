@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { zodResultToFormValidation, type FormValidationResult } from "@/utils/form-validation";
 import { contactInquirySchema, fatwaQuestionSchema, studentReviewSchema } from "@/utils/validations";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export type StudentReviewFormValues = z.infer<typeof studentReviewSchema>;
 
@@ -29,7 +30,7 @@ export function validateAskFatwaForm(values: AskFatwaFormValues): FormValidation
   const dataToValidate = {
     ...values,
     askerName: values.isAnonymous ? "Anonymous" : values.askerName,
-    askerEmail: values.isAnonymous ? "anonymous@darsequranacademy.org" : values.askerEmail,
+    askerEmail: values.isAnonymous ? `anonymous@${new URL(BRAND_CONFIG.websiteUrl).hostname}` : values.askerEmail,
   };
   return zodResultToFormValidation(fatwaQuestionSchema.safeParse(dataToValidate));
 }

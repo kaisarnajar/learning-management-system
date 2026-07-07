@@ -19,8 +19,9 @@ export function renderReceiptToHtml(data: ReceiptData): string {
     : `<div class="h-[100px] w-full"></div>`;
 
   return `
-    <div class="w-full max-w-[1050px] mx-auto bg-white p-10 shadow-lg print:shadow-none print:p-0 text-slate-800 font-sans">
-      <!-- Header Section -->
+    <div class="p-8 flex justify-center min-h-screen bg-white w-full">
+      <div class="max-w-4xl mx-auto bg-white p-10 shadow-lg print:shadow-none print:p-0 text-slate-800 font-sans w-full">
+        <!-- Header Section -->
       <header class="flex justify-between items-center border-b-4 border-brand-primary-light pb-6 mb-8">
         <div class="relative w-32 h-32">
           <img src="${academy.logoUrl}" alt="${academy.name} Logo" class="object-contain w-full h-full process-white-bg" />
@@ -151,6 +152,5 @@ export function renderReceiptToHtml(data: ReceiptData): string {
         </div>
       </div>
     </div>
-
   `;
 }

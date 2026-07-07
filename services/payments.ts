@@ -59,7 +59,7 @@ export async function processMonthlyPayment(
   paymentMethod: string | null,
   upiTransactionId: string | null,
   screenshotFile: File | null,
-  _paymentType?: string // kept for backward compat but now ignored — derived from course
+  paymentType?: string // kept for backward compat but now ignored — derived from course
 ) {
   const course = await getCourseById(courseId);
   if (!course) return { error: "Course not found.", status: 404 };

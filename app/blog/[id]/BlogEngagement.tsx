@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import { Heart, MessageCircle, Share2, MoreVertical, Edit2, Trash2, User as UserIcon } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { toggleLike, addComment, deleteComment, editComment } from "./actions";
 
 type User = {

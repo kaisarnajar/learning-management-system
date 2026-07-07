@@ -1,7 +1,6 @@
 import { deliverMail, NotificationEmailBaseParams } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailButton, EmailInfoCard } from "../components";
-import { BRAND_CONFIG } from "@/config/brand";
 
 export async function sendBookOrderApprovedEmail(
   params: NotificationEmailBaseParams & { orderUrl: string; totalAmountStr: string },

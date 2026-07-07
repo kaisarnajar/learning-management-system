@@ -2,7 +2,6 @@
 
 import { auth } from "@/services/auth";
 import { BRAND_CONFIG } from "@/config/brand";
-import { revalidatePath } from "next/cache";
 
 import { PAYMENTS } from "@/config/constants/payments";
 import { isAdminSession } from "@/services/admin";

@@ -1,171 +1,79 @@
-# Darse Quran Academy
+# Academy LMS
 
-A modern, full-stack Learning Management System (LMS) built for Islamic education. Darse Quran Academy allows students to enroll in courses, read books, browse digital library items, and submit fatwa questions. It provides a comprehensive admin and teacher dashboard for managing enrollments, grading, attendance, and revenue.
+A modern, full-stack Learning Management System (LMS) built for online education and academies. The platform allows students to enroll in courses, read books, browse digital library items, and submit Q&A (Fatwa). It provides a comprehensive admin and teacher dashboard for managing enrollments, grading, attendance, and revenue.
 
-## Features
+Built entirely as a **White-Label** solution, you can spin up a production-ready academy by simply updating the centralized branding configurations and environment variables.
 
-- **Course Management:** Publish courses with multiple pricing tiers, durations, and levels.
-- **Student Dashboard:** Track enrollments, view course announcements, attendance, and grades.
-- **Fatwa System:** Students can ask questions; teachers can provide verified fatwa answers.
-- **E-Commerce / Bookstore:** Manage and sell physical books with shipping & tracking.
-- **Library (Digital):** Provide digital resources (PDFs, Audio, Video) directly to students.
-- **Blog & Inspirations:** Daily Qur'an and Hadith inspirations, along with a full blogging engine.
-- **Role-Based Access Control:** Distinct roles for Students, Teachers, and Administrators.
-- **Automated Certificates:** Generate and email PDF certificates to students upon course completion.
-- **Payment Verification:** Manual UPI/Bank transfer uploads with admin approval workflows.
+## Tech Stack
+- **Framework:** Next.js 15 (App Router)
+- **Styling:** Tailwind CSS v4, Lucide React (Icons)
+- **Database:** PostgreSQL (Neon) with Prisma ORM
+- **Authentication:** NextAuth.js (Auth.js v5)
+- **Storage:** Cloudflare R2 / AWS S3
+- **Emails:** Nodemailer (with custom React/HTML templates)
+- **PDF Generation:** Puppeteer (Server-side rendered HTML-to-PDF)
+- **Validation:** Zod
+- **Components:** Radix UI Primitives
 
-## Technology Stack
+## White-Label Configuration
 
-- **Framework:** [Next.js](https://nextjs.org/) (App Router, React 19)
-- **Database:** [PostgreSQL](https://www.postgresql.org/) hosted on [Neon](https://neon.tech/)
-- **ORM:** [Prisma ORM](https://www.prisma.io/)
-- **Authentication:** [NextAuth.js](https://next-auth.js.org/) v5 (Beta)
-- **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
-- **File Storage:** [Cloudflare R2](https://www.cloudflare.com/developer-platform/r2/)
-- **Email:** Nodemailer (SMTP)
-- **PDF Generation:** Puppeteer + PDF-lib
+To deploy this application for your own academy, you **do not** need to edit the UI components or business logic. All configuration is centralized:
 
-## Prerequisites
+1. **Brand Settings**: Edit `config/brand.ts` to set your academy's name, website URL, SEO templates, support emails, and social links.
+2. **Assets**: Edit `config/assets.ts` to map your specific logos, favicons, and default cover images.
+3. **Business Rules**: Edit the files in `config/constants/` (e.g., `payments.ts`, `file.ts`, `business.ts`) to configure your supported currencies, max upload limits, and status mappings.
 
-- Node.js (v20+)
-- PostgreSQL database
-- Cloudflare R2 Account (for file uploads)
-- SMTP Email Provider (Gmail or custom domain)
+## Setup & Local Development
 
-## Local Development Setup
+1. **Clone the repository and install dependencies:**
+   ```bash
+   npm install
+   ```
 
-### 1. Installation
+2. **Environment Variables:**
+   Copy `.env.example` to `.env` and fill in your database, NextAuth, SMTP, and S3/R2 credentials.
+   ```bash
+   cp .env.example .env
+   ```
 
-Clone the repository and install dependencies:
+3. **Initialize Database:**
+   Push the Prisma schema to your database.
+   ```bash
+   npx prisma db push
+   ```
 
-\`\`\`bash
-git clone https://github.com/kaisarnajar/darse-quran-academy.git
-cd darse-quran-academy
-npm install
-\`\`\`
+4. **Seed the Database:**
+   Populate the database with necessary setup data (e.g., super admin accounts, initial payment settings).
+   ```bash
+   npm run db:seed
+   ```
+   *(Optional)* To populate the database with extensive demo content (dummy courses, students, and payments), ensure `ALLOW_DEMO_SEED="true"` is set in your `.env` and run:
+   ```bash
+   npm run db:seed:demo
+   ```
 
-### 2. Environment Variable Configuration
+5. **Start the Development Server:**
+   ```bash
+   npm run dev
+   ```
+   The application will be available at `http://localhost:3000`.
 
-Copy the example environment file and fill in your details:
+## Architecture Overview
 
-\`\`\`bash
-cp .env.example .env
-\`\`\`
-
-See \`.env.example\` for detailed explanations of each required variable. You must configure:
-- `AUTH_URL`, `NEXTAUTH_URL`, and `AUTH_SECRET`
-- `DATABASE_URL` and `DIRECT_URL` (Connection strings)
-- `SMTP_*` for email sending
-- `R2_*` for image and document uploads
-
-### 3. Database Setup & Prisma Migrations
-
-Initialize the database schema using Prisma:
-
-\`\`\`bash
-npm run db:push
-# or for explicit migrations:
-npm run db:migrate
-\`\`\`
-
-### 4. Prisma Seed Script
-
-To populate the database with demo data (Admin user, Teachers, Students, Courses, Books, etc.), run the seed script:
-
-\`\`\`bash
-npm run db:seed:demo
-\`\`\`
-
-> **Note:** The default admin credentials will be printed in your console (usually `deputy@youracademy.org` / `Admin@2026`).
-
-### 5. Running the Application
-
-Start the Next.js development server:
-
-\`\`\`bash
-npm run dev
-\`\`\`
-
-Visit [http://localhost:3000](http://localhost:3000) in your browser.
-
-## Build Process
-
-To build the application for production locally:
-
-\`\`\`bash
-npm run build
-npm start
-\`\`\`
+- `/app`: Next.js App Router structure with distinct sub-applications for `(public)`, `(auth)`, `admin`, `teacher`, and `profile` (student).
+- `/components`: A strictly decoupled, centralized UI component library (`/ui`) leveraging Tailwind CSS. 
+- `/config`: The single source of truth for all white-label variables (brand, assets, constants).
+- `/services`: Core business logic decoupled from the UI layer (e.g., `email/`, `auth.ts`, `payments.ts`).
+- `/utils`: Helper functions, validation schemas, and formatting utilities.
+- `/prisma`: Database schemas and initialization seeding tools.
 
 ## Production Deployment
 
-### 1. Neon Database Setup
+This application is designed to be easily deployed to **Vercel**:
+1. Connect your GitHub repository to Vercel.
+2. Ensure the Build Command is `prisma generate && next build`.
+3. Map all environment variables from your `.env` to Vercel's environment variables.
+4. Deploy!
 
-1. Create a project on [Neon](https://neon.tech/).
-2. Retrieve the connection string. Neon provides a pooled connection string and a direct connection string.
-3. Add the pooled connection string to your Vercel environment variables as `DATABASE_URL`.
-4. Add the direct connection string to your Vercel environment variables as `DIRECT_URL`.
-5. **Important:** Prisma requires `?pgbouncer=true` if using the pooled connection string natively, but Prisma Accelerate or modern drivers handle this automatically. Follow Neon's specific Prisma instructions.
-
-### 2. Cloudflare Setup (Storage & DNS)
-
-**DNS & Domain:**
-1. Add your custom domain to Cloudflare.
-2. In the DNS tab, create a `CNAME` record pointing your domain to Vercel (e.g., `cname.vercel-dns.com`). Ensure the proxy status is set correctly depending on Vercel's requirements (usually "DNS Only" for Vercel).
-3. Ensure SSL/TLS is set to "Full" or "Strict".
-
-**R2 Storage:**
-1. Navigate to **R2 Object Storage** in your Cloudflare dashboard.
-2. Create a new Bucket (e.g., `darse-quran-assets`).
-3. Under the bucket settings, enable **Public Access** (either via a custom domain or a `.r2.dev` dev URL).
-4. Go to **Manage R2 API Tokens** and create a token with `Object Read & Write` permissions.
-5. Copy the Account ID, Access Key ID, and Secret Access Key into your `.env` (or Vercel Env Vars).
-
-### 3. Email Provider Configuration
-
-To ensure emails (certificates, password resets) are delivered correctly:
-1. Provide a reliable SMTP host (e.g., Resend, SendGrid, or Google Workspace).
-2. If using a custom domain, ensure you configure **SPF**, **DKIM**, and **DMARC** records in your Cloudflare DNS settings. This prevents your system emails from landing in spam.
-3. Set the `SMTP_*` and `EMAIL_FROM` environment variables.
-
-### 4. Vercel Deployment
-
-1. Import your GitHub repository into [Vercel](https://vercel.com/).
-2. In the **Build and Output Settings**, Vercel will automatically detect Next.js.
-3. Add all production environment variables from your `.env` file to the Vercel **Environment Variables** tab.
-4. **Custom Build Command:** Go to Project Settings -> General -> Build & Development Settings and override the Build Command to:
-   \`\`\`bash
-   npm run vercel-build
-   \`\`\`
-   *(This ensures `prisma generate` and `prisma db push` run sequentially before the Next.js build).*
-5. Deploy.
-
-## Folder Structure
-
-- `/app`: Next.js App Router pages and API routes.
-- `/components`: Reusable React components (UI, Forms, Site layout).
-- `/lib`: Utility functions, Prisma client instance, auth configuration, and helpers.
-- `/prisma`: Prisma schema (`schema.prisma`), migrations, and seed scripts.
-- `/public`: Static assets like icons and optimized logos.
-- `/types`: TypeScript type definitions and Zod schemas.
-
-## Common Commands
-
-- `npm run dev`: Start development server.
-- `npm run lint`: Run ESLint.
-- `npm run knip`: Find unused files, dependencies, and exports.
-- `npm run db:push`: Push schema changes directly to the database.
-- `npm run db:migrate`: Create a migration file and apply it.
-
-## Troubleshooting
-
-- **Prisma Client not found:** Run `npm run postinstall` or `npx prisma generate`.
-- **Database Connection Errors:** Verify that your IP is allowlisted on your database provider (Neon allows all by default) and check that `DIRECT_URL` is set if running migrations.
-- **Foreign Key Constraint Errors during Seed:** Ensure you start with a completely fresh database by running `npx prisma migrate reset --force` before running the demo seed script.
-
-## Backup and Restore
-
-Neon provides point-in-time recovery automatically. However, for manual logical backups, use `pg_dump`:
-\`\`\`bash
-pg_dump "postgresql://user:pass@host/db" > backup.sql
-\`\`\`
+## License
+MIT License.

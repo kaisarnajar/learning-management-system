@@ -1,7 +1,6 @@
 import { deliverMail, NotificationEmailBaseParams } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailButton, EmailFallbackLink } from "../components";
-import { BRAND_CONFIG } from "@/config/brand";
 
 export async function sendEnrollmentApprovedEmail(
   params: NotificationEmailBaseParams & { courseTitle: string; courseUrl: string },

@@ -37,7 +37,7 @@ export async function toggleLike(blogPostId: string) {
     revalidatePath(`/blog/${blogPostId}`);
     revalidatePath(`/blog`);
     return { success: true };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Failed to toggle like:", err);
     return { error: "Failed to update like status" };
   }
@@ -89,7 +89,7 @@ export async function addComment(blogPostId: string, content: string) {
 
     revalidatePath(`/blog/${blogPostId}`);
     return { success: true, comment };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Failed to add comment:", err);
     return { error: "Failed to add comment" };
   }
@@ -119,7 +119,7 @@ export async function deleteComment(commentId: string) {
 
     revalidatePath(`/blog/${comment.blogPostId}`);
     return { success: true };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Failed to delete comment:", err);
     return { error: "Failed to delete comment" };
   }
@@ -153,7 +153,7 @@ export async function editComment(commentId: string, content: string) {
 
     revalidatePath(`/blog/${comment.blogPostId}`);
     return { success: true };
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Failed to edit comment:", err);
     return { error: "Failed to edit comment" };
   }

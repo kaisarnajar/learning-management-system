@@ -33,6 +33,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
 
   const currentUserId = session?.user?.id;
   const isAdmin = isAdminSession(session);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const initialHasLiked = currentUserId ? (post as any).likes?.some((like: any) => like.userId === currentUserId) : false;
 
 
@@ -88,8 +89,10 @@ export default async function BlogDetailPage({ params }: PageProps) {
 
         <BlogEngagement
           blogPostId={post.id}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           initialLikeCount={(post as any).likes?.length || 0}
-          initialHasLiked={initialHasLiked}
+          initialHasLiked={initialHasLiked ?? false}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           initialComments={(post as any).comments || []}
           currentUserId={currentUserId}
           isAdmin={isAdmin}

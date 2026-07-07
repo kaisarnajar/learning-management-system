@@ -5,7 +5,7 @@ import { ConfirmationModal } from "./ConfirmationModal";
 import { useToast } from "@/components/shared/ToastProvider";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
-import { adminDestructiveButtonClassName } from "@/lib/form";
+import { Button } from "../ui/Button";
 
 export function DeleteActionButton({
   action,
@@ -27,12 +27,11 @@ export function DeleteActionButton({
   const router = useRouter();
   const { addToast } = useToast();
   
-  const defaultClass = adminDestructiveButtonClassName;
-  const buttonClass = className || defaultClass;
-
   const trigger = (
-    <button
+    <Button
       type="button"
+      variant="destructive"
+      size="sm"
       disabled={disabled}
       onClick={(e) => {
         if (warningMessage) {
@@ -42,10 +41,10 @@ export function DeleteActionButton({
            return;
         }
       }}
-      className={buttonClass}
+      className={className}
     >
       {title}
-    </button>
+    </Button>
   );
 
   if (warningMessage || disabled) {

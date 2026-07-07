@@ -59,9 +59,9 @@ export const BRAND_CONFIG: BrandConfig = {
   websiteUrl: "https://darsequranacademy.com",
   
   assets: {
-    logoUrl: "/logo.png", // Replace with actual path if different
+    logoUrl: "/assets/logo.png",
     faviconUrl: "/favicon.ico",
-    defaultImage: "/images/default-academy.jpg",
+    defaultImage: "/assets/logo.png",
   },
   
   contact: {
@@ -82,7 +82,7 @@ export const BRAND_CONFIG: BrandConfig = {
     defaultTitle: "Darse Quran Academy | Online Islamic Learning",
     titleTemplate: "%s | Darse Quran Academy",
     defaultDescription: "Learn Quran, Tajweed, Arabic, and Islamic studies online with qualified teachers at Darse Quran Academy.",
-    openGraphImage: "/images/og-default.jpg",
+    openGraphImage: "/assets/logo.png",
   },
   
   content: {

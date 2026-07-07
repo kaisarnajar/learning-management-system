@@ -1,3 +1,4 @@
+import { ASSET_URLS } from "@/config/assets";
 export type CourseCategoryIconKey =
   | "tajweed"
   | "seerah"
@@ -28,7 +29,7 @@ const FLATICON_COURSE_ICONS: Record<CourseCategoryIconKey, FlaticonCourseIcon> =
   quran: {
     key: "quran",
     label: "Quran",
-    src: "/icons/flaticon/course-categories/quran.png",
+    src: ASSET_URLS.icons.quran,
     iconId: 1717548,
     slug: "quran",
     author: "Freepik",
@@ -37,7 +38,7 @@ const FLATICON_COURSE_ICONS: Record<CourseCategoryIconKey, FlaticonCourseIcon> =
   tajweed: {
     key: "tajweed",
     label: "Tajweed",
-    src: "/icons/flaticon/course-categories/quran-tajweed.png",
+    src: ASSET_URLS.icons.quranTajweed,
     iconId: 18947682,
     slug: "quran",
     author: "Magnific",
@@ -46,7 +47,7 @@ const FLATICON_COURSE_ICONS: Record<CourseCategoryIconKey, FlaticonCourseIcon> =
   hifz: {
     key: "hifz",
     label: "Hifz",
-    src: "/icons/flaticon/course-categories/tasbih.png",
+    src: ASSET_URLS.icons.tasbih,
     iconId: 19038297,
     slug: "tasbih",
     author: "Magnific",
@@ -55,7 +56,7 @@ const FLATICON_COURSE_ICONS: Record<CourseCategoryIconKey, FlaticonCourseIcon> =
   seerah: {
     key: "seerah",
     label: "Seerah",
-    src: "/icons/flaticon/course-categories/prophets-mosque.png",
+    src: ASSET_URLS.icons.prophetsMosque,
     iconId: 4269431,
     slug: "the-prophets-mosque",
     author: "Freepik",
@@ -64,7 +65,7 @@ const FLATICON_COURSE_ICONS: Record<CourseCategoryIconKey, FlaticonCourseIcon> =
   arabic: {
     key: "arabic",
     label: "Arabic",
-    src: "/icons/flaticon/course-categories/arabic-language.png",
+    src: ASSET_URLS.icons.arabicLanguage,
     iconId: 9103491,
     slug: "arabic-language",
     author: "HussainDev-Icon",
@@ -73,7 +74,7 @@ const FLATICON_COURSE_ICONS: Record<CourseCategoryIconKey, FlaticonCourseIcon> =
   fiqh: {
     key: "fiqh",
     label: "Fiqh",
-    src: "/icons/flaticon/course-categories/scales.png",
+    src: ASSET_URLS.icons.scales,
     iconId: 1430,
     slug: "scales-of-justice",
     author: "Freepik",
@@ -82,7 +83,7 @@ const FLATICON_COURSE_ICONS: Record<CourseCategoryIconKey, FlaticonCourseIcon> =
   islamic: {
     key: "islamic",
     label: "Islamic Studies",
-    src: "/icons/flaticon/course-categories/kaaba.png",
+    src: ASSET_URLS.icons.kaaba,
     iconId: 19038391,
     slug: "kaaba",
     author: "Magnific",
@@ -91,7 +92,7 @@ const FLATICON_COURSE_ICONS: Record<CourseCategoryIconKey, FlaticonCourseIcon> =
   tafsir: {
     key: "tafsir",
     label: "Tafsir",
-    src: "/icons/flaticon/course-categories/tafsir-book.png",
+    src: ASSET_URLS.icons.tafsirBook,
     iconId: 17259757,
     slug: "holy-book",
     author: "Magnific",
@@ -100,7 +101,7 @@ const FLATICON_COURSE_ICONS: Record<CourseCategoryIconKey, FlaticonCourseIcon> =
   aqeedah: {
     key: "aqeedah",
     label: "Aqeedah",
-    src: "/icons/flaticon/course-categories/crescent.png",
+    src: ASSET_URLS.icons.crescent,
     iconId: 7515485,
     slug: "crescent",
     author: "Freepik",
@@ -109,7 +110,7 @@ const FLATICON_COURSE_ICONS: Record<CourseCategoryIconKey, FlaticonCourseIcon> =
   hadith: {
     key: "hadith",
     label: "Hadith",
-    src: "/icons/flaticon/course-categories/hadist.png",
+    src: ASSET_URLS.icons.hadist,
     iconId: 15993562,
     slug: "hadist",
     author: "Freepik",
@@ -118,7 +119,7 @@ const FLATICON_COURSE_ICONS: Record<CourseCategoryIconKey, FlaticonCourseIcon> =
   duas: {
     key: "duas",
     label: "Duas & Adhkar",
-    src: "/icons/flaticon/course-categories/praying-hands.png",
+    src: ASSET_URLS.icons.prayingHands,
     iconId: 14900725,
     slug: "praying-hands",
     author: "Freepik",
@@ -127,7 +128,7 @@ const FLATICON_COURSE_ICONS: Record<CourseCategoryIconKey, FlaticonCourseIcon> =
   other: {
     key: "other",
     label: "Other",
-    src: "/icons/flaticon/course-categories/mosque.png",
+    src: ASSET_URLS.icons.mosque,
     iconId: 10324895,
     slug: "mosque",
     author: "Freepik",

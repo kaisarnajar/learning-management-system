@@ -2,8 +2,9 @@ import { PROCESS_IMAGE_SCRIPT } from "./html-scripts";
 import { resolveUserRole } from "@/lib/teacher-auth";
 import { generatePdfFromHtml } from "@/lib/pdf-generator";
 import fs from "fs/promises";
-import path from "path";
 import { BRAND_CONFIG } from "@/config/brand";
+import { ASSET_LOCAL_PATHS } from "@/config/assets";
+
 
 export function renderIdCardToHtml(data: {
   studentName: string;
@@ -238,9 +239,9 @@ export async function generateIdCardPdf(user: {
   let base64Font = "";
   
   try {
-    const logoPath = path.join(process.cwd(), "public", "assets", "logo.png");
-    const sigPath = path.join(process.cwd(), "public", "assets", "signature.png");
-    const stampPath = path.join(process.cwd(), "public", "assets", "stamp.png");
+    const logoPath = ASSET_LOCAL_PATHS.logo;
+    const sigPath = ASSET_LOCAL_PATHS.signature;
+    const stampPath = ASSET_LOCAL_PATHS.stamp;
     const fontPath = path.join(process.cwd(), "public", "fonts", "indopak-nastaleeq.woff2");
     
     const [logoBytes, sigBytes, stampBytes, fontBytes] = await Promise.all([

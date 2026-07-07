@@ -1,11 +1,12 @@
 import { prisma } from "@/lib/prisma";
 import fs from "fs/promises";
-import path from "path";
 import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-links";
 import { getAcademySettings } from "@/lib/academy-settings";
 import { INVOICE_TERMS, AUTHORITY_SIGNATURE } from "@/lib/academy-contact";
 import { ReceiptData } from "@/types/receipt";
 import { incomePaymentTypeLabel } from "@/lib/monthly-payment-status";
+import { ASSET_LOCAL_PATHS } from "@/config/assets";
+
 
 export function getReceiptFilename(courseTitle: string, paymentRecordId: string): string {
   const slug = courseTitle
@@ -27,9 +28,9 @@ export async function loadReceiptAssets(): Promise<ReceiptAssets> {
   let base64Signature = "";
   let base64Stamp = "";
   try {
-    const logoPath = path.join(process.cwd(), "public", "assets", "logo.png");
-    const sigPath = path.join(process.cwd(), "public", "assets", "signature.png");
-    const stampPath = path.join(process.cwd(), "public", "assets", "stamp.png");
+    const logoPath = ASSET_LOCAL_PATHS.logo;
+    const sigPath = ASSET_LOCAL_PATHS.signature;
+    const stampPath = ASSET_LOCAL_PATHS.stamp;
     
     const [logoBytes, sigBytes, stampBytes] = await Promise.all([
       fs.readFile(logoPath).catch(() => null),

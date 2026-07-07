@@ -1,3 +1,4 @@
+import { ASSET_URLS } from "@/config/assets";
 export type BrandAssets = {
   logoUrl: string;
   faviconUrl: string;
@@ -59,9 +60,9 @@ export const BRAND_CONFIG: BrandConfig = {
   websiteUrl: "https://darsequranacademy.com",
   
   assets: {
-    logoUrl: "/assets/logo.png",
-    faviconUrl: "/favicon.ico",
-    defaultImage: "/assets/logo.png",
+    logoUrl: ASSET_URLS.logo,
+    faviconUrl: ASSET_URLS.favicon,
+    defaultImage: ASSET_URLS.logo,
   },
   
   contact: {
@@ -82,7 +83,7 @@ export const BRAND_CONFIG: BrandConfig = {
     defaultTitle: "Darse Quran Academy | Online Islamic Learning",
     titleTemplate: "%s | Darse Quran Academy",
     defaultDescription: "Learn Quran, Tajweed, Arabic, and Islamic studies online with qualified teachers at Darse Quran Academy.",
-    openGraphImage: "/assets/logo.png",
+    openGraphImage: ASSET_URLS.logo,
   },
   
   content: {

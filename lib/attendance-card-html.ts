@@ -2,12 +2,13 @@ import { PROCESS_IMAGE_SCRIPT } from "./html-scripts";
 import { generatePdfFromHtml } from "@/lib/pdf-generator";
 import { prisma } from "@/lib/prisma";
 import fs from "fs/promises";
-import path from "path";
 import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-links";
 import { getAcademySettings } from "@/lib/academy-settings";
 import { BRAND_CONFIG } from "@/config/brand";
 import { AUTHORITY_SIGNATURE } from "@/lib/academy-contact";
 import { formatRollNumber } from "@/lib/roll-numbers";
+import { ASSET_LOCAL_PATHS } from "@/config/assets";
+
 
 export type AttendanceCardRecordData = {
   date: string;
@@ -314,9 +315,9 @@ export async function generateAttendanceCardPdf(enrollmentId: string): Promise<B
   let base64Stamp = "";
 
   try {
-    const logoPath = path.join(process.cwd(), "public", "assets", "logo.png");
-    const sigPath = path.join(process.cwd(), "public", "assets", "signature.png");
-    const stampPath = path.join(process.cwd(), "public", "assets", "stamp.png");
+    const logoPath = ASSET_LOCAL_PATHS.logo;
+    const sigPath = ASSET_LOCAL_PATHS.signature;
+    const stampPath = ASSET_LOCAL_PATHS.stamp;
 
     const [logoBytes, sigBytes, stampBytes] = await Promise.all([
       fs.readFile(logoPath).catch(() => null),

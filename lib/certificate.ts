@@ -1,9 +1,10 @@
 import fs from "fs/promises";
-import path from "path";
 import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-links";
 import { getAcademySettings } from "@/lib/academy-settings";
 import { renderCertificateToHtml } from "@/lib/certificate-html";
 import { generatePdfFromHtml } from "@/lib/pdf-generator";
+import { ASSET_LOCAL_PATHS } from "@/config/assets";
+
 
 export function getCertificateFilename(courseTitle: string, enrollmentId: string): string {
   const slug = courseTitle
@@ -39,9 +40,9 @@ export async function generateCertificatePdf(params: CertificatePdfParams): Prom
   let base64Signature = "";
   let base64Stamp = "";
   try {
-    const logoPath = path.join(process.cwd(), "public", "assets", "logo.png");
-    const sigPath = path.join(process.cwd(), "public", "assets", "signature.png");
-    const stampPath = path.join(process.cwd(), "public", "assets", "stamp.png");
+    const logoPath = ASSET_LOCAL_PATHS.logo;
+    const sigPath = ASSET_LOCAL_PATHS.signature;
+    const stampPath = ASSET_LOCAL_PATHS.stamp;
     const [logoBytes, sigBytes, stampBytes] = await Promise.all([
       fs.readFile(logoPath).catch(() => null),
       fs.readFile(sigPath).catch(() => null),

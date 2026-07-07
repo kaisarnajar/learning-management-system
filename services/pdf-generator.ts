@@ -86,7 +86,9 @@ export async function generatePdfFromHtml(
 
   try {
     const page = await browser.newPage();
-    await page.setViewport({ width: 1200, height: 800, deviceScaleFactor: 3 });
+    const viewportWidth = width ? parseInt(width.toString().replace('px', '')) : 1200;
+    const viewportHeight = height ? parseInt(height.toString().replace('px', '')) : 800;
+    await page.setViewport({ width: viewportWidth, height: viewportHeight, deviceScaleFactor: 3 });
 
     await page.setContent(html, { waitUntil: "load" });
 
@@ -283,7 +285,7 @@ export function wrapHtmlForPdf(
     @media print { 
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; } 
     }
-    ${options?.landscape ? "@page { size: A4 landscape; margin: 0; }" : ""}
+    @page { margin: 0; ${options?.landscape ? "size: A4 landscape;" : ""} }
     body {
       margin: 0;
       padding: 0;

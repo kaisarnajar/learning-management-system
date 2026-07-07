@@ -204,6 +204,62 @@ export function wrapHtmlForPdf(
 <head>
   <meta charset="utf-8">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              primary: '#0f3d2e',
+              'primary-light': '#1a4d2e',
+              gold: '#d4af37',
+            },
+            surface: {
+              cream: '#fdfaf3',
+            }
+          },
+          spacing: {
+            'pdf-id-width': '1011px',
+            'pdf-id-height': '638px',
+            'pdf-cert-width': '1123px',
+            'pdf-cert-height': '794px',
+            'pdf-label-w': '180px',
+            'pdf-photo-w': '230px',
+            'pdf-photo-h': '270px',
+          },
+          borderWidth: {
+            'pdf-hairline': '1.5px',
+            'pdf-xs': '3px',
+            'pdf-sm': '4px',
+            'pdf-md': '6px',
+            'pdf-lg': '8px',
+            'pdf-xl': '12px',
+            'pdf-thick': '10px',
+          },
+          borderRadius: {
+            'pdf-lg': '36px',
+          },
+          fontSize: {
+            'pdf-7': '7px',
+            'pdf-9': '9px',
+            'pdf-10': '10px',
+            'pdf-11': '11px',
+            'pdf-16': '16px',
+            'pdf-17': '17px',
+            'pdf-20': '20px',
+            'pdf-22': '22px',
+            'pdf-26': '26px',
+            'pdf-28': '28px',
+            'pdf-34': '34px',
+            'pdf-38': '38px',
+            'pdf-46': '46px',
+            'pdf-56': '56px',
+            'pdf-72': '72px',
+          }
+        }
+      }
+    }
+  </script>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:wght@400;600;700&family=Scheherazade+New:wght@400;700&family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     ${options?.base64Font ? `

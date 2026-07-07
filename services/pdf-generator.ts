@@ -216,6 +216,15 @@ export function wrapHtmlForPdf(
             },
             surface: {
               cream: '#fdfaf3',
+            },
+            gold: {
+              DEFAULT: '#d4a017',
+              light: '#f0c14a',
+              dark: '#b8860b'
+            },
+            teal: {
+              DEFAULT: '#0d4a4a',
+              dark: '#083333'
             }
           },
           spacing: {
@@ -252,6 +261,7 @@ export function wrapHtmlForPdf(
             'pdf-28': '28px',
             'pdf-34': '34px',
             'pdf-38': '38px',
+            'pdf-44': '44px',
             'pdf-46': '46px',
             'pdf-56': '56px',
             'pdf-72': '72px',

@@ -19,7 +19,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
     : `<div class="h-[100px] w-full"></div>`;
 
   return `
-    <div class="max-w-4xl mx-auto bg-white p-10 shadow-lg print:shadow-none print:p-0 text-slate-800 font-sans">
+    <div class="w-[794px] min-h-[1123px] mx-auto bg-white p-10 shadow-lg print:shadow-none print:p-0 text-slate-800 font-sans">
       <!-- Header Section -->
       <header class="flex justify-between items-center border-b-4 border-brand-primary-light pb-6 mb-8">
         <div class="relative w-32 h-32">

@@ -67,7 +67,7 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
   </style>
 </head>
 <body class="p-10">
-  <div class="max-w-4xl mx-auto border-pdf-thick border-brand-primary rounded-xl p-8 bg-surface-cream relative" style="min-height: 720px;">
+  <div class="w-[794px] mx-auto border-pdf-thick border-brand-primary rounded-xl p-8 bg-surface-cream relative" style="min-height: 900px;">
     <!-- Watermark -->
     <div class="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
       <img src="${data.logoUrl}" class="w-[350px] process-white-bg" alt="Watermark" />

@@ -49,7 +49,7 @@ export function ManualTransactionsTable({ records }: ManualTransactionsTableProp
 
   return (
     <div className="w-full overflow-x-auto">
-      <table className="w-full min-w-[1000px] text-left text-sm">
+      <table className="w-full min-w-ui-1000 text-left text-sm">
         <thead className="border-b border-border bg-background/50 text-xs uppercase tracking-wide text-muted">
           <tr>
             <th className="px-4 py-3 font-medium">Date</th>

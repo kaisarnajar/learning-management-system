@@ -44,7 +44,7 @@ type FooterCreditBlockProps = {
 };
 
 const footerIconLinkClassName =
-  "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white/70 transition-colors hover:border-[#cca72f] hover:text-[#cca72f]";
+  "inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-white/70 transition-colors hover:border-brand-gold-alt hover:text-brand-gold-alt";
 
 function FooterCreditBlock({
   title,
@@ -58,7 +58,7 @@ function FooterCreditBlock({
   return (
     <div className="text-center sm:text-right">
       <p className="font-medium text-white/90">{title}</p>
-      <p className="mt-1 text-[#cca72f] font-medium">{name}</p>
+      <p className="mt-1 text-brand-gold-alt font-medium">{name}</p>
       <div className="mt-3 flex items-center justify-center gap-2 sm:justify-end">
         <a href={emailHref} className={footerIconLinkClassName} aria-label={`Email ${email}`}>
           <EmailIcon className="h-4 w-4" />
@@ -110,13 +110,13 @@ export async function Footer() {
 
           {/* Quick Links Column */}
           <div>
-            <p className="text-sm font-bold uppercase tracking-widest text-[#cca72f]">Quick Links</p>
+            <p className="text-sm font-bold uppercase tracking-widest text-brand-gold-alt">Quick Links</p>
             <ul className="mt-6 space-y-3">
               {quickLinks.map((link) => (
                 <li key={link.href + link.label}>
                   <Link
                     href={link.href}
-                    className="text-sm text-muted transition-colors hover:text-[#cca72f]"
+                    className="text-sm text-muted transition-colors hover:text-brand-gold-alt"
                   >
                     {link.label}
                   </Link>
@@ -127,12 +127,12 @@ export async function Footer() {
 
           {/* Contact Column */}
           <div id="contact">
-            <p className="text-sm font-bold uppercase tracking-widest text-[#cca72f]">Contact</p>
+            <p className="text-sm font-bold uppercase tracking-widest text-brand-gold-alt">Contact</p>
             <ul className="mt-6 space-y-4 text-sm text-muted">
               <li>
                 <Link 
                   href="/contact" 
-                  className="inline-block rounded-full border border-border px-5 py-2 font-medium text-foreground transition-colors hover:border-[#cca72f] hover:text-[#cca72f]"
+                  className="inline-block rounded-full border border-border px-5 py-2 font-medium text-foreground transition-colors hover:border-brand-gold-alt hover:text-brand-gold-alt"
                 >
                   Send us a message
                 </Link>
@@ -141,7 +141,7 @@ export async function Footer() {
                 <li>
                   <a
                     href={`mailto:${settings.contactEmail}`}
-                    className="inline-flex items-center gap-3 hover:text-[#cca72f] transition-colors"
+                    className="inline-flex items-center gap-3 hover:text-brand-gold-alt transition-colors"
                     aria-label={`Email ${settings.contactEmail}`}
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-muted/50 text-foreground">
@@ -157,7 +157,7 @@ export async function Footer() {
                     href={whatsappHref}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-3 hover:text-[#cca72f] transition-colors"
+                    className="inline-flex items-center gap-3 hover:text-brand-gold-alt transition-colors"
                     aria-label={`WhatsApp ${whatsappDisplay}`}
                   >
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-muted/50 text-foreground">
@@ -181,7 +181,7 @@ export async function Footer() {
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:border-[#cca72f] hover:bg-[#cca72f]/10 hover:text-[#cca72f]"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:border-brand-gold-alt hover:bg-brand-gold-alt/10 hover:text-brand-gold-alt"
                   >
                     {link.label === "Facebook" && <FacebookIcon className="h-3.5 w-3.5" />}
                     {link.label === "Instagram" && <InstagramIcon className="h-3.5 w-3.5" />}

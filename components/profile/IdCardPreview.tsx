@@ -53,7 +53,7 @@ export function IdCardPreview({ userId }: { userId?: string }) {
         </div>
       </div>
 
-      <div className="relative flex min-h-[500px] w-full flex-col items-center justify-center rounded-2xl border border-border bg-surface shadow-sm overflow-hidden p-4 md:p-8">
+      <div className="relative flex min-h-ui-500 w-full flex-col items-center justify-center rounded-2xl border border-border bg-surface shadow-sm overflow-hidden p-4 md:p-8">
         
         {isLoading && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface/80 backdrop-blur-sm">

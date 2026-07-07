@@ -16,7 +16,7 @@ export function AdminCoursesTable({
   enrollmentCounts: Map<string, number>;
 }) {
   return (
-    <table className="w-full min-w-[840px] text-left text-sm">
+    <table className="w-full min-w-ui-840 text-left text-sm">
       <thead className="border-b border-border bg-background/50 text-muted">
         <tr>
           <th className="px-4 py-3 font-medium">Title</th>

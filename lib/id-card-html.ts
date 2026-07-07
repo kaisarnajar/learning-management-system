@@ -31,7 +31,7 @@ export function renderIdCardToHtml(data: {
 
   const profileContent = data.profilePicUrl
     ? `<img src="${data.profilePicUrl}" class="w-full h-full object-cover rounded-t-lg" />`
-    : `<div class="w-full h-full flex flex-col items-center justify-center bg-[#0f3d2e]/10 text-[#0f3d2e] rounded-t-lg">
+    : `<div class="w-full h-full flex flex-col items-center justify-center bg-brand-primary/10 text-brand-primary rounded-t-lg">
          <span class="text-7xl font-bold font-serif">${getInitials(data.studentName)}</span>
          <span class="text-lg mt-2 font-medium opacity-60">No Photo Available</span>
        </div>`;
@@ -70,7 +70,7 @@ export function renderIdCardToHtml(data: {
 <body>
   <div>
     <div
-      class="w-[1011px] h-[638px] relative overflow-hidden bg-[#fdfaf3] text-[#0f3d2e] box-border border-[6px] border-[#0f3d2e] rounded-[36px] shadow-2xl"
+      class="w-pdf-id-width h-pdf-id-height relative overflow-hidden bg-surface-cream text-brand-primary box-border border-pdf-md border-brand-primary rounded-pdf-lg shadow-2xl"
       style="background: #fcf9f2;"
     >
       <!-- Top Decorative Corners (Abstract curves) -->
@@ -95,24 +95,24 @@ export function renderIdCardToHtml(data: {
           <img src="${data.logoUrl}" class="w-[130px] h-[130px] object-contain mb-3 process-white-bg" alt="Logo" />
           
           <!-- Photo -->
-          <div class="w-[230px] h-[270px] border-[4px] border-[#0f3d2e] rounded-t-xl bg-white overflow-hidden relative shadow-md">
+          <div class="w-pdf-photo-w h-pdf-photo-h border-pdf-sm border-brand-primary rounded-t-xl bg-white overflow-hidden relative shadow-md">
             ${profileContent}
           </div>
           <!-- Banner -->
-          <div class="w-[230px] bg-[#0f3d2e] text-white text-center py-2 rounded-b-xl border-[4px] border-t-0 border-[#0f3d2e] font-bold text-[22px] tracking-wider shadow-md">
+          <div class="w-pdf-photo-w bg-brand-primary text-white text-center py-2 rounded-b-xl border-pdf-sm border-t-0 border-brand-primary font-bold text-pdf-22 tracking-wider shadow-md">
             ${cardRole} CARD
           </div>
 
           <!-- Stamp & Signature -->
-          <div class="mt-4 flex flex-col items-center relative w-[230px]">
+          <div class="mt-4 flex flex-col items-center relative w-pdf-photo-w">
              <div class="relative flex justify-center items-center h-[85px] w-full">
                <!-- Stamp as background layer -->
                <img src="${data.stampUrl}" class="w-20 absolute z-10 opacity-90 process-white-bg mix-blend-multiply" style="top: 50%; left: 50%; transform: translate(-50%, -50%);" alt="Stamp" />
                <!-- Signature as foreground layer -->
                <img src="${data.signatureUrl}" class="max-h-[85px] max-w-[150px] object-contain relative z-20 translate-y-1 process-white-bg" alt="Signature" />
              </div>
-             <div class="w-48 h-[2px] bg-[#d4af37] mt-1"></div>
-             <p class="text-[17px] font-semibold text-[#0f3d2e] mt-1 tracking-wide">Founder / CEO</p>
+             <div class="w-48 h-[2px] bg-brand-gold mt-1"></div>
+             <p class="text-pdf-17 font-semibold text-brand-primary mt-1 tracking-wide">Founder / CEO</p>
           </div>
         </div>
 
@@ -121,21 +121,21 @@ export function renderIdCardToHtml(data: {
           <!-- Title Section -->
           <div class="flex flex-col items-center mb-6 relative">
             <div class="flex flex-col items-center relative -left-6">
-              <h1 class="text-[46px] font-serif font-bold text-[#0f3d2e] tracking-wider uppercase mb-1 whitespace-nowrap">
+              <h1 class="text-pdf-46 font-serif font-bold text-brand-primary tracking-wider uppercase mb-1 whitespace-nowrap">
                 ${BRAND_CONFIG.name.toUpperCase()}
               </h1>
               
               <div class="flex items-center gap-4 mb-4">
-                 <div class="h-[2px] w-12 bg-[#d4af37]"></div>
-                 <h2 class="text-[38px] font-bold text-[#0f3d2e]" style="font-family: 'IndoPak', 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</h2>
-                 <div class="h-[2px] w-12 bg-[#d4af37]"></div>
+                 <div class="h-[2px] w-12 bg-brand-gold"></div>
+                 <h2 class="text-pdf-38 font-bold text-brand-primary" style="font-family: 'IndoPak', 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</h2>
+                 <div class="h-[2px] w-12 bg-brand-gold"></div>
               </div>
             </div>
             
-            <div class="bg-[#0f3d2e] text-white px-8 py-2.5 rounded-lg flex items-center gap-4 shadow-md">
-              <span class="text-[22px] font-bold tracking-wide">REGISTRATION NO.</span>
-              <div class="w-[2px] h-6 bg-[#d4af37]"></div>
-              <span class="text-[22px] font-bold tracking-wide">${data.registrationNo || "PENDING"}</span>
+            <div class="bg-brand-primary text-white px-8 py-2.5 rounded-lg flex items-center gap-4 shadow-md">
+              <span class="text-pdf-22 font-bold tracking-wide">REGISTRATION NO.</span>
+              <div class="w-[2px] h-6 bg-brand-gold"></div>
+              <span class="text-pdf-22 font-bold tracking-wide">${data.registrationNo || "PENDING"}</span>
             </div>
           </div>
 
@@ -144,56 +144,56 @@ export function renderIdCardToHtml(data: {
             
             <div class="flex flex-col mb-[12px]">
               <div class="flex items-baseline">
-                <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Name</span>
-                <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
-                <span class="text-[22px] text-gray-800 font-medium leading-tight">${data.studentName}</span>
+                <span class="text-pdf-22 font-bold text-brand-primary w-pdf-label-w shrink-0">Name</span>
+                <span class="text-pdf-22 font-bold text-brand-primary mx-3">:</span>
+                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${data.studentName}</span>
               </div>
-              <div class="h-[1.5px] w-full bg-[#d4af37]/80 mt-[8px]"></div>
+              <div class="h-[1.5px] w-full bg-brand-gold/80 mt-[8px]"></div>
             </div>
 
             <div class="flex flex-col mb-[12px]">
               <div class="flex items-baseline">
-                <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Father's Name</span>
-                <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
-                <span class="text-[22px] text-gray-800 font-medium leading-tight">${data.fathersName}</span>
+                <span class="text-pdf-22 font-bold text-brand-primary w-pdf-label-w shrink-0">Father's Name</span>
+                <span class="text-pdf-22 font-bold text-brand-primary mx-3">:</span>
+                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${data.fathersName}</span>
               </div>
-              <div class="h-[1.5px] w-full bg-[#d4af37]/80 mt-[8px]"></div>
+              <div class="h-[1.5px] w-full bg-brand-gold/80 mt-[8px]"></div>
             </div>
 
             <div class="flex flex-col mb-[12px]">
               <div class="flex items-baseline">
-                <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Residence</span>
-                <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
-                <span class="text-[20px] text-gray-800 font-medium leading-snug">${data.residence}</span>
+                <span class="text-pdf-22 font-bold text-brand-primary w-pdf-label-w shrink-0">Residence</span>
+                <span class="text-pdf-22 font-bold text-brand-primary mx-3">:</span>
+                <span class="text-pdf-20 text-gray-800 font-medium leading-snug">${data.residence}</span>
               </div>
-              <div class="h-[1.5px] w-full bg-[#d4af37]/80 mt-[8px]"></div>
+              <div class="h-[1.5px] w-full bg-brand-gold/80 mt-[8px]"></div>
             </div>
 
             <div class="flex flex-col mb-[12px]">
               <div class="flex items-baseline">
-                <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Email</span>
-                <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
-                <span class="text-[22px] text-gray-800 font-medium leading-tight">${data.email}</span>
+                <span class="text-pdf-22 font-bold text-brand-primary w-pdf-label-w shrink-0">Email</span>
+                <span class="text-pdf-22 font-bold text-brand-primary mx-3">:</span>
+                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${data.email}</span>
               </div>
-              <div class="h-[1.5px] w-full bg-[#d4af37]/80 mt-[8px]"></div>
+              <div class="h-[1.5px] w-full bg-brand-gold/80 mt-[8px]"></div>
             </div>
 
             <div class="flex flex-col mb-[12px]">
               <div class="flex items-baseline">
-                <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Phone</span>
-                <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
-                <span class="text-[22px] text-gray-800 font-medium leading-tight">${data.phone}</span>
+                <span class="text-pdf-22 font-bold text-brand-primary w-pdf-label-w shrink-0">Phone</span>
+                <span class="text-pdf-22 font-bold text-brand-primary mx-3">:</span>
+                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${data.phone}</span>
               </div>
-              <div class="h-[1.5px] w-full bg-[#d4af37]/80 mt-[8px]"></div>
+              <div class="h-[1.5px] w-full bg-brand-gold/80 mt-[8px]"></div>
             </div>
 
             <div class="flex flex-col">
               <div class="flex items-baseline">
-                <span class="text-[22px] font-bold text-[#0f3d2e] w-[180px] shrink-0">Date of Birth</span>
-                <span class="text-[22px] font-bold text-[#0f3d2e] mx-3">:</span>
-                <span class="text-[22px] text-gray-800 font-medium leading-tight">${data.dob}</span>
+                <span class="text-pdf-22 font-bold text-brand-primary w-pdf-label-w shrink-0">Date of Birth</span>
+                <span class="text-pdf-22 font-bold text-brand-primary mx-3">:</span>
+                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${data.dob}</span>
               </div>
-              <div class="h-[1.5px] w-full bg-[#d4af37]/80 mt-[8px]"></div>
+              <div class="h-[1.5px] w-full bg-brand-gold/80 mt-[8px]"></div>
             </div>
 
           </div>
@@ -201,12 +201,12 @@ export function renderIdCardToHtml(data: {
       </div>
 
       <!-- Footer -->
-      <div class="absolute bottom-0 left-0 h-[52px] bg-[#0f3d2e] w-full z-20 flex items-center justify-center border-t-[4px] border-[#d4af37] gap-3 rounded-b-[28px]">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#d4af37]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <div class="absolute bottom-0 left-0 h-[52px] bg-brand-primary w-full z-20 flex items-center justify-center border-t-pdf-sm border-brand-gold gap-3 rounded-b-[28px]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-brand-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
         </svg>
         <div class="w-[1.5px] h-6 bg-white/50"></div>
-        <span class="text-white font-medium tracking-wider text-[20px]">${BRAND_CONFIG.websiteUrl.replace(/^https?:\/\//, "")}</span>
+        <span class="text-white font-medium tracking-wider text-pdf-20">${BRAND_CONFIG.websiteUrl.replace(/^https?:\/\//, "")}</span>
       </div>
 
     </div>

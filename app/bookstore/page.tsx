@@ -139,7 +139,7 @@ export default async function BookstorePage({
             <h1 className={`${sourceSerif.className} text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl`}>
               Bookstore
             </h1>
-            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-[#cca72f]"></div>
+            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-brand-gold-alt"></div>
             <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">
               Browse our collection of physical Islamic books. Add to cart and submit your order — we&apos;ll confirm once payment is verified.
             </p>

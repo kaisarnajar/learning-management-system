@@ -16,7 +16,7 @@ export function BookstoreSalesTable({ records }: BookstoreSalesTableProps) {
   }
 
   return (
-    <table className="w-full min-w-[900px] text-left text-sm">
+    <table className="w-full min-w-ui-900 text-left text-sm">
       <thead className="border-b border-border bg-background/50 text-muted">
         <tr>
           <th className="px-4 py-3 font-medium">Book</th>

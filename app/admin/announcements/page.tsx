@@ -60,7 +60,7 @@ async function AdminAnnouncementsList({ params, q }: { params: PageParams; q?: s
             {q ? "No announcements match your search." : "No announcements yet."}
           </p>
         ) : (
-          <table className="w-full min-w-[800px] text-left text-sm">
+          <table className="w-full min-w-ui-800 text-left text-sm">
             <thead className="border-b border-border bg-background/50 text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Title</th>
@@ -145,7 +145,7 @@ function TableSkeleton() {
   return (
     <>
       <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
-      <div className="mt-4 h-[400px] w-full rounded-lg bg-border/40 animate-pulse" />
+      <div className="mt-4 h-ui-400 w-full rounded-lg bg-border/40 animate-pulse" />
     </>
   );
 }

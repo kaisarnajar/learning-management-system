@@ -109,7 +109,7 @@ export function AttendanceForm({ courseId, baseUrl, students, initialDate, initi
             disabled={isEditing}
             value={dateStr}
             onChange={(e) => setDateStr(e.target.value)}
-            className={`${inputClassName} max-w-[200px] disabled:bg-surface-muted disabled:text-muted`}
+            className={`${inputClassName} max-w-ui-200 disabled:bg-surface-muted disabled:text-muted`}
           />
         </div>
         

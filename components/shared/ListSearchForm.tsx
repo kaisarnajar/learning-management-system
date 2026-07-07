@@ -40,7 +40,7 @@ export function ListSearchForm({
           <input key={key} type="hidden" name={key} value={value} />
         ))}
 
-        <div className="relative w-full sm:w-auto sm:min-w-[200px] flex-1 max-w-md">
+        <div className="relative w-full sm:w-auto sm:min-w-ui-200 flex-1 max-w-md">
           <input
             type="search"
             name={SEARCH_PARAM}

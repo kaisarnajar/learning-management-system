@@ -71,7 +71,7 @@ export function CourseThumbnail({
 
   return (
     <div
-      className={`relative w-full overflow-hidden bg-[#0A1214] flex items-center justify-center transition-colors duration-300 ${heightClass} ${className}`}
+      className={`relative w-full overflow-hidden bg-surface-dark flex items-center justify-center transition-colors duration-300 ${heightClass} ${className}`}
       style={{
         backgroundImage: `radial-gradient(circle at center, ${colors.glowColor} 0%, rgba(10, 18, 20, 1) 85%)`,
       }}
@@ -102,7 +102,7 @@ export function CourseThumbnail({
 
       {/* Unified Halo Outer Container */}
       <div
-        className={`flex items-center justify-center rounded-full border-gold/25 bg-black/45 backdrop-blur-md shadow-[0_0_20px_rgba(212,175,55,0.08)] ${ringSizeClass} ${colors.ringColor} z-10 transition-transform hover:scale-105`}
+        className={`flex items-center justify-center rounded-full border-gold/25 bg-black/45 backdrop-blur-md shadow-gold-glow ${ringSizeClass} ${colors.ringColor} z-10 transition-transform hover:scale-105`}
       >
         {/* Dynamic Category Icon centered */}
         <CourseCategoryIcon category={category} size={innerIconSize} />
@@ -110,7 +110,7 @@ export function CourseThumbnail({
 
       {/* Elegant Header Text Badge (Only for medium & large banners) */}
       {size !== "sm" && (
-        <span className="absolute top-3 left-4 text-[9px] font-semibold tracking-[0.25em] text-gold/45 uppercase select-none pointer-events-none">
+        <span className="absolute top-3 left-4 text-ui-micro font-semibold tracking-[0.25em] text-gold/45 uppercase select-none pointer-events-none">
           {BRAND_CONFIG.name}
         </span>
       )}

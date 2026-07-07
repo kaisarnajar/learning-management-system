@@ -68,7 +68,7 @@ export async function PaymentDetailsPanel({
                   alt="UPI QR code — scan with Google Pay, PhonePe, or Paytm"
                   width={280}
                   height={280}
-                  className="h-auto w-[200px] sm:w-[220px]"
+                  className="h-auto w-ui-200 sm:w-[220px]"
                   unoptimized
                 />
               </div>

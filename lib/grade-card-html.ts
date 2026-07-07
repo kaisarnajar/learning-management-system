@@ -69,7 +69,7 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
   </style>
 </head>
 <body class="p-10">
-  <div class="max-w-4xl mx-auto border-[10px] border-[#0f3d2e] rounded-xl p-8 bg-[#fdfaf3] relative" style="min-height: 720px;">
+  <div class="max-w-4xl mx-auto border-pdf-thick border-brand-primary rounded-xl p-8 bg-surface-cream relative" style="min-height: 720px;">
     <!-- Watermark -->
     <div class="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
       <img src="${data.logoUrl}" class="w-[350px] process-white-bg" alt="Watermark" />
@@ -77,7 +77,7 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
 
     <div class="relative z-10">
       <!-- Header Section -->
-      <header class="border-b-4 border-[#0f3d2e] pb-6 mb-8 flex flex-col">
+      <header class="border-b-4 border-brand-primary pb-6 mb-8 flex flex-col">
         <div class="flex justify-between items-center w-full">
           <!-- Top Left: Logo -->
           <div class="relative w-28 h-28">
@@ -85,16 +85,16 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
           </div>
           <!-- Top Right: Academy Name & Arabic Verse -->
           <div class="text-right flex flex-col items-end">
-            <h1 class="text-3xl font-serif font-bold text-[#0f3d2e] tracking-wide mb-1 uppercase">
+            <h1 class="text-3xl font-serif font-bold text-brand-primary tracking-wide mb-1 uppercase">
               ${data.academyName}
             </h1>
-            <h2 class="text-xl font-bold text-[#0f3d2e] mt-1" style="font-family: 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">
+            <h2 class="text-xl font-bold text-brand-primary mt-1" style="font-family: 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">
               خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ
             </h2>
           </div>
         </div>
         <!-- Academy info below header -->
-        <div class="text-center mt-4 text-[11px] text-slate-600 flex justify-between items-center w-full border-t border-slate-200 pt-3">
+        <div class="text-center mt-4 text-pdf-11 text-slate-600 flex justify-between items-center w-full border-t border-slate-200 pt-3">
           <span>Address: ${data.academyAddress}</span>
           <span>Phone: ${data.academyPhone} | Email: ${data.academyEmail}</span>
           <span>Website: ${data.academyWebsite}</span>
@@ -103,13 +103,13 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
 
       <!-- Title -->
       <div class="text-center mb-8">
-        <h2 class="text-2xl font-bold tracking-widest text-[#0f3d2e] uppercase">
+        <h2 class="text-2xl font-bold tracking-widest text-brand-primary uppercase">
           Student Grade Card
         </h2>
       </div>
 
       <!-- Student & Course Details -->
-      <div class="grid grid-cols-2 gap-8 mb-8 bg-white border-l-4 border-[#0f3d2e] p-5 rounded-r border border-slate-100 shadow-sm">
+      <div class="grid grid-cols-2 gap-8 mb-8 bg-white border-l-4 border-brand-primary p-5 rounded-r border border-slate-100 shadow-sm">
         <div class="space-y-1">
           <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Student Information</h3>
           <p class="font-bold text-base text-slate-800">${data.studentName}</p>
@@ -118,7 +118,7 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
         </div>
         <div class="space-y-1">
           <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Academic Course</h3>
-          <p class="font-bold text-base text-[#0f3d2e]">${data.courseTitle}</p>
+          <p class="font-bold text-base text-brand-primary">${data.courseTitle}</p>
           <p class="text-slate-600 text-xs">Issue Date: <span class="font-medium">${data.issueDate}</span></p>
         </div>
       </div>
@@ -127,7 +127,7 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
       <div class="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm mb-8">
         <table class="w-full border-collapse">
           <thead>
-            <tr class="bg-[#0f3d2e] text-white text-left text-xs uppercase tracking-wider">
+            <tr class="bg-brand-primary text-white text-left text-xs uppercase tracking-wider">
               <th class="py-3 px-4 font-semibold">Exam / Test Name</th>
               <th class="py-3 px-4 font-semibold">Date</th>
               <th class="py-3 px-4 font-semibold text-right">Marks Obtained</th>
@@ -154,25 +154,25 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
       </div>
 
       <!-- Summary Section -->
-      <div class="grid grid-cols-5 gap-4 bg-white border-y-2 border-[#0f3d2e] py-4 px-5 mb-10 text-center rounded shadow-sm border border-slate-100">
+      <div class="grid grid-cols-5 gap-4 bg-white border-y-2 border-brand-primary py-4 px-5 mb-10 text-center rounded shadow-sm border border-slate-100">
         <div>
-          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Total Exams</div>
+          <div class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Total Exams</div>
           <div class="text-lg font-bold text-slate-800">${data.totalExams}</div>
         </div>
         <div>
-          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Obtained</div>
+          <div class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Obtained</div>
           <div class="text-lg font-bold text-emerald-600">${data.totalMarksObtained}</div>
         </div>
         <div>
-          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Max Marks</div>
+          <div class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Max Marks</div>
           <div class="text-lg font-bold text-slate-800">${data.totalMaxMarks}</div>
         </div>
         <div>
-          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Percentage</div>
-          <div class="text-lg font-bold text-[#0f3d2e]">${data.percentage}%</div>
+          <div class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Percentage</div>
+          <div class="text-lg font-bold text-brand-primary">${data.percentage}%</div>
         </div>
         <div>
-          <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Overall Grade</div>
+          <div class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Overall Grade</div>
           <div class="text-lg font-bold text-amber-600">${data.overallGrade}</div>
         </div>
       </div>
@@ -180,7 +180,7 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
       <!-- Footer Section -->
       <div class="flex justify-between items-end mt-12 break-inside-avoid">
         <div class="w-7/12 pr-6">
-          <p class="text-[10px] text-slate-500 leading-relaxed bg-white border border-slate-200/80 rounded p-3 italic shadow-sm">
+          <p class="text-pdf-10 text-slate-500 leading-relaxed bg-white border border-slate-200/80 rounded p-3 italic shadow-sm">
             This Grade Card is an official academic record issued by ${BRAND_CONFIG.name}.
           </p>
         </div>
@@ -191,7 +191,7 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
           </div>
           <div class="w-full border-t border-slate-300 pt-2 relative z-30">
             <p class="font-bold text-xs text-slate-850">${data.authorityName}</p>
-            <p class="text-[10px] text-slate-500">${data.authorityDesignation}</p>
+            <p class="text-pdf-10 text-slate-500">${data.authorityDesignation}</p>
           </div>
         </div>
       </div>

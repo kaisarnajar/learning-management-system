@@ -124,7 +124,7 @@ export function NotificationCard({ notification }: { notification: StudentNotifi
               <NotificationIcon type={notification.type} />
             </div>
             {unread && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[0.6875rem] font-semibold text-primary">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-ui-xs font-semibold text-primary">
                 <span className="h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
                 New
               </span>
@@ -132,7 +132,7 @@ export function NotificationCard({ notification }: { notification: StudentNotifi
           </div>
 
           <span
-            className={`mt-3 inline-flex w-fit rounded-full px-2 py-0.5 text-[0.6875rem] font-medium leading-tight ${notificationTypeClass(notification.type)}`}
+            className={`mt-3 inline-flex w-fit rounded-full px-2 py-0.5 text-ui-xs font-medium leading-tight ${notificationTypeClass(notification.type)}`}
           >
             {notificationTypeLabel(notification.type)}
           </span>
@@ -153,7 +153,7 @@ export function NotificationCard({ notification }: { notification: StudentNotifi
 
           <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/60 pt-3">
             <time
-              className="text-[0.6875rem] text-muted"
+              className="text-ui-xs text-muted"
               dateTime={notification.createdAt.toISOString()}
               title={formatFullTime(notification.createdAt)}
             >

@@ -88,7 +88,7 @@ async function PaymentsContent({ params, userId }: { params: PageParams; userId:
             {pendingSubmissions.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-muted">No pending payment submissions.</p>
             ) : (
-              <table className="w-full min-w-[640px] text-left text-sm">
+              <table className="w-full min-w-ui-640 text-left text-sm">
                 <thead className="border-b border-border bg-background/50 text-muted">
                   <tr>
                     <th className="px-4 py-3 font-medium">Submitted</th>
@@ -133,7 +133,7 @@ async function PaymentsContent({ params, userId }: { params: PageParams; userId:
             {paymentTotalCount === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-muted">No approved payments recorded yet.</p>
             ) : (
-              <table className="w-full min-w-[640px] text-left text-sm">
+              <table className="w-full min-w-ui-640 text-left text-sm">
                 <thead className="border-b border-border bg-background/50 text-muted">
                   <tr>
                     <th className="px-4 py-3 font-medium">Date</th>
@@ -188,7 +188,7 @@ function PaymentsSkeleton() {
         <div className="h-10 w-32 rounded-full bg-border/40 animate-pulse" />
         <div className="h-10 w-32 rounded-full bg-border/40 animate-pulse" />
       </div>
-      <div className="mt-6 h-[300px] w-full rounded-lg bg-border/40 animate-pulse" />
+      <div className="mt-6 h-ui-300 w-full rounded-lg bg-border/40 animate-pulse" />
     </>
   );
 }

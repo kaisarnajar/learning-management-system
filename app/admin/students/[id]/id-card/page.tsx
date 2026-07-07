@@ -29,7 +29,7 @@ export default async function AdminStudentIdCardPage({
           title="Digital ID Card"
           description={`ID Card for ${student.name || student.email}`}
         />
-        <div className="flex min-h-[400px] flex-col items-center justify-center rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
+        <div className="flex min-h-ui-400 flex-col items-center justify-center rounded-2xl border border-border bg-surface p-8 text-center shadow-sm">
           <div className="mb-4 rounded-full bg-warning-bg p-4 text-warning-text">
             <svg
               className="h-8 w-8"

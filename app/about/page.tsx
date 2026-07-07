@@ -59,7 +59,7 @@ export default async function AboutPage() {
             <h1 className={`${sourceSerif.className} text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl`}>
               Our Story
             </h1>
-            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-[#cca72f]"></div>
+            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-brand-gold-alt"></div>
             <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">
               Darse-Quran is a non-profit Sunni Islamic media and educational organization based in Jammu & Kashmir, South Asia. Established with the objective of spreading the authentic teachings of Islam, Darse-Quran strives to convey the message of the Holy Qur&apos;an and Sunnah to people across the globe through education, media, publications, and community engagement.
             </p>
@@ -97,7 +97,7 @@ export default async function AboutPage() {
           </div>
           
           <div className="mt-12 motion-safe:animate-fade-up" style={{ animationDelay: '400ms', animationFillMode: 'both' }}>
-            <blockquote className="text-center border-l-4 border-[#cca72f] pl-4 py-4 bg-accent-muted/10 rounded-r-lg">
+            <blockquote className="text-center border-l-4 border-brand-gold-alt pl-4 py-4 bg-accent-muted/10 rounded-r-lg">
               <p
                 className={`${indoPakArabic.className} indo-pak-arabic text-2xl sm:text-3xl leading-relaxed text-primary mb-3`}
                 dir="rtl"
@@ -108,7 +108,7 @@ export default async function AboutPage() {
               <p className="italic text-base sm:text-lg text-primary">
                 &quot;And who is better in speech than one who calls to Allah, does righteousness, and says, &apos;Indeed, I am of the Muslims.&apos;&quot;
               </p>
-              <cite className="not-italic block mt-2 text-xs sm:text-sm font-semibold text-[#cca72f] uppercase tracking-wider">
+              <cite className="not-italic block mt-2 text-xs sm:text-sm font-semibold text-brand-gold-alt uppercase tracking-wider">
                 — (Qur&apos;an 41:33)
               </cite>
             </blockquote>
@@ -394,7 +394,7 @@ export default async function AboutPage() {
                 <iframe
                   title={`${ACADEMY_LOCATION.name} on Google Maps`}
                   src={getAcademyLocationEmbedUrl()}
-                  className="h-[400px] w-full border-0 lg:h-[500px]"
+                  className="h-ui-400 w-full border-0 lg:h-ui-500"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   allowFullScreen

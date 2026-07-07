@@ -54,7 +54,7 @@ export function AttendanceCardPreview({ enrollmentId }: { enrollmentId: string }
         </div>
       </div>
 
-      <div className="relative flex min-h-[600px] w-full flex-col items-center justify-center rounded-2xl border border-border bg-surface shadow-sm overflow-hidden p-4 md:p-8">
+      <div className="relative flex min-h-ui-600 w-full flex-col items-center justify-center rounded-2xl border border-border bg-surface shadow-sm overflow-hidden p-4 md:p-8">
         
         {isLoading && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface/80 backdrop-blur-sm">
@@ -64,7 +64,7 @@ export function AttendanceCardPreview({ enrollmentId }: { enrollmentId: string }
         )}
 
         {/* Constrain max-width for A4 portrait layout */}
-        <div className="relative w-full max-w-[850px] aspect-[0.707] bg-white rounded-xl overflow-hidden shadow-md ring-1 ring-border/50">
+        <div className="relative w-full max-w-ui-850 aspect-[0.707] bg-white rounded-xl overflow-hidden shadow-md ring-1 ring-border/50">
           <iframe
             src={iframeSrc}
             className="w-full h-full border-none"

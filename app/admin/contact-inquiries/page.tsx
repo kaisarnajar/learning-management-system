@@ -100,7 +100,7 @@ export default async function AdminContactInquiriesPage({
             {q ? "No contact messages match your search." : "No contact messages yet."}
           </p>
         ) : (
-          <table className="w-full min-w-[880px] text-left text-sm">
+          <table className="w-full min-w-ui-880 text-left text-sm">
             <thead className="border-b border-border bg-background/50 text-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Name</th>

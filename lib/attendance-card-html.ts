@@ -72,7 +72,7 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
 
     return `
 <div class="page-container">
-  <div class="w-full h-full border-[8px] border-[#0f3d2e] rounded-xl p-6 bg-[#fdfaf3] relative flex flex-col justify-between" style="box-sizing: border-box; height: 100%;">
+  <div class="w-full h-full border-pdf-lg border-brand-primary rounded-xl p-6 bg-surface-cream relative flex flex-col justify-between" style="box-sizing: border-box; height: 100%;">
     <!-- Watermark -->
     <div class="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
       <img src="${data.logoUrl}" class="w-[300px] process-white-bg" alt="Watermark" />
@@ -82,7 +82,7 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
       <!-- Top Content (Header + Details + Table) -->
       <div>
         <!-- Header Section -->
-        <header class="border-b-2 border-[#0f3d2e] pb-3 mb-4 flex flex-col">
+        <header class="border-b-2 border-brand-primary pb-3 mb-4 flex flex-col">
           <div class="flex justify-between items-center w-full">
             <!-- Top Left: Logo -->
             <div class="relative w-20 h-20">
@@ -90,16 +90,16 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
             </div>
             <!-- Top Right: Academy Name & Arabic Verse -->
             <div class="text-right flex flex-col items-end">
-              <h1 class="text-2xl font-serif font-bold text-[#0f3d2e] tracking-wide mb-0.5 uppercase">
+              <h1 class="text-2xl font-serif font-bold text-brand-primary tracking-wide mb-0.5 uppercase">
                 ${data.academyName}
               </h1>
-              <h2 class="text-base font-bold text-[#0f3d2e] mt-0.5" style="font-family: 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">
+              <h2 class="text-base font-bold text-brand-primary mt-0.5" style="font-family: 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">
                 خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ
               </h2>
             </div>
           </div>
           <!-- Academy info below header -->
-          <div class="text-center mt-2.5 text-[10px] text-slate-600 flex justify-between items-center w-full border-t border-slate-200 pt-2">
+          <div class="text-center mt-2.5 text-pdf-10 text-slate-600 flex justify-between items-center w-full border-t border-slate-200 pt-2">
             <span>Address: ${data.academyAddress}</span>
             <span>Phone: ${data.academyPhone} | Email: ${data.academyEmail}</span>
             <span>Website: ${data.academyWebsite}</span>
@@ -109,22 +109,22 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
         ${isFirstPage ? `
         <!-- Title -->
         <div class="text-center mb-4">
-          <h2 class="text-xl font-bold tracking-widest text-[#0f3d2e] uppercase text-sm">
+          <h2 class="text-xl font-bold tracking-widest text-brand-primary uppercase text-sm">
             Student Attendance Card
           </h2>
         </div>
 
         <!-- Student & Course Details -->
-        <div class="grid grid-cols-2 gap-4 mb-4 bg-white border-l-4 border-[#0f3d2e] p-4 rounded-r border border-slate-100 shadow-sm text-xs">
+        <div class="grid grid-cols-2 gap-4 mb-4 bg-white border-l-4 border-brand-primary p-4 rounded-r border border-slate-100 shadow-sm text-xs">
           <div class="space-y-0.5">
-            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Student Information</h3>
+            <h3 class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Student Information</h3>
             <p class="font-bold text-sm text-slate-800">${data.studentName}</p>
             <p class="text-slate-600">Roll Number: <span class="font-semibold">${data.rollNumber}</span></p>
             <p class="text-slate-600">Email: <span class="font-medium">${data.studentEmail}</span></p>
           </div>
           <div class="space-y-0.5">
-            <h3 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Academic Course</h3>
-            <p class="font-bold text-sm text-[#0f3d2e]">${data.courseTitle}</p>
+            <h3 class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Academic Course</h3>
+            <p class="font-bold text-sm text-brand-primary">${data.courseTitle}</p>
             <p class="text-slate-600">Issue Date: <span class="font-medium">${data.issueDate}</span></p>
           </div>
         </div>
@@ -134,7 +134,7 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
         <div class="bg-white rounded-lg border border-slate-200 overflow-hidden shadow-sm">
           <table class="w-full border-collapse">
             <thead>
-              <tr class="bg-[#0f3d2e] text-white text-left text-[11px] uppercase tracking-wider">
+              <tr class="bg-brand-primary text-white text-left text-pdf-11 uppercase tracking-wider">
                 <th class="py-2.5 px-4 font-semibold">Date</th>
                 <th class="py-2.5 px-4 font-semibold text-right">Attendance Status</th>
               </tr>
@@ -150,7 +150,7 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
                 <tr class="hover:bg-slate-50/50">
                   <td class="py-2 px-4 font-medium text-slate-800">${record.date}</td>
                   <td class="py-2 px-4 text-right">
-                    <span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${
+                    <span class="inline-flex px-2 py-0.5 rounded text-pdf-10 font-bold ${
                       record.status === "Present" 
                         ? "bg-emerald-100 text-emerald-800" 
                         : "bg-rose-100 text-rose-800"
@@ -169,29 +169,29 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
       <!-- Bottom Content (Summary + Footer) -->
       <div class="mt-4">
         <!-- Summary Section -->
-        <div class="grid grid-cols-4 gap-4 bg-white border-y-2 border-[#0f3d2e] py-3 px-4 mb-4 text-center rounded shadow-sm border border-slate-100">
+        <div class="grid grid-cols-4 gap-4 bg-white border-y-2 border-brand-primary py-3 px-4 mb-4 text-center rounded shadow-sm border border-slate-100">
           <div>
-            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Classes</div>
+            <div class="text-pdf-9 font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Classes</div>
             <div class="text-base font-bold text-slate-800">${data.totalClasses}</div>
           </div>
           <div>
-            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Present</div>
+            <div class="text-pdf-9 font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Present</div>
             <div class="text-base font-bold text-emerald-600">${data.totalPresent}</div>
           </div>
           <div>
-            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Absent</div>
+            <div class="text-pdf-9 font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Absent</div>
             <div class="text-base font-bold text-rose-600">${data.totalAbsent}</div>
           </div>
           <div>
-            <div class="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Attendance Rate</div>
-            <div class="text-base font-bold text-[#0f3d2e]">${data.attendancePercentage}%</div>
+            <div class="text-pdf-9 font-bold text-slate-400 uppercase tracking-wider mb-0.5">Attendance Rate</div>
+            <div class="text-base font-bold text-brand-primary">${data.attendancePercentage}%</div>
           </div>
         </div>
 
         <!-- Footer Section -->
         <div class="flex justify-between items-end mt-4">
           <div class="w-7/12 pr-4">
-            <p class="text-[9px] text-slate-500 leading-relaxed bg-white border border-slate-200/80 rounded p-2.5 italic shadow-sm">
+            <p class="text-pdf-9 text-slate-500 leading-relaxed bg-white border border-slate-200/80 rounded p-2.5 italic shadow-sm">
               This Attendance Card is an official attendance record issued by ${BRAND_CONFIG.name}.
             </p>
           </div>
@@ -201,8 +201,8 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
               ${data.signatureUrl ? `<img src="${data.signatureUrl}" alt="Authorized Signature" class="max-h-[60px] max-w-[120px] object-contain relative z-20 translate-y-1 process-white-bg" />` : ''}
             </div>
             <div class="w-full border-t border-slate-300 pt-1 relative z-30">
-              <p class="font-bold text-[10px] text-slate-850">${data.authorityName}</p>
-              <p class="text-[9px] text-slate-500">${data.authorityDesignation}</p>
+              <p class="font-bold text-pdf-10 text-slate-850">${data.authorityName}</p>
+              <p class="text-pdf-9 text-slate-500">${data.authorityDesignation}</p>
             </div>
           </div>
         </div>

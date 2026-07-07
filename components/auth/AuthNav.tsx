@@ -10,7 +10,7 @@ export function AuthNav({ mobile = false, onLinkClick }: { mobile?: boolean; onL
 
   const linkClass = mobile
     ? "flex min-h-11 items-center rounded-md px-3 text-base font-medium text-foreground active:bg-accent-muted/50"
-    : "whitespace-nowrap rounded-md px-1.5 py-2 text-[0.6875rem] font-semibold text-foreground transition-colors hover:bg-accent-muted/50 hover:text-primary 2xl:px-2.5 2xl:text-sm";
+    : "whitespace-nowrap rounded-md px-1.5 py-2 text-ui-xs font-semibold text-foreground transition-colors hover:bg-accent-muted/50 hover:text-primary 2xl:px-2.5 2xl:text-sm";
 
   if (status === "loading") {
     return (
@@ -58,7 +58,7 @@ export function AuthNav({ mobile = false, onLinkClick }: { mobile?: boolean; onL
         className={
           mobile
             ? "flex min-h-11 items-center rounded-full bg-primary px-3 text-base font-medium text-white"
-            : "whitespace-nowrap rounded-full bg-primary px-2 py-2 text-[0.6875rem] font-semibold text-white transition-colors hover:bg-primary-light 2xl:px-3 2xl:text-sm"
+            : "whitespace-nowrap rounded-full bg-primary px-2 py-2 text-ui-xs font-semibold text-white transition-colors hover:bg-primary-light 2xl:px-3 2xl:text-sm"
         }
         onClick={onLinkClick}
       >

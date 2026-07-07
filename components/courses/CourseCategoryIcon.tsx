@@ -32,7 +32,7 @@ export function CourseCategoryIcon({
     <span
       role="img"
       aria-label={`${category} course`}
-      className={`inline-flex items-center justify-center drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] ${sizeClasses[size]} ${className}`}
+      className={`inline-flex items-center justify-center drop-shadow-card-elevated ${sizeClasses[size]} ${className}`}
     >
       <Image
         src={icon.src}

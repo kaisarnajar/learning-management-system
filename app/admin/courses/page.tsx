@@ -64,7 +64,7 @@ function TableSkeleton() {
   return (
     <>
       <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
-      <div className="mt-4 h-[400px] w-full rounded-lg bg-border/40 animate-pulse" />
+      <div className="mt-4 h-ui-400 w-full rounded-lg bg-border/40 animate-pulse" />
     </>
   );
 }

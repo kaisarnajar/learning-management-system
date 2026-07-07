@@ -103,7 +103,7 @@ export function ProfileSidebar({ unreadCount = 0 }: { unreadCount?: number }) {
                 
                 {link.href === "/profile/notifications" && unreadCount > 0 && (
                   <span
-                    className={`ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] font-bold tracking-wide transition-colors ${
+                    className={`ml-2 inline-flex min-w-5 items-center justify-center rounded-full px-1.5 py-0.5 text-ui-nano font-bold tracking-wide transition-colors ${
                       active ? "bg-white/25 text-white" : "bg-primary text-white"
                     }`}
                   >

@@ -93,7 +93,7 @@ function CoursesSkeleton() {
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {[1, 2, 3, 4, 5, 6].map((i) => (
-        <div key={i} className="h-[400px] w-full rounded-2xl bg-border/40 animate-pulse" />
+        <div key={i} className="h-ui-400 w-full rounded-2xl bg-border/40 animate-pulse" />
       ))}
     </div>
   );
@@ -119,7 +119,7 @@ export default async function CoursesPage({
             <h1 className={`${sourceSerif.className} text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl`}>
               Course Announcements
             </h1>
-            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-[#cca72f]"></div>
+            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-brand-gold-alt"></div>
             <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">
               Browse programs and request enrollment. Enrollment and monthly fees are set per course; see each listing for details.
             </p>

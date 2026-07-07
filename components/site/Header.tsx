@@ -66,7 +66,7 @@ function HeaderContent({ pathname }: { pathname: string }) {
                 <Link
                   key={link.label}
                   href={link.href}
-                  className={`shrink-0 whitespace-nowrap px-1.5 py-2 text-[0.6875rem] font-semibold uppercase tracking-normal transition-colors 2xl:px-2.5 2xl:text-sm ${
+                  className={`shrink-0 whitespace-nowrap px-1.5 py-2 text-ui-xs font-semibold uppercase tracking-normal transition-colors 2xl:px-2.5 2xl:text-sm ${
                     active ? "text-gold" : "text-foreground hover:text-gold"
                   }`}
                 >

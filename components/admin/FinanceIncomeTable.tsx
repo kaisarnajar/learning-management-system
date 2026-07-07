@@ -33,7 +33,7 @@ export function FinanceIncomeTable({ records }: FinanceIncomeTableProps) {
 
   return (
     <div className="w-full overflow-x-auto">
-      <table className="w-full min-w-[880px] text-left text-sm">
+      <table className="w-full min-w-ui-880 text-left text-sm">
       <thead className="border-b border-border bg-background/50 text-xs uppercase tracking-wide text-muted">
         <tr>
           <th className="px-4 py-3 font-medium">Date</th>

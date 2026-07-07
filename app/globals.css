@@ -93,9 +93,96 @@
   --color-gold-light: var(--gold-light);
   --color-teal: var(--teal);
   --color-teal-dark: var(--teal-dark);
+
+  /* Centralized Brand Colors */
+  --color-brand-primary: #0f3d2e;
+  --color-brand-primary-light: #1a4d2e;
+  --color-brand-gold: #d4af37;
+  --color-surface-cream: #fdfaf3;
+
+  /* Typography Fonts */
   --font-sans: var(--font-poppins);
   --font-serif: var(--font-poppins);
+  
+  /* Radius */
   --radius-card: 0.5rem;
+  --radius-pdf-lg: 36px;
+  
+  /* PDF Specialized Spacing / Dimensions */
+  --spacing-pdf-id-width: 1011px;
+  --spacing-pdf-id-height: 638px;
+  --spacing-pdf-cert-width: 1123px;
+  --spacing-pdf-cert-height: 794px;
+  --spacing-pdf-label-w: 180px;
+  --spacing-pdf-photo-w: 230px;
+  --spacing-pdf-photo-h: 270px;
+  
+  /* PDF Border Widths */
+  --border-width-pdf-thick: 10px;
+  --border-width-pdf-xl: 12px;
+  --border-width-pdf-lg: 8px;
+  --border-width-pdf-md: 6px;
+  --border-width-pdf-sm: 4px;
+  --border-width-pdf-xs: 3px;
+  --border-width-pdf-hairline: 1.5px;
+
+  /* PDF Typography Sizes */
+  --text-pdf-7: 7px;
+  --text-pdf-9: 9px;
+  --text-pdf-10: 10px;
+  --text-pdf-11: 11px;
+  --text-pdf-16: 16px;
+  --text-pdf-17: 17px;
+  --text-pdf-20: 20px;
+  --text-pdf-22: 22px;
+  --text-pdf-26: 26px;
+  --text-pdf-28: 28px;
+  --text-pdf-34: 34px;
+  --text-pdf-38: 38px;
+  --text-pdf-44: 44px;
+  --text-pdf-46: 46px;
+
+  /* Additional Centralized UI Colors */
+  --color-brand-gold-alt: #cca72f;
+  --color-brand-primary-light-alt: #0b4f35;
+  --color-brand-primary-hover: #06301f;
+  --color-brand-primary-dark: #003527;
+  --color-surface-dark: #0a1214;
+  --color-text-offwhite: #ececec;
+  
+  --color-whatsapp: #25d366;
+  --color-whatsapp-hover: #20bd5a;
+  --color-brand-gold-light: #e9c349;
+  --color-brand-gold-dark-text: #4e3d00;
+  
+  /* Centralized UI Shadows */
+  --shadow-card-elevated: 0 2px 10px rgba(0,0,0,0.28);
+  --shadow-gold-glow: 0 0 20px rgba(212,175,55,0.08);
+  --shadow-inset-soft: inset 0 0 20px rgba(0,0,0,0.1);
+  --shadow-modal-deep: 0 25px 60px rgba(0,0,0,0.65);
+
+  /* Centralized UI Typography */
+  --text-ui-micro: 9px;
+  --text-ui-nano: 10px;
+  --text-ui-xs: 0.6875rem;
+
+  /* Centralized UI Spacing / Dimensions */
+  --spacing-ui-400: 400px;
+  --spacing-ui-500: 500px;
+  --spacing-ui-600: 600px;
+  --spacing-ui-640: 640px;
+  --spacing-ui-720: 720px;
+  --spacing-ui-800: 800px;
+  --spacing-ui-840: 840px;
+  --spacing-ui-850: 850px;
+  --spacing-ui-880: 880px;
+  --spacing-ui-900: 900px;
+  --spacing-ui-1000: 1000px;
+  --spacing-ui-200: 200px;
+  --spacing-ui-300: 300px;
+  --spacing-ui-180: 180px;
+  
+  --radius-ui-lg: 20px;
 }
 
 html {

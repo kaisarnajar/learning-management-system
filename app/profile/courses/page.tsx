@@ -181,7 +181,7 @@ function CoursesSkeleton() {
   return (
     <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
       {[1, 2, 3, 4].map((i) => (
-        <li key={i} className="card-elevated flex flex-col p-5 h-[300px] bg-border/40 animate-pulse" />
+        <li key={i} className="card-elevated flex flex-col p-5 h-ui-300 bg-border/40 animate-pulse" />
       ))}
     </ul>
   );

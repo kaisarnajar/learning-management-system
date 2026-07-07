@@ -178,7 +178,7 @@ function TableSkeleton() {
         <div className="h-10 w-48 rounded-full bg-border/40 animate-pulse" />
       </div>
       <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
-      <div className="mt-8 h-[400px] w-full rounded-lg bg-border/40 animate-pulse" />
+      <div className="mt-8 h-ui-400 w-full rounded-lg bg-border/40 animate-pulse" />
     </>
   );
 }

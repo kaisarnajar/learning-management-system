@@ -21,12 +21,12 @@ export function renderReceiptToHtml(data: ReceiptData): string {
   return `
     <div class="max-w-4xl mx-auto bg-white p-10 shadow-lg print:shadow-none print:p-0 text-slate-800 font-sans">
       <!-- Header Section -->
-      <header class="flex justify-between items-center border-b-4 border-[#1a4d2e] pb-6 mb-8">
+      <header class="flex justify-between items-center border-b-4 border-brand-primary-light pb-6 mb-8">
         <div class="relative w-32 h-32">
           <img src="${academy.logoUrl}" alt="${academy.name} Logo" class="object-contain w-full h-full process-white-bg" />
         </div>
         <div class="text-right">
-          <h1 class="text-3xl font-serif font-bold text-[#1a4d2e] mb-2">${academy.name}</h1>
+          <h1 class="text-3xl font-serif font-bold text-brand-primary-light mb-2">${academy.name}</h1>
           <p class="text-sm text-slate-600">${academy.address}</p>
           <p class="text-sm text-slate-600">Phone: ${academy.phone} | Email: ${academy.email}</p>
           <p class="text-sm text-slate-600">Website: ${academy.website}</p>
@@ -35,7 +35,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
 
       <!-- Receipt Title & Meta -->
       <div class="flex justify-between items-center mb-10">
-        <h2 class="text-2xl font-bold tracking-widest text-[#1a4d2e] uppercase">Payment Receipt</h2>
+        <h2 class="text-2xl font-bold tracking-widest text-brand-primary-light uppercase">Payment Receipt</h2>
         <div class="border border-slate-200 rounded bg-slate-50 overflow-hidden">
           <table class="text-sm">
             <tbody>
@@ -54,14 +54,14 @@ export function renderReceiptToHtml(data: ReceiptData): string {
 
       <!-- Info Grid -->
       <div class="grid grid-cols-2 gap-8 mb-10">
-        <div class="bg-slate-50 border-l-4 border-[#1a4d2e] p-5">
+        <div class="bg-slate-50 border-l-4 border-brand-primary-light p-5">
           <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Received From</h3>
           <p class="font-bold text-lg text-slate-800 mb-1">${student.name}</p>
           <p class="text-slate-600 text-sm whitespace-pre-line">${student.address}</p>
           <p class="text-slate-600 text-sm mt-1">Phone: ${student.phone}</p>
         </div>
 
-        <div class="bg-slate-50 border-l-4 border-[#1a4d2e] p-5 flex flex-col justify-center items-start relative overflow-hidden">
+        <div class="bg-slate-50 border-l-4 border-brand-primary-light p-5 flex flex-col justify-center items-start relative overflow-hidden">
           <div class="relative z-10">
             <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-6">Payment Status</h3>
             <p class="text-sm text-slate-600 font-medium">
@@ -70,14 +70,14 @@ export function renderReceiptToHtml(data: ReceiptData): string {
           </div>
           
           <div class="absolute right-4 top-1/2 -translate-y-1/2 opacity-70">
-            <div class="relative flex items-center justify-center w-28 h-28 rounded-full border-[3px] border-red-600">
+            <div class="relative flex items-center justify-center w-28 h-28 rounded-full border-pdf-xs border-red-600">
               <div class="absolute inset-1 rounded-full border border-red-600 border-dashed"></div>
               <div class="absolute inset-2 rounded-full border border-red-600/20"></div>
               
               <div class="text-center font-bold text-red-600 flex flex-col items-center justify-center z-10">
-                <span class="text-[7px] uppercase tracking-[0.15em] leading-tight mb-0.5">${BRAND_CONFIG.shortName}</span>
-                <span class="w-8 border-t-[1.5px] border-red-600 my-[3px]"></span>
-                <span class="text-[9px] uppercase tracking-wider leading-tight">Payment<br/>Successful</span>
+                <span class="text-pdf-7 uppercase tracking-[0.15em] leading-tight mb-0.5">${BRAND_CONFIG.shortName}</span>
+                <span class="w-8 border-t-pdf-hairline border-red-600 my-[3px]"></span>
+                <span class="text-pdf-9 uppercase tracking-wider leading-tight">Payment<br/>Successful</span>
               </div>
             </div>
           </div>
@@ -87,7 +87,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
       <!-- Payment Details Table -->
       <table class="w-full mb-12 border-collapse">
         <thead>
-          <tr class="bg-[#1a4d2e] text-white text-left">
+          <tr class="bg-brand-primary-light text-white text-left">
             <th class="py-3 px-4 font-semibold">Description</th>
             <th class="py-3 px-4 font-semibold text-right">Amount</th>
           </tr>
@@ -122,9 +122,9 @@ export function renderReceiptToHtml(data: ReceiptData): string {
             </td>
           </tr>
           ` : ""}
-          <tr class="bg-slate-50 border-y-2 border-[#1a4d2e]">
-            <td class="py-4 px-4 text-right font-bold text-lg text-[#1a4d2e]">Grand Total:</td>
-            <td class="py-4 px-4 text-right font-bold font-mono text-xl text-[#1a4d2e]">
+          <tr class="bg-slate-50 border-y-2 border-brand-primary-light">
+            <td class="py-4 px-4 text-right font-bold text-lg text-brand-primary-light">Grand Total:</td>
+            <td class="py-4 px-4 text-right font-bold font-mono text-xl text-brand-primary-light">
               ${currencySymbol} ${payment.amount.toFixed(2)}
             </td>
           </tr>

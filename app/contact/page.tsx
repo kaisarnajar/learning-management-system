@@ -30,7 +30,7 @@ export default async function ContactPage({
             <h1 className={`${sourceSerif.className} text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl`}>
               Send a Message
             </h1>
-            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-[#cca72f]"></div>
+            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-brand-gold-alt"></div>
             <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">
               We would love to hear from you. Please fill out the form below and our team will get back to you within 2-3 business days.
             </p>
@@ -43,7 +43,7 @@ export default async function ContactPage({
         <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
           
           {params.submitted === "1" && (
-            <div className="motion-safe:animate-fade-up mb-8 rounded-xl border border-[#cca72f]/30 bg-gold/5 p-6 text-center">
+            <div className="motion-safe:animate-fade-up mb-8 rounded-xl border border-brand-gold-alt/30 bg-gold/5 p-6 text-center">
               <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gold/20 text-gold">
                 <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />

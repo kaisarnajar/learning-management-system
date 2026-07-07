@@ -47,7 +47,7 @@ export function FinanceExpenseFilters({ filters, teachers }: FinanceExpenseFilte
         <input key={field.name} type="hidden" name={field.name} value={field.value} />
       ))}
 
-      <div className="w-full sm:w-auto sm:min-w-[180px]">
+      <div className="w-full sm:w-auto sm:min-w-ui-180">
         <label htmlFor="expense-category" className="block text-xs font-medium text-muted">
           Category
         </label>
@@ -68,7 +68,7 @@ export function FinanceExpenseFilters({ filters, teachers }: FinanceExpenseFilte
       </div>
 
       {showTeacherFilter && (
-        <div className="w-full sm:w-auto sm:min-w-[180px]">
+        <div className="w-full sm:w-auto sm:min-w-ui-180">
           <label htmlFor="expense-teacher" className="block text-xs font-medium text-muted">
             Teacher
           </label>

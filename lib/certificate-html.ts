@@ -17,12 +17,12 @@ export function renderCertificateToHtml(data: {
 }) {
   const isCompletion = data.certificateType === "COMPLETION";
   const title = isCompletion ? "Certificate of Completion" : "Certificate of Appreciation";
-  const gradeText = (isCompletion && data.certificateGrade != null) ? ` and has obtained a Grade of <strong class="text-[#0f3d2e]">${data.certificateGrade}/10</strong>` : "";
+  const gradeText = (isCompletion && data.certificateGrade != null) ? ` and has obtained a Grade of <strong class="text-brand-primary">${data.certificateGrade}/10</strong>` : "";
 
   return `
 <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet" />
 <div
-  class="w-[1123px] h-[794px] relative overflow-hidden bg-[#fdfaf3]"
+  class="w-pdf-cert-width h-pdf-cert-height relative overflow-hidden bg-surface-cream"
   style="
     background:
       radial-gradient(circle at center, rgba(212,175,55,0.05), transparent 60%),
@@ -31,10 +31,10 @@ export function renderCertificateToHtml(data: {
 >
   
   <!-- Outer Border -->
-  <div class="absolute inset-4 border-[8px] border-[#d4af37] rounded-lg"></div>
+  <div class="absolute inset-4 border-pdf-lg border-brand-gold rounded-lg"></div>
 
   <!-- Inner Border -->
-  <div class="absolute inset-8 border-2 border-[#0f3d2e] rounded-lg"></div>
+  <div class="absolute inset-8 border-2 border-brand-primary rounded-lg"></div>
 
   <!-- Watermark -->
   <div
@@ -57,22 +57,22 @@ export function renderCertificateToHtml(data: {
   
       <div class="flex flex-col items-center">
         <h1
-          class="text-[34px] font-serif font-bold tracking-wide text-[#0f3d2e] uppercase leading-tight"
+          class="text-pdf-34 font-serif font-bold tracking-wide text-brand-primary uppercase leading-tight"
         >
           ${data.academyName}
         </h1>
         
         <div class="flex items-center gap-4 mt-2">
-           <div class="h-[2px] w-10 bg-[#d4af37]"></div>
-           <h2 class="text-[26px] font-bold text-[#0f3d2e]" style="font-family: 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</h2>
-           <div class="h-[2px] w-10 bg-[#d4af37]"></div>
+           <div class="h-[2px] w-10 bg-brand-gold"></div>
+           <h2 class="text-pdf-26 font-bold text-brand-primary" style="font-family: 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ</h2>
+           <div class="h-[2px] w-10 bg-brand-gold"></div>
         </div>
       </div>
     </div>
 
     <div class="text-center mt-5">
       <h2
-        class="text-[44px] font-serif text-[#b8860b] leading-tight"
+        class="text-pdf-44 font-serif text-gold-dark leading-tight"
         style="letter-spacing:2px"
       >
         ${title}
@@ -83,20 +83,20 @@ export function renderCertificateToHtml(data: {
   <!-- Body -->
   <div class="px-16 mt-4 text-center relative z-10 flex flex-col items-center justify-center">
     
-    <p class="text-[20px] text-gray-700">
+    <p class="text-pdf-20 text-gray-700">
       This certificate is proudly presented to
     </p>
 
     <h3
-      class="text-[44px] font-bold mt-2 text-[#0f3d2e] leading-tight max-w-[900px] mx-auto"
+      class="text-pdf-44 font-bold mt-2 text-brand-primary leading-tight max-w-[900px] mx-auto"
       style="font-family: 'Georgia', 'Cormorant Garamond', serif;"
     >
       ${data.studentName}
     </h3>
 
-    <div class="w-80 h-[2px] bg-[#d4af37] mx-auto my-3"></div>
+    <div class="w-80 h-[2px] bg-brand-gold mx-auto my-3"></div>
 
-    <p class="text-[22px] text-gray-700 leading-snug max-w-[950px] mx-auto">
+    <p class="text-pdf-22 text-gray-700 leading-snug max-w-[950px] mx-auto">
       residing at
       <strong>${data.address}</strong>,
       in recognition of their commitment, diligence,
@@ -104,7 +104,7 @@ export function renderCertificateToHtml(data: {
       at ${data.academyName}.
     </p>
 
-    <p class="text-[22px] text-gray-700 leading-snug max-w-[950px] mx-auto mt-3">
+    <p class="text-pdf-22 text-gray-700 leading-snug max-w-[950px] mx-auto mt-3">
       The student has demonstrated admirable effort, discipline,
       and enthusiasm throughout the successful completion of the
       <strong>${data.courseName}</strong> course${gradeText},
@@ -129,12 +129,12 @@ export function renderCertificateToHtml(data: {
           Date of Issuance
         </p>
 
-        <p class="text-[28px] font-semibold text-[#0f3d2e]">
+        <p class="text-pdf-28 font-semibold text-brand-primary">
           ${data.issueDate}
         </p>
       </div>
 
-      <div class="mt-4 text-gray-700 text-[16px]">
+      <div class="mt-4 text-gray-700 text-pdf-16">
         <p>${data.academyEmail}</p>
         <p>${data.academyPhone}</p>
       </div>
@@ -158,9 +158,9 @@ export function renderCertificateToHtml(data: {
         />
       </div>
 
-      <div class="w-full border-t border-[#d4af37] mt-1"></div>
+      <div class="w-full border-t border-brand-gold mt-1"></div>
 
-      <p class="text-lg text-[#0f3d2e] mt-1">
+      <p class="text-lg text-brand-primary mt-1">
         Founder / CEO
       </p>
     </div>
@@ -168,19 +168,19 @@ export function renderCertificateToHtml(data: {
 
   <!-- Corner Decorations -->
   <div
-    class="absolute top-0 left-0 w-40 h-40 border-t-[12px] border-l-[12px] border-[#0f3d2e]"
+    class="absolute top-0 left-0 w-40 h-40 border-t-pdf-xl border-l-pdf-xl border-brand-primary"
   ></div>
 
   <div
-    class="absolute top-0 right-0 w-40 h-40 border-t-[12px] border-r-[12px] border-[#0f3d2e]"
+    class="absolute top-0 right-0 w-40 h-40 border-t-pdf-xl border-r-pdf-xl border-brand-primary"
   ></div>
 
   <div
-    class="absolute bottom-0 left-0 w-40 h-40 border-b-[12px] border-l-[12px] border-[#0f3d2e]"
+    class="absolute bottom-0 left-0 w-40 h-40 border-b-pdf-xl border-l-pdf-xl border-brand-primary"
   ></div>
 
   <div
-    class="absolute bottom-0 right-0 w-40 h-40 border-b-[12px] border-r-[12px] border-[#0f3d2e]"
+    class="absolute bottom-0 right-0 w-40 h-40 border-b-pdf-xl border-r-pdf-xl border-brand-primary"
   ></div>
 
   <script>

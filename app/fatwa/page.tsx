@@ -48,7 +48,7 @@ export default async function FatwaPage({
             <h1 className={`${sourceSerif.className} text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl`}>
               Fatwa Section
             </h1>
-            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-[#cca72f]"></div>
+            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-brand-gold-alt"></div>
             <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">
               Questions answered by our scholars on Islam, Quran, Hadith, Fiqh, Tajweed, Seerah, and more.
             </p>

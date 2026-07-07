@@ -284,7 +284,7 @@ export function BaseOrderRow({
           })}
         </p>
       </td>
-      <td className="px-4 py-4 align-top max-w-[200px]">
+      <td className="px-4 py-4 align-top max-w-ui-200">
         {order.deliveryAddress && order.deliveryAddress !== "No address provided" ? (
           <div className="space-y-1">
             <p className="whitespace-pre-wrap text-sm text-muted">{order.deliveryAddress}</p>
@@ -355,7 +355,7 @@ export function BookOrdersTable({
 
   return (
     <div className="w-full overflow-x-auto">
-      <table className="w-full min-w-[800px] text-left text-sm">
+      <table className="w-full min-w-ui-800 text-left text-sm">
         <thead className="border-b border-border bg-background/50 text-muted">
           <tr>
             <th className="px-4 py-3 font-medium">Student</th>

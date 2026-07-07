@@ -4,7 +4,7 @@ const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] 
 
 export function ExperienceBanner() {
   return (
-    <section className="relative overflow-hidden bg-gradient-to-r from-[#b38b22] via-[#d4a017] to-[#b38b22] py-12 text-center shadow-[inset_0_0_20px_rgba(0,0,0,0.1)]">
+    <section className="relative overflow-hidden bg-gradient-to-r from-[#b38b22] via-[#d4a017] to-[#b38b22] py-12 text-center shadow-inset-soft">
       {/* Decorative overlays */}
       <div className="absolute inset-0 bg-white/10 mix-blend-overlay"></div>
       <div className="pattern-islamic absolute inset-0 opacity-[0.03] mix-blend-overlay pointer-events-none"></div>

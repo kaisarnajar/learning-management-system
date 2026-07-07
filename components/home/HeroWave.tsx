@@ -2,7 +2,7 @@ export function HeroWave() {
   return (
     <div className="relative -mt-1 h-12 bg-[var(--gold)] sm:h-16" aria-hidden>
       <svg
-        className="absolute bottom-0 left-0 w-full text-[#ececec]"
+        className="absolute bottom-0 left-0 w-full text-text-offwhite"
         viewBox="0 0 1440 80"
         preserveAspectRatio="none"
         fill="currentColor"

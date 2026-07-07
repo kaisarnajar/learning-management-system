@@ -59,7 +59,7 @@ export function FinanceIncomeFilters({ filters, courses, students }: FinanceInco
         </select>
       </div>
 
-      <div className="w-full sm:w-auto sm:min-w-[180px]">
+      <div className="w-full sm:w-auto sm:min-w-ui-180">
         <label htmlFor="income-student" className="block text-xs font-medium text-muted">
           Student
         </label>

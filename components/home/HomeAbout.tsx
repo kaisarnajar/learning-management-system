@@ -26,7 +26,7 @@ export function HomeAbout() {
             About <span className="text-gold">Us</span>
           </h2>
           
-          <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-[#cca72f]"></div>
+          <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-brand-gold-alt"></div>
           
           <p className="mt-8 text-base leading-relaxed text-white/90 sm:text-lg md:text-xl">
             Darse-Quran is a non-profit Sunni Islamic media group based in South Asia, serving from Jammu

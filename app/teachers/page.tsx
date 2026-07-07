@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import { TeacherCard } from "@/components/TeacherCard";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
@@ -11,7 +12,7 @@ const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] 
 
 export const metadata: Metadata = {
   title: "Teachers",
-  description: "Meet the qualified scholars and instructors at Darse Quran Academy.",
+  description: `Meet the qualified scholars and instructors at ${BRAND_CONFIG.name}.`,
 };
 
 export default async function TeachersPage({

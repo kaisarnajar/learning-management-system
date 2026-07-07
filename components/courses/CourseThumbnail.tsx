@@ -1,4 +1,5 @@
 import { CourseCategoryIcon } from "./CourseCategoryIcon";
+import { BRAND_CONFIG } from "@/config/brand";
 
 type CourseThumbnailProps = {
   category: string;
@@ -110,7 +111,7 @@ export function CourseThumbnail({
       {/* Elegant Header Text Badge (Only for medium & large banners) */}
       {size !== "sm" && (
         <span className="absolute top-3 left-4 text-[9px] font-semibold tracking-[0.25em] text-gold/45 uppercase select-none pointer-events-none">
-          Darse Quran Academy
+          {BRAND_CONFIG.name}
         </span>
       )}
     </div>

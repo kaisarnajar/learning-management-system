@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import { Suspense } from "react";
 import { ResetPasswordForm } from "@/components/auth/ResetPasswordForm";
 import { Section } from "@/components/site/Section";
 
 export const metadata: Metadata = {
   title: "Choose New Password",
-  description: "Set a new password for your Darse Quran Academy account.",
+  description: `Set a new password for your ${BRAND_CONFIG.name} account.`,
 };
 
 export default function ResetPasswordPage() {

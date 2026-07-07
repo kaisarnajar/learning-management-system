@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { BRAND_CONFIG } from "@/config/brand";
 import { BankDetailsCard } from "@/components/payment/BankDetailsCard";
 import { CopyButton } from "@/components/payment/CopyButton";
 import {
@@ -20,7 +21,7 @@ export async function PaymentDetailsPanel({
   paymentRef,
   amountLabel,
   amountPaise,
-  paymentNote = "Darse Quran Academy registration",
+  paymentNote = `${BRAND_CONFIG.name} registration`,
 }: PaymentDetailsPanelProps) {
   const settings = await getPaymentSettings();
   const upiReady = isUpiConfiguredFromSettings(settings);

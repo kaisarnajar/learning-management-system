@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import Link from "next/link";
 import { BookForm } from "@/components/admin/BookForm";
 import { createBook } from "@/app/admin/bookstore/actions";
@@ -6,7 +7,7 @@ import { getFeaturedHomepageBookCount } from "@/lib/bookstore";
 
 export const metadata: Metadata = {
   title: "Add Book — Admin",
-  description: "Add a new physical book to the Darse Quran Academy bookstore.",
+  description: `Add a new physical book to the ${BRAND_CONFIG.name} bookstore.`,
 };
 
 export default async function AdminBookstoreNewPage() {

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import Link from "next/link";
 import { FatwaCard } from "@/components/fatwa/FatwaCard";
 import { FatwaCategoryFilter } from "@/components/fatwa/FatwaCategoryFilter";
@@ -14,7 +15,7 @@ const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] 
 export const metadata: Metadata = {
   title: "Fatwa Section",
   description:
-    "Browse answered questions on Islam, Quran, Hadith, Fiqh, and related topics. Submit your own question to Darse Quran Academy.",
+    `Browse answered questions on Islam, Quran, Hadith, Fiqh, and related topics. Submit your own question to ${BRAND_CONFIG.name}.`,
 };
 
 export default async function FatwaPage({

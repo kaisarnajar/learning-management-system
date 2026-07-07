@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { BRAND_CONFIG } from "@/config/brand";
 
 /** Intrinsic dimensions of public/assets/logo.png after optimization */
 const LOGO_WIDTH = 480;
@@ -20,8 +21,8 @@ export function SiteLogo({
 }: SiteLogoProps) {
   const image = (
     <Image
-      src="/assets/logo.png"
-      alt="Darse Quran Academy — Come towards Quran, come towards success"
+      src={BRAND_CONFIG.assets.logoUrl}
+      alt={`${BRAND_CONFIG.name} — Come towards Quran, come towards success`}
       width={LOGO_WIDTH}
       height={LOGO_HEIGHT}
       className={[

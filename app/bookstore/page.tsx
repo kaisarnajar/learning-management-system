@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import Link from "next/link";
 import { BookCard } from "@/components/bookstore/BookCard";
 import { CartCount } from "@/components/bookstore/CartCount";
@@ -14,7 +15,7 @@ const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] 
 export const metadata: Metadata = {
   title: "Bookstore",
   description:
-    "Browse and purchase physical Islamic books from Darse Quran Academy. Add books to your cart and submit your order for approval.",
+    `Browse and purchase physical Islamic books from ${BRAND_CONFIG.name}. Add books to your cart and submit your order for approval.`,
 };
 
 import { Suspense } from "react";

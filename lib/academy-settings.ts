@@ -1,3 +1,5 @@
+import { BRAND_CONFIG } from "@/config/brand";
+
 export type AcademySettingsData = {
   academyName: string;
   academyAddress: string;
@@ -5,9 +7,9 @@ export type AcademySettingsData = {
 };
 
 export const ACADEMY_CONFIG: AcademySettingsData = {
-  academyName: "Darse Quran Academy",
-  academyAddress: "Treran Tangmarg, Baramulla J&K 193402",
-  academyWebsite: "www.darsequranacademy.com",
+  academyName: BRAND_CONFIG.name,
+  academyAddress: BRAND_CONFIG.contact.address,
+  academyWebsite: BRAND_CONFIG.websiteUrl.replace("https://", "").replace("http://", ""),
 };
 
 export async function getAcademySettings(): Promise<AcademySettingsData> {

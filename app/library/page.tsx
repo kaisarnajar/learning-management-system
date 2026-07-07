@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import { LibraryCard } from "@/components/LibraryCard";
 import { LibraryCategoryFilter } from "@/components/library/LibraryCategoryFilter";
 import { Pagination } from "@/components/shared/Pagination";
@@ -13,7 +14,7 @@ const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] 
 
 export const metadata: Metadata = {
   title: "Library",
-  description: "Browse Islamic books and study materials in the Darse Quran Academy digital library.",
+  description: `Browse Islamic books and study materials in the ${BRAND_CONFIG.name} digital library.`,
 };
 
 export default async function LibraryPage({

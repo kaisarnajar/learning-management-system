@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { auth } from "@/lib/auth";
 import { Source_Serif_4 } from "next/font/google";
@@ -7,7 +8,7 @@ const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] 
 
 export const metadata: Metadata = {
   title: "Contact Us",
-  description: "Get in touch with Darse Quran Academy — send your query and we will reply by email.",
+  description: `Get in touch with ${BRAND_CONFIG.name} — send your query and we will reply by email.`,
 };
 
 export default async function ContactPage({

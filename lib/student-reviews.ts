@@ -1,4 +1,5 @@
 import type { StudentReview, StudentReviewStatus, User } from "@prisma/client";
+import { BRAND_CONFIG } from "@/config/brand";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { andWhere, buildSearchOr } from "@/lib/text-search";
@@ -60,7 +61,7 @@ export function toHomepageReview(review: StudentReviewWithUser): HomepageReview 
   return {
     id: review.id,
     quote: review.quote,
-    course: review.course?.trim() || "Darse Quran Academy",
+    course: review.course?.trim() || `${BRAND_CONFIG.name}`,
     location: review.location?.trim() || "—",
     name,
     initials: getInitialsFromName(name),

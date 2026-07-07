@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import { ProfileSidebar } from "@/components/profile/ProfileSidebar";
 import { VerificationBanner } from "@/components/auth/VerificationBanner";
 import { requireUser } from "@/lib/auth-actions";
@@ -6,7 +7,7 @@ import { getUnreadNotificationCount } from "@/lib/notifications";
 
 export const metadata: Metadata = {
   title: "My Profile",
-  description: "Manage your profile, payments, and courses at Darse Quran Academy.",
+  description: `Manage your profile, payments, and courses at ${BRAND_CONFIG.name}.`,
 };
 
 export default async function ProfileLayout({ children }: { children: React.ReactNode }) {

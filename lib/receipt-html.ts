@@ -1,5 +1,6 @@
 import { ReceiptData } from '@/types/receipt';
 import { PROCESS_IMAGE_SCRIPT } from "./html-scripts";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export function renderReceiptToHtml(data: ReceiptData): string {
   const { academy, student, payment, authority, termsAndConditions } = data;
@@ -74,7 +75,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
               <div class="absolute inset-2 rounded-full border border-red-600/20"></div>
               
               <div class="text-center font-bold text-red-600 flex flex-col items-center justify-center z-10">
-                <span class="text-[7px] uppercase tracking-[0.15em] leading-tight mb-0.5">Darse Quran<br/>Academy</span>
+                <span class="text-[7px] uppercase tracking-[0.15em] leading-tight mb-0.5">${BRAND_CONFIG.shortName}</span>
                 <span class="w-8 border-t-[1.5px] border-red-600 my-[3px]"></span>
                 <span class="text-[9px] uppercase tracking-wider leading-tight">Payment<br/>Successful</span>
               </div>

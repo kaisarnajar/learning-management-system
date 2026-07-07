@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import { CourseCard } from "@/components/CourseCard";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
@@ -15,7 +16,7 @@ const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] 
 
 export const metadata: Metadata = {
   title: "Courses",
-  description: "View and enroll in upcoming courses at Darse Quran Academy.",
+  description: `View and enroll in upcoming courses at ${BRAND_CONFIG.name}.`,
 };
 
 import { Suspense } from "react";

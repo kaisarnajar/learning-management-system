@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { randomBytes } from "crypto";
+import { BRAND_CONFIG } from "@/config/brand";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -50,10 +51,10 @@ function getFromAddress(): string {
   const raw =
     process.env.EMAIL_FROM?.trim() ||
     process.env.SMTP_USER?.trim() ||
-    "noreply@darsequranacademy.com";
+    `noreply@${BRAND_CONFIG.websiteUrl.replace(/^https?:\/\//, "")}`;
   const stripped = stripEnvQuotes(raw);
   if (stripped.includes("<")) return stripped; // already has display name
-  return `Darse Quran Academy <${stripped}>`;
+  return `${BRAND_CONFIG.name} <${stripped}>`;
 }
 
 /**
@@ -77,7 +78,7 @@ function getReplyTo(): string {
  * Format: <hex@domain>
  */
 function generateMessageId(): string {
-  const domain = getSenderEmail().split("@")[1] || "darsequranacademy.com";
+  const domain = getSenderEmail().split("@")[1] || BRAND_CONFIG.websiteUrl.replace(/^https?:\/\//, "");
   const unique = randomBytes(16).toString("hex");
   return `<${unique}@${domain}>`;
 }
@@ -142,7 +143,7 @@ function buildHtmlEmail({
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="x-apple-disable-message-reformatting" />
   <meta name="format-detection" content="telephone=no,address=no,email=no,date=no,url=no" />
-  <title>Darse Quran Academy</title>
+  <title>${BRAND_CONFIG.name}</title>
   <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
 </head>
 <body style="margin:0;padding:0;background-color:#f9fafb;font-family:system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;">
@@ -157,7 +158,7 @@ function buildHtmlEmail({
           <tr>
             <td style="background-color:#3730a3;padding:22px 32px;border-radius:8px 8px 0 0;text-align:center;">
               <p style="margin:0;color:#c7d2fe;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;font-weight:600;">بسم الله الرحمن الرحيم</p>
-              <h1 style="margin:6px 0 0 0;color:#ffffff;font-size:20px;font-weight:700;letter-spacing:0.3px;">Darse Quran Academy</h1>
+              <h1 style="margin:6px 0 0 0;color:#ffffff;font-size:20px;font-weight:700;letter-spacing:0.3px;">${BRAND_CONFIG.name}</h1>
             </td>
           </tr>
           <!-- Email body -->
@@ -169,8 +170,8 @@ function buildHtmlEmail({
           <!-- Footer -->
           <tr>
             <td style="background-color:#f3f4f6;padding:18px 32px;border-radius:0 0 8px 8px;border:1px solid #e5e7eb;border-top:none;text-align:center;color:#6b7280;font-size:12px;line-height:1.6;">
-              <p style="margin:0 0 4px 0;">This is a transactional notification from <strong style="color:#374151;">Darse Quran Academy</strong>.</p>
-              <p style="margin:0;">Questions? Reply to this email or visit <a href="https://darsequranacademy.com/contact" style="color:#3730a3;text-decoration:none;">darsequranacademy.com</a>.</p>
+              <p style="margin:0 0 4px 0;">This is a transactional notification from <strong style="color:#374151;">${BRAND_CONFIG.name}</strong>.</p>
+              <p style="margin:0;">Questions? Reply to this email or visit <a href="${BRAND_CONFIG.websiteUrl}/contact" style="color:#3730a3;text-decoration:none;">${BRAND_CONFIG.websiteUrl.replace(/^https?:\/\//, "")}</a>.</p>
               ${footerExtra}
             </td>
           </tr>
@@ -233,7 +234,7 @@ async function deliverMail({
 
   const headers: Record<string, string> = {
     "Message-ID": messageId,
-    "X-Mailer": "Darse Quran Academy Mailer",
+    "X-Mailer": `${BRAND_CONFIG.name} Mailer`,
     "X-Entity-Ref-ID": messageId,
     "X-Transaction-ID": messageId,
   };

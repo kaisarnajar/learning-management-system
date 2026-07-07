@@ -1,4 +1,5 @@
 import type { BlogImage, BlogPost } from "@prisma/client";
+import { BRAND_CONFIG } from "@/config/brand";
 import { BLOG_PUBLIC_WHERE } from "@/lib/blog-approval";
 import { resolveHomepageFeaturedUpdate } from "@/lib/homepage-featured";
 import { type PaginatedResult } from "@/lib/pagination";
@@ -34,7 +35,7 @@ export function formatBlogDate(date: Date): string {
 export function formatBlogAuthorName(
   createdBy: { name: string | null; email?: string | null } | null,
 ): string {
-  return createdBy?.name?.trim() || createdBy?.email?.trim() || "Darse Quran Academy";
+  return createdBy?.name?.trim() || createdBy?.email?.trim() || `${BRAND_CONFIG.name}`;
 }
 
 export function isBlogPubliclyVisible(post: Pick<BlogPost, "published" | "approvalStatus">): boolean {

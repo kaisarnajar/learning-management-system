@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { BRAND_CONFIG } from "@/config/brand";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { approveStudentReview, rejectStudentReview, deleteStudentReview } from "@/app/admin/review-approvals/actions";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
@@ -100,7 +101,7 @@ export function ReviewTable({
               <ReviewName review={review} />
             </td>
             <td className="px-4 py-3 text-muted">{review.user.email}</td>
-            <td className="px-4 py-3 text-muted">{review.course?.trim() || "Darse Quran Academy"}</td>
+            <td className="px-4 py-3 text-muted">{review.course?.trim() || `${BRAND_CONFIG.name}`}</td>
             <td className="px-4 py-3 text-muted">{review.location?.trim() || "—"}</td>
             <td className="px-4 py-3">
               <StarRating rating={review.rating} size="sm" />

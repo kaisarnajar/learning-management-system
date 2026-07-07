@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import { SiteAnnouncementCard } from "@/components/announcements/SiteAnnouncementCard";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
@@ -12,7 +13,7 @@ const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] 
 export const metadata: Metadata = {
   title: "Announcements",
   description:
-    "Events, scholar visits, and academy updates from Darse Quran Academy — masjid programs, special sessions, and more.",
+    `Events, scholar visits, and academy updates from ${BRAND_CONFIG.name} — masjid programs, special sessions, and more.`,
 };
 
 export default async function AnnouncementsPage({

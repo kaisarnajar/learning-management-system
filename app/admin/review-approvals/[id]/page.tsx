@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BRAND_CONFIG } from "@/config/brand";
 import { notFound } from "next/navigation";
 
 import { ReviewDetailActions } from "@/components/admin/ReviewDetailActions";
@@ -43,7 +44,7 @@ export default async function AdminReviewDetailPage({
         </div>
         <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
           <dt className="shrink-0 font-medium text-foreground sm:w-28">Course</dt>
-          <dd className="text-muted">{review.course?.trim() || "Darse Quran Academy"}</dd>
+          <dd className="text-muted">{review.course?.trim() || `${BRAND_CONFIG.name}`}</dd>
         </div>
         <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
           <dt className="shrink-0 font-medium text-foreground sm:w-28">Location</dt>

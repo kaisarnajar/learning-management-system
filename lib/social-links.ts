@@ -1,3 +1,5 @@
+import { BRAND_CONFIG } from "@/config/brand";
+
 export type SocialLinksSettingsData = {
   contactEmail: string;
   whatsappNumber: string;
@@ -8,12 +10,12 @@ export type SocialLinksSettingsData = {
 };
 
 export const SOCIAL_LINKS_CONFIG: SocialLinksSettingsData = {
-  contactEmail: "darsequraann@gmail.com",
-  whatsappNumber: "919622966911",
-  whatsappDefaultMessage: "Assalamu Alaikum, I would like to know more about Darse Quran Academy.",
-  facebookUrl: "https://facebook.com",
-  instagramUrl: "https://instagram.com",
-  youtubeUrl: "https://youtube.com",
+  contactEmail: BRAND_CONFIG.contact.email,
+  whatsappNumber: BRAND_CONFIG.contact.whatsapp,
+  whatsappDefaultMessage: BRAND_CONFIG.contact.whatsappDefaultMessage,
+  facebookUrl: BRAND_CONFIG.social.facebook || "",
+  instagramUrl: BRAND_CONFIG.social.instagram || "",
+  youtubeUrl: BRAND_CONFIG.social.youtube || "",
 };
 
 export function normalizeWhatsAppNumber(input: string): string {

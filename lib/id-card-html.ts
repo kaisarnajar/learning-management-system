@@ -3,6 +3,7 @@ import { resolveUserRole } from "@/lib/teacher-auth";
 import { generatePdfFromHtml } from "@/lib/pdf-generator";
 import fs from "fs/promises";
 import path from "path";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export function renderIdCardToHtml(data: {
   studentName: string;
@@ -121,7 +122,7 @@ export function renderIdCardToHtml(data: {
           <div class="flex flex-col items-center mb-6 relative">
             <div class="flex flex-col items-center relative -left-6">
               <h1 class="text-[46px] font-serif font-bold text-[#0f3d2e] tracking-wider uppercase mb-1 whitespace-nowrap">
-                DARSE QURAN ACADEMY
+                ${BRAND_CONFIG.name.toUpperCase()}
               </h1>
               
               <div class="flex items-center gap-4 mb-4">
@@ -205,7 +206,7 @@ export function renderIdCardToHtml(data: {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
         </svg>
         <div class="w-[1.5px] h-6 bg-white/50"></div>
-        <span class="text-white font-medium tracking-wider text-[20px]">darsequranacademy.com</span>
+        <span class="text-white font-medium tracking-wider text-[20px]">${BRAND_CONFIG.websiteUrl.replace(/^https?:\/\//, "")}</span>
       </div>
 
     </div>

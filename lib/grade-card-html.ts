@@ -5,6 +5,7 @@ import fs from "fs/promises";
 import path from "path";
 import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-links";
 import { getAcademySettings } from "@/lib/academy-settings";
+import { BRAND_CONFIG } from "@/config/brand";
 import { AUTHORITY_SIGNATURE } from "@/lib/academy-contact";
 import { formatRollNumber } from "@/lib/roll-numbers";
 
@@ -180,7 +181,7 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
       <div class="flex justify-between items-end mt-12 break-inside-avoid">
         <div class="w-7/12 pr-6">
           <p class="text-[10px] text-slate-500 leading-relaxed bg-white border border-slate-200/80 rounded p-3 italic shadow-sm">
-            This Grade Card is an official academic record issued by Darse Quran Academy.
+            This Grade Card is an official academic record issued by ${BRAND_CONFIG.name}.
           </p>
         </div>
         <div class="w-5/12 text-center flex flex-col items-center relative">

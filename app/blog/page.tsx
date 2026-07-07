@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
@@ -11,7 +12,7 @@ const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] 
 
 export const metadata: Metadata = {
   title: "Blog",
-  description: "Articles and reflections from Darse Quran Academy.",
+  description: `Articles and reflections from ${BRAND_CONFIG.name}.`,
 };
 
 export default async function BlogPage({

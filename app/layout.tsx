@@ -23,13 +23,14 @@ const amiri = Amiri({
   weight: ["400", "700"],
 });
 
+import { BRAND_CONFIG } from "@/config/brand";
+
 export const metadata: Metadata = {
   title: {
-    default: "Darse Quran Academy | Online Islamic Learning",
-    template: "%s | Darse Quran Academy",
+    default: BRAND_CONFIG.seo.defaultTitle,
+    template: BRAND_CONFIG.seo.titleTemplate,
   },
-  description:
-    "Learn Quran, Tajweed, Arabic, and Islamic studies online with qualified teachers at Darse Quran Academy.",
+  description: BRAND_CONFIG.seo.defaultDescription,
 };
 
 export default function RootLayout({

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import Link from "next/link";
 import { AskFatwaForm } from "@/components/fatwa/AskFatwaForm";
 import { PageHeader } from "@/components/site/PageHeader";
@@ -7,7 +8,7 @@ import { auth } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "Ask a Question",
-  description: "Submit your Islamic question to Darse Quran Academy scholars.",
+  description: `Submit your Islamic question to ${BRAND_CONFIG.name} scholars.`,
 };
 
 export default async function FatwaAskPage() {

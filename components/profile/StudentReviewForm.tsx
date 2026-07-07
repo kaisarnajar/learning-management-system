@@ -3,6 +3,7 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import { useCallback } from "react";
 import type { StudentReview } from "@prisma/client";
+import { BRAND_CONFIG } from "@/config/brand";
 import { StarRatingInput } from "@/components/reviews/StarRatingInput";
 import { labelClassName } from "@/lib/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/lib/form-validation";
@@ -82,7 +83,7 @@ export function StudentReviewForm({
           onChange={(e) => updateField("quote", e.target.value)}
           onBlur={() => markTouched("quote")}
           aria-invalid={showError("quote") || undefined}
-          placeholder="Share your experience learning with Darse Quran Academy…"
+          placeholder={`Share your experience learning with ${BRAND_CONFIG.name}…`}
           className={formFieldInputClass(showError("quote"))}
         />
         {showError("quote") && (

@@ -5,6 +5,7 @@ import { useState, useTransition, useEffect } from "react";
 import { PageHeader } from "@/components/site/PageHeader";
 import { useToast } from "@/components/shared/ToastProvider";
 import { sendCertificateToEmailAction } from "@/app/actions/certificates";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export function CertificatePreview({ enrollmentId }: { enrollmentId: string }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -37,7 +38,7 @@ export function CertificatePreview({ enrollmentId }: { enrollmentId: string }) {
       <div className="flex items-center justify-between">
         <PageHeader
           title="Student Certificate"
-          description="Official course certificate issued by Darse Quran Academy."
+          description={`Official course certificate issued by ${BRAND_CONFIG.name}.`}
         />
         
         <div className="flex items-center gap-3">

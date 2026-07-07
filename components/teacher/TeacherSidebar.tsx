@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { BRAND_CONFIG } from "@/config/brand";
 
 const links = [
   { href: "/teacher", label: "My courses", exact: true },
@@ -17,7 +18,7 @@ export function TeacherSidebar({ teacherName }: { teacherName: string }) {
       <div className="p-4">
         <p className="font-serif text-lg font-bold text-primary">Teacher portal</p>
         <p className="mt-1 text-sm font-medium text-foreground">{teacherName}</p>
-        <p className="text-xs text-muted">Darse Quran Academy</p>
+        <p className="text-xs text-muted">{BRAND_CONFIG.name}</p>
       </div>
       <nav className="flex flex-col gap-0.5 px-2 pb-4 md:px-3" aria-label="Teacher navigation">
         {links.map((link) => {

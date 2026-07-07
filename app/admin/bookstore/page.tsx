@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import Link from "next/link";
 import Image from "next/image";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
@@ -15,7 +16,7 @@ import { ActionToast } from "@/components/shared/ToastProvider";
 
 export const metadata: Metadata = {
   title: "Bookstore — Admin",
-  description: "Manage the physical book catalog for the Darse Quran Academy bookstore.",
+  description: `Manage the physical book catalog for the ${BRAND_CONFIG.name} bookstore.`,
 };
 
 function formatPrice(paise: number): string {

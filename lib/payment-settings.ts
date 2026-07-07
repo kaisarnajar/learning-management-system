@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { withDbErrorHandling } from "@/lib/db-error";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export type BankDetails = {
   accountName: string;
@@ -26,8 +27,8 @@ function defaultSettings(): PaymentSettingsData {
   return {
     upiId: "",
     upiNumber: "",
-    upiPayeeName: "Darse Quran Academy",
-    bankAccountName: "Darse Quran Academy",
+    upiPayeeName: BRAND_CONFIG.name,
+    bankAccountName: BRAND_CONFIG.name,
     bankName: "",
     bankAccountNumber: "",
     bankIfsc: "",

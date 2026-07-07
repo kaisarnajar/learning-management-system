@@ -14,6 +14,8 @@ import {
   getConfiguredSocialNetworkLinks,
   getSocialLinksSettings,
 } from "@/lib/social-links";
+import { BRAND_CONFIG } from "@/config/brand";
+import { CREDITS_CONFIG } from "@/config/credits";
 
 const quickLinks = [
   { href: "/", label: "Home" },
@@ -25,13 +27,11 @@ const quickLinks = [
   { href: "/teachers", label: "Teachers" },
 ];
 
-const DEVELOPER_WHATSAPP_NUMBER = "917006025120";
-const developerWhatsAppHref = buildWhatsAppHref(DEVELOPER_WHATSAPP_NUMBER);
-const developerWhatsAppDisplay = formatWhatsAppForDisplay(DEVELOPER_WHATSAPP_NUMBER);
+const developerWhatsAppHref = buildWhatsAppHref(CREDITS_CONFIG.developer.whatsapp);
+const developerWhatsAppDisplay = formatWhatsAppForDisplay(CREDITS_CONFIG.developer.whatsapp);
 
-const SUPPORTER_WHATSAPP_NUMBER = "917006079324";
-const supporterWhatsAppHref = buildWhatsAppHref(SUPPORTER_WHATSAPP_NUMBER);
-const supporterWhatsAppDisplay = formatWhatsAppForDisplay(SUPPORTER_WHATSAPP_NUMBER);
+const supporterWhatsAppHref = buildWhatsAppHref(CREDITS_CONFIG.supporter.whatsapp);
+const supporterWhatsAppDisplay = formatWhatsAppForDisplay(CREDITS_CONFIG.supporter.whatsapp);
 
 type FooterCreditBlockProps = {
   title: string;
@@ -104,8 +104,7 @@ export async function Footer() {
           <div>
             <SiteLogo href="/" className="h-14 sm:h-16 mix-blend-multiply" />
             <p className="mt-6 text-sm leading-relaxed text-muted">
-              Dedicated to authentic Islamic education—Quran, Arabic, and Islamic studies for all
-              ages, taught online by qualified scholars.
+              {BRAND_CONFIG.footer.description}
             </p>
           </div>
 
@@ -170,7 +169,7 @@ export async function Footer() {
               )}
               <li className="flex items-center gap-3 pt-2">
                 <div className="h-px w-8 bg-border"></div>
-                <span className="text-muted text-xs uppercase tracking-wider">Serving students worldwide</span>
+                <span className="text-muted text-xs uppercase tracking-wider">{BRAND_CONFIG.footer.text}</span>
               </li>
             </ul>
 
@@ -200,26 +199,26 @@ export async function Footer() {
       <div className="relative z-10 bg-gradient-to-br from-[#003527] via-teal-900 to-[#002117] px-4 py-10 text-xs text-white/60 sm:px-6 shadow-inner">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 sm:flex-row sm:items-start">
           <p className="text-center sm:text-left mt-2">
-            © {new Date().getFullYear()} Darse Quran Academy. All rights reserved.
+            {BRAND_CONFIG.footer.copyrightText}
           </p>
           <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-start sm:gap-12 lg:gap-16">
             <FooterCreditBlock
-              title="Developed & Maintained by"
-              name="Kaisar Ahmad Najar"
-              email="kaisarnajar11114@gmail.com"
-              emailHref="mailto:kaisarnajar11114@gmail.com"
+              title={CREDITS_CONFIG.developer.role}
+              name={CREDITS_CONFIG.developer.name}
+              email={CREDITS_CONFIG.developer.email}
+              emailHref={`mailto:${CREDITS_CONFIG.developer.email}`}
               whatsappHref={developerWhatsAppHref}
               whatsappLabel={developerWhatsAppDisplay}
-              linkedInHref="https://www.linkedin.com/in/kaisarnajar/"
+              linkedInHref={CREDITS_CONFIG.developer.linkedIn}
             />
             <FooterCreditBlock
-              title="Supported by"
-              name="Barkat Bashir Malik"
-              email="barkatbashir4@gmail.com"
-              emailHref="mailto:barkatbashir4@gmail.com"
+              title={CREDITS_CONFIG.supporter.role}
+              name={CREDITS_CONFIG.supporter.name}
+              email={CREDITS_CONFIG.supporter.email}
+              emailHref={`mailto:${CREDITS_CONFIG.supporter.email}`}
               whatsappHref={supporterWhatsAppHref}
               whatsappLabel={supporterWhatsAppDisplay}
-              linkedInHref="https://www.linkedin.com/in/barkat-bashir-070a68178/"
+              linkedInHref={CREDITS_CONFIG.supporter.linkedIn}
             />
           </div>
         </div>

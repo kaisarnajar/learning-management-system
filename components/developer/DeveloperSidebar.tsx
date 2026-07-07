@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { ADMIN_NAV_GROUPS, ADMIN_NAV_LINKS } from "@/lib/admin-nav";
+import { BRAND_CONFIG } from "@/config/brand";
 
 const DEVELOPER_NAV_GROUPS = ADMIN_NAV_GROUPS;
 
@@ -42,7 +43,7 @@ export function DeveloperSidebar() {
     <aside className="border-b border-border bg-surface md:w-56 md:shrink-0 md:border-b-0 md:border-r overflow-y-auto">
       <div className="p-4">
         <p className="font-serif text-lg font-bold text-primary">Developer Panel</p>
-        <p className="text-xs text-muted">Darse Quran Academy</p>
+        <p className="text-xs text-muted">{BRAND_CONFIG.name}</p>
       </div>
       <nav className="flex flex-col gap-1 px-2 pb-6 md:px-3" aria-label="Developer navigation">
         <Link

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Source_Serif_4 } from "next/font/google";
+import { BRAND_CONFIG } from "@/config/brand";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
@@ -32,7 +33,7 @@ export function HomeAbout() {
             and Kashmir to spread the teaching of Islam worldwide through sound scholarship and da&apos;wah.
           </p>
           <p className="mt-4 text-base leading-relaxed text-white/80 sm:text-lg">
-            Darse Quran Academy is our online platform for structured Quran and Islamic studies—with
+            {BRAND_CONFIG.name} is our online platform for structured Quran and Islamic studies—with
             qualified teachers, classes are generally after Isha salah, and structured progress through each course.
           </p>
           

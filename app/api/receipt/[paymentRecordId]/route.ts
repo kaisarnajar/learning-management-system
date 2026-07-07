@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { isAdminSession } from "@/lib/admin";
+import { BRAND_CONFIG } from "@/config/brand";
 import { getCourseById } from "@/lib/courses";
 import { prepareReceiptData } from "@/lib/payment-receipt";
 import { renderReceiptToHtml } from "@/lib/receipt-html";
@@ -32,7 +33,7 @@ export async function GET(
   }
 
   const course = record.courseId ? await getCourseById(record.courseId) : null;
-  const courseTitle = course?.title ?? "Darse Quran Academy";
+  const courseTitle = course?.title ?? BRAND_CONFIG.name;
 
   const { receiptData, filename } = await prepareReceiptData(record, courseTitle);
 

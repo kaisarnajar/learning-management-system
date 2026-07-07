@@ -1,6 +1,7 @@
 "use server";
 
 import { auth } from "@/lib/auth";
+import { BRAND_CONFIG } from "@/config/brand";
 import { isAdminSession } from "@/lib/admin";
 import { prisma } from "@/lib/prisma";
 import { sendReceiptEmail } from "@/lib/email";
@@ -139,7 +140,7 @@ export async function sendReceiptToEmailAction(paymentRecordId: string): Promise
 
   try {
     const course = record.courseId ? await getCourseById(record.courseId) : null;
-    const courseTitle = course?.title ?? "Darse Quran Academy";
+    const courseTitle = course?.title ?? `${BRAND_CONFIG.name}`;
 
     const { receiptData, filename: pdfFilename } = await prepareReceiptData(record, courseTitle, {
       invoiceNumberOverride: record.invoiceNumber,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { indoPakArabic } from "@/lib/fonts/indo-pak-arabic";
 import { Source_Serif_4 } from "next/font/google";
+import { BRAND_CONFIG } from "@/config/brand";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["400", "600", "700"] });
 
@@ -22,7 +23,7 @@ export function HomeHero() {
           </h1>
           
           <p className="mt-6 max-w-xl text-base leading-relaxed text-white/90 sm:text-lg">
-            Join Darse Quran Academy to study Quran, Tajweed, Islamic Jurisprudence, Hadith, Arabic Language, and more with qualified teachers from anywhere in the world. Embark on a journey of spiritual and intellectual growth.
+            Join {BRAND_CONFIG.name} to study Quran, Tajweed, Islamic Jurisprudence, Hadith, Arabic Language, and more with qualified teachers from anywhere in the world. Embark on a journey of spiritual and intellectual growth.
           </p>
           
           <div className="mt-10">

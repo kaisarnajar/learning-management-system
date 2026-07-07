@@ -5,6 +5,7 @@ import { useState, useTransition } from "react";
 import { PageHeader } from "@/components/site/PageHeader";
 import { useToast } from "@/components/shared/ToastProvider";
 import { sendAttendanceCardToEmailAction } from "@/app/actions/attendance";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export function AttendanceCardPreview({ enrollmentId }: { enrollmentId: string }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -30,7 +31,7 @@ export function AttendanceCardPreview({ enrollmentId }: { enrollmentId: string }
       <div className="flex items-center justify-between">
         <PageHeader
           title="Student Attendance Card"
-          description="Official attendance record issued by Darse Quran Academy."
+          description={`Official attendance record issued by ${BRAND_CONFIG.name}.`}
         />
         
         <div className="flex items-center gap-3">

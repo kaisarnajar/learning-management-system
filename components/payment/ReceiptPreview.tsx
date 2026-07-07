@@ -5,6 +5,7 @@ import { useState, useTransition, useEffect } from "react";
 import { PageHeader } from "@/components/site/PageHeader";
 import { useToast } from "@/components/shared/ToastProvider";
 import { sendReceiptToEmailAction } from "@/app/actions/receipts";
+import { BRAND_CONFIG } from "@/config/brand";
 
 export function ReceiptPreview({ paymentRecordId }: { paymentRecordId: string }) {
   const [isLoading, setIsLoading] = useState(true);
@@ -37,7 +38,7 @@ export function ReceiptPreview({ paymentRecordId }: { paymentRecordId: string })
       <div className="flex items-center justify-between">
         <PageHeader
           title="Payment Receipt"
-          description="Official payment receipt issued by Darse Quran Academy."
+          description={`Official payment receipt issued by ${BRAND_CONFIG.name}.`}
         />
         
         <div className="flex items-center gap-3">

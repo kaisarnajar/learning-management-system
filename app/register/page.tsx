@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import { Suspense } from "react";
 import { RegisterForm } from "@/components/auth/RegisterForm";
 import { Section } from "@/components/site/Section";
 
 export const metadata: Metadata = {
   title: "Register",
-  description: "Create an account at Darse Quran Academy.",
+  description: `Create an account at ${BRAND_CONFIG.name}.`,
 };
 
 const googleEnabled =

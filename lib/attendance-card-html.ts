@@ -5,6 +5,7 @@ import fs from "fs/promises";
 import path from "path";
 import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/lib/social-links";
 import { getAcademySettings } from "@/lib/academy-settings";
+import { BRAND_CONFIG } from "@/config/brand";
 import { AUTHORITY_SIGNATURE } from "@/lib/academy-contact";
 import { formatRollNumber } from "@/lib/roll-numbers";
 
@@ -191,7 +192,7 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
         <div class="flex justify-between items-end mt-4">
           <div class="w-7/12 pr-4">
             <p class="text-[9px] text-slate-500 leading-relaxed bg-white border border-slate-200/80 rounded p-2.5 italic shadow-sm">
-              This Attendance Card is an official attendance record issued by Darse Quran Academy.
+              This Attendance Card is an official attendance record issued by ${BRAND_CONFIG.name}.
             </p>
           </div>
           <div class="w-5/12 text-center flex flex-col items-center relative">

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
+import { BRAND_CONFIG } from "@/config/brand";
 import { Suspense } from "react";
 import { ForgotPasswordForm } from "@/components/auth/ForgotPasswordForm";
 import { Section } from "@/components/site/Section";
 
 export const metadata: Metadata = {
   title: "Reset Password",
-  description: "Request a password reset link for your Darse Quran Academy account.",
+  description: `Request a password reset link for your ${BRAND_CONFIG.name} account.`,
 };
 
 export default function ForgotPasswordPage() {

@@ -76,7 +76,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
               <div class="absolute inset-2 rounded-full border border-red-600/20"></div>
               
               <div class="text-center font-bold text-red-600 flex flex-col items-center justify-center z-10">
-                <span class="text-pdf-7 uppercase tracking-[0.15em] leading-tight mb-0.5">${BRAND_CONFIG.shortName}</span>
+                <span class="text-pdf-7 uppercase tracking-[0.15em] leading-tight mb-0.5">Darse Quran<br/>Academy</span>
                 <span class="w-8 border-t-pdf-hairline border-red-600 my-[3px]"></span>
                 <span class="text-pdf-9 uppercase tracking-wider leading-tight">Payment<br/>Successful</span>
               </div>

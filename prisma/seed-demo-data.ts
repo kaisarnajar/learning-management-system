@@ -304,15 +304,17 @@ export async function seedDemoAdmins(prisma: PrismaClient) {
   const hashedPassword = await hash(DEMO_ADMIN_PASSWORD, 12);
 
   for (const [index, email] of emails.entries()) {
+    const userId = demoAdminUserId(index);
     await prisma.user.upsert({
-      where: { email },
+      where: { id: userId },
       create: {
-        id: demoAdminUserId(index),
+        id: userId,
         email,
         name: demoAdminDisplayName(email),
         password: hashedPassword,
       },
       update: {
+        email,
         name: demoAdminDisplayName(email),
         password: hashedPassword,
       },
@@ -328,7 +330,7 @@ export async function seedDemoTeachers(prisma: PrismaClient) {
     const userId = demoTeacherUserId(teacher.id);
 
     await prisma.user.upsert({
-      where: { email: teacher.email },
+      where: { id: userId },
       create: {
         id: userId,
         email: teacher.email,
@@ -336,6 +338,7 @@ export async function seedDemoTeachers(prisma: PrismaClient) {
         password: hashedPassword,
       },
       update: {
+        email: teacher.email,
         name: teacher.name,
         password: hashedPassword,
       },

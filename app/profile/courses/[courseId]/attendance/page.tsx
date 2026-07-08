@@ -1,5 +1,7 @@
 import { requireUser } from "@/services/auth-actions";
 import { getStudentAttendanceRecords } from "@/app/actions/attendance";
+import Link from "next/link";
+import { ArrowLeftIcon } from "lucide-react";
 
 export default async function StudentCourseAttendancePage({
   params,
@@ -17,6 +19,18 @@ export default async function StudentCourseAttendancePage({
 
   return (
     <div className="py-6 space-y-6">
+      <div className="flex items-center gap-4">
+        <Link
+          href="/profile/courses"
+          className="p-2 text-muted hover:text-foreground bg-surface rounded-full hover:bg-accent-muted/50 transition-colors border border-border shadow-sm flex-shrink-0"
+        >
+          <ArrowLeftIcon className="w-5 h-5" />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold text-foreground">Attendance Report</h1>
+        </div>
+      </div>
+
       <div className="bg-surface p-6 rounded-lg border border-border shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Your Attendance</h2>

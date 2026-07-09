@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AnnouncementCategoryBadge } from "@/components/announcements/AnnouncementCategoryBadge";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { formatAnnouncementDate } from "@/services/announcements";
+import { ViewAnnouncementModal } from "@/components/announcements/ViewAnnouncementModal";
 
 type AdminCourseAnnouncementCardProps = {
   courseId: string;
@@ -70,9 +71,12 @@ export function AdminCourseAnnouncementCard({
           {attachmentName}
         </Link>
       )}
-      <p className="mt-3 text-xs text-muted">
-        Posted by {authorName} · {formatAnnouncementDate(createdAt)}
-      </p>
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/60 pt-4">
+        <p className="line-clamp-1 text-xs text-muted">
+          Posted by {authorName} · {formatAnnouncementDate(createdAt)}
+        </p>
+        <ViewAnnouncementModal title={title} body={body} />
+      </div>
     </article>
   );
 }

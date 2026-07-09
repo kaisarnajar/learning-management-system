@@ -4,6 +4,7 @@ import { AnnouncementCategoryBadge } from "@/components/announcements/Announceme
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteCourseAnnouncement } from "@/services/course-announcement-actions";
 import { formatAnnouncementDate } from "@/services/announcements";
+import { ViewAnnouncementModal } from "@/components/announcements/ViewAnnouncementModal";
 import { adminActionButtonClassName } from "@/utils/form";
 
 type TeacherCourseAnnouncementCardProps = {
@@ -83,12 +84,17 @@ export function TeacherCourseAnnouncementCard({
           {attachmentName}
         </Link>
       )}
-      <p className="mt-3 text-xs text-muted">
-        Posted by {authorName} · {formatAnnouncementDate(createdAt)}
-      </p>
-      {!canManage && postedByAdmin && (
-        <p className="mt-2 text-xs text-muted">Posted by the academy administration</p>
-      )}
+      <div className="mt-3 flex items-center justify-between gap-2 border-t border-border/60 pt-4">
+        <div className="min-w-0">
+          <p className="line-clamp-1 text-xs text-muted">
+            Posted by {authorName} · {formatAnnouncementDate(createdAt)}
+          </p>
+          {!canManage && postedByAdmin && (
+            <p className="mt-1 line-clamp-1 text-xs text-muted">Posted by the academy administration</p>
+          )}
+        </div>
+        <ViewAnnouncementModal title={title} body={body} />
+      </div>
     </article>
   );
 }

@@ -2,6 +2,7 @@ import type { AnnouncementCategory } from "@prisma/client";
 import { AnnouncementAttachment } from "@/components/announcements/AnnouncementAttachment";
 import { AnnouncementCategoryBadge } from "@/components/announcements/AnnouncementCategoryBadge";
 import { formatAnnouncementDate } from "@/services/announcements";
+import { ViewAnnouncementModal } from "@/components/announcements/ViewAnnouncementModal";
 
 type AnnouncementCardProps = {
   category: AnnouncementCategory;
@@ -45,9 +46,12 @@ export function AnnouncementCard({
       {attachmentPath && attachmentName && (
         <AnnouncementAttachment attachmentPath={attachmentPath} attachmentName={attachmentName} />
       )}
-      <p className="mt-auto pt-4 text-xs text-muted">
-        Posted by {authorName} · {formatAnnouncementDate(createdAt)}
-      </p>
+      <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/60 pt-4">
+        <p className="line-clamp-1 text-xs text-muted">
+          Posted by {authorName} · {formatAnnouncementDate(createdAt)}
+        </p>
+        <ViewAnnouncementModal title={title} body={body} />
+      </div>
     </article>
   );
 }

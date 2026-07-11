@@ -47,7 +47,8 @@ export function FeaturedCourses({ courses }: FeaturedCoursesProps) {
                   </h3>
                   <p className="mt-2 line-clamp-2 text-sm text-muted">{course.description}</p>
                   <CourseTeacherInfo teacher={course.teacher} compact />
-                  <CourseDurationDisplay duration={course.duration} className="mt-2" />
+                  <p className="mt-4 text-sm text-muted">Starts: {course.startDate}</p>
+                  <CourseDurationDisplay duration={course.duration} className="mt-1" />
                   <CoursePricingDisplay course={course} className="mt-2" compact />
                   <Link
                     href={detailHref}

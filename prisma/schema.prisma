@@ -37,6 +37,7 @@ enum CourseStatus {
   ONGOING
   COMPLETED
   ON_HOLD
+  COMING_SOON
 }
 
 enum FeeFrequency {

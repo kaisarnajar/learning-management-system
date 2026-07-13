@@ -24,6 +24,7 @@ export const courseStatusEnum = z.enum([
   "ONGOING",
   "COMPLETED",
   "ON_HOLD",
+  "COMING_SOON",
 ]);
 
 export const courseCategoryEnum = z.string().trim().min(2, "Category is required.").max(100, "Category is too long.");

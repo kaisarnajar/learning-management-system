@@ -41,6 +41,7 @@ export const COURSE_STATUS_UI: Record<CourseStatus, { label: string; variant: "d
   [CourseStatus.ONGOING]: { label: "Ongoing", variant: "default" },
   [CourseStatus.COMPLETED]: { label: "Completed", variant: "outline" },
   [CourseStatus.ON_HOLD]: { label: "On Hold", variant: "warning" },
+  [CourseStatus.COMING_SOON]: { label: "Coming Soon", variant: "warning" },
 };
 
 export const BLOG_STATUS_UI: Record<BlogApprovalStatus, { label: string; variant: "default" | "success" | "warning" | "destructive" | "outline" }> = {

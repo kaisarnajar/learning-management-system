@@ -20,7 +20,7 @@ export async function sendPaymentApprovedEmail(
     paymentUrl,
     "",
     "Jazakallah Khair,",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `
@@ -61,7 +61,7 @@ export async function sendPaymentDeclinedEmail(params: PaymentDeclinedEmailParam
     "",
     "If you believe this was a mistake, please reply to this email or contact the academy.",
     "",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `
@@ -106,7 +106,7 @@ export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<Emai
     "Please keep it for your records.",
     "",
     "Jazakallah Khair,",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `

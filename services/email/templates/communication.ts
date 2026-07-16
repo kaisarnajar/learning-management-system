@@ -25,7 +25,7 @@ export async function sendFatwaAnswerEmail(params: FatwaAnswerEmailParams): Prom
     "Read the answer here:",
     fatwaUrl,
     "",
-    "${BRAND_CONFIG.name} — Fatwa Section",
+    `${BRAND_CONFIG.name} — Fatwa Section`,
   ].join("\n");
 
   const bodyHtml = `
@@ -62,7 +62,7 @@ export async function sendFatwaSubmissionAdminEmail(params: FatwaSubmissionAdmin
     "Please review and approve the answer here:",
     adminReviewUrl,
     "",
-    "${BRAND_CONFIG.name} System",
+    `${BRAND_CONFIG.name} System`,
   ].join("\n");
 
   const bodyHtml = `
@@ -104,7 +104,7 @@ export async function sendFatwaStatusTeacherEmail(params: FatwaStatusTeacherEmai
     "View the question here:",
     fatwaUrl,
     "",
-    "${BRAND_CONFIG.name} System",
+    `${BRAND_CONFIG.name} System`,
   ].join("\n");
 
   const bodyHtml = `
@@ -133,20 +133,20 @@ export async function sendContactInquiryReplyEmail(
   const { to, name, originalMessage, reply } = params;
   const displayName = name || "Reader";
 
-  const subject = "Reply from ${BRAND_CONFIG.name}";
+  const subject = `Reply from ${BRAND_CONFIG.name}`;
   const preview = `Assalamu Alaikum ${displayName}, we have replied to your message.`;
 
   const text = [
     `Assalamu Alaikum ${displayName},`,
     "",
-    "Thank you for contacting ${BRAND_CONFIG.name}. Here is our reply to your message:",
+    `Thank you for contacting ${BRAND_CONFIG.name}. Here is our reply to your message:`,
     "",
     reply,
     "",
     "— Your original message —",
     originalMessage,
     "",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `
@@ -185,7 +185,7 @@ export async function sendCourseAnnouncementEmail(
     "Read the full announcement here:",
     announcementUrl,
     "",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `
@@ -232,7 +232,7 @@ export async function sendPersonalMessageEmail(
     "View your messages here:",
     messageUrl,
     "",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `
@@ -268,7 +268,7 @@ export async function sendSiteAnnouncementEmail(
     "Read more on our site:",
     announcementUrl,
     "",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `

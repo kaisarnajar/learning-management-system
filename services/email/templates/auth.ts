@@ -11,13 +11,13 @@ export type VerificationEmailParams = {
 export async function sendVerificationEmail(params: VerificationEmailParams): Promise<EmailSendResult> {
   const { to, verificationUrl } = params;
 
-  const subject = "Verify your email address — ${BRAND_CONFIG.name}";
+  const subject = `Verify your email address — ${BRAND_CONFIG.name}`;
   const preview = "Welcome! Please verify your email address to complete your registration.";
 
   const text = [
     "Assalamu Alaikum,",
     "",
-    "Thank you for registering at ${BRAND_CONFIG.name}.",
+    `Thank you for registering at ${BRAND_CONFIG.name}.`,
     "",
     "Please verify your email address by clicking the link below:",
     verificationUrl,
@@ -26,7 +26,7 @@ export async function sendVerificationEmail(params: VerificationEmailParams): Pr
     "",
     "If you did not create an account, you can safely ignore this email.",
     "",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `
@@ -52,20 +52,20 @@ export type PasswordResetEmailParams = {
 export async function sendPasswordResetEmail(params: PasswordResetEmailParams): Promise<EmailSendResult> {
   const { to, resetUrl } = params;
 
-  const subject = "Reset your password — ${BRAND_CONFIG.name}";
+  const subject = `Reset your password — ${BRAND_CONFIG.name}`;
   const preview = "We received a request to reset your password. Click the link inside to choose a new one.";
 
   const text = [
     "Assalamu Alaikum,",
     "",
-    "We received a request to reset the password for your ${BRAND_CONFIG.name} account.",
+    `We received a request to reset the password for your ${BRAND_CONFIG.name} account.`,
     "",
     "Use the link below to choose a new password. This link expires in one hour.",
     resetUrl,
     "",
     "If you did not request this, you can ignore this email.",
     "",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `

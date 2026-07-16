@@ -36,7 +36,7 @@ export async function sendCertificateEmail(params: CertificateEmailParams): Prom
     "We pray this certificate is a blessing and a recognition of your sincere efforts in seeking Islamic knowledge.",
     "",
     "Jazakallah Khair,",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `
@@ -103,7 +103,7 @@ export async function sendIdCardEmail(params: IdCardEmailParams): Promise<EmailS
     "Please download and keep it for your records.",
     "",
     "Jazakallah Khair,",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `
@@ -164,7 +164,7 @@ export async function sendGradeCardEmail(params: GradeCardEmailParams): Promise<
     "Please download and review it for your academic records.",
     "",
     "Jazakallah Khair,",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `
@@ -225,7 +225,7 @@ export async function sendAttendanceCardEmail(params: AttendanceCardEmailParams)
     "Please download and review it for your academic records.",
     "",
     "Jazakallah Khair,",
-    "${BRAND_CONFIG.name}",
+    `${BRAND_CONFIG.name}`,
   ].join("\n");
 
   const bodyHtml = `

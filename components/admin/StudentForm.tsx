@@ -40,7 +40,7 @@ export function StudentForm({ student, action, submitLabel, error }: StudentForm
       occupation: student.occupation ?? "",
       address: student.address ?? "",
       whatsapp: student.whatsapp ?? "",
-      gender: student.gender ?? "",
+      gender: (student.gender ?? "") as any,
     },
     fields: STUDENT_FIELDS,
     validate,

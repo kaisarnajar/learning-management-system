@@ -163,8 +163,7 @@ export const occupationEnum = z.enum(OCCUPATION_VALUES);
 export const profileCountryEnum = z.enum(PROFILE_COUNTRY_CODES);
 
 export const genderEnum = z.enum(["MALE", "FEMALE"], {
-  required_error: "Gender is required.",
-  invalid_type_error: "Gender is required.",
+  message: "Gender is required.",
 });
 
 export const profileUpdateSchema = z
@@ -425,8 +424,7 @@ export const adminStudentSchema = z.object({
   address: z.string().min(5, "Address is required"),
   whatsapp: z.string().min(5, "WhatsApp is required"),
   gender: z.enum(["MALE", "FEMALE"], {
-    required_error: "Gender is required.",
-    invalid_type_error: "Gender is required.",
+    message: "Gender is required.",
   }),
 });
 

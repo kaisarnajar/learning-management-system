@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/services/auth-actions";
 import { buildStoredProfileWhatsApp } from "@/services/countries";
 import { prisma } from "@/utils/prisma";
-import { Occupation } from "@prisma/client";
+import { Occupation, Gender } from "@prisma/client";
 import { profileUpdateSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { saveProfileImage, validateProfileImage, deleteProfileImage } from "@/services/profile-upload";
@@ -29,6 +29,7 @@ export async function updateProfile(
     address: formData.get("address"),
     country: formData.get("country"),
     whatsapp: formData.get("whatsapp"),
+    gender: formData.get("gender"),
   });
 
   if (!parsed.success) {
@@ -40,17 +41,29 @@ export async function updateProfile(
   const imageFile = formData.get("image") as File | null;
   let newImageUrl: string | undefined;
 
-  if (imageFile && imageFile.size > 0) {
-    const validation = validateProfileImage(imageFile);
-    if (validation.error) {
-      return { error: validation.error };
-    }
-
-    if (currentProfile?.image) {
+  if (parsed.data.gender === "FEMALE") {
+    if (currentProfile?.image && currentProfile.image !== "/assets/female_icon.jpeg") {
       await deleteProfileImage(currentProfile.image);
     }
+    newImageUrl = "/assets/female_icon.jpeg";
+  } else {
+    // MALE
+    if (imageFile && imageFile.size > 0) {
+      const validation = validateProfileImage(imageFile);
+      if (validation.error) {
+        return { error: validation.error };
+      }
 
-    newImageUrl = await saveProfileImage(session.user.id, imageFile);
+      if (currentProfile?.image && currentProfile.image !== "/assets/female_icon.jpeg" && currentProfile.image !== "/assets/male_icon.png") {
+        await deleteProfileImage(currentProfile.image);
+      }
+
+      newImageUrl = await saveProfileImage(session.user.id, imageFile);
+    } else {
+      if (currentProfile?.image === "/assets/female_icon.jpeg" || !currentProfile?.image) {
+        newImageUrl = "/assets/male_icon.png";
+      }
+    }
   }
 
   const updateData: {
@@ -60,6 +73,7 @@ export async function updateProfile(
     occupation: Occupation;
     address: string;
     whatsapp: string;
+    gender: Gender;
     image?: string;
     registrationNumber?: string;
   } = {
@@ -69,6 +83,7 @@ export async function updateProfile(
     occupation: parsed.data.occupation as Occupation,
     address: parsed.data.address,
     whatsapp: buildStoredProfileWhatsApp(parsed.data.country, parsed.data.whatsapp),
+    gender: parsed.data.gender as Gender,
   };
 
   if (newImageUrl) {
@@ -83,6 +98,7 @@ export async function updateProfile(
       updateData.occupation &&
       updateData.address?.trim() &&
       updateData.whatsapp?.trim() &&
+      updateData.gender &&
       currentProfile?.email?.trim()
   );
 

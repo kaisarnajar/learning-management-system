@@ -26,6 +26,7 @@ const STUDENT_FIELDS: (keyof StudentFormValues)[] = [
   "occupation",
   "address",
   "whatsapp",
+  "gender",
 ];
 
 export function StudentForm({ student, action, submitLabel, error }: StudentFormProps) {
@@ -39,6 +40,7 @@ export function StudentForm({ student, action, submitLabel, error }: StudentForm
       occupation: student.occupation ?? "",
       address: student.address ?? "",
       whatsapp: student.whatsapp ?? "",
+      gender: student.gender ?? "",
     },
     fields: STUDENT_FIELDS,
     validate,
@@ -163,6 +165,32 @@ export function StudentForm({ student, action, submitLabel, error }: StudentForm
         {showError("occupation") && (
           <p className={formErrorTextClassName} role="alert">
             {errors.occupation}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="gender" className={labelClassName}>
+          Gender
+        </label>
+        <div className="mt-1">
+          <select
+            id="gender"
+            name="gender"
+            required
+            value={values.gender}
+            onChange={(e) => updateField("gender", e.target.value)}
+            onBlur={() => markTouched("gender")}
+            className={formFieldInputClass(showError("gender"))}
+          >
+            <option value="" disabled>Select gender</option>
+            <option value="MALE">Male</option>
+            <option value="FEMALE">Female</option>
+          </select>
+        </div>
+        {showError("gender") && (
+          <p className={formErrorTextClassName} role="alert">
+            {errors.gender}
           </p>
         )}
       </div>

@@ -1,4 +1,4 @@
-import type { Occupation } from "@prisma/client";
+import type { Occupation, Gender } from "@prisma/client";
 import Image from "next/image";
 import { getInitialsFromName } from "@/services/student-reviews";
 import { occupationLabel, formatDateOfBirthDisplay } from "@/services/profile";
@@ -18,6 +18,7 @@ type ProfileDetailsCardProps = {
   address: string | null;
   whatsapp: string | null;
   image: string | null;
+  gender: Gender | null;
   registrationNumber?: string | null;
   onEdit: () => void;
 };
@@ -31,9 +32,11 @@ export function ProfileDetailsCard({
   address,
   whatsapp,
   image,
+  gender,
   registrationNumber,
   onEdit,
 }: ProfileDetailsCardProps) {
+  const profileImage = image || (gender === "FEMALE" ? "/assets/female_icon.jpeg" : gender === "MALE" ? "/assets/male_icon.png" : null);
   const displayName = name?.trim() || "Student";
   const initials = getInitialsFromName(displayName);
 
@@ -50,9 +53,9 @@ export function ProfileDetailsCard({
       <div className="rounded-2xl border border-border bg-surface p-6 shadow-sm sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center">
           <div className="shrink-0">
-            {image ? (
+            {profileImage ? (
               <Image
-                src={image}
+                src={profileImage}
                 alt="Profile"
                 width={112}
                 height={112}
@@ -142,6 +145,19 @@ export function ProfileDetailsCard({
               <p className="text-xs font-medium text-muted">Date of Birth</p>
               <p className="mt-0.5 text-sm font-semibold text-foreground">
                 {formatDateOfBirthDisplay(dateOfBirth) || "Not provided"}
+              </p>
+            </div>
+          </div>
+
+          {/* Gender */}
+          <div className="flex items-start gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm">
+            <div className="mt-0.5 rounded-lg border border-border p-2 text-muted">
+              <User className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-xs font-medium text-muted">Gender</p>
+              <p className="mt-0.5 text-sm font-semibold text-foreground">
+                {gender ? (gender === "MALE" ? "Male" : "Female") : "Not provided"}
               </p>
             </div>
           </div>

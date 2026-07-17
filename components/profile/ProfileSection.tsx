@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Occupation } from "@prisma/client";
+import type { Occupation, Gender } from "@prisma/client";
 import { ProfileDetailsCard } from "./ProfileDetailsCard";
 import { ProfileForm } from "./ProfileForm";
 import { formatDateOfBirthForInput } from "@/services/profile";
@@ -15,6 +15,7 @@ type ProfileSectionProps = {
   address: string | null;
   whatsapp: string | null;
   image: string | null;
+  gender: Gender | null;
   registrationNumber?: string | null;
 };
 
@@ -27,6 +28,7 @@ export function ProfileSection({
   address,
   whatsapp,
   image,
+  gender,
   registrationNumber,
 }: ProfileSectionProps) {
   const [isEditing, setIsEditing] = useState(false);
@@ -42,6 +44,7 @@ export function ProfileSection({
         address={address}
         whatsapp={whatsapp}
         image={image}
+        gender={gender}
         onCancel={() => setIsEditing(false)}
       />
     );
@@ -57,6 +60,7 @@ export function ProfileSection({
       address={address}
       whatsapp={whatsapp}
       image={image}
+      gender={gender}
       registrationNumber={registrationNumber}
       onEdit={() => setIsEditing(true)}
     />

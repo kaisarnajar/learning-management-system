@@ -48,6 +48,7 @@ export default async function AdminStudentDetailPage({
 
   const titleById = new Map(courses.map((c) => [c.id, c.title]));
   const deleteAction = deleteStudentUserForm.bind(null, id);
+  const profileImage = student.image || (student.gender === "FEMALE" ? "/assets/female_icon.jpeg" : student.gender === "MALE" ? "/assets/male_icon.png" : null);
 
   return (
     <div>
@@ -58,9 +59,9 @@ export default async function AdminStudentDetailPage({
       <div className="mt-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="shrink-0">
-            {student.image ? (
+            {profileImage ? (
               <Image
-                src={student.image.includes("googleusercontent.com") ? student.image.replace(/=s\d+-c/g, "=s1000-c") : student.image}
+                src={profileImage.includes("googleusercontent.com") ? profileImage.replace(/=s\d+-c/g, "=s1000-c") : profileImage}
                 alt="Profile"
                 width={80}
                 height={80}
@@ -115,6 +116,12 @@ export default async function AdminStudentDetailPage({
         <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
           <dt className="shrink-0 font-medium text-foreground sm:w-28">Name</dt>
           <dd className="text-muted">{student.name ?? "—"}</dd>
+        </div>
+        <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
+          <dt className="shrink-0 font-medium text-foreground sm:w-28">Gender</dt>
+          <dd className="text-muted">
+            {student.gender ? (student.gender === "MALE" ? "Male" : "Female") : "—"}
+          </dd>
         </div>
         <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
           <dt className="shrink-0 font-medium text-foreground sm:w-28">Father&apos;s name</dt>

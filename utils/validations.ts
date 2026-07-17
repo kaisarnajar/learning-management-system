@@ -162,6 +162,11 @@ export const occupationEnum = z.enum(OCCUPATION_VALUES);
 
 export const profileCountryEnum = z.enum(PROFILE_COUNTRY_CODES);
 
+export const genderEnum = z.enum(["MALE", "FEMALE"], {
+  required_error: "Gender is required.",
+  invalid_type_error: "Gender is required.",
+});
+
 export const profileUpdateSchema = z
   .object({
     name: z.string().trim().min(2, "Name must be at least 2 characters.").max(100),
@@ -186,6 +191,7 @@ export const profileUpdateSchema = z
     address: z.string().trim().min(10, "Address must be at least 10 characters.").max(500),
     country: profileCountryEnum,
     whatsapp: z.string().trim(),
+    gender: genderEnum,
   })
   .superRefine((data, ctx) => {
     const country = getProfileCountryOrDefault(data.country);
@@ -418,5 +424,9 @@ export const adminStudentSchema = z.object({
   occupation: z.string().min(1, "Occupation is required"),
   address: z.string().min(5, "Address is required"),
   whatsapp: z.string().min(5, "WhatsApp is required"),
+  gender: z.enum(["MALE", "FEMALE"], {
+    required_error: "Gender is required.",
+    invalid_type_error: "Gender is required.",
+  }),
 });
 

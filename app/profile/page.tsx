@@ -104,6 +104,7 @@ export default async function ProfilePage({
           address={user.address}
           whatsapp={user.whatsapp}
           image={user.image}
+          gender={user.gender}
           registrationNumber={user.registrationNumber}
         />
       </div>

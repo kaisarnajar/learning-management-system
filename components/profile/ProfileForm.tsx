@@ -1,7 +1,7 @@
 "use client";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 import Image from "next/image";
-import type { Occupation } from "@prisma/client";
+import type { Occupation, Gender } from "@prisma/client";
 import type { ReactNode } from "react";
 import { useActionState, useMemo, useState } from "react";
 import { updateProfile, type ProfileUpdateState } from "@/app/profile/actions";
@@ -27,6 +27,7 @@ type ProfileFormProps = {
   address: string | null;
   whatsapp: string | null;
   image: string | null;
+  gender: Gender | null;
   onCancel?: () => void;
 };
 
@@ -38,6 +39,7 @@ type ProfileFormValues = {
   address: string;
   country: ProfileCountryCode;
   whatsapp: string;
+  gender: Gender | "";
 };
 
 type FormField = keyof ProfileFormValues;
@@ -50,6 +52,7 @@ const FORM_FIELDS: FormField[] = [
   "address",
   "country",
   "whatsapp",
+  "gender",
 ];
 
 const initialState: ProfileUpdateState = {};
@@ -91,11 +94,15 @@ export function ProfileForm({
   address,
   whatsapp,
   image,
+  gender,
   onCancel,
 }: ProfileFormProps) {
   const parsedWhatsApp = parseStoredProfileWhatsApp(whatsapp);
   const [state, formAction, pending] = useActionState(updateProfile, initialState);
-  const [imagePreview, setImagePreview] = useState<string | null>(image);
+  
+  const defaultPreview = image || (gender === "FEMALE" ? "/assets/female_icon.jpeg" : gender === "MALE" ? "/assets/male_icon.png" : null);
+  const [imagePreview, setImagePreview] = useState<string | null>(defaultPreview);
+  
   const [values, setValues] = useState<ProfileFormValues>({
     name: name ?? "",
     fatherName: fatherName ?? "",
@@ -104,6 +111,7 @@ export function ProfileForm({
     address: address ?? "",
     country: parsedWhatsApp.countryCode ?? DEFAULT_PROFILE_COUNTRY_CODE,
     whatsapp: parsedWhatsApp.localNumber,
+    gender: gender ?? "",
   });
   const [touched, setTouched] = useState<Partial<Record<FormField, boolean>>>({});
 
@@ -169,7 +177,7 @@ export function ProfileForm({
       <FormSection title="Personal information">
         <div className="mb-4">
           <label htmlFor="image" className={labelClassName}>
-            Profile Photo (Optional)
+            Profile Photo {values.gender === "FEMALE" ? "(Disabled for Female)" : values.gender === "" ? "(Select gender first)" : "(Optional)"}
           </label>
           <div className="mt-2 flex items-center gap-4">
             {imagePreview ? (
@@ -185,7 +193,10 @@ export function ProfileForm({
               type="file"
               accept="image/jpeg,image/png,image/webp,image/gif"
               onChange={handleImageChange}
-              className="text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer"
+              disabled={values.gender !== "MALE"}
+              className={`text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20 cursor-pointer ${
+                values.gender !== "MALE" ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             />
           </div>
         </div>
@@ -235,6 +246,47 @@ export function ProfileForm({
             {showError("fatherName") && (
               <p id="fatherName-error" className={errorTextClassName} role="alert">
                 {errors.fatherName}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="gender" className={labelClassName}>
+              Gender
+            </label>
+            <select
+              id="gender"
+              name="gender"
+              required
+              value={values.gender}
+              onChange={(e) => {
+                const newGender = e.target.value as "MALE" | "FEMALE";
+                updateField("gender", newGender);
+                markTouched("gender");
+                if (newGender === "FEMALE") {
+                  setImagePreview("/assets/female_icon.jpeg");
+                } else if (newGender === "MALE") {
+                  if (imagePreview === "/assets/female_icon.jpeg" || !imagePreview) {
+                    setImagePreview("/assets/male_icon.png");
+                  }
+                }
+              }}
+              onBlur={() => markTouched("gender")}
+              aria-invalid={showError("gender") || undefined}
+              aria-describedby={showError("gender") ? "gender-error" : undefined}
+              className={fieldInputClass(showError("gender"))}
+            >
+              <option value="" disabled>
+                Select…
+              </option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+            </select>
+            {showError("gender") && (
+              <p id="gender-error" className={errorTextClassName} role="alert">
+                {errors.gender}
               </p>
             )}
           </div>

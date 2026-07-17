@@ -16,6 +16,7 @@ export const userProfileSelect = {
   image: true,
   registrationNumber: true,
   createdAt: true,
+  gender: true,
 } as const;
 
 export type UserProfileData = Pick<User, keyof typeof userProfileSelect>;
@@ -42,7 +43,8 @@ export function isProfileComplete(user: Partial<UserProfileData>): boolean {
       user.occupation &&
       user.address?.trim() &&
       user.whatsapp?.trim() &&
-      user.email?.trim(),
+      user.email?.trim() &&
+      user.gender,
   );
 }
 

@@ -109,6 +109,11 @@ enum BookOrderStatus {
   REFUNDED
 }
 
+enum Gender {
+  MALE
+  FEMALE
+}
+
 model User {
   id                       String                    @id @default(cuid())
   name                     String?
@@ -118,6 +123,7 @@ model User {
   occupation               Occupation?
   address                  String?
   whatsapp                 String?
+  gender                   Gender?
   registrationNumber       String?                   @unique
   emailVerified            DateTime?
   image                    String?

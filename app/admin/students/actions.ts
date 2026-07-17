@@ -55,7 +55,9 @@ export async function deleteStudentUserForm(id: string) {
 }
 
 import { validateStudentForm, type StudentFormValues } from "@/services/admin-form-validation";
-import type { Occupation } from "@prisma/client";
+import { Occupation, Gender } from "@prisma/client";
+import { deleteProfileImage } from "@/services/profile-upload";
+import { getStudentUserById } from "@/services/students";
 
 function parseStudentForm(formData: FormData): StudentFormValues {
   return {
@@ -65,6 +67,7 @@ function parseStudentForm(formData: FormData): StudentFormValues {
     occupation: (formData.get("occupation") as string) ?? "",
     address: (formData.get("address") as string) ?? "",
     whatsapp: (formData.get("whatsapp") as string) ?? "",
+    gender: (formData.get("gender") as any) ?? "",
   };
 }
 
@@ -78,6 +81,20 @@ export async function updateStudentUserForm(id: string, formData: FormData) {
     redirect(`/admin/students/${id}/edit?error=${encodeURIComponent(parsed.issues[0]?.message ?? "Invalid input")}`);
   }
   
+  const currentStudent = await getStudentUserById(id);
+  let updateImage = undefined;
+  
+  if (values.gender === "FEMALE") {
+    if (currentStudent?.image && currentStudent.image !== "/assets/female_icon.jpeg") {
+      await deleteProfileImage(currentStudent.image);
+    }
+    updateImage = "/assets/female_icon.jpeg";
+  } else if (values.gender === "MALE") {
+    if (currentStudent?.image === "/assets/female_icon.jpeg" || !currentStudent?.image) {
+      updateImage = "/assets/male_icon.png";
+    }
+  }
+
   await withDbErrorHandling(() => prisma.user.update({
     where: { id },
     data: {
@@ -87,6 +104,8 @@ export async function updateStudentUserForm(id: string, formData: FormData) {
       occupation: values.occupation as Occupation,
       address: values.address,
       whatsapp: values.whatsapp,
+      gender: values.gender as Gender,
+      ...(updateImage !== undefined ? { image: updateImage } : {}),
     },
   }), "Database operation failed");
 

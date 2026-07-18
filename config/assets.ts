@@ -32,4 +32,6 @@ export const ASSET_LOCAL_PATHS = {
   logo: path.join(process.cwd(), "public", "assets", "logo.png"),
   signature: path.join(process.cwd(), "public", "assets", "signature.png"),
   stamp: path.join(process.cwd(), "public", "assets", "stamp.png"),
+  maleIcon: path.join(process.cwd(), "public", "assets", "male_icon.png"),
+  femaleIcon: path.join(process.cwd(), "public", "assets", "female_icon.png"),
 };

@@ -182,7 +182,14 @@ export async function loadProfilePictureAsBase64(imageUrl: string | null | undef
         return `data:${mimeType};base64,${Buffer.from(buffer).toString('base64')}`;
       }
     } else if (imageUrl.startsWith("/")) {
-      const imgPath = path.join(process.cwd(), "public", imageUrl);
+      let imgPath = "";
+      if (imageUrl === "/assets/male_icon.png") {
+        imgPath = ASSET_LOCAL_PATHS.maleIcon;
+      } else if (imageUrl === "/assets/female_icon.png") {
+        imgPath = ASSET_LOCAL_PATHS.femaleIcon;
+      } else {
+        imgPath = path.join(process.cwd(), "public", imageUrl);
+      }
       const bytes = await fs.readFile(imgPath);
       const ext = path.extname(imgPath).substring(1) || "jpeg";
       return `data:image/${ext};base64,${bytes.toString('base64')}`;

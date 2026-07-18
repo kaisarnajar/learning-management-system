@@ -48,7 +48,7 @@ export default async function AdminStudentDetailPage({
 
   const titleById = new Map(courses.map((c) => [c.id, c.title]));
   const deleteAction = deleteStudentUserForm.bind(null, id);
-  const profileImage = student.image || (student.gender === "FEMALE" ? "/assets/female_icon.jpeg" : student.gender === "MALE" ? "/assets/male_icon.png" : null);
+  const profileImage = student.image || (student.gender === "FEMALE" ? "/assets/female_icon.png" : student.gender === "MALE" ? "/assets/male_icon.png" : null);
 
   return (
     <div>

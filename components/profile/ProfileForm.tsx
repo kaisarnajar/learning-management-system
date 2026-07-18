@@ -100,7 +100,7 @@ export function ProfileForm({
   const parsedWhatsApp = parseStoredProfileWhatsApp(whatsapp);
   const [state, formAction, pending] = useActionState(updateProfile, initialState);
   
-  const defaultPreview = image || (gender === "FEMALE" ? "/assets/female_icon.jpeg" : gender === "MALE" ? "/assets/male_icon.png" : null);
+  const defaultPreview = image || (gender === "FEMALE" ? "/assets/female_icon.png" : gender === "MALE" ? "/assets/male_icon.png" : null);
   const [imagePreview, setImagePreview] = useState<string | null>(defaultPreview);
   
   const [values, setValues] = useState<ProfileFormValues>({
@@ -266,9 +266,9 @@ export function ProfileForm({
                 updateField("gender", newGender);
                 markTouched("gender");
                 if (newGender === "FEMALE") {
-                  setImagePreview("/assets/female_icon.jpeg");
+                  setImagePreview("/assets/female_icon.png");
                 } else if (newGender === "MALE") {
-                  if (imagePreview === "/assets/female_icon.jpeg" || !imagePreview) {
+                  if (imagePreview === "/assets/female_icon.png" || !imagePreview) {
                     setImagePreview("/assets/male_icon.png");
                   }
                 }

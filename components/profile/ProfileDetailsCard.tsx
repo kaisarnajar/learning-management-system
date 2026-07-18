@@ -36,7 +36,7 @@ export function ProfileDetailsCard({
   registrationNumber,
   onEdit,
 }: ProfileDetailsCardProps) {
-  const profileImage = image || (gender === "FEMALE" ? "/assets/female_icon.jpeg" : gender === "MALE" ? "/assets/male_icon.png" : null);
+  const profileImage = image || (gender === "FEMALE" ? "/assets/female_icon.png" : gender === "MALE" ? "/assets/male_icon.png" : null);
   const displayName = name?.trim() || "Student";
   const initials = getInitialsFromName(displayName);
 

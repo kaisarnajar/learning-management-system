@@ -42,10 +42,10 @@ export async function updateProfile(
   let newImageUrl: string | undefined;
 
   if (parsed.data.gender === "FEMALE") {
-    if (currentProfile?.image && currentProfile.image !== "/assets/female_icon.jpeg") {
+    if (currentProfile?.image && currentProfile.image !== "/assets/female_icon.png") {
       await deleteProfileImage(currentProfile.image);
     }
-    newImageUrl = "/assets/female_icon.jpeg";
+    newImageUrl = "/assets/female_icon.png";
   } else {
     // MALE
     if (imageFile && imageFile.size > 0) {
@@ -54,13 +54,13 @@ export async function updateProfile(
         return { error: validation.error };
       }
 
-      if (currentProfile?.image && currentProfile.image !== "/assets/female_icon.jpeg" && currentProfile.image !== "/assets/male_icon.png") {
+      if (currentProfile?.image && currentProfile.image !== "/assets/female_icon.png" && currentProfile.image !== "/assets/male_icon.png") {
         await deleteProfileImage(currentProfile.image);
       }
 
       newImageUrl = await saveProfileImage(session.user.id, imageFile);
     } else {
-      if (currentProfile?.image === "/assets/female_icon.jpeg" || !currentProfile?.image) {
+      if (currentProfile?.image === "/assets/female_icon.png" || !currentProfile?.image) {
         newImageUrl = "/assets/male_icon.png";
       }
     }

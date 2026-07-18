@@ -85,12 +85,12 @@ export async function updateStudentUserForm(id: string, formData: FormData) {
   let updateImage = undefined;
   
   if (values.gender === "FEMALE") {
-    if (currentStudent?.image && currentStudent.image !== "/assets/female_icon.jpeg") {
+    if (currentStudent?.image && currentStudent.image !== "/assets/female_icon.png") {
       await deleteProfileImage(currentStudent.image);
     }
-    updateImage = "/assets/female_icon.jpeg";
+    updateImage = "/assets/female_icon.png";
   } else if (values.gender === "MALE") {
-    if (currentStudent?.image === "/assets/female_icon.jpeg" || !currentStudent?.image) {
+    if (currentStudent?.image === "/assets/female_icon.png" || !currentStudent?.image) {
       updateImage = "/assets/male_icon.png";
     }
   }

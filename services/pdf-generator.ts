@@ -165,12 +165,19 @@ export async function loadStandardPdfAssets() {
  * Normalizes a user profile image URL to a base64 string, handling Google upscaling
  * and local file reading automatically.
  */
-export async function loadProfilePictureAsBase64(imageUrl: string | null | undefined): Promise<string> {
-  if (!imageUrl) return "";
+export async function loadProfilePictureAsBase64(
+  imageUrl: string | null | undefined,
+  gender?: string | null,
+): Promise<string> {
+  const effectiveUrl =
+    imageUrl ||
+    (gender === "FEMALE" ? "/assets/female_icon.png" : "/assets/male_icon.png");
+
+  if (!effectiveUrl) return "";
 
   try {
-    if (imageUrl.startsWith("http")) {
-      let upgradedUrl = imageUrl;
+    if (effectiveUrl.startsWith("http")) {
+      let upgradedUrl = effectiveUrl;
       if (upgradedUrl.includes("googleusercontent.com")) {
         upgradedUrl = upgradedUrl.replace(/=s\d+-c/g, "=s1000-c");
       }
@@ -181,21 +188,26 @@ export async function loadProfilePictureAsBase64(imageUrl: string | null | undef
         const mimeType = res.headers.get("content-type") || "image/jpeg";
         return `data:${mimeType};base64,${Buffer.from(buffer).toString('base64')}`;
       }
-    } else if (imageUrl.startsWith("/")) {
+    } else if (effectiveUrl.startsWith("/")) {
       let imgPath = "";
-      if (imageUrl === "/assets/male_icon.png") {
+      if (effectiveUrl === "/assets/male_icon.png") {
         imgPath = ASSET_LOCAL_PATHS.maleIcon;
-      } else if (imageUrl === "/assets/female_icon.png") {
+      } else if (effectiveUrl === "/assets/female_icon.png") {
         imgPath = ASSET_LOCAL_PATHS.femaleIcon;
       } else {
-        imgPath = path.join(process.cwd(), "public", imageUrl);
+        imgPath = path.join(process.cwd(), "public", effectiveUrl);
       }
       const bytes = await fs.readFile(imgPath);
-      const ext = path.extname(imgPath).substring(1) || "jpeg";
+      const ext = path.extname(imgPath).substring(1) || "png";
       return `data:image/${ext};base64,${bytes.toString('base64')}`;
     }
   } catch (e) {
     console.error("[pdf-generator] Could not load profile picture:", e);
+    if (effectiveUrl !== "/assets/male_icon.png" && effectiveUrl !== "/assets/female_icon.png") {
+      return loadProfilePictureAsBase64(
+        gender === "FEMALE" ? "/assets/female_icon.png" : "/assets/male_icon.png"
+      );
+    }
   }
   return "";
 }

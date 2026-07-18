@@ -1,6 +1,7 @@
 import { resolveUserRole } from "@/services/teacher-auth";
 import { generatePdfFromHtml, loadStandardPdfAssets, loadProfilePictureAsBase64, wrapHtmlForPdf } from "@/services/pdf-generator";
 import { BRAND_CONFIG } from "@/config/brand";
+import type { Gender } from "@prisma/client";
 
 
 export function renderIdCardToHtml(data: {
@@ -28,10 +29,9 @@ export function renderIdCardToHtml(data: {
   };
 
   const profileContent = data.profilePicUrl
-    ? `<img src="${data.profilePicUrl}" class="w-full h-full object-cover rounded-t-lg" />`
+    ? `<img src="${data.profilePicUrl}" class="w-full h-full object-cover rounded-t-lg" alt="Profile" />`
     : `<div class="w-full h-full flex flex-col items-center justify-center bg-brand-primary/10 text-brand-primary rounded-t-lg">
          <span class="text-7xl font-bold font-serif">${getInitials(data.studentName)}</span>
-         <span class="text-lg mt-2 font-medium opacity-60">No Photo Available</span>
        </div>`;
 
   let cardRole = "STUDENT";
@@ -199,12 +199,13 @@ export async function generateIdCardPdf(user: {
   dateOfBirth: Date | null;
   registrationNumber: string | null;
   image: string | null;
+  gender?: Gender | string | null;
 }): Promise<Buffer> {
   const targetRole = await resolveUserRole(user.email);
 
   const { base64Logo, base64Signature, base64Stamp, base64Font } = await loadStandardPdfAssets();
 
-  const base64ProfilePic = await loadProfilePictureAsBase64(user.image);
+  const base64ProfilePic = await loadProfilePictureAsBase64(user.image, user.gender);
 
   const dobFormatted = user.dateOfBirth 
     ? user.dateOfBirth.toLocaleDateString("en-IN", {

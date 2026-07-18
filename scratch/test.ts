@@ -1,6 +1,6 @@
 import fs from "fs";
-import { renderReceiptToHtml } from "../utils/receipt-html.ts";
-import { wrapHtmlForPdf, generatePdfFromHtml } from "../services/pdf-generator.ts";
+import { renderReceiptToHtml } from "../utils/receipt-html";
+import { wrapHtmlForPdf, generatePdfFromHtml } from "../services/pdf-generator";
 
 const mockReceiptData = {
   academy: {

@@ -198,9 +198,20 @@ export async function Footer() {
       {/* Sub-footer / Credits */}
       <div className="relative z-10 bg-gradient-to-br from-[#003527] via-teal-900 to-[#002117] px-4 py-10 text-xs text-white/60 sm:px-6 shadow-inner">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-8 sm:flex-row sm:items-start">
-          <p className="text-center sm:text-left mt-2">
-            {BRAND_CONFIG.footer.copyrightText}
-          </p>
+          <div className="text-center sm:text-left">
+            <p className="mt-2">
+              {BRAND_CONFIG.footer.copyrightText}
+            </p>
+            <div className="mt-3 flex flex-wrap items-center justify-center gap-3.5 sm:justify-start text-xs text-white/70">
+              <Link href="/terms-and-conditions" className="transition-colors hover:text-brand-gold-alt hover:underline font-medium">
+                Terms &amp; Conditions
+              </Link>
+              <span className="opacity-40">•</span>
+              <Link href="/privacy-policy" className="transition-colors hover:text-brand-gold-alt hover:underline font-medium">
+                Privacy Policy
+              </Link>
+            </div>
+          </div>
           <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-start sm:gap-12 lg:gap-16">
             <FooterCreditBlock
               title={CREDITS_CONFIG.developer.role}

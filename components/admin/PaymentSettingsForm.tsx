@@ -25,6 +25,7 @@ const PAYMENT_FIELDS: (keyof PaymentSettingsFormValues)[] = [
   "bankAccountNumber",
   "bankIfsc",
   "bankBranch",
+  "includeGstByDefault",
 ];
 
 export function PaymentSettingsForm({ settings, action }: PaymentSettingsFormProps) {
@@ -43,6 +44,7 @@ export function PaymentSettingsForm({ settings, action }: PaymentSettingsFormPro
       bankAccountNumber: settings.bankAccountNumber,
       bankIfsc: settings.bankIfsc,
       bankBranch: settings.bankBranch,
+      includeGstByDefault: settings.includeGstByDefault,
     },
     fields: PAYMENT_FIELDS,
     validate,
@@ -239,6 +241,26 @@ export function PaymentSettingsForm({ settings, action }: PaymentSettingsFormPro
               </p>
             )}
           </div>
+        </div>
+      </section>
+
+      <section className="space-y-4 rounded-lg border border-border bg-background/40 p-5">
+        <h2 className="font-serif text-lg font-semibold text-foreground">Receipt Settings</h2>
+        <p className="text-sm text-muted">
+          Configure defaults for newly generated payment receipts.
+        </p>
+        <div className="flex items-center gap-2">
+          <input
+            id="includeGstByDefault"
+            name="includeGstByDefault"
+            type="checkbox"
+            checked={values.includeGstByDefault}
+            onChange={(e) => updateField("includeGstByDefault", e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+          <label htmlFor="includeGstByDefault" className="text-sm font-medium text-foreground select-none cursor-pointer">
+            Include GST (18% inclusive) by default in generated receipts
+          </label>
         </div>
       </section>
 

@@ -32,6 +32,7 @@ export async function updatePaymentSettings(formData: FormData) {
     bankAccountNumber: formData.get("bankAccountNumber"),
     bankIfsc: formData.get("bankIfsc"),
     bankBranch: (formData.get("bankBranch") as string | null) ?? "",
+    includeGstByDefault: formData.get("includeGstByDefault") === "on",
   });
 
   if (!parsed.success) {

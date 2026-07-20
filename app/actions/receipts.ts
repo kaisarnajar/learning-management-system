@@ -11,15 +11,19 @@ import { generatePdfFromHtml, wrapHtmlForPdf } from "@/services/pdf-generator";
 import { renderReceiptToHtml } from "@/utils/receipt-html";
 import { prepareReceiptData } from "@/services/payment-receipt";
 import { getCourseById } from "@/services/courses";
+import { getPaymentSettings } from "@/services/payment-settings";
 import crypto from "crypto";
 
-export async function generateReceipt(paymentRecordId: string, includeGst: boolean) {
+export async function generateReceipt(paymentRecordId: string) {
   const session = await auth();
   const isAdmin = isAdminSession(session);
 
   if (!isAdmin) {
     throw new Error("Unauthorized: Only admins can generate receipts.");
   }
+
+  const settings = await getPaymentSettings();
+  const includeGst = settings.includeGstByDefault;
 
   const record = await prisma.paymentRecord.findUnique({
     where: { id: paymentRecordId },

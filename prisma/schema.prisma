@@ -538,6 +538,7 @@ model PaymentSettings {
   bankAccountNumber String   @default("")
   bankIfsc          String   @default("")
   bankBranch        String   @default("")
+  includeGstByDefault Boolean  @default(false)
   updatedAt         DateTime @updatedAt
 }
 

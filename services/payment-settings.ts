@@ -21,6 +21,7 @@ export type PaymentSettingsData = {
   bankAccountNumber: string;
   bankIfsc: string;
   bankBranch: string;
+  includeGstByDefault: boolean;
 };
 
 function defaultSettings(): PaymentSettingsData {
@@ -33,6 +34,7 @@ function defaultSettings(): PaymentSettingsData {
     bankAccountNumber: "",
     bankIfsc: "",
     bankBranch: "",
+    includeGstByDefault: false,
   };
 }
 
@@ -45,6 +47,7 @@ function rowToSettings(row: {
   bankAccountNumber: string;
   bankIfsc: string;
   bankBranch: string;
+  includeGstByDefault: boolean;
 }): PaymentSettingsData {
   const defaults = defaultSettings();
   return {
@@ -56,6 +59,7 @@ function rowToSettings(row: {
     bankAccountNumber: row.bankAccountNumber.trim(),
     bankIfsc: row.bankIfsc.trim(),
     bankBranch: row.bankBranch.trim(),
+    includeGstByDefault: row.includeGstByDefault,
   };
 }
 

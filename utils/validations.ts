@@ -128,6 +128,7 @@ export const paymentSettingsSchema = z.object({
   bankAccountNumber: z.string().trim().min(1, "Account number is required.").max(40),
   bankIfsc: z.string().trim().min(1, "IFSC is required.").max(20),
   bankBranch: z.string().trim().max(200).optional().or(z.literal("")),
+  includeGstByDefault: z.boolean().default(false),
 });
 
 export const monthlyPaymentSubmitSchema = z.object({

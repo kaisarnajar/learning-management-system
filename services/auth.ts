@@ -6,10 +6,23 @@ import { authConfig } from "@/services/auth.config";
 import { prisma } from "@/utils/prisma";
 import { getTeacherByEmail, resolveUserRole } from "@/services/teacher-auth";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { CURRENT_POLICIES_VERSION } from "@/config/constants";
+
+const prismaAdapter = PrismaAdapter(prisma);
+const originalCreateUser = prismaAdapter.createUser;
+if (originalCreateUser) {
+  prismaAdapter.createUser = async (user) => {
+    return originalCreateUser({
+      ...user,
+      policiesAcceptedAt: new Date(),
+      policiesAcceptedVersion: CURRENT_POLICIES_VERSION,
+    } as any);
+  };
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(prisma),
+  adapter: prismaAdapter,
   providers: [
     ...authConfig.providers,
     Credentials({

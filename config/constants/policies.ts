@@ -1,0 +1,1 @@
+export const CURRENT_POLICIES_VERSION = "1.0";

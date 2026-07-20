@@ -208,6 +208,24 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
           Register
         </Link>
       </p>
+
+      <div className="mt-6 flex items-center justify-center gap-3 text-xs text-muted">
+        <Link
+          href="/terms-and-conditions"
+          target="_blank"
+          className="hover:text-foreground hover:underline transition-colors"
+        >
+          Terms &amp; Conditions
+        </Link>
+        <span className="h-3 w-px bg-border" />
+        <Link
+          href="/privacy-policy"
+          target="_blank"
+          className="hover:text-foreground hover:underline transition-colors"
+        >
+          Privacy Policy
+        </Link>
+      </div>
     </div>
   );
 }

@@ -5,12 +5,18 @@ import { useState } from "react";
 
 type GoogleSignInButtonProps = {
   callbackUrl?: string;
+  disabled?: boolean;
+  onClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
 };
 
-export function GoogleSignInButton({ callbackUrl = "/" }: GoogleSignInButtonProps) {
+export function GoogleSignInButton({ callbackUrl = "/", disabled, onClick }: GoogleSignInButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleClick = async () => {
+  const handleClick = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (onClick) {
+      onClick(e);
+      if (e.isDefaultPrevented()) return;
+    }
     setIsLoading(true);
     await signIn("google", { callbackUrl });
     // Keep loading state as the page will redirect
@@ -20,7 +26,7 @@ export function GoogleSignInButton({ callbackUrl = "/" }: GoogleSignInButtonProp
     <button
       type="button"
       onClick={handleClick}
-      disabled={isLoading}
+      disabled={isLoading || disabled}
       className="flex min-h-11 w-full items-center justify-center gap-2 rounded-md border border-border bg-surface px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-background disabled:cursor-not-allowed disabled:opacity-60"
     >
       {isLoading ? (

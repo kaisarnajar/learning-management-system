@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/utils/prisma";
 import { generateVerificationToken } from "@/services/tokens";
 import { sendVerificationEmail } from "@/services/email";
+import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 
 export async function POST(request: Request) {
   try {
@@ -11,6 +12,7 @@ export async function POST(request: Request) {
     const name = typeof body.name === "string" ? body.name.trim() : "";
     const email = typeof body.email === "string" ? body.email.toLowerCase().trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
+    const acceptPolicies = body.acceptPolicies;
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required." }, { status: 400 });
@@ -19,6 +21,13 @@ export async function POST(request: Request) {
     if (password.length < 8) {
       return NextResponse.json(
         { error: "Password must be at least 8 characters." },
+        { status: 400 },
+      );
+    }
+
+    if (acceptPolicies !== true) {
+      return NextResponse.json(
+        { error: "You must accept the Terms & Conditions and Privacy Policy." },
         { status: 400 },
       );
     }
@@ -35,6 +44,8 @@ export async function POST(request: Request) {
         name: name || null,
         email,
         password: hashedPassword,
+        policiesAcceptedAt: new Date(),
+        policiesAcceptedVersion: CURRENT_POLICIES_VERSION,
       },
     });
 

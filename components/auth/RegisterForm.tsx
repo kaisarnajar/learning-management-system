@@ -19,6 +19,9 @@ const registerSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters."),
   email: z.string().trim().email("Enter a valid email address."),
   password: z.string().min(8, "Password must be at least 8 characters."),
+  acceptPolicies: z.boolean().refine((val) => val === true, {
+    message: "You must agree to the Terms & Conditions and Privacy Policy.",
+  }),
 });
 
 type RegisterFormValues = z.infer<typeof registerSchema>;
@@ -35,10 +38,18 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
   const validate = useCallback((v: RegisterFormValues) => zodResultToFormValidation(registerSchema.safeParse(v)), []);
 
   const { values, updateField, markTouched, showError, errors, isValid } = useZodForm({
-    initialValues: { name: "", email: "", password: "" },
-    fields: ["name", "email", "password"],
+    initialValues: { name: "", email: "", password: "", acceptPolicies: false },
+    fields: ["name", "email", "password", "acceptPolicies"],
     validate,
   });
+
+  const handleGoogleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!values.acceptPolicies) {
+      e.preventDefault();
+      markTouched("acceptPolicies");
+      setError("Please agree to the Terms & Conditions and Privacy Policy to continue.");
+    }
+  };
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -52,7 +63,12 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: values.name, email: values.email, password: values.password }),
+        body: JSON.stringify({
+          name: values.name,
+          email: values.email,
+          password: values.password,
+          acceptPolicies: values.acceptPolicies,
+        }),
       });
 
       const data = await res.json();
@@ -100,7 +116,12 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
       )}
 
       <div className="mt-6 space-y-4">
-        {googleEnabled && <GoogleSignInButton callbackUrl={authContinueUrl(callbackUrl)} />}
+        {googleEnabled && (
+          <GoogleSignInButton
+            callbackUrl={authContinueUrl(callbackUrl)}
+            onClick={handleGoogleClick}
+          />
+        )}
 
         {googleEnabled && (
           <div className="flex items-center gap-3">
@@ -190,6 +211,43 @@ export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
               </p>
             ) : (
               <p className="mt-1 text-xs text-muted">At least 8 characters</p>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-start gap-2.5">
+              <input
+                id="acceptPolicies"
+                type="checkbox"
+                checked={values.acceptPolicies}
+                onChange={(e) => updateField("acceptPolicies", e.target.checked)}
+                onBlur={() => markTouched("acceptPolicies")}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary mt-1 shrink-0"
+              />
+              <label htmlFor="acceptPolicies" className="text-sm text-muted-foreground select-none cursor-pointer leading-tight">
+                I have read and agree to the{" "}
+                <Link
+                  href="/terms-and-conditions"
+                  target="_blank"
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Terms & Conditions
+                </Link>{" "}
+                and{" "}
+                <Link
+                  href="/privacy-policy"
+                  target="_blank"
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Privacy Policy
+                </Link>
+                .
+              </label>
+            </div>
+            {showError("acceptPolicies") && (
+              <p className={formErrorTextClassName} role="alert">
+                {errors.acceptPolicies}
+              </p>
             )}
           </div>
 

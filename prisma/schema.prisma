@@ -145,6 +145,8 @@ model User {
   bookOrders               BookOrder[]
   blogLikes                BlogLike[]
   blogComments             BlogComment[]
+  policiesAcceptedAt       DateTime?
+  policiesAcceptedVersion  String?
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
 }

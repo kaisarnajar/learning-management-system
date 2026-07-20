@@ -7,7 +7,7 @@ import { PAYMENTS } from "@/config/constants/payments";
 import { isAdminSession } from "@/services/admin";
 import { prisma } from "@/utils/prisma";
 import { sendReceiptEmail } from "@/services/email";
-import { generatePdfFromHtml } from "@/services/pdf-generator";
+import { generatePdfFromHtml, wrapHtmlForPdf } from "@/services/pdf-generator";
 import { renderReceiptToHtml } from "@/utils/receipt-html";
 import { prepareReceiptData } from "@/services/payment-receipt";
 import { getCourseById } from "@/services/courses";
@@ -152,23 +152,7 @@ export async function sendReceiptToEmailAction(paymentRecordId: string): Promise
     });
 
     const componentHtml = renderReceiptToHtml(receiptData);
-    const fullHtml = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <script src="https://cdn.tailwindcss.com"></script>
-        <style>
-          @media print { body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
-          body { font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background: white !important; margin: 0; }
-          img { max-width: 100%; height: auto; }
-        </style>
-      </head>
-      <body>
-        <div class="p-8 flex justify-center min-h-screen">${componentHtml}</div>
-      </body>
-      </html>
-    `;
+    const fullHtml = wrapHtmlForPdf(componentHtml, { landscape: false });
 
     const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false });
     const amountStr = `₹${(record.amountInrPaise / 100).toFixed(2)}`;

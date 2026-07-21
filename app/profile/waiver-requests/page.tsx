@@ -29,11 +29,7 @@ export default async function WaiverRequestsPage({
     orderBy: { createdAt: "desc" },
   });
 
-  const defaultReason = params.type === "enrollment" 
-    ? "I am requesting a fee waiver for the Enrollment Fee because..."
-    : params.type === "course"
-    ? "I am requesting a fee waiver for the Course Fee because..."
-    : "";
+  const defaultType = params.type === "enrollment" ? "enrollment" : params.type === "course" ? "course" : "";
 
   return (
     <div className="space-y-8">
@@ -42,7 +38,7 @@ export default async function WaiverRequestsPage({
         <p className="text-sm text-muted">Submit and track your fee waiver requests.</p>
       </div>
 
-      <WaiverRequestForm courses={courses} defaultCourseId={params.courseId} defaultReason={defaultReason} />
+      <WaiverRequestForm courses={courses} defaultCourseId={params.courseId} defaultType={defaultType} />
 
       {requests.length > 0 && (
         <div className="space-y-4">

@@ -147,6 +147,8 @@ model User {
   blogComments             BlogComment[]
   policiesAcceptedAt       DateTime?
   policiesAcceptedVersion  String?
+  coupons                  Coupon[]
+  couponRequests           CouponRequest[]
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
 }
@@ -221,6 +223,8 @@ model Course {
   announcements      CourseAnnouncement[]
   attendances        CourseAttendance[]
   grades             CourseGrade[]
+  coupons            Coupon[]
+  couponRequests     CouponRequest[]
 
   @@index([featuredOnHomepage, featuredAt])
   @@index([teacherId])
@@ -324,8 +328,8 @@ model BlogLike {
   blogPostId String
   createdAt  DateTime @default(now())
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  blogPost   BlogPost @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blogPost BlogPost @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
 
   @@unique([userId, blogPostId])
   @@index([blogPostId])
@@ -339,8 +343,8 @@ model BlogComment {
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  blogPost   BlogPost @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  blogPost BlogPost @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
 
   @@index([blogPostId])
   @@index([userId])
@@ -411,20 +415,20 @@ model LibraryItem {
 }
 
 model Enrollment {
-  id                     String               @id @default(cuid())
+  id                     String                   @id @default(cuid())
   userId                 String
   courseId               String
-  status                 String               @default("pending_approval")
+  status                 String                   @default("pending_approval")
   rollNumber             Int?
-  certificateNumber      String?              @unique
+  certificateNumber      String?                  @unique
   certificateGeneratedAt DateTime?
   certificateType        String?
   certificateGrade       Int?
   completedAt            DateTime?
   certificateEmailSentAt DateTime?
-  createdAt              DateTime             @default(now())
-  updatedAt              DateTime             @updatedAt
-  user                   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt              DateTime                 @default(now())
+  updatedAt              DateTime                 @updatedAt
+  user                   User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
   announcements          CourseAnnouncement[]
   attendanceRecords      CourseAttendanceRecord[]
   gradeRecords           CourseGradeRecord[]
@@ -435,7 +439,7 @@ model Enrollment {
 }
 
 model FatwaQuestion {
-  id                 String    @id @default(cuid())
+  id                 String              @id @default(cuid())
   userId             String?
   askerName          String
   askerEmail         String
@@ -446,12 +450,12 @@ model FatwaQuestion {
   approvalStatus     FatwaApprovalStatus @default(APPROVED)
   answeredAt         DateTime?
   answeredById       String?
-  featuredOnHomepage Boolean   @default(false)
+  featuredOnHomepage Boolean             @default(false)
   featuredAt         DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  user               User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  answeredBy         User?     @relation("FatwaAnsweredBy", fields: [answeredById], references: [id], onDelete: SetNull)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  user               User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  answeredBy         User?               @relation("FatwaAnsweredBy", fields: [answeredById], references: [id], onDelete: SetNull)
 
   @@index([category])
   @@index([answeredAt])
@@ -522,24 +526,22 @@ model Expense {
   @@index([teacherId])
 }
 
-
-
-
 /**
  * Academy UPI and bank details (single row, id = "default"). Editable in admin.
  */
 model PaymentSettings {
-  id                String   @id @default("default")
-  upiId             String   @default("")
-  upiNumber         String   @default("")
-  upiPayeeName      String   @default("Darse Quran Academy")
-  bankAccountName   String   @default("Darse Quran Academy")
-  bankName          String   @default("")
-  bankAccountNumber String   @default("")
-  bankIfsc          String   @default("")
-  bankBranch        String   @default("")
+  id                  String   @id @default("default")
+  upiId               String   @default("")
+  upiNumber           String   @default("")
+  upiPayeeName        String   @default("Darse Quran Academy")
+  bankAccountName     String   @default("Darse Quran Academy")
+  bankName            String   @default("")
+  bankAccountNumber   String   @default("")
+  bankIfsc            String   @default("")
+  bankBranch          String   @default("")
   includeGstByDefault Boolean  @default(false)
-  updatedAt         DateTime @updatedAt
+  feeWaiverEnabled    Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
 }
 
 /**
@@ -617,24 +619,24 @@ model Book {
  * A user's book purchase order submitted for admin approval.
  */
 model BookOrder {
-  id                    String          @id @default(cuid())
-  userId                String
-  totalAmountInrPaise   Int
+  id                     String          @id @default(cuid())
+  userId                 String
+  totalAmountInrPaise    Int
   shippingChargeInrPaise Int             @default(0)
-  status                BookOrderStatus @default(PENDING_VERIFICATION)
-  paymentMethod         String?
-  upiTransactionId      String?
-  paymentScreenshotPath String?
-  notes                 String?
-  deliveryAddress       String          @default("No address provided")
-  deliveryPinCode       String?
-  deliveryPhoneNumber   String?
-  courierServiceName    String?
-  trackingId            String?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
-  user                  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items                 BookOrderItem[]
+  status                 BookOrderStatus @default(PENDING_VERIFICATION)
+  paymentMethod          String?
+  upiTransactionId       String?
+  paymentScreenshotPath  String?
+  notes                  String?
+  deliveryAddress        String          @default("No address provided")
+  deliveryPinCode        String?
+  deliveryPhoneNumber    String?
+  courierServiceName     String?
+  trackingId             String?
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  user                   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items                  BookOrderItem[]
 
   @@index([userId])
   @@index([status])
@@ -658,7 +660,6 @@ model BookOrderItem {
   @@index([bookId])
 }
 
-
 /**
  * Configurable weight slabs and their associated shipping charges.
  */
@@ -679,9 +680,9 @@ model CourseAttendance {
   date      DateTime @db.Date
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  records   CourseAttendanceRecord[]
+
+  course  Course                   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  records CourseAttendanceRecord[]
 
   @@unique([courseId, date])
   @@index([courseId])
@@ -689,15 +690,15 @@ model CourseAttendance {
 }
 
 model CourseAttendanceRecord {
-  id            String           @id @default(cuid())
-  attendanceId  String
-  enrollmentId  String
-  isPresent     Boolean
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  id           String   @id @default(cuid())
+  attendanceId String
+  enrollmentId String
+  isPresent    Boolean
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  attendance    CourseAttendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
-  enrollment    Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  attendance CourseAttendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  enrollment Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 
   @@unique([attendanceId, enrollmentId])
   @@index([enrollmentId])
@@ -711,26 +712,78 @@ model CourseGrade {
   maxMarks  Int
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
-  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  records   CourseGradeRecord[]
+
+  course  Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  records CourseGradeRecord[]
 
   @@index([courseId])
   @@index([date])
 }
 
 model CourseGradeRecord {
-  id            String           @id @default(cuid())
+  id            String   @id @default(cuid())
   gradeId       String
   enrollmentId  String
   marksObtained Float
-  createdAt     DateTime         @default(now())
-  updatedAt     DateTime         @updatedAt
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  grade         CourseGrade      @relation(fields: [gradeId], references: [id], onDelete: Cascade)
-  enrollment    Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  grade      CourseGrade @relation(fields: [gradeId], references: [id], onDelete: Cascade)
+  enrollment Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
 
   @@unique([gradeId, enrollmentId])
   @@index([enrollmentId])
 }
 
+enum CouponType {
+  DEFAULT
+  SPECIAL
+}
+
+enum CouponRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Coupon {
+  id         String     @id @default(cuid())
+  code       String     @unique
+  type       CouponType
+  percentage Int
+  validFrom  DateTime
+  validUntil DateTime
+  courseId   String?
+  gender     String?
+  userId     String?
+  isActive   Boolean    @default(true)
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  course   Course?         @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user     User?           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requests CouponRequest[]
+
+  @@index([courseId])
+  @@index([userId])
+  @@index([code])
+}
+
+model CouponRequest {
+  id        String              @id @default(cuid())
+  userId    String
+  courseId  String
+  reason    String
+  status    CouponRequestStatus @default(PENDING)
+  couponId  String?
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  coupon Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([courseId])
+  @@index([couponId])
+}

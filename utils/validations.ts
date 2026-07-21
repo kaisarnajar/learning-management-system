@@ -129,6 +129,7 @@ export const paymentSettingsSchema = z.object({
   bankIfsc: z.string().trim().min(1, "IFSC is required.").max(20),
   bankBranch: z.string().trim().max(200).optional().or(z.literal("")),
   includeGstByDefault: z.boolean().default(false),
+  feeWaiverEnabled: z.boolean().default(false),
 });
 
 export const monthlyPaymentSubmitSchema = z.object({
@@ -138,25 +139,25 @@ export const monthlyPaymentSubmitSchema = z.object({
     .string()
     .regex(/^\d{4}$/, "Enter a valid year.")
     .refine(isPaymentYearAllowed, { message: "Select a fee year from the list." }),
-  paymentMethod: z.enum(["upi", "bank"]),
+  paymentMethod: z.enum(["upi", "bank"]).optional(),
   upiTransactionId: z
     .string()
     .trim()
-    .min(8, "Enter a valid transaction / UTR reference (at least 8 characters).")
-    .max(50)
-    .regex(/^[a-zA-Z0-9]+$/, "Reference should contain only letters and numbers."),
+    .regex(/^[a-zA-Z0-9]*$/, "Reference should contain only letters and numbers.")
+    .optional()
+    .or(z.literal("")),
   paymentType: z.enum(["monthly", "quarterly", "half_yearly", "yearly", "one_time"]).optional().default("monthly"),
 });
 
 export const enrollmentPaymentSubmitSchema = z.object({
   courseId: z.string().min(1),
-  paymentMethod: z.enum(["upi", "bank"]),
+  paymentMethod: z.enum(["upi", "bank"]).optional(),
   upiTransactionId: z
     .string()
     .trim()
-    .min(8, "Enter a valid transaction / UTR reference (at least 8 characters).")
-    .max(50)
-    .regex(/^[a-zA-Z0-9]+$/, "Reference should contain only letters and numbers."),
+    .regex(/^[a-zA-Z0-9]*$/, "Reference should contain only letters and numbers.")
+    .optional()
+    .or(z.literal("")),
 });
 
 export const occupationEnum = z.enum(OCCUPATION_VALUES);

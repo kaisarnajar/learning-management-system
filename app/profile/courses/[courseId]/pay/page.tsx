@@ -9,6 +9,7 @@ import { prisma } from "@/utils/prisma";
 import { isUpiConfigured } from "@/services/upi";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getFeeFrequencyLabel, getFeeFrequencySuffix } from "@/services/fee-frequency";
+import { getBestApplicableCoupon, calculateDiscountedAmount } from "@/services/coupons";
 
 export default async function PayFeePage({
   params,
@@ -39,11 +40,17 @@ export default async function PayFeePage({
     );
   }
 
-  const feePaise = getMonthlyFeePaise(course);
+  const originalFeePaise = getMonthlyFeePaise(course);
+  
+  const coupon = await getBestApplicableCoupon(session.user.id, courseId);
+  const finalFeePaise = coupon
+    ? calculateDiscountedAmount(originalFeePaise, coupon.percentage)
+    : originalFeePaise;
+
   const feeFrequency = course.feeFrequency ?? "MONTHLY";
   const freqLabel = getFeeFrequencyLabel(feeFrequency);
   const freqSuffix = getFeeFrequencySuffix(feeFrequency);
-  const amountLabel = formatPrice(feePaise);
+  const amountLabel = formatPrice(finalFeePaise);
 
   return (
     <div>
@@ -55,12 +62,13 @@ export default async function PayFeePage({
       <p className="mt-1 text-sm text-muted">{course.title}</p>
       <p className="mt-2 text-sm font-medium text-foreground">
         {amountLabel} {freqSuffix} · <span className="text-muted">{freqLabel}</span>
+        {coupon && <span className="ml-2 text-xs text-green-600 line-through">{formatPrice(originalFeePaise)}</span>}
       </p>
 
       <div className="mx-auto mt-8 max-w-5xl space-y-8">
         <PaymentDetailsPanel
           amountLabel={amountLabel}
-          amountPaise={feePaise}
+          amountPaise={finalFeePaise}
           paymentNote={`${course.title} — ${freqLabel}`.slice(0, 80)}
         />
         <div className="card-elevated p-6 sm:p-8">
@@ -71,8 +79,9 @@ export default async function PayFeePage({
           <div className="mt-6">
             <MonthlyPaymentForm
               courseId={course.id}
-              feePaise={feePaise}
+              feePaise={finalFeePaise}
               feeFrequency={feeFrequency}
+              couponInfo={coupon ? { code: coupon.code, percentage: coupon.percentage } : null}
             />
           </div>
         </div>

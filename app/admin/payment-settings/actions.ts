@@ -33,6 +33,7 @@ export async function updatePaymentSettings(formData: FormData) {
     bankIfsc: formData.get("bankIfsc"),
     bankBranch: (formData.get("bankBranch") as string | null) ?? "",
     includeGstByDefault: formData.get("includeGstByDefault") === "on",
+    feeWaiverEnabled: formData.get("feeWaiverEnabled") === "on",
   });
 
   if (!parsed.success) {

@@ -26,6 +26,7 @@ const PAYMENT_FIELDS: (keyof PaymentSettingsFormValues)[] = [
   "bankIfsc",
   "bankBranch",
   "includeGstByDefault",
+  "feeWaiverEnabled",
 ];
 
 export function PaymentSettingsForm({ settings, action }: PaymentSettingsFormProps) {
@@ -45,6 +46,7 @@ export function PaymentSettingsForm({ settings, action }: PaymentSettingsFormPro
       bankIfsc: settings.bankIfsc,
       bankBranch: settings.bankBranch,
       includeGstByDefault: settings.includeGstByDefault,
+      feeWaiverEnabled: settings.feeWaiverEnabled,
     },
     fields: PAYMENT_FIELDS,
     validate,
@@ -260,6 +262,19 @@ export function PaymentSettingsForm({ settings, action }: PaymentSettingsFormPro
           />
           <label htmlFor="includeGstByDefault" className="text-sm font-medium text-foreground select-none cursor-pointer">
             Include GST (18% inclusive) by default in generated receipts
+          </label>
+        </div>
+        <div className="flex items-center gap-2 mt-4">
+          <input
+            id="feeWaiverEnabled"
+            name="feeWaiverEnabled"
+            type="checkbox"
+            checked={values.feeWaiverEnabled}
+            onChange={(e) => updateField("feeWaiverEnabled", e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+          <label htmlFor="feeWaiverEnabled" className="text-sm font-medium text-foreground select-none cursor-pointer">
+            Enable Fee Waiver & Coupon System
           </label>
         </div>
       </section>

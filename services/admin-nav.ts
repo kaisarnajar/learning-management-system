@@ -61,6 +61,7 @@ export const ADMIN_NAV_GROUPS: AdminNavGroup[] = [
       { href: "/admin/finance", label: "Finance" },
       { href: "/admin/transactions", label: "Transactions" },
       { href: "/admin/payment-settings", label: "Payment details" },
+      { href: "/admin/coupons", label: "Fee Waivers" },
       { href: "/admin/shipping-charges", label: "Shipping charges" },
     ],
   },

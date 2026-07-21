@@ -35,13 +35,19 @@ export async function createDefaultCoupon(formData: FormData) {
   const { code, percentage, validFrom, validUntil, courseId, gender, isActive } = parsed.data;
 
   try {
+    const fromDate = new Date(validFrom);
+    
+    // Set validUntil to the end of the specified day (23:59:59.999)
+    const untilDate = new Date(validUntil);
+    untilDate.setUTCHours(23, 59, 59, 999);
+
     await prisma.coupon.create({
       data: {
         code,
         type: "DEFAULT",
         percentage,
-        validFrom: new Date(validFrom),
-        validUntil: new Date(validUntil),
+        validFrom: fromDate,
+        validUntil: untilDate,
         courseId: courseId || null,
         gender: gender || null,
         isActive,
@@ -82,6 +88,9 @@ export async function approveCouponRequest(requestId: string, percentage: number
   const code = `WAIVER-${request.user.name?.substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   try {
+    const untilDate = new Date(validUntil);
+    untilDate.setUTCHours(23, 59, 59, 999);
+
     await prisma.$transaction(async (tx) => {
       const coupon = await tx.coupon.create({
         data: {
@@ -89,7 +98,7 @@ export async function approveCouponRequest(requestId: string, percentage: number
           type: "SPECIAL",
           percentage,
           validFrom: new Date(),
-          validUntil: new Date(validUntil),
+          validUntil: untilDate,
           courseId: request.courseId,
           userId: request.userId,
           isActive: true,

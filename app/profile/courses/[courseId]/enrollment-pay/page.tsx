@@ -10,6 +10,7 @@ import { prisma } from "@/utils/prisma";
 import { isUpiConfigured } from "@/services/upi";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getBestApplicableCoupon, calculateDiscountedAmount } from "@/services/coupons";
+import { getPaymentSettings } from "@/services/payment-settings";
 
 export default async function PayEnrollmentFeePage({
   params,
@@ -21,6 +22,8 @@ export default async function PayEnrollmentFeePage({
 
   const course = await getCourseById(courseId);
   if (!course) notFound();
+
+  const paymentSettings = await getPaymentSettings();
 
   const originalEnrollmentFeePaise = getRegistrationFeePaise(course);
   if (originalEnrollmentFeePaise <= 0) {
@@ -89,6 +92,18 @@ export default async function PayEnrollmentFeePage({
               couponInfo={coupon ? { code: coupon.code, percentage: coupon.percentage } : null}
             />
           </div>
+          
+          {paymentSettings?.feeWaiverEnabled && finalEnrollmentFeePaise > 0 && (
+            <div className="mt-8 border-t border-border pt-6 text-center">
+              <p className="text-sm text-muted mb-2">Are you unable to afford the enrollment fee?</p>
+              <Link 
+                href={`/profile/waiver-requests`} 
+                className="inline-block rounded border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary/5 transition-colors"
+              >
+                Request a Fee Waiver
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

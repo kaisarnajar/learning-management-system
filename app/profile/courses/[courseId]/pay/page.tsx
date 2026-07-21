@@ -10,6 +10,7 @@ import { isUpiConfigured } from "@/services/upi";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getFeeFrequencyLabel, getFeeFrequencySuffix } from "@/services/fee-frequency";
 import { getBestApplicableCoupon, calculateDiscountedAmount } from "@/services/coupons";
+import { getPaymentSettings } from "@/services/payment-settings";
 
 export default async function PayFeePage({
   params,
@@ -21,6 +22,8 @@ export default async function PayFeePage({
 
   const course = await getCourseById(courseId);
   if (!course) notFound();
+
+  const paymentSettings = await getPaymentSettings();
 
   const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
       where: { userId_courseId: { userId: session.user.id, courseId } },
@@ -84,6 +87,18 @@ export default async function PayFeePage({
               couponInfo={coupon ? { code: coupon.code, percentage: coupon.percentage } : null}
             />
           </div>
+          
+          {paymentSettings?.feeWaiverEnabled && finalFeePaise > 0 && (
+            <div className="mt-8 border-t border-border pt-6 text-center">
+              <p className="text-sm text-muted mb-2">Are you unable to afford the fee?</p>
+              <Link 
+                href={`/profile/waiver-requests`} 
+                className="inline-block rounded border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary/5 transition-colors"
+              >
+                Request a Fee Waiver
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>

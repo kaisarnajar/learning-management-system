@@ -7,8 +7,13 @@ export const metadata = {
   title: "Fee Waiver Requests | Darse Quran Academy",
 };
 
-export default async function WaiverRequestsPage() {
+export default async function WaiverRequestsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ courseId?: string }>;
+}) {
   const session = await requireUser();
+  const params = await searchParams;
 
   const courses = await prisma.course.findMany({
     select: { id: true, title: true },
@@ -31,7 +36,7 @@ export default async function WaiverRequestsPage() {
         <p className="text-sm text-muted">Submit and track your fee waiver requests.</p>
       </div>
 
-      <WaiverRequestForm courses={courses} />
+      <WaiverRequestForm courses={courses} defaultCourseId={params.courseId} />
 
       {requests.length > 0 && (
         <div className="space-y-4">

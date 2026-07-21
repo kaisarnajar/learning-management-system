@@ -4,7 +4,7 @@ import { useState } from "react";
 import { submitWaiverRequest } from "@/app/actions/waiver";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 
-export function WaiverRequestForm({ courses }: { courses: { id: string; title: string }[] }) {
+export function WaiverRequestForm({ courses, defaultCourseId }: { courses: { id: string; title: string }[], defaultCourseId?: string }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
@@ -33,7 +33,7 @@ export function WaiverRequestForm({ courses }: { courses: { id: string; title: s
 
       <div>
         <label className="block text-sm font-medium text-gray-700">Course</label>
-        <select required name="courseId" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm">
+        <select required name="courseId" defaultValue={defaultCourseId} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm">
           <option value="">Select a course...</option>
           {courses.map(c => <option key={c.id} value={c.id}>{c.title}</option>)}
         </select>

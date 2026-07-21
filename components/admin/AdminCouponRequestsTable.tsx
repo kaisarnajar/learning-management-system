@@ -4,40 +4,6 @@ import { format } from "date-fns";
 import { useState, useTransition, useRef, useEffect } from "react";
 import { approveCouponRequest, rejectCouponRequest } from "@/app/admin/coupons/actions";
 import { SubmitButton } from "@/components/shared/SubmitButton";
-
-export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {
-  const [isPending, startTransition] = useTransition();
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (selectedRequest && dialog && !dialog.open) {
-      dialog.showModal();
-    } else if (!selectedRequest && dialog && dialog.open) {
-      dialog.close();
-    }
-  }, [selectedRequest]);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    
-    const handleCancel = (e: Event) => {
-      e.preventDefault();
-      setSelectedRequest(null);
-    };
-    
-    dialog.addEventListener("cancel", handleCancel);
-    return () => dialog.removeEventListener("cancel", handleCancel);
-  }, []);
-
-"use client";
-
-import { format } from "date-fns";
-import { useState, useTransition, useRef, useEffect } from "react";
-import { approveCouponRequest, rejectCouponRequest } from "@/app/admin/coupons/actions";
-import { SubmitButton } from "@/components/shared/SubmitButton";
 import { adminActionButtonClassName, adminDestructiveButtonClassName, inputClassName, labelClassName } from "@/utils/form";
 
 export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {

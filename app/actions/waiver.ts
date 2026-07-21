@@ -1,11 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAuth } from "@/services/auth-actions";
+import { requireUser } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
 
 export async function submitWaiverRequest(formData: FormData) {
-  const session = await requireAuth();
+  const session = await requireUser();
 
   const courseId = formData.get("courseId") as string;
   const reason = formData.get("reason") as string;

@@ -1,4 +1,4 @@
-import { requireAuth } from "@/services/auth-actions";
+import { requireUser } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
 import { WaiverRequestForm } from "@/components/profile/WaiverRequestForm";
 import { format } from "date-fns";
@@ -8,7 +8,7 @@ export const metadata = {
 };
 
 export default async function WaiverRequestsPage() {
-  const session = await requireAuth();
+  const session = await requireUser();
 
   const courses = await prisma.course.findMany({
     select: { id: true, title: true },

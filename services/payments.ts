@@ -115,7 +115,7 @@ export async function processMonthlyPayment(
 
   if (submissionResult.error) return { error: submissionResult.error, status: 400 };
 
-  if (isFree && submissionResult.submission) {
+  if (isFree && submissionResult.createdId) {
     // Auto-create PaymentRecord for 100% waiver
     const record = await prisma.paymentRecord.create({
       data: {
@@ -129,7 +129,7 @@ export async function processMonthlyPayment(
     });
 
     await prisma.coursePaymentSubmission.update({
-      where: { id: submissionResult.submission.id },
+      where: { id: submissionResult.createdId },
       data: { paymentRecordId: record.id },
     });
   }

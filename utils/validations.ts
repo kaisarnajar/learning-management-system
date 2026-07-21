@@ -139,25 +139,27 @@ export const monthlyPaymentSubmitSchema = z.object({
     .string()
     .regex(/^\d{4}$/, "Enter a valid year.")
     .refine(isPaymentYearAllowed, { message: "Select a fee year from the list." }),
-  paymentMethod: z.enum(["upi", "bank"]).optional(),
+  paymentMethod: z.enum(["upi", "bank"]).optional().or(z.literal("")).or(z.null()),
   upiTransactionId: z
     .string()
     .trim()
     .regex(/^[a-zA-Z0-9]*$/, "Reference should contain only letters and numbers.")
     .optional()
-    .or(z.literal("")),
+    .or(z.literal(""))
+    .or(z.null()),
   paymentType: z.enum(["monthly", "quarterly", "half_yearly", "yearly", "one_time"]).optional().default("monthly"),
 });
 
 export const enrollmentPaymentSubmitSchema = z.object({
   courseId: z.string().min(1),
-  paymentMethod: z.enum(["upi", "bank"]).optional(),
+  paymentMethod: z.enum(["upi", "bank"]).optional().or(z.literal("")).or(z.null()),
   upiTransactionId: z
     .string()
     .trim()
     .regex(/^[a-zA-Z0-9]*$/, "Reference should contain only letters and numbers.")
     .optional()
-    .or(z.literal("")),
+    .or(z.literal(""))
+    .or(z.null()),
 });
 
 export const occupationEnum = z.enum(OCCUPATION_VALUES);

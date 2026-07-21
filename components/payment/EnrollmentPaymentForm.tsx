@@ -156,7 +156,7 @@ export function EnrollmentPaymentForm({ courseId, amountPaise, couponInfo }: Enr
       <SubmitButton isSubmitting={loading}
         type="submit"
         disabled={loading}
-        className={`min-h-11 w-full rounded-full px-4 py-3 text-sm font-semibold text-white disabled:opacity-60 ${isFree ? 'bg-green-600 hover:bg-green-700' : 'bg-primary hover:bg-primary-light'}`}
+        className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-light transition-colors disabled:opacity-60"
       >
         {loading ? "Submitting…" : isFree ? "Claim Fee Waiver & Enroll" : "Submit enrollment fee for verification"}
       </SubmitButton>

@@ -24,8 +24,8 @@ export async function getBestApplicableCoupon(userId: string, courseId: string) 
     },
   });
 
-  let bestCoupon = null;
-  let maxPercentage = 0;
+  const applicableCoupons = [];
+  let totalPercentage = 0;
 
   for (const coupon of coupons) {
     let applicable = false;
@@ -40,13 +40,26 @@ export async function getBestApplicableCoupon(userId: string, courseId: string) 
       }
     }
 
-    if (applicable && coupon.percentage > maxPercentage) {
-      maxPercentage = coupon.percentage;
-      bestCoupon = coupon;
+    if (applicable) {
+      applicableCoupons.push(coupon);
+      totalPercentage += coupon.percentage;
     }
   }
 
-  return bestCoupon;
+  if (applicableCoupons.length === 0) return null;
+
+  const combinedPercentage = Math.min(100, totalPercentage);
+  const displayCode =
+    applicableCoupons.length === 1
+      ? applicableCoupons[0].code
+      : applicableCoupons.map((c) => c.code).join(" + ");
+
+  return {
+    id: applicableCoupons.map((c) => c.id).join(","),
+    code: displayCode,
+    percentage: combinedPercentage,
+    coupons: applicableCoupons,
+  };
 }
 
 export function calculateDiscountedAmount(originalPaise: number, percentage: number): number {

@@ -73,6 +73,14 @@ export async function toggleCouponActive(couponId: string, isActive: boolean) {
   revalidatePath("/admin/coupons");
 }
 
+export async function deleteCoupon(couponId: string) {
+  await requireAdmin();
+  await prisma.coupon.delete({
+    where: { id: couponId },
+  });
+  revalidatePath("/admin/coupons");
+}
+
 export async function approveCouponRequest(requestId: string, percentage: number, validUntil: string) {
   await requireAdmin();
 

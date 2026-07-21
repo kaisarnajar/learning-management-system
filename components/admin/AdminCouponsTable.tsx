@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import { toggleCouponActive } from "@/app/admin/coupons/actions";
+import { toggleCouponActive, deleteCoupon } from "@/app/admin/coupons/actions";
 import { useTransition } from "react";
 import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/utils/form";
 
@@ -20,6 +20,14 @@ export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
     startTransition(() => {
       toggleCouponActive(id, !current);
     });
+  }
+
+  function handleDelete(id: string, code: string) {
+    if (confirm(`Are you sure you want to delete coupon "${code}"?`)) {
+      startTransition(() => {
+        deleteCoupon(id);
+      });
+    }
   }
 
   return (
@@ -79,13 +87,22 @@ export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
                   )}
                 </td>
                 <td className="px-5 py-4 text-right whitespace-nowrap">
-                  <button
-                    disabled={isPending}
-                    onClick={() => handleToggle(c.id, c.isActive)}
-                    className={c.isActive ? adminDestructiveButtonClassName : adminActionButtonClassName}
-                  >
-                    {c.isActive ? "Deactivate" : "Activate"}
-                  </button>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      disabled={isPending}
+                      onClick={() => handleToggle(c.id, c.isActive)}
+                      className={c.isActive ? adminActionButtonClassName : adminActionButtonClassName}
+                    >
+                      {c.isActive ? "Deactivate" : "Activate"}
+                    </button>
+                    <button
+                      disabled={isPending}
+                      onClick={() => handleDelete(c.id, c.code)}
+                      className={adminDestructiveButtonClassName}
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

@@ -69,17 +69,21 @@ export function WaiverRequestForm({
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="space-y-4">
         <div>
           <label htmlFor="courseId" className={labelClassName}>
             Course
           </label>
+          {defaultCourseId && (
+            <input type="hidden" name="courseId" value={defaultCourseId} />
+          )}
           <select
             id="courseId"
-            name="courseId"
+            name={defaultCourseId ? undefined : "courseId"}
             required
             defaultValue={defaultCourseId}
-            className={inputClassName}
+            disabled={!!defaultCourseId}
+            className={`${inputClassName} ${defaultCourseId ? "opacity-70 cursor-not-allowed" : ""}`}
           >
             <option value="" disabled>Select a course...</option>
             {courses.map((c) => (
@@ -94,12 +98,16 @@ export function WaiverRequestForm({
           <label htmlFor="feeType" className={labelClassName}>
             Fee Type
           </label>
+          {defaultType && (
+            <input type="hidden" name="feeType" value={defaultType} />
+          )}
           <select
             id="feeType"
-            name="feeType"
+            name={defaultType ? undefined : "feeType"}
             required
             defaultValue={defaultType || ""}
-            className={inputClassName}
+            disabled={!!defaultType}
+            className={`${inputClassName} ${defaultType ? "opacity-70 cursor-not-allowed" : ""}`}
           >
             <option value="" disabled>Select fee type...</option>
             <option value="enrollment">Enrollment Fee</option>

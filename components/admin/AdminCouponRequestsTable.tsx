@@ -1,14 +1,36 @@
 "use client";
 
 import { format } from "date-fns";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { approveCouponRequest, rejectCouponRequest } from "@/app/admin/coupons/actions";
-import { Dialog } from "@headlessui/react";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 
 export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {
   const [isPending, startTransition] = useTransition();
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (selectedRequest && dialog && !dialog.open) {
+      dialog.showModal();
+    } else if (!selectedRequest && dialog && dialog.open) {
+      dialog.close();
+    }
+  }, [selectedRequest]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    
+    const handleCancel = (e: Event) => {
+      e.preventDefault();
+      setSelectedRequest(null);
+    };
+    
+    dialog.addEventListener("cancel", handleCancel);
+    return () => dialog.removeEventListener("cancel", handleCancel);
+  }, []);
 
   if (requests.length === 0) {
     return <p className="text-gray-500 text-sm">No waiver requests found.</p>;
@@ -94,37 +116,32 @@ export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {
         </table>
       </div>
 
-      <Dialog open={!!selectedRequest} onClose={() => setSelectedRequest(null)} className="relative z-50">
-        <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="mx-auto max-w-md w-full rounded bg-white p-6 shadow-xl">
-            <Dialog.Title className="text-lg font-semibold text-gray-900 mb-4">
-              Approve Fee Waiver
-            </Dialog.Title>
-            
-            <form action={handleApprove} className="space-y-4">
-              <input type="hidden" name="id" value={selectedRequest?.id} />
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Discount Percentage (%)</label>
-                <input required type="number" min="1" max="100" defaultValue="100" name="percentage" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm" />
-                <p className="text-xs text-gray-500 mt-1">Set to 100 for a full free course.</p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Valid Until</label>
-                <input required type="date" name="validUntil" defaultValue={format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd")} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm" />
-                <p className="text-xs text-gray-500 mt-1">How long the student has to use this coupon.</p>
-              </div>
+      <dialog ref={dialogRef} className="backdrop:bg-black/50 backdrop:backdrop-blur-sm fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-md p-6 bg-surface rounded-xl shadow-xl border border-border open:animate-in open:fade-in-90 open:zoom-in-95 m-0 overflow-hidden text-left">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Approve Fee Waiver
+        </h3>
+        
+        <form action={handleApprove} className="space-y-4">
+          <input type="hidden" name="id" value={selectedRequest?.id} />
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Discount Percentage (%)</label>
+            <input required type="number" min="1" max="100" defaultValue="100" name="percentage" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm" />
+            <p className="text-xs text-gray-500 mt-1">Set to 100 for a full free course.</p>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Valid Until</label>
+            <input required type="date" name="validUntil" defaultValue={format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd")} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm" />
+            <p className="text-xs text-gray-500 mt-1">How long the student has to use this coupon.</p>
+          </div>
 
-              <div className="mt-6 flex justify-end gap-3">
-                <button type="button" onClick={() => setSelectedRequest(null)} className="rounded border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
-                <SubmitButton className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700">Approve & Generate Coupon</SubmitButton>
-              </div>
-            </form>
-          </Dialog.Panel>
-        </div>
-      </Dialog>
+          <div className="mt-6 flex justify-end gap-3">
+            <button type="button" onClick={() => setSelectedRequest(null)} className="rounded border px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">Cancel</button>
+            <SubmitButton className="rounded bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700">Approve & Generate Coupon</SubmitButton>
+          </div>
+        </form>
+      </dialog>
     </>
   );
 }

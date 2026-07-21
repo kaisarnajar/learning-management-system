@@ -4,7 +4,7 @@ import { useState } from "react";
 import { submitWaiverRequest } from "@/app/actions/waiver";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 
-export function WaiverRequestForm({ courses, defaultCourseId }: { courses: { id: string; title: string }[], defaultCourseId?: string }) {
+export function WaiverRequestForm({ courses, defaultCourseId, defaultReason }: { courses: { id: string; title: string }[], defaultCourseId?: string, defaultReason?: string }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
@@ -41,7 +41,7 @@ export function WaiverRequestForm({ courses, defaultCourseId }: { courses: { id:
 
       <div>
         <label className="block text-sm font-medium text-gray-700">Reason</label>
-        <textarea required name="reason" rows={4} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm" placeholder="Please explain why you need a fee waiver..." />
+        <textarea required name="reason" defaultValue={defaultReason} rows={4} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm" placeholder="Please explain why you need a fee waiver..." />
       </div>
 
       <SubmitButton className="rounded bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-light">Submit Request</SubmitButton>

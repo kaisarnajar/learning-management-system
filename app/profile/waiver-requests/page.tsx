@@ -10,7 +10,7 @@ export const metadata = {
 export default async function WaiverRequestsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ courseId?: string }>;
+  searchParams: Promise<{ courseId?: string; type?: string }>;
 }) {
   const session = await requireUser();
   const params = await searchParams;
@@ -29,6 +29,12 @@ export default async function WaiverRequestsPage({
     orderBy: { createdAt: "desc" },
   });
 
+  const defaultReason = params.type === "enrollment" 
+    ? "I am requesting a fee waiver for the Enrollment Fee because..."
+    : params.type === "course"
+    ? "I am requesting a fee waiver for the Course Fee because..."
+    : "";
+
   return (
     <div className="space-y-8">
       <div>
@@ -36,7 +42,7 @@ export default async function WaiverRequestsPage({
         <p className="text-sm text-muted">Submit and track your fee waiver requests.</p>
       </div>
 
-      <WaiverRequestForm courses={courses} defaultCourseId={params.courseId} />
+      <WaiverRequestForm courses={courses} defaultCourseId={params.courseId} defaultReason={defaultReason} />
 
       {requests.length > 0 && (
         <div className="space-y-4">

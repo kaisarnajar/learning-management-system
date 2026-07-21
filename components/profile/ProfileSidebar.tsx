@@ -12,6 +12,7 @@ import {
   CreditCard,
   ShoppingCart,
   Star,
+  Ticket,
 } from "lucide-react";
 
 const links = [
@@ -19,6 +20,7 @@ const links = [
   { href: "/profile/notifications", label: "Notifications", icon: Bell },
   { href: "/profile/courses", label: "My Courses", icon: GraduationCap },
   { href: "/profile/payments", label: "Payments", icon: CreditCard },
+  { href: "/profile/waiver-requests", label: "Fee Waivers", icon: Ticket },
   { href: "/profile/cart", label: "Cart", icon: ShoppingCart },
   { href: "/profile/reviews", label: "My Reviews", icon: Star },
 ];

@@ -79,10 +79,15 @@ export async function toggleCouponActive(couponId: string, isActive: boolean) {
 
 export async function deleteCoupon(couponId: string) {
   await requireAdmin();
-  await prisma.coupon.delete({
-    where: { id: couponId },
-  });
-  revalidatePath("/admin/coupons");
+  try {
+    await prisma.coupon.delete({
+      where: { id: couponId },
+    });
+    revalidatePath("/admin/coupons");
+    return { success: "Coupon deleted successfully." };
+  } catch (error) {
+    return { error: "Failed to delete coupon." };
+  }
 }
 
 export async function approveCouponRequest(requestId: string, percentage: number, validUntil: string) {

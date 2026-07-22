@@ -2,28 +2,15 @@
 
 import { format } from "date-fns";
 import { deleteCoupon } from "@/app/admin/coupons/actions";
-import { useTransition } from "react";
-import { adminDestructiveButtonClassName } from "@/utils/form";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 
 export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
-  const [isPending, startTransition] = useTransition();
-
   if (coupons.length === 0) {
     return (
       <div className="mt-4 rounded-lg border border-border bg-surface px-4 py-8 text-center text-sm text-muted">
         No coupons created yet.
       </div>
     );
-  }
-
-
-
-  function handleDelete(id: string, code: string) {
-    if (confirm(`Are you sure you want to delete coupon "${code}"?`)) {
-      startTransition(() => {
-        deleteCoupon(id);
-      });
-    }
   }
 
   return (
@@ -86,13 +73,10 @@ export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
               </td>
               <td className="px-4 py-3 text-right whitespace-nowrap">
                 <div className="flex justify-end gap-2">
-                  <button
-                    disabled={isPending}
-                    onClick={() => handleDelete(c.id, c.code)}
-                    className={adminDestructiveButtonClassName}
-                  >
-                    Delete
-                  </button>
+                  <DeleteActionButton
+                    action={deleteCoupon.bind(null, c.id)}
+                    itemName={c.code}
+                  />
                 </div>
               </td>
             </tr>

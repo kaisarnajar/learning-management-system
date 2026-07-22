@@ -45,7 +45,7 @@ export default async function PayFeePage({
 
   const originalFeePaise = getMonthlyFeePaise(course);
   
-  const coupon = await getBestApplicableCoupon(session.user.id, courseId);
+  const coupon = await getBestApplicableCoupon(session.user.id, courseId, "course");
   const finalFeePaise = coupon
     ? calculateDiscountedAmount(originalFeePaise, coupon.percentage)
     : originalFeePaise;

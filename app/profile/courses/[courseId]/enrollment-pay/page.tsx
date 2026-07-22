@@ -53,7 +53,7 @@ export default async function PayEnrollmentFeePage({
     );
   }
 
-  const coupon = await getBestApplicableCoupon(session.user.id, courseId);
+  const coupon = await getBestApplicableCoupon(session.user.id, courseId, "enrollment");
   const finalEnrollmentFeePaise = coupon 
     ? calculateDiscountedAmount(originalEnrollmentFeePaise, coupon.percentage)
     : originalEnrollmentFeePaise;

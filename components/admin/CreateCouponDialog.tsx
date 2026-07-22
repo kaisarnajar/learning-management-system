@@ -139,6 +139,15 @@ export function CreateCouponDialog({ courses }: { courses: CourseOption[] }) {
             </select>
           </div>
 
+          <div>
+            <label className={labelClassName}>Applies to Fee Type</label>
+            <select name="applyTo" className={inputClassName} defaultValue="BOTH">
+              <option value="BOTH">Both Enrollment & Course Fees</option>
+              <option value="ENROLLMENT">Enrollment Fee Only</option>
+              <option value="COURSE">Course Fee Only</option>
+            </select>
+          </div>
+
           <input type="hidden" name="isActive" value="true" />
 
           <div className="mt-6 flex justify-end gap-3 border-t border-border pt-4">

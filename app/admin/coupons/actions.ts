@@ -13,6 +13,7 @@ const createCouponSchema = z.object({
   courseId: z.string().optional().or(z.literal("")),
   gender: z.enum(["MALE", "FEMALE"]).optional().or(z.literal("")),
   isActive: z.boolean().default(true),
+  applyTo: z.enum(["BOTH", "ENROLLMENT", "COURSE"]).default("BOTH"),
 });
 
 export async function createDefaultCoupon(formData: FormData) {
@@ -26,13 +27,14 @@ export async function createDefaultCoupon(formData: FormData) {
     courseId: formData.get("courseId"),
     gender: formData.get("gender"),
     isActive: formData.get("isActive") === "true",
+    applyTo: formData.get("applyTo"),
   });
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message || "Invalid input." };
   }
 
-  const { code, percentage, validFrom, validUntil, courseId, gender, isActive } = parsed.data;
+  const { code, percentage, validFrom, validUntil, courseId, gender, isActive, applyTo } = parsed.data;
 
   try {
     const fromDate = new Date(validFrom);
@@ -51,6 +53,8 @@ export async function createDefaultCoupon(formData: FormData) {
         courseId: courseId || null,
         gender: gender || null,
         isActive,
+        applyToEnrollment: applyTo === "BOTH" || applyTo === "ENROLLMENT",
+        applyToCourse: applyTo === "BOTH" || applyTo === "COURSE",
       },
     });
 
@@ -96,6 +100,9 @@ export async function approveCouponRequest(requestId: string, percentage: number
   const code = `WAIVER-${request.user.name?.substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   try {
+    const isEnrollmentOnly = request.reason.includes("[Fee Type: Enrollment Fee]");
+    const isCourseOnly = request.reason.includes("[Fee Type: Course Fee]");
+
     const untilDate = new Date(validUntil);
     untilDate.setUTCHours(23, 59, 59, 999);
 
@@ -110,6 +117,8 @@ export async function approveCouponRequest(requestId: string, percentage: number
           courseId: request.courseId,
           userId: request.userId,
           isActive: true,
+          applyToEnrollment: !isCourseOnly,
+          applyToCourse: !isEnrollmentOnly,
         },
       });
 

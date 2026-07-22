@@ -747,18 +747,20 @@ enum CouponRequestStatus {
 }
 
 model Coupon {
-  id         String     @id @default(cuid())
-  code       String     @unique
-  type       CouponType
-  percentage Int
-  validFrom  DateTime
-  validUntil DateTime
-  courseId   String?
-  gender     String?
-  userId     String?
-  isActive   Boolean    @default(true)
-  createdAt  DateTime   @default(now())
-  updatedAt  DateTime   @updatedAt
+  id                String     @id @default(cuid())
+  code              String     @unique
+  type              CouponType
+  percentage        Int
+  validFrom         DateTime
+  validUntil        DateTime
+  courseId          String?
+  gender            String?
+  userId            String?
+  isActive          Boolean    @default(true)
+  applyToEnrollment Boolean    @default(true)
+  applyToCourse     Boolean    @default(true)
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
 
   course   Course?         @relation(fields: [courseId], references: [id], onDelete: Cascade)
   user     User?           @relation(fields: [userId], references: [id], onDelete: Cascade)

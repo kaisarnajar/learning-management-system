@@ -1,6 +1,6 @@
 import { prisma } from "@/utils/prisma";
 
-export async function getBestApplicableCoupon(userId: string, courseId: string) {
+export async function getBestApplicableCoupon(userId: string, courseId: string, feeType?: "enrollment" | "course") {
   const settings = await prisma.paymentSettings.findUnique({ where: { id: "default" } });
   if (!settings?.feeWaiverEnabled) return null;
 
@@ -21,6 +21,8 @@ export async function getBestApplicableCoupon(userId: string, courseId: string) 
         { courseId: courseId },
         { courseId: null },
       ],
+      ...(feeType === "enrollment" ? { applyToEnrollment: true } : {}),
+      ...(feeType === "course" ? { applyToCourse: true } : {}),
     },
   });
 

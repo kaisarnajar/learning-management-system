@@ -73,6 +73,9 @@ export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
                 {c.user && (
                   <div className="text-xs text-muted">For: {c.user.name} ({c.user.email})</div>
                 )}
+                <div className="text-xs font-medium text-primary mt-1">
+                  Applies to: {c.applyToEnrollment && c.applyToCourse ? "Both Fees" : c.applyToEnrollment ? "Enrollment Only" : "Course Only"}
+                </div>
               </td>
               <td className="px-4 py-3 whitespace-nowrap">
                 {c.isActive ? (

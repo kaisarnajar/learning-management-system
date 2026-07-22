@@ -97,7 +97,7 @@ export async function processMonthlyPayment(
   const baseAmountInrPaise = getMonthlyFeePaise(course);
   
   const { getBestApplicableCoupon, calculateDiscountedAmount } = await import("@/services/coupons");
-  const coupon = await getBestApplicableCoupon(userId, courseId);
+  const coupon = await getBestApplicableCoupon(userId, courseId, "course");
   const amountInrPaise = coupon ? calculateDiscountedAmount(baseAmountInrPaise, coupon.percentage) : baseAmountInrPaise;
   const isFree = amountInrPaise === 0;
 
@@ -179,7 +179,7 @@ export async function processEnrollmentPayment(
   }
 
   const { getBestApplicableCoupon, calculateDiscountedAmount } = await import("@/services/coupons");
-  const coupon = await getBestApplicableCoupon(userId, courseId);
+  const coupon = await getBestApplicableCoupon(userId, courseId, "enrollment");
   const enrollmentFeePaise = coupon ? calculateDiscountedAmount(baseEnrollmentFeePaise, coupon.percentage) : baseEnrollmentFeePaise;
   const isFree = enrollmentFeePaise === 0;
 

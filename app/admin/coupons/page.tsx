@@ -36,20 +36,20 @@ export default async function AdminCouponsPage() {
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-serif font-bold text-foreground">Fee Waivers & Coupons</h1>
-          <p className="text-sm text-muted">Manage default discount coupons and special student waiver requests.</p>
+          <h1 className="font-serif text-2xl font-bold text-primary">Fee Waivers & Coupons</h1>
+          <p className="mt-1 text-sm text-muted">Manage default discount coupons and special student waiver requests.</p>
         </div>
         <CreateCouponDialog courses={courses} />
       </div>
 
       <div className="space-y-8">
         <section>
-          <h2 className="text-lg font-serif font-semibold text-foreground mb-4">Waiver Requests (Special)</h2>
+          <h2 className="font-serif text-lg font-semibold text-foreground mb-4">Waiver Requests (Special)</h2>
           <AdminCouponRequestsTable requests={requests} />
         </section>
 
         <section>
-          <h2 className="text-lg font-serif font-semibold text-foreground mb-4">All Coupons</h2>
+          <h2 className="font-serif text-lg font-semibold text-foreground mb-4">All Coupons</h2>
           <AdminCouponsTable coupons={coupons} />
         </section>
       </div>

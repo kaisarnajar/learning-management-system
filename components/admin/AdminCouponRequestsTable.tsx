@@ -35,7 +35,7 @@ export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {
 
   if (requests.length === 0) {
     return (
-      <div className="card-elevated p-8 text-center text-sm text-muted">
+      <div className="mt-4 rounded-lg border border-border bg-surface px-4 py-8 text-center text-sm text-muted">
         No fee waiver requests found.
       </div>
     );
@@ -64,76 +64,74 @@ export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {
 
   return (
     <>
-      <div className="card-elevated overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="border-b border-border bg-surface-muted/60 text-xs font-semibold uppercase tracking-wider text-muted">
-              <tr>
-                <th className="px-5 py-3.5">Date</th>
-                <th className="px-5 py-3.5">Student</th>
-                <th className="px-5 py-3.5">Course</th>
-                <th className="px-5 py-3.5 max-w-xs">Reason</th>
-                <th className="px-5 py-3.5">Status</th>
-                <th className="px-5 py-3.5 text-right">Action</th>
+      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
+        <table className="w-full min-w-[800px] text-left text-sm">
+          <thead className="border-b border-border bg-background/50 text-muted">
+            <tr>
+              <th className="px-4 py-3 font-medium">Date</th>
+              <th className="px-4 py-3 font-medium">Student</th>
+              <th className="px-4 py-3 font-medium">Course</th>
+              <th className="px-4 py-3 font-medium max-w-xs">Reason</th>
+              <th className="px-4 py-3 font-medium">Status</th>
+              <th className="px-4 py-3 font-medium text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {requests.map((r) => (
+              <tr key={r.id}>
+                <td className="px-4 py-3 whitespace-nowrap text-muted font-medium">
+                  {format(new Date(r.createdAt), "dd MMM, yyyy")}
+                </td>
+                <td className="px-4 py-3">
+                  <p className="font-medium text-foreground">{r.user.name}</p>
+                  <p className="text-xs text-muted">{r.user.email}</p>
+                </td>
+                <td className="px-4 py-3 font-medium text-foreground">{r.course.title}</td>
+                <td className="px-4 py-3 max-w-xs text-xs leading-relaxed text-muted font-mono">{r.reason}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                      r.status === "PENDING"
+                        ? "bg-amber-50 text-amber-700 border border-amber-200"
+                        : r.status === "APPROVED"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : "bg-rose-50 text-rose-700 border border-rose-200"
+                    }`}
+                  >
+                    {r.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-right whitespace-nowrap">
+                  {r.status === "PENDING" && (
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => setSelectedRequest(r)}
+                        className={adminActionButtonClassName}
+                        disabled={isPending}
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => handleReject(r.id)}
+                        className={adminDestructiveButtonClassName}
+                        disabled={isPending}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  )}
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-border bg-surface">
-              {requests.map((r) => (
-                <tr key={r.id} className="hover:bg-surface-muted/30 transition-colors">
-                  <td className="px-5 py-4 whitespace-nowrap text-muted font-medium">
-                    {format(new Date(r.createdAt), "dd MMM, yyyy")}
-                  </td>
-                  <td className="px-5 py-4">
-                    <p className="font-semibold text-foreground">{r.user.name}</p>
-                    <p className="text-xs text-muted">{r.user.email}</p>
-                  </td>
-                  <td className="px-5 py-4 font-medium text-foreground">{r.course.title}</td>
-                  <td className="px-5 py-4 max-w-xs text-xs leading-relaxed text-muted font-mono">{r.reason}</td>
-                  <td className="px-5 py-4 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                        r.status === "PENDING"
-                          ? "bg-amber-50 text-amber-700 border border-amber-200"
-                          : r.status === "APPROVED"
-                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
-                          : "bg-rose-50 text-rose-700 border border-rose-200"
-                      }`}
-                    >
-                      {r.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4 text-right whitespace-nowrap">
-                    {r.status === "PENDING" && (
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => setSelectedRequest(r)}
-                          className={adminActionButtonClassName}
-                          disabled={isPending}
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleReject(r.id)}
-                          className={adminDestructiveButtonClassName}
-                          disabled={isPending}
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <dialog
         ref={dialogRef}
         className="backdrop:bg-black/50 backdrop:backdrop-blur-sm fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-md p-6 bg-surface rounded-xl shadow-xl border border-border open:animate-in open:fade-in-90 open:zoom-in-95 m-0 overflow-hidden text-left"
       >
-        <h3 className="text-lg font-serif font-bold text-foreground mb-4">
+        <h3 className="font-serif text-lg font-bold text-foreground mb-4">
           Approve Fee Waiver
         </h3>
         
@@ -170,11 +168,11 @@ export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {
             <button
               type="button"
               onClick={() => setSelectedRequest(null)}
-              className="rounded-full border border-border px-5 py-2 text-xs font-semibold text-foreground hover:bg-surface-muted transition-colors"
+              className="min-h-10 rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent-muted/50 transition-colors"
             >
               Cancel
             </button>
-            <SubmitButton className="rounded-full bg-primary px-5 py-2 text-xs font-semibold text-white hover:bg-primary-light transition-colors">
+            <SubmitButton className="min-h-10 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-light transition-colors">
               Approve & Generate Coupon
             </SubmitButton>
           </div>

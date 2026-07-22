@@ -52,7 +52,7 @@ export function CreateCouponDialog({ courses }: { courses: CourseOption[] }) {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="rounded-full bg-primary px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-primary-light transition-colors"
+        className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-light transition-colors"
       >
         + Create Default Coupon
       </button>
@@ -61,7 +61,7 @@ export function CreateCouponDialog({ courses }: { courses: CourseOption[] }) {
         ref={dialogRef}
         className="backdrop:bg-black/50 backdrop:backdrop-blur-sm fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-md p-6 bg-surface rounded-xl shadow-xl border border-border open:animate-in open:fade-in-90 open:zoom-in-95 m-0 overflow-hidden text-left"
       >
-        <h3 className="text-lg font-serif font-bold text-foreground mb-4">
+        <h3 className="font-serif text-lg font-bold text-foreground mb-4">
           Create Default Coupon
         </h3>
         
@@ -145,11 +145,11 @@ export function CreateCouponDialog({ courses }: { courses: CourseOption[] }) {
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="rounded-full border border-border px-5 py-2 text-xs font-semibold text-foreground hover:bg-surface-muted transition-colors"
+              className="min-h-10 rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent-muted/50 transition-colors"
             >
               Cancel
             </button>
-            <SubmitButton className="rounded-full bg-primary px-5 py-2 text-xs font-semibold text-white hover:bg-primary-light transition-colors">
+            <SubmitButton className="min-h-10 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary-light transition-colors">
               Create Coupon
             </SubmitButton>
           </div>

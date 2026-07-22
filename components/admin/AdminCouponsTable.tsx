@@ -10,7 +10,7 @@ export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
 
   if (coupons.length === 0) {
     return (
-      <div className="card-elevated p-8 text-center text-sm text-muted">
+      <div className="mt-4 rounded-lg border border-border bg-surface px-4 py-8 text-center text-sm text-muted">
         No coupons created yet.
       </div>
     );
@@ -31,84 +31,82 @@ export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
   }
 
   return (
-    <div className="card-elevated overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-border bg-surface-muted/60 text-xs font-semibold uppercase tracking-wider text-muted">
-            <tr>
-              <th className="px-5 py-3.5">Code</th>
-              <th className="px-5 py-3.5">Type</th>
-              <th className="px-5 py-3.5">Discount</th>
-              <th className="px-5 py-3.5">Valid Until</th>
-              <th className="px-5 py-3.5">Target</th>
-              <th className="px-5 py-3.5">Status</th>
-              <th className="px-5 py-3.5 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-border bg-surface">
-            {coupons.map((c) => (
-              <tr key={c.id} className="hover:bg-surface-muted/30 transition-colors">
-                <td className="px-5 py-4 font-mono font-bold text-foreground">{c.code}</td>
-                <td className="px-5 py-4">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      c.type === "DEFAULT"
-                        ? "bg-blue-50 text-blue-700 border border-blue-200"
-                        : "bg-purple-50 text-purple-700 border border-purple-200"
-                    }`}
-                  >
-                    {c.type}
+    <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
+      <table className="w-full min-w-[800px] text-left text-sm">
+        <thead className="border-b border-border bg-background/50 text-muted">
+          <tr>
+            <th className="px-4 py-3 font-medium">Code</th>
+            <th className="px-4 py-3 font-medium">Type</th>
+            <th className="px-4 py-3 font-medium">Discount</th>
+            <th className="px-4 py-3 font-medium">Valid Until</th>
+            <th className="px-4 py-3 font-medium">Target</th>
+            <th className="px-4 py-3 font-medium">Status</th>
+            <th className="px-4 py-3 font-medium text-right">Action</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {coupons.map((c) => (
+            <tr key={c.id}>
+              <td className="px-4 py-3 font-mono font-bold text-foreground">{c.code}</td>
+              <td className="px-4 py-3">
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    c.type === "DEFAULT"
+                      ? "bg-blue-50 text-blue-700 border border-blue-200"
+                      : "bg-purple-50 text-purple-700 border border-purple-200"
+                  }`}
+                >
+                  {c.type}
+                </span>
+              </td>
+              <td className="px-4 py-3 font-medium text-foreground">{c.percentage}% OFF</td>
+              <td className="px-4 py-3 text-muted whitespace-nowrap">
+                {format(new Date(c.validUntil), "dd MMM, yyyy")}
+              </td>
+              <td className="px-4 py-3">
+                <div className="font-medium text-foreground">
+                  {c.course?.title || "All Courses"}
+                </div>
+                {c.gender && (
+                  <div className="text-xs text-muted">Gender: {c.gender}</div>
+                )}
+                {c.user && (
+                  <div className="text-xs text-muted">For: {c.user.name} ({c.user.email})</div>
+                )}
+              </td>
+              <td className="px-4 py-3 whitespace-nowrap">
+                {c.isActive ? (
+                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 border border-emerald-200">
+                    Active
                   </span>
-                </td>
-                <td className="px-5 py-4 font-medium text-foreground">{c.percentage}% OFF</td>
-                <td className="px-5 py-4 text-muted whitespace-nowrap">
-                  {format(new Date(c.validUntil), "dd MMM, yyyy")}
-                </td>
-                <td className="px-5 py-4">
-                  <div className="font-medium text-foreground">
-                    {c.course?.title || "All Courses"}
-                  </div>
-                  {c.gender && (
-                    <div className="text-xs text-muted">Gender: {c.gender}</div>
-                  )}
-                  {c.user && (
-                    <div className="text-xs text-muted">For: {c.user.name} ({c.user.email})</div>
-                  )}
-                </td>
-                <td className="px-5 py-4 whitespace-nowrap">
-                  {c.isActive ? (
-                    <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 border border-emerald-200">
-                      Active
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-700 border border-rose-200">
-                      Inactive
-                    </span>
-                  )}
-                </td>
-                <td className="px-5 py-4 text-right whitespace-nowrap">
-                  <div className="flex justify-end gap-2">
-                    <button
-                      disabled={isPending}
-                      onClick={() => handleToggle(c.id, c.isActive)}
-                      className={c.isActive ? adminActionButtonClassName : adminActionButtonClassName}
-                    >
-                      {c.isActive ? "Deactivate" : "Activate"}
-                    </button>
-                    <button
-                      disabled={isPending}
-                      onClick={() => handleDelete(c.id, c.code)}
-                      className={adminDestructiveButtonClassName}
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                ) : (
+                  <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-700 border border-rose-200">
+                    Inactive
+                  </span>
+                )}
+              </td>
+              <td className="px-4 py-3 text-right whitespace-nowrap">
+                <div className="flex justify-end gap-2">
+                  <button
+                    disabled={isPending}
+                    onClick={() => handleToggle(c.id, c.isActive)}
+                    className={adminActionButtonClassName}
+                  >
+                    {c.isActive ? "Deactivate" : "Activate"}
+                  </button>
+                  <button
+                    disabled={isPending}
+                    onClick={() => handleDelete(c.id, c.code)}
+                    className={adminDestructiveButtonClassName}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

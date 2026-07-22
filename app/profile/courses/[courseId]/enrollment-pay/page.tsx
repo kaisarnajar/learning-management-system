@@ -98,7 +98,7 @@ export default async function PayEnrollmentFeePage({
               <p className="text-sm text-muted mb-2">Are you unable to afford the enrollment fee?</p>
               <Link 
                 href={`/profile/waiver-requests?courseId=${course.id}&type=enrollment`} 
-                className="inline-block rounded border border-primary px-4 py-2 text-sm font-medium text-primary hover:bg-primary/5 transition-colors"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-light transition-colors"
               >
                 Request a Fee Waiver
               </Link>

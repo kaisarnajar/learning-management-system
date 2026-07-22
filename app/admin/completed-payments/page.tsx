@@ -28,6 +28,8 @@ export const metadata: Metadata = {
 type TabType =
   | "enrollment_approved"
   | "monthly_approved"
+  | "enrollment_waiver"
+  | "monthly_waiver"
   | "book_approved"
   | "manual_transactions"
   | "manual_expenses";
@@ -35,12 +37,19 @@ type TabType =
 const ALL_TABS: TabType[] = [
   "enrollment_approved",
   "monthly_approved",
+  "enrollment_waiver",
+  "monthly_waiver",
   "book_approved",
   "manual_transactions",
   "manual_expenses",
 ];
 
-const APPROVAL_TABLE_TABS = new Set<TabType>(["enrollment_approved", "monthly_approved"]);
+const APPROVAL_TABLE_TABS = new Set<TabType>([
+  "enrollment_approved",
+  "monthly_approved",
+  "enrollment_waiver",
+  "monthly_waiver",
+]);
 
 function tabHref(type: TabType, extraParams?: Record<string, string>) {
   const params = new URLSearchParams(extraParams);
@@ -115,8 +124,12 @@ export default async function AdminCompletedPaymentsPage({
     // Approved enrollment / course fee tabs
     isApprovalTab
       ? (type === "enrollment_approved"
-          ? getApprovedEnrollmentFeePaymentsPaginated(requestedPage, pageSize, q)
-          : getApprovedMonthlyPaymentsPaginated(requestedPage, pageSize, q))
+          ? getApprovedEnrollmentFeePaymentsPaginated(requestedPage, pageSize, q, "paid")
+          : type === "monthly_approved"
+          ? getApprovedMonthlyPaymentsPaginated(requestedPage, pageSize, q, "paid")
+          : type === "enrollment_waiver"
+          ? getApprovedEnrollmentFeePaymentsPaginated(requestedPage, pageSize, q, "waiver")
+          : getApprovedMonthlyPaymentsPaginated(requestedPage, pageSize, q, "waiver"))
       : Promise.resolve({ items: [], totalCount: 0 }),
     // Approved book order payments tab
     isBookApproved
@@ -146,6 +159,8 @@ export default async function AdminCompletedPaymentsPage({
   const tabDefs = [
     { label: "Enrollment Fee Approved", value: "enrollment_approved" as TabType },
     { label: "Course Fee Approved", value: "monthly_approved" as TabType },
+    { label: "100% Fee Waiver (Enrollment)", value: "enrollment_waiver" as TabType },
+    { label: "100% Fee Waiver (Course)", value: "monthly_waiver" as TabType },
     { label: "Book Order Payments", value: "book_approved" as TabType },
     { label: "Manually Added Transactions", value: "manual_transactions" as TabType },
     { label: "Manually Added Expenses", value: "manual_expenses" as TabType },

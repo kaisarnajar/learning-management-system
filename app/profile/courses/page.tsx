@@ -44,7 +44,7 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
 
   return (
     <>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         {totalCount > 0 && (
           <Link
             href="/courses"

@@ -1,9 +1,9 @@
 "use client";
 
 import { format } from "date-fns";
-import { toggleCouponActive, deleteCoupon } from "@/app/admin/coupons/actions";
+import { deleteCoupon } from "@/app/admin/coupons/actions";
 import { useTransition } from "react";
-import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/utils/form";
+import { adminDestructiveButtonClassName } from "@/utils/form";
 
 export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
   const [isPending, startTransition] = useTransition();
@@ -16,11 +16,7 @@ export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
     );
   }
 
-  function handleToggle(id: string, current: boolean) {
-    startTransition(() => {
-      toggleCouponActive(id, !current);
-    });
-  }
+
 
   function handleDelete(id: string, code: string) {
     if (confirm(`Are you sure you want to delete coupon "${code}"?`)) {
@@ -90,13 +86,6 @@ export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
               </td>
               <td className="px-4 py-3 text-right whitespace-nowrap">
                 <div className="flex justify-end gap-2">
-                  <button
-                    disabled={isPending}
-                    onClick={() => handleToggle(c.id, c.isActive)}
-                    className={adminActionButtonClassName}
-                  >
-                    {c.isActive ? "Deactivate" : "Activate"}
-                  </button>
                   <button
                     disabled={isPending}
                     onClick={() => handleDelete(c.id, c.code)}

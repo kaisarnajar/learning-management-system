@@ -93,7 +93,7 @@ export default async function AdminCouponsPage({
         ) : (
           <section>
             <h2 className="font-serif text-lg font-semibold text-foreground mb-4">All Coupons</h2>
-            <AdminCouponsTable coupons={coupons} />
+            <AdminCouponsTable coupons={coupons} courses={courses} />
           </section>
         )}
       </div>

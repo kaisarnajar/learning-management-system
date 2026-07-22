@@ -68,6 +68,55 @@ export async function createDefaultCoupon(formData: FormData) {
   }
 }
 
+export async function updateCoupon(couponId: string, formData: FormData) {
+  await requireAdmin();
+
+  const parsed = createCouponSchema.safeParse({
+    code: formData.get("code"),
+    percentage: formData.get("percentage"),
+    validFrom: formData.get("validFrom"),
+    validUntil: formData.get("validUntil"),
+    courseId: formData.get("courseId"),
+    gender: formData.get("gender"),
+    isActive: true,
+    applyTo: formData.get("applyTo"),
+  });
+
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message || "Invalid input." };
+  }
+
+  const { code, percentage, validFrom, validUntil, courseId, gender, applyTo } = parsed.data;
+
+  try {
+    const fromDate = new Date(validFrom);
+    const untilDate = new Date(validUntil);
+    untilDate.setUTCHours(23, 59, 59, 999);
+
+    await prisma.coupon.update({
+      where: { id: couponId },
+      data: {
+        code,
+        percentage,
+        validFrom: fromDate,
+        validUntil: untilDate,
+        courseId: courseId || null,
+        gender: gender || null,
+        applyToEnrollment: applyTo === "BOTH" || applyTo === "ENROLLMENT",
+        applyToCourse: applyTo === "BOTH" || applyTo === "COURSE",
+      },
+    });
+
+    revalidatePath("/admin/coupons");
+    return { success: true };
+  } catch (error: any) {
+    if (error.code === "P2002") {
+      return { error: "A coupon with this code already exists." };
+    }
+    return { error: "Failed to update coupon." };
+  }
+}
+
 export async function toggleCouponActive(couponId: string, isActive: boolean) {
   await requireAdmin();
   await prisma.coupon.update({

@@ -3,8 +3,20 @@
 import { format } from "date-fns";
 import { deleteCoupon } from "@/app/admin/coupons/actions";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
+import { EditCouponDialog } from "@/components/admin/EditCouponDialog";
 
-export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
+type CourseOption = {
+  id: string;
+  title: string;
+};
+
+export function AdminCouponsTable({
+  coupons,
+  courses = [],
+}: {
+  coupons: any[];
+  courses?: CourseOption[];
+}) {
   if (coupons.length === 0) {
     return (
       <div className="mt-4 rounded-lg border border-border bg-surface px-4 py-8 text-center text-sm text-muted">
@@ -61,6 +73,7 @@ export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
               </td>
               <td className="px-4 py-3 text-right whitespace-nowrap">
                 <div className="flex justify-end gap-2">
+                  <EditCouponDialog coupon={c} courses={courses} />
                   <DeleteActionButton
                     action={deleteCoupon.bind(null, c.id)}
                     itemName={c.code}

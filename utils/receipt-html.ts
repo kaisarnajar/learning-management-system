@@ -99,12 +99,22 @@ export function renderReceiptToHtml(data: ReceiptData): string {
             <td class="py-3 px-4">
               <span class="font-bold block text-slate-800">${payment.courseName}</span>
               <span class="text-xs text-slate-500">${payment.typeLabel || (payment.courseName === 'Book Order' ? 'Books' : 'Course / Enrollment Fee')}</span>
-              ${payment.amount === 0 ? `<span class="inline-block mt-1 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">100% Fee Waived Off</span>` : ''}
+              ${payment.discountPercentage ? `<span class="inline-block mt-1 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">${payment.discountPercentage}% Fee Waived Off</span>` : (payment.amount === 0 ? `<span class="inline-block mt-1 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">100% Fee Waived Off</span>` : '')}
             </td>
             <td class="py-3 px-4 text-right font-mono text-base text-slate-800">
-              ${currencySymbol} ${(payment.baseAmount ?? (payment.amount - (payment.shippingAmount || 0))).toFixed(2)}
+              ${currencySymbol} ${(payment.originalAmount ?? (payment.baseAmount ?? (payment.amount - (payment.shippingAmount || 0)))).toFixed(2)}
             </td>
           </tr>
+          ${payment.discountAmount ? `
+          <tr class="border-b border-slate-200 bg-emerald-50/40">
+            <td class="py-2.5 px-4 text-right text-xs font-semibold text-emerald-800">
+              Fee Waiver / Discount (${payment.discountPercentage}% OFF)
+            </td>
+            <td class="py-2.5 px-4 text-right font-mono text-sm font-semibold text-emerald-700">
+              - ${currencySymbol} ${payment.discountAmount.toFixed(2)}
+            </td>
+          </tr>
+          ` : ""}
           ${payment.shippingAmount ? `
           <tr class="border-b border-slate-200">
             <td class="py-3 px-4 text-right text-xs text-slate-600">

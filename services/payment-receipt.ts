@@ -19,6 +19,7 @@ export function getReceiptFilename(courseTitle: string, paymentRecordId: string)
 export type ReceiptRecordInput = {
   id: string;
   userId: string;
+  courseId?: string | null;
   amountInrPaise: number;
   paymentType: string | null;
   description: string | null;
@@ -73,6 +74,35 @@ export async function prepareReceiptData(
     }
   }
 
+  let originalAmount: number | undefined = undefined;
+  let discountAmount: number | undefined = undefined;
+  let discountPercentage: number | undefined = undefined;
+
+  if (record.courseId) {
+    const { getCourseById } = await import("@/services/courses");
+    const { getMonthlyFeePaise, getRegistrationFeePaise } = await import("@/services/course-pricing");
+    const course = await getCourseById(record.courseId);
+
+    if (course) {
+      const fullFeePaise = record.paymentType === "enrollment"
+        ? getRegistrationFeePaise(course)
+        : getMonthlyFeePaise(course);
+
+      if (fullFeePaise > 0 && fullFeePaise > record.amountInrPaise) {
+        originalAmount = fullFeePaise / 100;
+        discountAmount = (fullFeePaise - record.amountInrPaise) / 100;
+        discountPercentage = Math.round(((fullFeePaise - record.amountInrPaise) / fullFeePaise) * 100);
+      }
+    }
+  }
+
+  if (!discountPercentage && record.description) {
+    const waiverMatch = record.description.match(/(\d+)%\s*(Fee Waiver|OFF)/i);
+    if (waiverMatch) {
+      discountPercentage = parseInt(waiverMatch[1], 10);
+    }
+  }
+
   const filename = getReceiptFilename(finalCourseTitle, record.id);
   
   const [socialLinks, academySettings, assets] = await Promise.all([
@@ -119,6 +149,9 @@ export async function prepareReceiptData(
       baseAmount: baseAmount ? baseAmount / 100 : undefined,
       gstAmount: gstAmount ? gstAmount / 100 : undefined,
       shippingAmount: shippingAmount > 0 ? shippingAmount : undefined,
+      discountAmount,
+      discountPercentage,
+      originalAmount,
       currency: "₹",
       typeLabel: record.paymentType === "book_purchase" ? "Books" : incomePaymentTypeLabel(record.paymentType),
     },

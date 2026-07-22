@@ -100,12 +100,13 @@ export async function processMonthlyPayment(
   const coupon = await getBestApplicableCoupon(userId, courseId, "course");
   const amountInrPaise = coupon ? calculateDiscountedAmount(baseAmountInrPaise, coupon.percentage) : baseAmountInrPaise;
   const isFree = amountInrPaise === 0;
+  const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
 
   const submissionResult = await createCoursePaymentSubmission({
     userId,
     courseId: course.id,
     paymentType: derivedPaymentType,
-    label,
+    label: finalLabel,
     amountInrPaise,
     status: isFree ? MONTHLY_PAYMENT_APPROVED : MONTHLY_PAYMENT_PENDING,
     paymentMethod: isFree ? "waiver" : paymentMethod,
@@ -182,6 +183,7 @@ export async function processEnrollmentPayment(
   const coupon = await getBestApplicableCoupon(userId, courseId, "enrollment");
   const enrollmentFeePaise = coupon ? calculateDiscountedAmount(baseEnrollmentFeePaise, coupon.percentage) : baseEnrollmentFeePaise;
   const isFree = enrollmentFeePaise === 0;
+  const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
 
   if (upiTransactionId && !isFree && upiTransactionId !== "FEE-WAIVER") {
     const duplicateUtr = await prisma.coursePaymentSubmission.findFirst({
@@ -207,7 +209,7 @@ export async function processEnrollmentPayment(
         userId,
         courseId,
         paymentType: PAYMENT_TYPE_ENROLLMENT,
-        label,
+        label: finalLabel,
         amountInrPaise: enrollmentFeePaise,
         status: isFree ? MONTHLY_PAYMENT_APPROVED : MONTHLY_PAYMENT_PENDING,
         paymentMethod: isFree ? "waiver" : paymentMethod,

@@ -23,6 +23,9 @@ export interface PaymentInfo {
   baseAmount?: number;
   gstAmount?: number;
   shippingAmount?: number;
+  discountAmount?: number;
+  discountPercentage?: number;
+  originalAmount?: number;
   currency?: string;
   typeLabel?: string;
 }

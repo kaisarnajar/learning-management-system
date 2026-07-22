@@ -89,9 +89,15 @@ export async function submitCheckout(courseId: string) {
     }
 
     if (requiresEnrollmentFee) {
-      // For paid courses: do NOT create an enrollment yet.
-      // The enrollment is created atomically when the student submits
-      // their payment receipt in submitEnrollmentPayment().
+      if (!existing) {
+        await prisma.enrollment.create({
+          data: {
+            userId: session.user.id,
+            courseId: course.id,
+            status: AWAITING_ENROLLMENT_FEE,
+          },
+        });
+      }
       return {
         redirectUrl: `/profile/courses/${courseId}/enrollment-pay`,
       };

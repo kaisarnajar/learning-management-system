@@ -4,12 +4,15 @@ import { format } from "date-fns";
 import { useState, useTransition, useRef, useEffect } from "react";
 import { approveCouponRequest, rejectCouponRequest } from "@/app/admin/coupons/actions";
 import { SubmitButton } from "@/components/shared/SubmitButton";
+import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
+import { useToast } from "@/components/shared/ToastProvider";
 import { adminActionButtonClassName, adminDestructiveButtonClassName, inputClassName, labelClassName } from "@/utils/form";
 
 export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {
   const [isPending, startTransition] = useTransition();
   const [selectedRequest, setSelectedRequest] = useState<any>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const { addToast } = useToast();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -41,24 +44,17 @@ export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {
     );
   }
 
-  function handleReject(id: string) {
-    if (confirm("Are you sure you want to reject this request?")) {
-      startTransition(() => {
-        rejectCouponRequest(id);
-      });
-    }
-  }
-
   async function handleApprove(formData: FormData) {
     const id = formData.get("id") as string;
     const percentage = Number(formData.get("percentage"));
     const validUntil = formData.get("validUntil") as string;
 
     const res = await approveCouponRequest(id, percentage, validUntil);
-    if (!res.error) {
+    if (res?.success) {
       setSelectedRequest(null);
-    } else {
-      alert(res.error);
+      addToast("Fee waiver request approved and coupon created.", "success");
+    } else if (res?.error) {
+      addToast(res.error, "error");
     }
   }
 
@@ -111,13 +107,29 @@ export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {
                       >
                         Approve
                       </button>
-                      <button
-                        onClick={() => handleReject(r.id)}
-                        className={adminDestructiveButtonClassName}
-                        disabled={isPending}
-                      >
-                        Reject
-                      </button>
+                      <ConfirmationModal
+                        title="Reject Fee Waiver Request"
+                        description="Are you sure you want to reject this request?"
+                        actionLabel="Reject"
+                        variant="destructive"
+                        onConfirm={async () => {
+                          const res = await rejectCouponRequest(r.id);
+                          if (res?.error) {
+                            addToast(res.error, "error");
+                          } else {
+                            addToast("Fee waiver request rejected.", "info");
+                          }
+                        }}
+                        trigger={
+                          <button
+                            type="button"
+                            className={adminDestructiveButtonClassName}
+                            disabled={isPending}
+                          >
+                            Reject
+                          </button>
+                        }
+                      />
                     </div>
                   )}
                 </td>

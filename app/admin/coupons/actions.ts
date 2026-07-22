@@ -145,9 +145,14 @@ export async function approveCouponRequest(requestId: string, percentage: number
 
 export async function rejectCouponRequest(requestId: string) {
   await requireAdmin();
-  await prisma.couponRequest.update({
-    where: { id: requestId },
-    data: { status: "REJECTED" },
-  });
-  revalidatePath("/admin/coupons");
+  try {
+    await prisma.couponRequest.update({
+      where: { id: requestId },
+      data: { status: "REJECTED" },
+    });
+    revalidatePath("/admin/coupons");
+    return { success: true };
+  } catch (error) {
+    return { error: "Failed to reject request." };
+  }
 }

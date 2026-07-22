@@ -183,7 +183,7 @@ export async function processEnrollmentPayment(
   const enrollmentFeePaise = coupon ? calculateDiscountedAmount(baseEnrollmentFeePaise, coupon.percentage) : baseEnrollmentFeePaise;
   const isFree = enrollmentFeePaise === 0;
 
-  if (upiTransactionId && !isFree) {
+  if (upiTransactionId && !isFree && upiTransactionId !== "FEE-WAIVER") {
     const duplicateUtr = await prisma.coursePaymentSubmission.findFirst({
       where: { upiTransactionId },
     });

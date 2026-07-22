@@ -12,7 +12,7 @@ export async function createCoursePaymentSubmission(params: {
   upiTransactionId: string | null;
   screenshotFile: File | null;
 }): Promise<{ error?: string; createdId?: string }> {
-  if (params.upiTransactionId) {
+  if (params.upiTransactionId && params.paymentMethod !== "waiver" && params.upiTransactionId !== "FEE-WAIVER") {
     const duplicateUtrSubmission = await prisma.coursePaymentSubmission.findFirst({
       where: { upiTransactionId: params.upiTransactionId },
     });

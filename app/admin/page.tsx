@@ -77,6 +77,7 @@ export default async function AdminDashboardPage() {
     receiptCount,
     paymentRecordCount,
     expenseCount,
+    pendingWaiverCount,
   ] = await Promise.all([
     withDbErrorHandling(() => prisma.siteAnnouncement.count(), "Database operation failed"),
     withDbErrorHandling(() => prisma.blogPost.count(), "Database operation failed"),
@@ -98,6 +99,7 @@ export default async function AdminDashboardPage() {
     withDbErrorHandling(() => prisma.paymentRecord.count({ where: { receiptGeneratedAt: { not: null } } }), "Database operation failed"),
     withDbErrorHandling(() => prisma.paymentRecord.count(), "Database operation failed"),
     withDbErrorHandling(() => prisma.expense.count(), "Database operation failed"),
+    withDbErrorHandling(() => prisma.couponRequest.count({ where: { status: "PENDING" } }), "Database operation failed"),
   ]);
 
   const countByHref = new Map<string, { count: number; highlight?: boolean }>([
@@ -141,6 +143,13 @@ export default async function AdminDashboardPage() {
     ["/admin/completed-payments", { count: paymentRecordCount + expenseCount }],
     ["/admin/receipts", { count: receiptCount }],
     ["/admin/finance", { count: 0 }],
+    [
+      "/admin/coupons",
+      {
+        count: pendingWaiverCount,
+        highlight: pendingWaiverCount > 0,
+      },
+    ],
   ]);
 
   const countStats: DashboardStat[] = ADMIN_NAV_LINKS.filter(

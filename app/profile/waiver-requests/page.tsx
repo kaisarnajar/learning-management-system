@@ -49,6 +49,7 @@ export default async function WaiverRequestsPage({
                 <tr>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Date</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Course</th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Fee Type</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Status</th>
                   <th scope="col" className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-muted-foreground">Assigned Coupon</th>
                 </tr>
@@ -58,6 +59,9 @@ export default async function WaiverRequestsPage({
                   <tr key={r.id}>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">{format(new Date(r.createdAt), "dd MMM yyyy")}</td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">{r.course.title}</td>
+                    <td className="whitespace-nowrap px-6 py-4 text-sm text-foreground">
+                      {r.reason.includes("[Fee Type: Enrollment Fee]") ? "Enrollment Fee" : r.reason.includes("[Fee Type: Course Fee]") ? "Course Fee" : "Both"}
+                    </td>
                     <td className="whitespace-nowrap px-6 py-4 text-sm">
                       <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                         r.status === 'PENDING' ? 'bg-yellow-100 text-yellow-800' :

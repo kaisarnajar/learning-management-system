@@ -150,6 +150,7 @@ export default async function AdminDashboardPage() {
         highlight: pendingWaiverCount > 0,
       },
     ],
+    ["/admin/coupons/finance", { count: 0 }],
   ]);
 
   const countStats: DashboardStat[] = ADMIN_NAV_LINKS.filter(

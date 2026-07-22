@@ -7,6 +7,7 @@ import {
 
 type FinanceDateFilterProps = {
   filters: FinanceFilters;
+  basePath?: string;
 };
 
 function hiddenFilterFields(filters: FinanceFilters, exclude: ("preset" | "from" | "to")[] = []) {
@@ -33,7 +34,7 @@ function hiddenFilterFields(filters: FinanceFilters, exclude: ("preset" | "from"
   return fields;
 }
 
-export function FinanceDateFilter({ filters }: FinanceDateFilterProps) {
+export function FinanceDateFilter({ filters, basePath = "/admin/finance" }: FinanceDateFilterProps) {
   const customFrom = filters.from?.toISOString().slice(0, 10) ?? "";
   const customTo = filters.to?.toISOString().slice(0, 10) ?? "";
 
@@ -42,7 +43,7 @@ export function FinanceDateFilter({ filters }: FinanceDateFilterProps) {
       <nav className="flex flex-wrap gap-2" aria-label="Date range">
         {FINANCE_DATE_PRESETS.map((item) => {
           const active = filters.preset === item.preset;
-          const href = `/admin/finance${buildFinanceQueryString({
+          const href = `${basePath}${buildFinanceQueryString({
             courseId: filters.courseId,
             studentId: filters.studentId,
             paymentType: filters.paymentType,
@@ -71,7 +72,7 @@ export function FinanceDateFilter({ filters }: FinanceDateFilterProps) {
 
       <form
         method="get"
-        action="/admin/finance"
+        action={basePath}
         className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface p-4"
       >
         <input type="hidden" name="preset" value="custom" />

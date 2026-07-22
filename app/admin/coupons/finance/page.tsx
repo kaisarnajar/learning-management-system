@@ -65,7 +65,7 @@ export default async function FeeWaiverFinancePage({
 
       {/* ── Date Range Presets ──────────────────────────── */}
       <div className="mt-6">
-        <FinanceDateFilter filters={filters} />
+        <FinanceDateFilter filters={filters} basePath="/admin/coupons/finance" />
       </div>
 
       {/* ── Summary Statistics Cards ────────────────────── */}

@@ -65,7 +65,7 @@ export default async function AdminBookstoreFinancePage({
       </p>
 
       <div className="mt-6">
-        <FinanceDateFilter filters={filters} />
+        <FinanceDateFilter filters={filters} basePath="/admin/finance/bookstore" />
       </div>
 
       <div className="mt-6">

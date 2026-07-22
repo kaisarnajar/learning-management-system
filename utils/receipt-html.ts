@@ -68,6 +68,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
             <p class="text-sm text-slate-600 font-medium">
               Payment Method: <span class="font-bold text-slate-800">${payment.method}</span>
             </p>
+            ${payment.amount === 0 ? `<p class="text-xs text-emerald-700 font-bold uppercase mt-1">100% Fee Waived Off</p>` : ''}
           </div>
           
           <div class="absolute right-4 top-1/2 -translate-y-1/2 opacity-80">
@@ -78,7 +79,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
               <div class="text-center font-bold text-red-600 flex flex-col items-center justify-center z-10">
                 <span class="text-pdf-7 uppercase tracking-[0.15em] leading-tight mb-0.5">Darse Quran<br/>Academy</span>
                 <span class="w-7 border-t-pdf-hairline border-red-600 my-[2px]"></span>
-                <span class="text-pdf-9 uppercase tracking-wider leading-tight">Payment<br/>Successful</span>
+                <span class="text-pdf-9 uppercase tracking-wider leading-tight">${payment.amount === 0 ? 'Waiver<br/>Granted' : 'Payment<br/>Successful'}</span>
               </div>
             </div>
           </div>
@@ -98,6 +99,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
             <td class="py-3 px-4">
               <span class="font-bold block text-slate-800">${payment.courseName}</span>
               <span class="text-xs text-slate-500">${payment.typeLabel || (payment.courseName === 'Book Order' ? 'Books' : 'Course / Enrollment Fee')}</span>
+              ${payment.amount === 0 ? `<span class="inline-block mt-1 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">100% Fee Waived Off</span>` : ''}
             </td>
             <td class="py-3 px-4 text-right font-mono text-base text-slate-800">
               ${currencySymbol} ${(payment.baseAmount ?? (payment.amount - (payment.shippingAmount || 0))).toFixed(2)}
@@ -127,6 +129,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
             <td class="py-3 px-4 text-right font-bold text-base text-brand-primary-light" style="color: #1a4d2e;">Grand Total:</td>
             <td class="py-3 px-4 text-right font-bold font-mono text-lg text-brand-primary-light" style="color: #1a4d2e;">
               ${currencySymbol} ${payment.amount.toFixed(2)}
+              ${payment.amount === 0 ? `<div class="text-xs text-emerald-700 font-bold uppercase mt-0.5 font-sans">(100% Waived Off)</div>` : ''}
             </td>
           </tr>
         </tbody>

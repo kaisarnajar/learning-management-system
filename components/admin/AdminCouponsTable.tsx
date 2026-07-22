@@ -23,7 +23,6 @@ export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
             <th className="px-4 py-3 font-medium">Discount</th>
             <th className="px-4 py-3 font-medium">Valid Until</th>
             <th className="px-4 py-3 font-medium">Target</th>
-            <th className="px-4 py-3 font-medium">Status</th>
             <th className="px-4 py-3 font-medium text-right">Action</th>
           </tr>
         </thead>
@@ -59,17 +58,6 @@ export function AdminCouponsTable({ coupons }: { coupons: any[] }) {
                 <div className="text-xs font-medium text-primary mt-1">
                   Applies to: {c.applyToEnrollment && c.applyToCourse ? "Both Fees" : c.applyToEnrollment ? "Enrollment Only" : "Course Only"}
                 </div>
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap">
-                {c.isActive ? (
-                  <span className="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 border border-emerald-200">
-                    Active
-                  </span>
-                ) : (
-                  <span className="inline-flex items-center rounded-full bg-rose-50 px-2.5 py-0.5 text-xs font-medium text-rose-700 border border-rose-200">
-                    Inactive
-                  </span>
-                )}
               </td>
               <td className="px-4 py-3 text-right whitespace-nowrap">
                 <div className="flex justify-end gap-2">

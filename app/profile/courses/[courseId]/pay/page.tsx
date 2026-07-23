@@ -9,7 +9,7 @@ import { prisma } from "@/utils/prisma";
 import { isUpiConfigured } from "@/services/upi";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getFeeFrequencyLabel, getFeeFrequencySuffix } from "@/services/fee-frequency";
-import { getBestApplicableCoupon, calculateDiscountedAmount } from "@/services/coupons";
+import { getApplicableCoupons, calculateDiscountedAmount } from "@/services/coupons";
 import { getPaymentSettings } from "@/services/payment-settings";
 
 export default async function PayFeePage({
@@ -44,16 +44,16 @@ export default async function PayFeePage({
   }
 
   const originalFeePaise = getMonthlyFeePaise(course);
-  
-  const coupon = await getBestApplicableCoupon(session.user.id, courseId, "course");
-  const finalFeePaise = coupon
-    ? calculateDiscountedAmount(originalFeePaise, coupon.percentage)
+  const availableCoupons = await getApplicableCoupons(session.user.id, courseId, "course");
+  const topCoupon = availableCoupons.length > 0 ? availableCoupons[0] : null;
+  const initialFeePaise = topCoupon
+    ? calculateDiscountedAmount(originalFeePaise, topCoupon.percentage)
     : originalFeePaise;
 
   const feeFrequency = course.feeFrequency ?? "MONTHLY";
   const freqLabel = getFeeFrequencyLabel(feeFrequency);
   const freqSuffix = getFeeFrequencySuffix(feeFrequency);
-  const amountLabel = formatPrice(finalFeePaise);
+  const amountLabel = formatPrice(initialFeePaise);
 
   return (
     <div>
@@ -64,14 +64,13 @@ export default async function PayFeePage({
       <h2 className="mt-4 font-serif text-lg font-semibold text-foreground">Pay Fee</h2>
       <p className="mt-1 text-sm text-muted">{course.title}</p>
       <p className="mt-2 text-sm font-medium text-foreground">
-        {amountLabel} {freqSuffix} · <span className="text-muted">{freqLabel}</span>
-        {coupon && <span className="ml-2 text-xs text-green-600 line-through">{formatPrice(originalFeePaise)}</span>}
+        Standard Fee: {formatPrice(originalFeePaise)} {freqSuffix} · <span className="text-muted">{freqLabel}</span>
       </p>
 
       <div className="mx-auto mt-8 max-w-5xl space-y-8">
         <PaymentDetailsPanel
           amountLabel={amountLabel}
-          amountPaise={finalFeePaise}
+          amountPaise={initialFeePaise}
           paymentNote={`${course.title} — ${freqLabel}`.slice(0, 80)}
         />
         <div className="card-elevated p-6 sm:p-8">
@@ -82,13 +81,13 @@ export default async function PayFeePage({
           <div className="mt-6">
             <MonthlyPaymentForm
               courseId={course.id}
-              feePaise={finalFeePaise}
+              baseFeePaise={originalFeePaise}
               feeFrequency={feeFrequency}
-              couponInfo={coupon ? { code: coupon.code, percentage: coupon.percentage } : null}
+              availableCoupons={availableCoupons}
             />
           </div>
           
-          {paymentSettings?.feeWaiverEnabled && finalFeePaise > 0 && (
+          {paymentSettings?.feeWaiverEnabled && (
             <div className="mt-8 border-t border-border pt-6 text-center">
               <p className="text-sm text-muted mb-2">Are you unable to afford the fee?</p>
               <Link 

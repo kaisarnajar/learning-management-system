@@ -59,7 +59,8 @@ export async function processMonthlyPayment(
   paymentMethod: string | null,
   upiTransactionId: string | null,
   screenshotFile: File | null,
-  paymentType?: string
+  paymentType?: string,
+  couponId?: string | null
 ) {
   const course = await getCourseById(courseId);
   if (!course) return { error: "Course not found.", status: 404 };
@@ -96,8 +97,8 @@ export async function processMonthlyPayment(
 
   const baseAmountInrPaise = getMonthlyFeePaise(course);
   
-  const { getBestApplicableCoupon, calculateDiscountedAmount } = await import("@/services/coupons");
-  const coupon = await getBestApplicableCoupon(userId, courseId, "course");
+  const { getSelectedCoupon, calculateDiscountedAmount } = await import("@/services/coupons");
+  const coupon = await getSelectedCoupon(userId, courseId, "course", couponId);
   const amountInrPaise = coupon ? calculateDiscountedAmount(baseAmountInrPaise, coupon.percentage) : baseAmountInrPaise;
   const isFree = amountInrPaise === 0;
   const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
@@ -143,7 +144,8 @@ export async function processEnrollmentPayment(
   courseId: string,
   paymentMethod: string | null,
   upiTransactionId: string | null,
-  screenshotFile: File | null
+  screenshotFile: File | null,
+  couponId?: string | null
 ) {
   const course = await getCourseById(courseId);
   if (!course) return { error: "Course not found.", status: 404 };
@@ -179,8 +181,8 @@ export async function processEnrollmentPayment(
     };
   }
 
-  const { getBestApplicableCoupon, calculateDiscountedAmount } = await import("@/services/coupons");
-  const coupon = await getBestApplicableCoupon(userId, courseId, "enrollment");
+  const { getSelectedCoupon, calculateDiscountedAmount } = await import("@/services/coupons");
+  const coupon = await getSelectedCoupon(userId, courseId, "enrollment", couponId);
   const enrollmentFeePaise = coupon ? calculateDiscountedAmount(baseEnrollmentFeePaise, coupon.percentage) : baseEnrollmentFeePaise;
   const isFree = enrollmentFeePaise === 0;
   const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;

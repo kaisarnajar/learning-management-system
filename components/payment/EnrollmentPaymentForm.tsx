@@ -1,20 +1,30 @@
 "use client";
-import { SubmitButton } from "@/components/shared/SubmitButton";
 
+import { SubmitButton } from "@/components/shared/SubmitButton";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { submitEnrollmentPayment } from "@/app/actions/payments";
+import { CouponSelector } from "@/components/payment/CouponSelector";
+import { calculateDiscountedAmount, type ApplicableCoupon } from "@/services/coupons";
+import { formatPrice } from "@/services/courses";
 
 type PaymentMethod = "upi" | "bank";
 
 type EnrollmentPaymentFormProps = {
   courseId: string;
-  amountPaise: number;
-  couponInfo?: { code: string; percentage: number } | null;
+  baseFeePaise: number;
+  availableCoupons?: ApplicableCoupon[];
 };
 
-export function EnrollmentPaymentForm({ courseId, amountPaise, couponInfo }: EnrollmentPaymentFormProps) {
+export function EnrollmentPaymentForm({
+  courseId,
+  baseFeePaise,
+  availableCoupons = [],
+}: EnrollmentPaymentFormProps) {
   const router = useRouter();
+  const [selectedCouponId, setSelectedCouponId] = useState<string>(
+    availableCoupons.length > 0 ? availableCoupons[0].id : ""
+  );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
   const [transactionId, setTransactionId] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
@@ -22,7 +32,13 @@ export function EnrollmentPaymentForm({ courseId, amountPaise, couponInfo }: Enr
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const isFree = amountPaise === 0;
+  const selectedCoupon = availableCoupons.find((c) => c.id === selectedCouponId);
+  const currentPercentage = selectedCoupon ? selectedCoupon.percentage : 0;
+  const currentAmountPaise = selectedCoupon
+    ? calculateDiscountedAmount(baseFeePaise, currentPercentage)
+    : baseFeePaise;
+
+  const isFree = currentAmountPaise === 0;
 
   function handleClearScreenshot() {
     setScreenshot(null);
@@ -40,6 +56,9 @@ export function EnrollmentPaymentForm({ courseId, amountPaise, couponInfo }: Enr
     try {
       const formData = new FormData();
       formData.append("courseId", courseId);
+      if (selectedCouponId && selectedCouponId !== "none") {
+        formData.append("couponId", selectedCouponId);
+      }
       
       if (!isFree) {
         formData.append("paymentMethod", paymentMethod);
@@ -66,13 +85,30 @@ export function EnrollmentPaymentForm({ courseId, amountPaise, couponInfo }: Enr
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {couponInfo && (
-        <div className="rounded-md bg-green-50 p-4 border border-green-200">
-          <p className="text-sm font-medium text-green-800">
-            Coupon Applied: <span className="font-mono bg-white px-1 py-0.5 rounded border border-green-300">{couponInfo.code}</span>
-          </p>
-          <p className="text-sm text-green-700 mt-1">You get a {couponInfo.percentage}% discount!</p>
+      {/* Fee summary badge */}
+      <div className="flex items-center justify-between rounded-lg border border-border bg-background/50 px-4 py-3">
+        <span className="text-sm text-muted">
+          Enrollment Fee:
+        </span>
+        <div className="text-right">
+          <span className="text-sm font-bold text-foreground">
+            {currentAmountPaise === 0 ? "FREE" : formatPrice(currentAmountPaise)}
+          </span>
+          {selectedCoupon && currentAmountPaise < baseFeePaise && (
+            <span className="ml-2 text-xs text-muted line-through">
+              {formatPrice(baseFeePaise)}
+            </span>
+          )}
         </div>
+      </div>
+
+      {availableCoupons.length > 0 && (
+        <CouponSelector
+          coupons={availableCoupons}
+          selectedCouponId={selectedCouponId}
+          onSelectCoupon={(id) => setSelectedCouponId(id)}
+          baseFeePaise={baseFeePaise}
+        />
       )}
 
       {!isFree && (
@@ -153,7 +189,8 @@ export function EnrollmentPaymentForm({ courseId, amountPaise, couponInfo }: Enr
         </p>
       )}
 
-      <SubmitButton isSubmitting={loading}
+      <SubmitButton
+        isSubmitting={loading}
         type="submit"
         disabled={loading}
         className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-light transition-colors disabled:opacity-60"

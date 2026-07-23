@@ -9,7 +9,7 @@ import { hasPendingEnrollmentFeeSubmission } from "@/services/monthly-payments";
 import { prisma } from "@/utils/prisma";
 import { isUpiConfigured } from "@/services/upi";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { getBestApplicableCoupon, calculateDiscountedAmount } from "@/services/coupons";
+import { getApplicableCoupons, calculateDiscountedAmount } from "@/services/coupons";
 import { getPaymentSettings } from "@/services/payment-settings";
 
 export default async function PayEnrollmentFeePage({
@@ -53,12 +53,13 @@ export default async function PayEnrollmentFeePage({
     );
   }
 
-  const coupon = await getBestApplicableCoupon(session.user.id, courseId, "enrollment");
-  const finalEnrollmentFeePaise = coupon 
-    ? calculateDiscountedAmount(originalEnrollmentFeePaise, coupon.percentage)
+  const availableCoupons = await getApplicableCoupons(session.user.id, courseId, "enrollment");
+  const topCoupon = availableCoupons.length > 0 ? availableCoupons[0] : null;
+  const initialEnrollmentFeePaise = topCoupon 
+    ? calculateDiscountedAmount(originalEnrollmentFeePaise, topCoupon.percentage)
     : originalEnrollmentFeePaise;
 
-  const amountLabel = formatPrice(finalEnrollmentFeePaise);
+  const amountLabel = formatPrice(initialEnrollmentFeePaise);
 
   return (
     <div>
@@ -69,14 +70,13 @@ export default async function PayEnrollmentFeePage({
       <h2 className="mt-4 font-serif text-lg font-semibold text-foreground">Pay enrollment fee</h2>
       <p className="mt-1 text-sm text-muted">{course.title}</p>
       <p className="mt-2 text-sm font-medium text-foreground">
-        Amount: {amountLabel}
-        {coupon && <span className="ml-2 text-xs text-green-600 line-through">{formatPrice(originalEnrollmentFeePaise)}</span>}
+        Standard Enrollment Fee: {formatPrice(originalEnrollmentFeePaise)}
       </p>
 
       <div className="mx-auto mt-8 max-w-5xl space-y-8">
         <PaymentDetailsPanel
           amountLabel={amountLabel}
-          amountPaise={finalEnrollmentFeePaise}
+          amountPaise={initialEnrollmentFeePaise}
           paymentNote={`${course.title} enrollment`.slice(0, 80)}
         />
         <div className="card-elevated p-6 sm:p-8">
@@ -88,12 +88,12 @@ export default async function PayEnrollmentFeePage({
           <div className="mt-6">
             <EnrollmentPaymentForm 
               courseId={course.id} 
-              amountPaise={finalEnrollmentFeePaise}
-              couponInfo={coupon ? { code: coupon.code, percentage: coupon.percentage } : null}
+              baseFeePaise={originalEnrollmentFeePaise}
+              availableCoupons={availableCoupons}
             />
           </div>
           
-          {paymentSettings?.feeWaiverEnabled && finalEnrollmentFeePaise > 0 && (
+          {paymentSettings?.feeWaiverEnabled && (
             <div className="mt-8 border-t border-border pt-6 text-center">
               <p className="text-sm text-muted mb-2">Are you unable to afford the enrollment fee?</p>
               <Link 

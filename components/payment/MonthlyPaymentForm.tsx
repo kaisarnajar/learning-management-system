@@ -1,11 +1,14 @@
 "use client";
-import { SubmitButton } from "@/components/shared/SubmitButton";
 
+import { SubmitButton } from "@/components/shared/SubmitButton";
 import { getPaymentYearOptions } from "@/services/monthly-payments";
 import { getFeeFrequencyOption, isOneTimeFee, getFeeFrequencyLabel } from "@/services/fee-frequency";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { submitMonthlyPayment } from "@/app/actions/payments";
+import { CouponSelector } from "@/components/payment/CouponSelector";
+import { calculateDiscountedAmount, type ApplicableCoupon } from "@/services/coupons";
+import { formatPrice } from "@/services/courses";
 
 type PaymentMethod = "upi" | "bank";
 
@@ -26,22 +29,20 @@ const MONTHS = [
 
 type MonthlyPaymentFormProps = {
   courseId: string;
-  /** Base fee amount in paise for the configured billing period. */
-  feePaise: number;
-  /** The course's configured fee frequency (e.g. "MONTHLY", "EVERY_3_MONTHS"). */
+  baseFeePaise: number;
   feeFrequency?: string | null;
   defaultMonth?: string;
   defaultYear?: string;
-  couponInfo?: { code: string; percentage: number } | null;
+  availableCoupons?: ApplicableCoupon[];
 };
 
 export function MonthlyPaymentForm({
   courseId,
-  feePaise,
+  baseFeePaise,
   feeFrequency,
   defaultMonth,
   defaultYear,
-  couponInfo,
+  availableCoupons = [],
 }: MonthlyPaymentFormProps) {
   const router = useRouter();
   const now = new Date();
@@ -52,6 +53,9 @@ export function MonthlyPaymentForm({
   const freqOption = getFeeFrequencyOption(feeFrequency);
   const isOneTime = isOneTimeFee(feeFrequency);
 
+  const [selectedCouponId, setSelectedCouponId] = useState<string>(
+    availableCoupons.length > 0 ? availableCoupons[0].id : ""
+  );
   const [paymentMonth, setPaymentMonth] = useState(defaultMonth ?? String(now.getMonth() + 1).padStart(2, "0"));
   const [paymentYear, setPaymentYear] = useState(defaultYearValue);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
@@ -61,8 +65,12 @@ export function MonthlyPaymentForm({
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  // Amount is the base fee — multiplier already baked in at the course level
-  const totalAmountPaise = feePaise;
+  const selectedCoupon = availableCoupons.find((c) => c.id === selectedCouponId);
+  const currentPercentage = selectedCoupon ? selectedCoupon.percentage : 0;
+  const totalAmountPaise = selectedCoupon
+    ? calculateDiscountedAmount(baseFeePaise, currentPercentage)
+    : baseFeePaise;
+
   const isFree = totalAmountPaise === 0;
 
   function handleClearScreenshot() {
@@ -84,6 +92,9 @@ export function MonthlyPaymentForm({
       formData.append("paymentMonth", isOneTime ? "01" : paymentMonth);
       formData.append("paymentYear", isOneTime ? String(now.getFullYear()) : paymentYear);
       formData.append("paymentType", freqOption.paymentType);
+      if (selectedCouponId && selectedCouponId !== "none") {
+        formData.append("couponId", selectedCouponId);
+      }
       
       if (!isFree) {
         formData.append("paymentMethod", paymentMethod);
@@ -115,18 +126,25 @@ export function MonthlyPaymentForm({
         <span className="text-sm text-muted">
           Fee type: <span className="font-semibold text-foreground">{getFeeFrequencyLabel(feeFrequency)}</span>
         </span>
-        <span className="text-sm font-bold text-foreground">
-          ₹{(totalAmountPaise / 100).toFixed(2)}
-        </span>
+        <div className="text-right">
+          <span className="text-sm font-bold text-foreground">
+            {totalAmountPaise === 0 ? "FREE" : formatPrice(totalAmountPaise)}
+          </span>
+          {selectedCoupon && totalAmountPaise < baseFeePaise && (
+            <span className="ml-2 text-xs text-muted line-through">
+              {formatPrice(baseFeePaise)}
+            </span>
+          )}
+        </div>
       </div>
 
-      {couponInfo && (
-        <div className="rounded-md bg-green-50 p-4 border border-green-200">
-          <p className="text-sm font-medium text-green-800">
-            Coupon Applied: <span className="font-mono bg-white px-1 py-0.5 rounded border border-green-300">{couponInfo.code}</span>
-          </p>
-          <p className="text-sm text-green-700 mt-1">You get a {couponInfo.percentage}% discount!</p>
-        </div>
+      {availableCoupons.length > 0 && (
+        <CouponSelector
+          coupons={availableCoupons}
+          selectedCouponId={selectedCouponId}
+          onSelectCoupon={(id) => setSelectedCouponId(id)}
+          baseFeePaise={baseFeePaise}
+        />
       )}
 
       {/* Month / year pickers — only for recurring fees */}
@@ -249,7 +267,8 @@ export function MonthlyPaymentForm({
         </p>
       )}
 
-      <SubmitButton isSubmitting={loading}
+      <SubmitButton
+        isSubmitting={loading}
         type="submit"
         disabled={loading}
         className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white hover:bg-primary-light transition-colors disabled:opacity-60"

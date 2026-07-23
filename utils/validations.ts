@@ -148,6 +148,7 @@ export const monthlyPaymentSubmitSchema = z.object({
     .or(z.literal(""))
     .or(z.null()),
   paymentType: z.enum(["monthly", "quarterly", "half_yearly", "yearly", "one_time"]).optional().default("monthly"),
+  couponId: z.string().optional().or(z.literal("")).or(z.null()),
 });
 
 export const enrollmentPaymentSubmitSchema = z.object({
@@ -160,6 +161,7 @@ export const enrollmentPaymentSubmitSchema = z.object({
     .optional()
     .or(z.literal(""))
     .or(z.null()),
+  couponId: z.string().optional().or(z.literal("")).or(z.null()),
 });
 
 export const occupationEnum = z.enum(OCCUPATION_VALUES);

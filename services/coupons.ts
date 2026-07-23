@@ -1,8 +1,22 @@
 import { prisma } from "@/utils/prisma";
 
-export async function getBestApplicableCoupon(userId: string, courseId: string, feeType?: "enrollment" | "course") {
+export type ApplicableCoupon = {
+  id: string;
+  code: string;
+  percentage: number;
+  type: "DEFAULT" | "SPECIAL";
+  validUntil: Date;
+  applyToEnrollment: boolean;
+  applyToCourse: boolean;
+};
+
+export async function getApplicableCoupons(
+  userId: string,
+  courseId: string,
+  feeType?: "enrollment" | "course"
+): Promise<ApplicableCoupon[]> {
   const settings = await prisma.paymentSettings.findUnique({ where: { id: "default" } });
-  if (!settings?.feeWaiverEnabled) return null;
+  if (!settings?.feeWaiverEnabled) return [];
 
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -11,7 +25,7 @@ export async function getBestApplicableCoupon(userId: string, courseId: string, 
 
   const now = new Date();
 
-  // Find all active coupons
+  // Find all active coupons matching date and course/feeType
   const coupons = await prisma.coupon.findMany({
     where: {
       isActive: true,
@@ -24,44 +38,70 @@ export async function getBestApplicableCoupon(userId: string, courseId: string, 
       ...(feeType === "enrollment" ? { applyToEnrollment: true } : {}),
       ...(feeType === "course" ? { applyToCourse: true } : {}),
     },
+    orderBy: [
+      { percentage: "desc" },
+      { createdAt: "desc" },
+    ],
   });
 
-  const applicableCoupons = [];
-  let totalPercentage = 0;
+  const applicableCoupons: ApplicableCoupon[] = [];
 
   for (const coupon of coupons) {
     let applicable = false;
 
     if (coupon.type === "SPECIAL") {
-      // Must match userId
       if (coupon.userId === userId) applicable = true;
     } else {
-      // DEFAULT coupon
       if (!coupon.gender || coupon.gender === user?.gender) {
         applicable = true;
       }
     }
 
     if (applicable) {
-      applicableCoupons.push(coupon);
-      totalPercentage += coupon.percentage;
+      applicableCoupons.push({
+        id: coupon.id,
+        code: coupon.code,
+        percentage: coupon.percentage,
+        type: coupon.type as "DEFAULT" | "SPECIAL",
+        validUntil: coupon.validUntil,
+        applyToEnrollment: coupon.applyToEnrollment,
+        applyToCourse: coupon.applyToCourse,
+      });
     }
   }
 
+  return applicableCoupons;
+}
+
+export async function getSelectedCoupon(
+  userId: string,
+  courseId: string,
+  feeType?: "enrollment" | "course",
+  couponId?: string | null
+): Promise<ApplicableCoupon | null> {
+  const applicableCoupons = await getApplicableCoupons(userId, courseId, feeType);
   if (applicableCoupons.length === 0) return null;
 
-  const combinedPercentage = Math.min(100, totalPercentage);
-  const displayCode =
-    applicableCoupons.length === 1
-      ? applicableCoupons[0].code
-      : applicableCoupons.map((c) => c.code).join(" + ");
+  if (couponId === "none" || couponId === "") {
+    return null;
+  }
 
-  return {
-    id: applicableCoupons.map((c) => c.id).join(","),
-    code: displayCode,
-    percentage: combinedPercentage,
-    coupons: applicableCoupons,
-  };
+  if (couponId) {
+    const found = applicableCoupons.find((c) => c.id === couponId || c.code === couponId);
+    if (found) return found;
+  }
+
+  // Default to highest discount coupon if not specified
+  return applicableCoupons[0];
+}
+
+/** Backwards-compatible helper returning the selected or default top coupon. */
+export async function getBestApplicableCoupon(
+  userId: string,
+  courseId: string,
+  feeType?: "enrollment" | "course"
+) {
+  return getSelectedCoupon(userId, courseId, feeType);
 }
 
 export function calculateDiscountedAmount(originalPaise: number, percentage: number): number {

@@ -144,3 +144,103 @@ export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<Emai
     ],
   });
 }
+
+export type FeeWaiverApprovedEmailParams = {
+  to: string;
+  studentName: string;
+  courseTitle: string;
+  couponCode: string;
+  percentage: number;
+  validUntil: string;
+  feeTypeLabel: string;
+  actionUrl: string;
+};
+
+export async function sendFeeWaiverApprovedEmail(params: FeeWaiverApprovedEmailParams): Promise<EmailSendResult> {
+  const { to, studentName, courseTitle, couponCode, percentage, validUntil, feeTypeLabel, actionUrl } = params;
+  const displayName = studentName || "Student";
+
+  const subject = `Fee waiver request approved (${percentage}% OFF) — ${courseTitle}`;
+  const preview = `Good news! Your fee waiver request for "${courseTitle}" has been approved. Coupon code: ${couponCode}`;
+
+  const text = [
+    `Assalamu Alaikum ${displayName},`,
+    "",
+    `Good news! Your fee waiver request for "${courseTitle}" has been approved by ${BRAND_CONFIG.name}.`,
+    "",
+    `Coupon Details:`,
+    `- Coupon Code: ${couponCode}`,
+    `- Discount: ${percentage}% OFF`,
+    `- Applies To: ${feeTypeLabel}`,
+    `- Valid Until: ${validUntil}`,
+    "",
+    "You can use this coupon code when enrolling or paying fees for your course:",
+    actionUrl,
+    "",
+    "May Allah make your learning journey blessed for you. Jazakallah Khair!",
+    "",
+    `${BRAND_CONFIG.name}`,
+  ].join("\n");
+
+  const bodyHtml = `
+    ${EmailGreeting({ name: displayName })}
+    <p>Good news! Your fee waiver request for <strong>${courseTitle}</strong> has been <strong style="color:#166534;">approved</strong> by ${BRAND_CONFIG.name}.</p>
+    ${EmailInfoCard({
+      title: "Fee Waiver Coupon Approved",
+      items: [
+        { label: "Coupon Code", value: couponCode },
+        { label: "Discount", value: `${percentage}% OFF` },
+        { label: "Applies To", value: feeTypeLabel },
+        { label: "Valid Until", value: validUntil },
+      ],
+      borderColor: "#16a34a",
+      bgColor: "#f0fdf4",
+      titleColor: "#166534",
+    })}
+    <p>Your special coupon code is ready to use. Click below to view your course and claim your discount:</p>
+    ${EmailButton({ href: actionUrl, label: "View Course & Claim Waiver", color: "#166534" })}
+    ${EmailFallbackLink({ href: actionUrl })}
+    <p style="font-size:13px;color:#6b7280;margin-top:16px;">May Allah make this learning journey blessed for you. Jazakallah Khair!</p>
+  `;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, preview: actionUrl, priority: "high" });
+}
+
+export type FeeWaiverRejectedEmailParams = {
+  to: string;
+  studentName: string;
+  courseTitle: string;
+  courseUrl: string;
+};
+
+export async function sendFeeWaiverRejectedEmail(params: FeeWaiverRejectedEmailParams): Promise<EmailSendResult> {
+  const { to, studentName, courseTitle, courseUrl } = params;
+  const displayName = studentName || "Student";
+
+  const subject = `Fee waiver request update — ${courseTitle}`;
+  const preview = `Your fee waiver request for "${courseTitle}" was not approved. Please contact us if you have questions.`;
+
+  const text = [
+    `Assalamu Alaikum ${displayName},`,
+    "",
+    `Your fee waiver request for "${courseTitle}" was not approved by ${BRAND_CONFIG.name} at this time.`,
+    "",
+    "If you believe this was a mistake or need financial assistance options, please feel free to contact us.",
+    "",
+    `${BRAND_CONFIG.name}`,
+  ].join("\n");
+
+  const bodyHtml = `
+    ${EmailGreeting({ name: displayName })}
+    <p>Your fee waiver request for <strong>${courseTitle}</strong> was not approved by ${BRAND_CONFIG.name} at this time.</p>
+    <p>If you believe this was a mistake or need financial assistance options, please feel free to reply to this email or contact our support team.</p>
+    ${courseUrl ? EmailButton({ href: courseUrl, label: "View Courses", color: "#3730a3" }) : ""}
+    ${courseUrl ? EmailFallbackLink({ href: courseUrl }) : ""}
+  `;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html });
+}

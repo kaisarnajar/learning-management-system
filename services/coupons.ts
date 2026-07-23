@@ -42,8 +42,8 @@ export async function getApplicableCoupons(
   ]);
 
   const usedCouponIds = new Set<string>([
-    ...usedUsages.map((u) => u.couponId),
-    ...usedSubmissions.map((s) => s.couponId!).filter(Boolean),
+    ...usedUsages.map((u: { couponId: string }) => u.couponId),
+    ...usedSubmissions.map((s: { couponId: string | null }) => s.couponId!).filter(Boolean),
   ]);
 
   // Find all active coupons matching date and course/feeType

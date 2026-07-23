@@ -25,6 +25,27 @@ export async function getApplicableCoupons(
 
   const now = new Date();
 
+  // Find all coupons already used by this student
+  const [usedUsages, usedSubmissions] = await Promise.all([
+    prisma.couponUsage.findMany({
+      where: { userId },
+      select: { couponId: true },
+    }),
+    prisma.coursePaymentSubmission.findMany({
+      where: {
+        userId,
+        couponId: { not: null },
+        status: { in: ["pending_verification", "approved"] },
+      },
+      select: { couponId: true },
+    }),
+  ]);
+
+  const usedCouponIds = new Set<string>([
+    ...usedUsages.map((u) => u.couponId),
+    ...usedSubmissions.map((s) => s.couponId!).filter(Boolean),
+  ]);
+
   // Find all active coupons matching date and course/feeType
   const coupons = await prisma.coupon.findMany({
     where: {
@@ -47,6 +68,10 @@ export async function getApplicableCoupons(
   const applicableCoupons: ApplicableCoupon[] = [];
 
   for (const coupon of coupons) {
+    if (usedCouponIds.has(coupon.id)) {
+      continue; // Coupon already used by this user
+    }
+
     let applicable = false;
 
     if (coupon.type === "SPECIAL") {
@@ -102,6 +127,29 @@ export async function getBestApplicableCoupon(
   feeType?: "enrollment" | "course"
 ) {
   return getSelectedCoupon(userId, courseId, feeType);
+}
+
+export async function recordCouponUsage(userId: string, couponId: string) {
+  try {
+    await prisma.couponUsage.upsert({
+      where: { couponId_userId: { couponId, userId } },
+      create: { couponId, userId },
+      update: {},
+    });
+    // For SPECIAL coupons, mark as inactive once used
+    const coupon = await prisma.coupon.findUnique({
+      where: { id: couponId },
+      select: { type: true },
+    });
+    if (coupon?.type === "SPECIAL") {
+      await prisma.coupon.update({
+        where: { id: couponId },
+        data: { isActive: false },
+      });
+    }
+  } catch (e) {
+    console.error("Error recording coupon usage:", e);
+  }
 }
 
 export function calculateDiscountedAmount(originalPaise: number, percentage: number): number {

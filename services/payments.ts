@@ -97,7 +97,7 @@ export async function processMonthlyPayment(
 
   const baseAmountInrPaise = getMonthlyFeePaise(course);
   
-  const { getSelectedCoupon, calculateDiscountedAmount } = await import("@/services/coupons");
+  const { getSelectedCoupon, calculateDiscountedAmount, recordCouponUsage } = await import("@/services/coupons");
   const coupon = await getSelectedCoupon(userId, courseId, "course", couponId);
   const amountInrPaise = coupon ? calculateDiscountedAmount(baseAmountInrPaise, coupon.percentage) : baseAmountInrPaise;
   const isFree = amountInrPaise === 0;
@@ -113,9 +113,14 @@ export async function processMonthlyPayment(
     paymentMethod: isFree ? "waiver" : paymentMethod,
     upiTransactionId: isFree ? "FEE-WAIVER" : upiTransactionId,
     screenshotFile: isFree ? null : screenshotFile,
+    couponId: coupon?.id,
   });
 
   if (submissionResult.error) return { error: submissionResult.error, status: 400 };
+
+  if (coupon) {
+    await recordCouponUsage(userId, coupon.id);
+  }
 
   if (isFree && submissionResult.createdId) {
     // Auto-create PaymentRecord for 100% waiver
@@ -181,7 +186,7 @@ export async function processEnrollmentPayment(
     };
   }
 
-  const { getSelectedCoupon, calculateDiscountedAmount } = await import("@/services/coupons");
+  const { getSelectedCoupon, calculateDiscountedAmount, recordCouponUsage } = await import("@/services/coupons");
   const coupon = await getSelectedCoupon(userId, courseId, "enrollment", couponId);
   const enrollmentFeePaise = coupon ? calculateDiscountedAmount(baseEnrollmentFeePaise, coupon.percentage) : baseEnrollmentFeePaise;
   const isFree = enrollmentFeePaise === 0;
@@ -216,9 +221,14 @@ export async function processEnrollmentPayment(
         status: isFree ? MONTHLY_PAYMENT_APPROVED : MONTHLY_PAYMENT_PENDING,
         paymentMethod: isFree ? "waiver" : paymentMethod,
         upiTransactionId: isFree ? "FEE-WAIVER" : upiTransactionId,
+        couponId: coupon?.id || null,
       },
     });
   });
+
+  if (coupon) {
+    await recordCouponUsage(userId, coupon.id);
+  }
 
   await prisma.coursePaymentSubmission.update({
     where: { id: created.id },

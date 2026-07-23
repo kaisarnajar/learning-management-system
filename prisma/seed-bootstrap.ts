@@ -171,6 +171,8 @@ export async function seedBootstrap(prisma: PrismaClient) {
       bankAccountNumber: "123456789012",
       bankIfsc: "SBIN0001234",
       bankBranch: "Srinagar Main Branch",
+      feeWaiverEnabled: true,
+      includeGstByDefault: false,
     },
     update: {
       upiId: "darsequran.demo@oksbi",
@@ -181,8 +183,54 @@ export async function seedBootstrap(prisma: PrismaClient) {
       bankAccountNumber: "123456789012",
       bankIfsc: "SBIN0001234",
       bankBranch: "Srinagar Main Branch",
+      feeWaiverEnabled: true,
+      includeGstByDefault: false,
     },
   });
+
+  const defaultCoupons = [
+    {
+      id: "coupon-welcome50",
+      code: "WELCOME50",
+      type: "DEFAULT" as const,
+      percentage: 50,
+      validFrom: new Date("2026-01-01T00:00:00.000Z"),
+      validUntil: new Date("2027-12-31T23:59:59.000Z"),
+      applyToEnrollment: true,
+      applyToCourse: true,
+      isActive: true,
+    },
+    {
+      id: "coupon-earlybird20",
+      code: "EARLYBIRD20",
+      type: "DEFAULT" as const,
+      percentage: 20,
+      validFrom: new Date("2026-01-01T00:00:00.000Z"),
+      validUntil: new Date("2027-12-31T23:59:59.000Z"),
+      applyToEnrollment: false,
+      applyToCourse: true,
+      isActive: true,
+    },
+    {
+      id: "coupon-scholarship100",
+      code: "SCHOLARSHIP100",
+      type: "DEFAULT" as const,
+      percentage: 100,
+      validFrom: new Date("2026-01-01T00:00:00.000Z"),
+      validUntil: new Date("2027-12-31T23:59:59.000Z"),
+      applyToEnrollment: true,
+      applyToCourse: true,
+      isActive: true,
+    },
+  ];
+
+  for (const c of defaultCoupons) {
+    await prisma.coupon.upsert({
+      where: { code: c.code },
+      create: c,
+      update: c,
+    });
+  }
 
   const shippingSlabs = [
     { id: "slab-1", minWeightGrams: 0, maxWeightGrams: 500, chargeInrPaise: 5000 },

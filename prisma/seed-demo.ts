@@ -65,9 +65,56 @@ async function assertDatabaseMigrated() {
   }
 }
 
+async function clearDatabase(prisma: PrismaClient) {
+  console.log("Removing all current data from database...");
+  const db = prisma as any;
+
+  await prisma.$transaction([
+    db.couponUsage.deleteMany(),
+    db.couponRequest.deleteMany(),
+    db.coupon.deleteMany(),
+    db.bookOrderItem.deleteMany(),
+    db.bookOrder.deleteMany(),
+    db.shippingChargeSlab.deleteMany(),
+    db.book.deleteMany(),
+    db.courseGradeRecord.deleteMany(),
+    db.courseGrade.deleteMany(),
+    db.courseAttendanceRecord.deleteMany(),
+    db.courseAttendance.deleteMany(),
+    db.libraryItem.deleteMany(),
+    db.studentReview.deleteMany(),
+    db.dailyInspiration.deleteMany(),
+    db.blogComment.deleteMany(),
+    db.blogLike.deleteMany(),
+    db.blogImage.deleteMany(),
+    db.blogPost.deleteMany(),
+    db.siteAnnouncementImage.deleteMany(),
+    db.siteAnnouncement.deleteMany(),
+    db.courseAnnouncement.deleteMany(),
+    db.expense.deleteMany(),
+    db.coursePaymentSubmission.deleteMany(),
+    db.paymentRecord.deleteMany(),
+    db.studentNotification.deleteMany(),
+    db.enrollment.deleteMany(),
+    db.course.deleteMany(),
+    db.teacher.deleteMany(),
+    db.contactInquiry.deleteMany(),
+    db.fatwaQuestion.deleteMany(),
+    db.account.deleteMany(),
+    db.session.deleteMany(),
+    db.passwordResetToken.deleteMany(),
+    db.verificationToken.deleteMany(),
+    db.user.deleteMany(),
+    db.paymentSettings.deleteMany(),
+  ]);
+
+  console.log("Database cleared successfully.");
+}
+
 async function main() {
   assertDemoSeedAllowed();
   await assertDatabaseMigrated();
+  await clearDatabase(prisma);
 
   await seedBootstrap(prisma);
   await seedDemoAdmins(prisma);

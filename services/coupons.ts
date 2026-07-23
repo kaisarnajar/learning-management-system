@@ -24,14 +24,15 @@ export async function getApplicableCoupons(
   });
 
   const now = new Date();
+  const db = prisma as any;
 
   // Find all coupons already used by this student
   const [usedUsages, usedSubmissions] = await Promise.all([
-    prisma.couponUsage.findMany({
+    db.couponUsage.findMany({
       where: { userId },
       select: { couponId: true },
     }),
-    prisma.coursePaymentSubmission.findMany({
+    db.coursePaymentSubmission.findMany({
       where: {
         userId,
         couponId: { not: null },
@@ -131,7 +132,7 @@ export async function getBestApplicableCoupon(
 
 export async function recordCouponUsage(userId: string, couponId: string) {
   try {
-    await prisma.couponUsage.upsert({
+    await (prisma as any).couponUsage.upsert({
       where: { couponId_userId: { couponId, userId } },
       create: { couponId, userId },
       update: {},

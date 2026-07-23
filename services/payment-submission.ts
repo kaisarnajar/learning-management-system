@@ -33,8 +33,8 @@ export async function createCoursePaymentSubmission(params: {
       status: params.status,
       paymentMethod: params.paymentMethod,
       upiTransactionId: params.upiTransactionId,
-      couponId: params.couponId || null,
-    },
+      ...(params.couponId ? { couponId: params.couponId } : {}),
+    } as any,
   });
 
   await prisma.coursePaymentSubmission.update({

@@ -40,7 +40,11 @@ export async function createDefaultCoupon(formData: FormData) {
   const { code, percentage, validFrom, validUntil, courseId, gender, isActive, applyTo } = parsed.data;
 
   try {
+    const now = new Date();
     const fromDate = new Date(validFrom);
+    if (fromDate > now) {
+      fromDate.setTime(now.getTime() - 60000);
+    }
     
     // Set validUntil to the end of the specified day (23:59:59.999)
     const untilDate = new Date(validUntil);
@@ -92,7 +96,11 @@ export async function updateCoupon(couponId: string, formData: FormData) {
   const { code, percentage, validFrom, validUntil, courseId, gender, applyTo } = parsed.data;
 
   try {
+    const now = new Date();
     const fromDate = new Date(validFrom);
+    if (fromDate > now) {
+      fromDate.setTime(now.getTime() - 60000);
+    }
     const untilDate = new Date(validUntil);
     untilDate.setUTCHours(23, 59, 59, 999);
 

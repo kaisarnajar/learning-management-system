@@ -113,6 +113,7 @@ export function CreateCouponDialog({ courses }: { courses: CourseOption[] }) {
                 required
                 type="date"
                 name="validUntil"
+                defaultValue={format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd")}
                 className={inputClassName}
               />
             </div>

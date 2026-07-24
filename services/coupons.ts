@@ -25,6 +25,8 @@ export async function getApplicableCoupons(
   });
 
   const now = new Date();
+  // Account for timezones ahead of UTC (e.g. IST +5:30) where local date is today but UTC is previous day
+  const timezoneBuffer = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const db = prisma as any;
 
   // Find all coupons already used by this student
@@ -52,7 +54,7 @@ export async function getApplicableCoupons(
   const coupons = await prisma.coupon.findMany({
     where: {
       isActive: true,
-      validFrom: { lte: now },
+      validFrom: { lte: timezoneBuffer },
       validUntil: { gte: now },
       OR: [
         { courseId: courseId },

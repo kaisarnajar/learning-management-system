@@ -60,7 +60,7 @@ async function AdminEnrollmentsList({ params, q }: { params: PageParams; q?: str
 
   const tabs = [
     { label: "Free Enrollment Requests", value: "free_requests" as TabType, count: freeTotalCount, showBadge: true },
-    { label: "Paid Courses Awaiting Fee", value: "paid_awaiting" as TabType, count: paidTotalCount, showBadge: true },
+    { label: "Paid Courses Awaiting Fee", value: "paid_awaiting" as TabType, count: paidTotalCount, showBadge: false },
   ];
 
   return (
@@ -148,7 +148,7 @@ async function AdminEnrollmentsList({ params, q }: { params: PageParams; q?: str
                     : "No paid enrollments awaiting student payment."
                 }
                 showApprove={false}
-                showReject={false}
+                showReject={true}
               />
             </div>
           </>

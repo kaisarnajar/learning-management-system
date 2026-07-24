@@ -136,7 +136,7 @@ export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {
                     )}
                     <DeleteActionButton
                       action={deleteCouponRequest.bind(null, r.id)}
-                      itemName={`Waiver Request for ${r.user?.name || "Student"}`}
+                      itemName={`waiver request for ${r.user?.name || "Student"}`}
                       className={adminDestructiveButtonClassName}
                     />
                   </div>

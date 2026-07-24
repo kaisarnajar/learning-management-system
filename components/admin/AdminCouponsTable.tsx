@@ -4,6 +4,7 @@ import { format } from "date-fns";
 import { deleteCoupon } from "@/app/admin/coupons/actions";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { EditCouponDialog } from "@/components/admin/EditCouponDialog";
+import { adminDestructiveButtonClassName } from "@/utils/form";
 
 type CourseOption = {
   id: string;
@@ -72,11 +73,12 @@ export function AdminCouponsTable({
                 </div>
               </td>
               <td className="px-4 py-3 text-right whitespace-nowrap">
-                <div className="flex justify-end gap-2">
+                <div className="flex items-center justify-end gap-2">
                   <EditCouponDialog coupon={c} courses={courses} />
                   <DeleteActionButton
                     action={deleteCoupon.bind(null, c.id)}
                     itemName={c.code}
+                    className={adminDestructiveButtonClassName}
                   />
                 </div>
               </td>

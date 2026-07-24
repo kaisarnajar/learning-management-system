@@ -2,9 +2,10 @@
 
 import { format } from "date-fns";
 import { useState, useTransition, useRef, useEffect } from "react";
-import { approveCouponRequest, rejectCouponRequest } from "@/app/admin/coupons/actions";
+import { approveCouponRequest, rejectCouponRequest, deleteCouponRequest } from "@/app/admin/coupons/actions";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
+import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { useToast } from "@/components/shared/ToastProvider";
 import { adminActionButtonClassName, adminDestructiveButtonClassName, inputClassName, labelClassName } from "@/utils/form";
 
@@ -98,40 +99,47 @@ export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-right whitespace-nowrap">
-                  {r.status === "PENDING" && (
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => setSelectedRequest(r)}
-                        className={adminActionButtonClassName}
-                        disabled={isPending}
-                      >
-                        Approve
-                      </button>
-                      <ConfirmationModal
-                        title="Reject Fee Waiver Request"
-                        description="Are you sure you want to reject this request?"
-                        actionLabel="Reject"
-                        variant="destructive"
-                        onConfirm={async () => {
-                          const res = await rejectCouponRequest(r.id);
-                          if (res?.error) {
-                            addToast(res.error, "error");
-                          } else {
-                            addToast("Fee waiver request rejected.", "info");
+                  <div className="flex items-center justify-end gap-2">
+                    {r.status === "PENDING" && (
+                      <>
+                        <button
+                          onClick={() => setSelectedRequest(r)}
+                          className={adminActionButtonClassName}
+                          disabled={isPending}
+                        >
+                          Approve
+                        </button>
+                        <ConfirmationModal
+                          title="Reject Fee Waiver Request"
+                          description="Are you sure you want to reject this request?"
+                          actionLabel="Reject"
+                          variant="destructive"
+                          onConfirm={async () => {
+                            const res = await rejectCouponRequest(r.id);
+                            if (res?.error) {
+                              addToast(res.error, "error");
+                            } else {
+                              addToast("Fee waiver request rejected.", "info");
+                            }
+                          }}
+                          trigger={
+                            <button
+                              type="button"
+                              className={adminDestructiveButtonClassName}
+                              disabled={isPending}
+                            >
+                              Reject
+                            </button>
                           }
-                        }}
-                        trigger={
-                          <button
-                            type="button"
-                            className={adminDestructiveButtonClassName}
-                            disabled={isPending}
-                          >
-                            Reject
-                          </button>
-                        }
-                      />
-                    </div>
-                  )}
+                        />
+                      </>
+                    )}
+                    <DeleteActionButton
+                      action={deleteCouponRequest.bind(null, r.id)}
+                      itemName={`Waiver Request for ${r.user?.name || "Student"}`}
+                      className={adminDestructiveButtonClassName}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}

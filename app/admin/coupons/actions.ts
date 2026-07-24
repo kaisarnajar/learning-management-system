@@ -279,3 +279,76 @@ export async function rejectCouponRequest(requestId: string) {
     return { error: "Failed to reject request." };
   }
 }
+
+export async function deleteCouponRequest(requestId: string) {
+  await requireAdmin();
+
+  const request = await prisma.couponRequest.findUnique({
+    where: { id: requestId },
+    select: { id: true, couponId: true, userId: true, courseId: true },
+  });
+
+  if (!request) return { error: "Request not found." };
+
+  try {
+    await prisma.$transaction(async (tx: any) => {
+      // If there's a coupon associated with this request
+      if (request.couponId) {
+        // Find payment submissions linked to this couponId
+        const submissions = await tx.coursePaymentSubmission.findMany({
+          where: { couponId: request.couponId },
+          select: { id: true, paymentRecordId: true },
+        });
+
+        const submissionIds = submissions.map((s: { id: string }) => s.id);
+        const paymentRecordIds = submissions
+          .map((s: { paymentRecordId: string | null }) => s.paymentRecordId)
+          .filter(Boolean);
+
+        // Delete PaymentRecords linked to these submissions (removes from Finance & Fee Waiver Finance)
+        if (paymentRecordIds.length > 0) {
+          await tx.paymentRecord.deleteMany({
+            where: { id: { in: paymentRecordIds } },
+          });
+        }
+
+        // Delete CoursePaymentSubmissions linked to this coupon
+        if (submissionIds.length > 0) {
+          await tx.coursePaymentSubmission.deleteMany({
+            where: { id: { in: submissionIds } },
+          });
+        }
+
+        // Delete CouponUsage entries linked to this coupon
+        await tx.couponUsage.deleteMany({
+          where: { couponId: request.couponId },
+        });
+
+        // Delete the Coupon itself
+        await tx.coupon.delete({
+          where: { id: request.couponId },
+        });
+      }
+
+      // Delete student notifications associated with this request
+      await tx.studentNotification.deleteMany({
+        where: { sourceType: "CouponRequest", sourceId: requestId },
+      });
+
+      // Delete the CouponRequest record itself
+      await tx.couponRequest.delete({
+        where: { id: requestId },
+      });
+    });
+
+    revalidatePath("/admin/coupons");
+    revalidatePath("/admin/coupons/finance");
+    revalidatePath("/admin/finance");
+    revalidatePath("/profile/waiver-requests");
+
+    return { success: "Waiver request and associated finance records deleted successfully." };
+  } catch (error) {
+    console.error("Failed to delete coupon request:", error);
+    return { error: "Failed to delete waiver request." };
+  }
+}

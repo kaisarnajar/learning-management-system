@@ -32,11 +32,11 @@ export function WaiverRequestsView({
   );
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-serif font-bold text-foreground">Fee Waiver Requests</h1>
-        <p className="text-sm text-muted mt-1">Track and manage your fee waiver requests.</p>
+        <h1 className="font-serif text-2xl font-bold text-primary">Fee Waiver Requests</h1>
+        <p className="mt-1 text-sm text-muted">Track and manage your fee waiver requests.</p>
       </div>
 
       {/* Modal */}
@@ -50,13 +50,13 @@ export function WaiverRequestsView({
 
       {/* Requests History Table */}
       {requests.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-surface p-10 text-center max-w-xl mx-auto space-y-3">
-          <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-primary">
-            <Ticket className="h-5 w-5" />
+        <div className="mt-6 rounded-lg border border-border bg-surface p-8 sm:p-12 text-center max-w-xl mx-auto shadow-sm space-y-3">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-accent-muted text-primary border border-border/50">
+            <Ticket className="h-6 w-6" />
           </div>
           <div>
-            <h3 className="font-serif text-base font-bold text-foreground">No Fee Waiver Requests</h3>
-            <p className="text-xs text-muted mt-1 leading-relaxed">
+            <h3 className="font-serif text-lg font-bold text-foreground">No Fee Waiver Requests</h3>
+            <p className="mt-2 text-sm text-muted leading-relaxed max-w-md mx-auto">
               When you submit a fee waiver request during course enrollment or payment, your submitted requests and approved coupon status will appear here.
             </p>
           </div>

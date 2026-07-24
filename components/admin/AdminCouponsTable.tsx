@@ -108,12 +108,38 @@ function CouponSectionTable({
 export function AdminCouponsTable({
   coupons,
   courses = [],
+  type,
 }: {
   coupons: any[];
   courses?: CourseOption[];
+  type?: "SPECIAL" | "DEFAULT";
 }) {
   const specialCoupons = coupons.filter((c) => c.type === "SPECIAL");
   const defaultCoupons = coupons.filter((c) => c.type !== "SPECIAL");
+
+  if (type === "SPECIAL") {
+    return (
+      <CouponSectionTable
+        title="Special Coupons"
+        description="Coupons generated for specific students or approved fee waiver requests."
+        coupons={specialCoupons}
+        courses={courses}
+        emptyMessage="No special coupons created yet."
+      />
+    );
+  }
+
+  if (type === "DEFAULT") {
+    return (
+      <CouponSectionTable
+        title="Default Coupons"
+        description="General promotional coupons available to public or specific course/gender groups."
+        coupons={defaultCoupons}
+        courses={courses}
+        emptyMessage="No default coupons created yet."
+      />
+    );
+  }
 
   return (
     <div className="space-y-8">

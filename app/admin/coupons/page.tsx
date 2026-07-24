@@ -69,12 +69,9 @@ export default async function AdminCouponsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Fee Waivers & Coupons</h1>
-          <p className="mt-1 text-sm text-muted">Manage default discount coupons and special student waiver requests.</p>
-        </div>
-        <CreateCouponDialog courses={courses} />
+      <div>
+        <h1 className="font-serif text-2xl font-bold text-primary">Fee Waivers & Coupons</h1>
+        <p className="mt-1 text-sm text-muted">Manage default discount coupons and special student waiver requests.</p>
       </div>
 
       {/* Tab Navigation */}
@@ -100,7 +97,10 @@ export default async function AdminCouponsPage({
         )}
         {(activeTab === "default" || activeTab === "coupons") && (
           <section>
-            <h2 className="font-serif text-lg font-semibold text-foreground mb-4">Default Coupons</h2>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+              <h2 className="font-serif text-lg font-semibold text-foreground">Default Coupons</h2>
+              <CreateCouponDialog courses={courses} />
+            </div>
             <AdminCouponsTable coupons={coupons} courses={courses} type="DEFAULT" />
           </section>
         )}

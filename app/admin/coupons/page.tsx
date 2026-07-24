@@ -69,31 +69,39 @@ export default async function AdminCouponsPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Fee Waivers & Coupons</h1>
-          <p className="mt-1 text-sm text-muted">Manage default discount coupons and special student waiver requests.</p>
-        </div>
-        <CreateCouponDialog courses={courses} />
+      <div>
+        <h1 className="font-serif text-2xl font-bold text-primary">Fee Waivers & Coupons</h1>
+        <p className="mt-1 text-sm text-muted">Manage default discount coupons and special student waiver requests.</p>
       </div>
 
       {/* Tab Navigation */}
       <nav className="flex flex-wrap gap-2" aria-label="Fee waivers navigation">
-        <TabLink value="requests" label="Waiver Requests (Special)" active={activeTab === "requests"} />
-        <TabLink value="coupons" label="All Coupons" active={activeTab === "coupons"} />
+        <TabLink value="requests" label="Waiver Requests" active={activeTab === "requests"} />
+        <TabLink value="special" label="Special Coupons" active={activeTab === "special"} />
+        <TabLink value="default" label="Default Coupons" active={activeTab === "default" || activeTab === "coupons"} />
       </nav>
 
       {/* Tab Content */}
       <div className="mt-6">
-        {activeTab === "requests" ? (
+        {activeTab === "requests" && (
           <section>
-            <h2 className="font-serif text-lg font-semibold text-foreground mb-4">Waiver Requests (Special)</h2>
+            <h2 className="font-serif text-lg font-semibold text-foreground mb-4">Waiver Requests</h2>
             <AdminCouponRequestsTable requests={requests} />
           </section>
-        ) : (
+        )}
+        {activeTab === "special" && (
           <section>
-            <h2 className="font-serif text-lg font-semibold text-foreground mb-4">All Coupons</h2>
-            <AdminCouponsTable coupons={coupons} courses={courses} />
+            <h2 className="font-serif text-lg font-semibold text-foreground mb-4">Special Coupons</h2>
+            <AdminCouponsTable coupons={coupons} courses={courses} type="SPECIAL" />
+          </section>
+        )}
+        {(activeTab === "default" || activeTab === "coupons") && (
+          <section>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
+              <h2 className="font-serif text-lg font-semibold text-foreground">Default Coupons</h2>
+              <CreateCouponDialog courses={courses} />
+            </div>
+            <AdminCouponsTable coupons={coupons} courses={courses} type="DEFAULT" />
           </section>
         )}
       </div>

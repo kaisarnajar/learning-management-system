@@ -7,6 +7,7 @@ import { ToastProvider } from "@/components/shared/ToastProvider";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
 import { WhatsAppButton } from "@/components/site/WhatsAppButton";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 export const dynamic = "force-dynamic";
@@ -51,6 +52,7 @@ export default function RootLayout({
             </CartProvider>
           </ToastProvider>
         </SessionProvider>
+        <SpeedInsights />
       </body>
     </html>
   );

@@ -79,7 +79,7 @@ export default async function AdminCouponsPage({
 
       {/* Tab Navigation */}
       <nav className="flex flex-wrap gap-2" aria-label="Fee waivers navigation">
-        <TabLink value="requests" label="Waiver Requests (Special)" active={activeTab === "requests"} />
+        <TabLink value="requests" label="Waiver Requests" active={activeTab === "requests"} />
         <TabLink value="coupons" label="All Coupons" active={activeTab === "coupons"} />
       </nav>
 
@@ -87,7 +87,7 @@ export default async function AdminCouponsPage({
       <div className="mt-6">
         {activeTab === "requests" ? (
           <section>
-            <h2 className="font-serif text-lg font-semibold text-foreground mb-4">Waiver Requests (Special)</h2>
+            <h2 className="font-serif text-lg font-semibold text-foreground mb-4">Waiver Requests</h2>
             <AdminCouponRequestsTable requests={requests} />
           </section>
         ) : (

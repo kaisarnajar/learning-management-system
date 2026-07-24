@@ -124,11 +124,11 @@ export async function getFeeWaiverFinanceData(
         : getMonthlyFeePaise(course)
       : 0;
 
-    const isExplicitZero = s.amountInrPaise === 0;
-    const isDiscounted = baseCourseFeePaise > s.amountInrPaise && baseCourseFeePaise > 0;
-    const hasWaiverKeyword = s.label.toLowerCase().includes("waiver");
+    const hasCoupon = Boolean(s.couponId);
+    const hasWaiverKeyword = s.label.toLowerCase().includes("waiver") || s.paymentMethod === "waiver";
+    const isWaiverClaimed = hasCoupon || hasWaiverKeyword;
 
-    if (isExplicitZero || isDiscounted || hasWaiverKeyword) {
+    if (isWaiverClaimed) {
       const originalFeePaise = Math.max(baseCourseFeePaise, s.amountInrPaise);
       const waivedAmountPaise = Math.max(0, originalFeePaise - s.amountInrPaise);
       const discountPercentage = originalFeePaise > 0

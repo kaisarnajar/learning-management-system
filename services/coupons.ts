@@ -19,10 +19,16 @@ export async function getApplicableCoupons(
   const settings = await prisma.paymentSettings.findUnique({ where: { id: "default" } });
   if (!settings?.feeWaiverEnabled) return [];
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { gender: true },
-  });
+  const [user, enrollment] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { gender: true },
+    }),
+    prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+      select: { createdAt: true },
+    }),
+  ]);
 
   const now = new Date();
   const db = prisma as any;
@@ -75,7 +81,8 @@ export async function getApplicableCoupons(
     if (coupon.type === "SPECIAL") {
       if (coupon.userId === userId) applicable = true;
     } else {
-      if (!coupon.gender || coupon.gender === user?.gender) {
+      const enrolledBeforeCoupon = enrollment && enrollment.createdAt < (coupon.validFrom || coupon.createdAt);
+      if (!enrolledBeforeCoupon && (!coupon.gender || coupon.gender === user?.gender)) {
         applicable = true;
       }
     }

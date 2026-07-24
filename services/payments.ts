@@ -22,7 +22,7 @@ export async function getPaymentRecordById(id: string) {
           select: { id: true, name: true, email: true, address: true, whatsapp: true },
         },
         submission: {
-          select: { paymentMethod: true, upiTransactionId: true, label: true },
+          select: { paymentMethod: true, upiTransactionId: true, label: true, couponId: true },
         },
       },
     }), "Database operation failed");

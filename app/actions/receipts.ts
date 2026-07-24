@@ -29,7 +29,7 @@ export async function generateReceipt(paymentRecordId: string) {
     where: { id: paymentRecordId },
     include: {
       user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } },
-      submission: { select: { paymentMethod: true, upiTransactionId: true, label: true } },
+      submission: { select: { paymentMethod: true, upiTransactionId: true, label: true, couponId: true } },
     },
   });
 

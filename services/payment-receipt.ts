@@ -36,6 +36,7 @@ export type ReceiptRecordInput = {
     paymentMethod: string | null;
     upiTransactionId: string | null;
     label: string | null;
+    couponId?: string | null;
   } | null;
 };
 
@@ -78,7 +79,13 @@ export async function prepareReceiptData(
   let discountAmount: number | undefined = undefined;
   let discountPercentage: number | undefined = undefined;
 
-  if (record.courseId) {
+  const isWaiverOrDiscountUsed =
+    Boolean(record.submission?.couponId) ||
+    Boolean(record.description?.toLowerCase().includes("waiver")) ||
+    Boolean(record.submission?.label?.toLowerCase().includes("waiver")) ||
+    record.submission?.paymentMethod === "waiver";
+
+  if (record.courseId && isWaiverOrDiscountUsed) {
     const { getCourseById } = await import("@/services/courses");
     const { getMonthlyFeePaise, getRegistrationFeePaise } = await import("@/services/course-pricing");
     const course = await getCourseById(record.courseId);
@@ -96,7 +103,7 @@ export async function prepareReceiptData(
     }
   }
 
-  if (!discountPercentage && record.description) {
+  if (!discountPercentage && isWaiverOrDiscountUsed && record.description) {
     const waiverMatch = record.description.match(/(\d+)%\s*(Fee Waiver|OFF)/i);
     if (waiverMatch) {
       discountPercentage = parseInt(waiverMatch[1], 10);

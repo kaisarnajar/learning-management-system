@@ -28,12 +28,13 @@ export function AdminCouponsTable({
 
   return (
     <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-      <table className="w-full min-w-[800px] text-left text-sm">
+      <table className="w-full min-w-[850px] text-left text-sm">
         <thead className="border-b border-border bg-background/50 text-muted">
           <tr>
             <th className="px-4 py-3 font-medium">Code</th>
             <th className="px-4 py-3 font-medium">Type</th>
             <th className="px-4 py-3 font-medium">Discount</th>
+            <th className="px-4 py-3 font-medium">Created At</th>
             <th className="px-4 py-3 font-medium">Valid Until</th>
             <th className="px-4 py-3 font-medium">Target</th>
             <th className="px-4 py-3 font-medium text-right">Action</th>
@@ -55,6 +56,9 @@ export function AdminCouponsTable({
                 </span>
               </td>
               <td className="px-4 py-3 font-medium text-foreground">{c.percentage}% OFF</td>
+              <td className="px-4 py-3 text-muted whitespace-nowrap">
+                {c.createdAt ? format(new Date(c.createdAt), "dd MMM, yyyy") : "N/A"}
+              </td>
               <td className="px-4 py-3 text-muted whitespace-nowrap">
                 {format(new Date(c.validUntil), "dd MMM, yyyy")}
               </td>

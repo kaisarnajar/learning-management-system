@@ -5,6 +5,7 @@ import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { approveEnrollmentRequest, rejectEnrollmentRequest } from "@/app/admin/enrollments/actions";
 import type { PendingEnrollmentWithUser } from "@/services/enrollments";
 import { useToast } from "@/components/shared/ToastProvider";
+import { adminActionButtonClassName, adminDestructiveButtonClassName, adminSecondaryButtonClassName } from "@/utils/form";
 
 export function EnrollmentRequestsTable({
   enrollments,
@@ -64,7 +65,7 @@ export function EnrollmentRequestsTable({
                       const result = await approveEnrollmentRequest(enrollment.id, enrollment.courseId, window.location.pathname); 
                       if (result?.error) addToast(result.error, "error"); 
                     }} 
-                    trigger={<button type="button" className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white hover:bg-primary-light transition-colors">Approve</button>} 
+                    trigger={<button type="button" className={adminActionButtonClassName}>Approve</button>} 
                   />
                 )}
                 {showReject && (
@@ -77,12 +78,12 @@ export function EnrollmentRequestsTable({
                       const result = await rejectEnrollmentRequest(enrollment.id, enrollment.courseId, window.location.pathname); 
                       if (result?.error) addToast(result.error, "error"); 
                     }} 
-                    trigger={<button type="button" className="rounded-md border border-red-300 bg-destructive-bg px-3 py-1.5 text-xs font-semibold text-destructive-text hover:bg-destructive-bg disabled:opacity-60">Reject</button>} 
+                    trigger={<button type="button" className={adminDestructiveButtonClassName}>Reject</button>} 
                   />
                 )}
                 <Link
                   href={`/admin/students/${enrollment.user.id}`}
-                  className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground hover:bg-accent-muted/50"
+                  className={adminSecondaryButtonClassName}
                 >
                   Student profile
                 </Link>

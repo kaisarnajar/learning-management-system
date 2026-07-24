@@ -111,8 +111,8 @@ export default async function AdminDashboardPage() {
     [
       "/admin/enrollments",
       {
-        count: pendingEnrollmentCount + awaitingEnrollmentFeeCount,
-        highlight: pendingEnrollmentCount + awaitingEnrollmentFeeCount > 0,
+        count: pendingEnrollmentCount,
+        highlight: pendingEnrollmentCount > 0,
       },
     ],
     ["/admin/students", { count: studentCount }],

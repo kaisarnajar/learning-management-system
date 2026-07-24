@@ -9,6 +9,9 @@ export const adminActionButtonClassName =
 export const adminDestructiveButtonClassName =
   "inline-flex h-8 items-center justify-center rounded-md border border-red-300 bg-destructive-bg px-3 text-xs font-semibold text-destructive-text hover:bg-destructive-bg/85 transition-colors disabled:opacity-60";
 
+export const adminSecondaryButtonClassName =
+  "inline-flex h-8 items-center justify-center rounded-md border border-border bg-surface px-3 text-xs font-semibold text-foreground hover:bg-surface-muted transition-colors disabled:opacity-60";
+
 export function rupeesToPaise(rupees: number): number {
   return Math.round(rupees * 100);
 }

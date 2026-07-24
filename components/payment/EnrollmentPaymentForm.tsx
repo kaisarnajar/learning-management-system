@@ -22,8 +22,9 @@ export function EnrollmentPaymentForm({
   availableCoupons = [],
 }: EnrollmentPaymentFormProps) {
   const router = useRouter();
+  const firstSelectable = availableCoupons.find((c) => !c.isUsed);
   const [selectedCouponId, setSelectedCouponId] = useState<string>(
-    availableCoupons.length > 0 ? availableCoupons[0].id : ""
+    firstSelectable ? firstSelectable.id : ""
   );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
   const [transactionId, setTransactionId] = useState("");
@@ -32,7 +33,7 @@ export function EnrollmentPaymentForm({
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const selectedCoupon = availableCoupons.find((c) => c.id === selectedCouponId);
+  const selectedCoupon = availableCoupons.find((c) => c.id === selectedCouponId && !c.isUsed);
   const currentPercentage = selectedCoupon ? selectedCoupon.percentage : 0;
   const currentAmountPaise = selectedCoupon
     ? calculateDiscountedAmount(baseFeePaise, currentPercentage)

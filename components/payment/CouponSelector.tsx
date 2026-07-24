@@ -32,18 +32,23 @@ export function CouponSelector({
 
       <div className="space-y-2">
         {coupons.map((coupon) => {
-          const isSelected = selectedCouponId === coupon.id;
+          const isUsed = coupon.isUsed;
+          const isSelected = selectedCouponId === coupon.id && !isUsed;
           const discountAmountPaise = Math.floor((baseFeePaise * coupon.percentage) / 100);
           const finalPaise = Math.max(0, baseFeePaise - discountAmountPaise);
 
           return (
             <label
               key={coupon.id}
-              onClick={() => onSelectCoupon(coupon.id)}
-              className={`flex cursor-pointer items-center justify-between rounded-lg border p-3.5 transition-all ${
-                isSelected
-                  ? "border-primary bg-primary/5 ring-1 ring-primary"
-                  : "border-border bg-background hover:bg-accent-muted/40"
+              onClick={() => {
+                if (!isUsed) onSelectCoupon(coupon.id);
+              }}
+              className={`flex items-center justify-between rounded-lg border p-3.5 transition-all ${
+                isUsed
+                  ? "opacity-60 bg-muted/20 border-border cursor-not-allowed select-none"
+                  : isSelected
+                  ? "border-primary bg-primary/5 ring-1 ring-primary cursor-pointer"
+                  : "border-border bg-background hover:bg-accent-muted/40 cursor-pointer"
               }`}
             >
               <div className="flex items-center gap-3">
@@ -52,15 +57,22 @@ export function CouponSelector({
                   name="couponChoice"
                   value={coupon.id}
                   checked={isSelected}
-                  onChange={() => onSelectCoupon(coupon.id)}
-                  className="h-4 w-4 text-primary focus:ring-primary"
+                  disabled={isUsed}
+                  onChange={() => {
+                    if (!isUsed) onSelectCoupon(coupon.id);
+                  }}
+                  className="h-4 w-4 text-primary focus:ring-primary disabled:opacity-50"
                 />
                 <div>
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-foreground text-sm">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`font-mono font-bold text-sm ${isUsed ? "line-through text-muted" : "text-foreground"}`}>
                       {coupon.code}
                     </span>
-                    <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-xs font-bold text-emerald-700">
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold ${
+                      isUsed
+                        ? "bg-gray-100 text-gray-500 border border-gray-200"
+                        : "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                    }`}>
                       {coupon.percentage}% OFF
                     </span>
                     {coupon.type === "SPECIAL" && (
@@ -68,15 +80,22 @@ export function CouponSelector({
                         Special Waiver
                       </span>
                     )}
+                    {isUsed && (
+                      <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                        Already Used
+                      </span>
+                    )}
                   </div>
                   <p className="text-xs text-muted mt-0.5">
-                    Valid until {format(new Date(coupon.validUntil), "dd MMM, yyyy")}
+                    {isUsed
+                      ? "You have already used this coupon."
+                      : `Valid until ${format(new Date(coupon.validUntil), "dd MMM, yyyy")}`}
                   </p>
                 </div>
               </div>
 
               <div className="text-right">
-                <p className="text-sm font-bold text-emerald-600">
+                <p className={`text-sm font-bold ${isUsed ? "text-muted line-through" : "text-emerald-600"}`}>
                   Save {formatPrice(discountAmountPaise)}
                 </p>
                 <p className="text-xs text-muted">

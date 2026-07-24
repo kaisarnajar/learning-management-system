@@ -8,6 +8,7 @@ export type ApplicableCoupon = {
   validUntil: Date;
   applyToEnrollment: boolean;
   applyToCourse: boolean;
+  isUsed: boolean;
 };
 
 export async function getApplicableCoupons(
@@ -69,10 +70,6 @@ export async function getApplicableCoupons(
   const applicableCoupons: ApplicableCoupon[] = [];
 
   for (const coupon of coupons) {
-    if (usedCouponIds.has(coupon.id)) {
-      continue; // Coupon already used by this user
-    }
-
     let applicable = false;
 
     if (coupon.type === "SPECIAL") {
@@ -84,6 +81,7 @@ export async function getApplicableCoupons(
     }
 
     if (applicable) {
+      const isUsed = usedCouponIds.has(coupon.id);
       applicableCoupons.push({
         id: coupon.id,
         code: coupon.code,
@@ -92,11 +90,16 @@ export async function getApplicableCoupons(
         validUntil: coupon.validUntil,
         applyToEnrollment: coupon.applyToEnrollment,
         applyToCourse: coupon.applyToCourse,
+        isUsed,
       });
     }
   }
 
-  return applicableCoupons;
+  // Sort usable (unused) coupons first, then by percentage descending
+  return applicableCoupons.sort((a, b) => {
+    if (a.isUsed !== b.isUsed) return a.isUsed ? 1 : -1;
+    return b.percentage - a.percentage;
+  });
 }
 
 export async function getSelectedCoupon(
@@ -106,19 +109,20 @@ export async function getSelectedCoupon(
   couponId?: string | null
 ): Promise<ApplicableCoupon | null> {
   const applicableCoupons = await getApplicableCoupons(userId, courseId, feeType);
-  if (applicableCoupons.length === 0) return null;
+  const selectableCoupons = applicableCoupons.filter((c) => !c.isUsed);
+  if (selectableCoupons.length === 0) return null;
 
   if (couponId === "none" || couponId === "") {
     return null;
   }
 
   if (couponId) {
-    const found = applicableCoupons.find((c) => c.id === couponId || c.code === couponId);
+    const found = selectableCoupons.find((c) => c.id === couponId || c.code === couponId);
     if (found) return found;
   }
 
-  // Default to highest discount coupon if not specified
-  return applicableCoupons[0];
+  // Default to highest discount usable coupon if not specified
+  return selectableCoupons[0];
 }
 
 /** Backwards-compatible helper returning the selected or default top coupon. */

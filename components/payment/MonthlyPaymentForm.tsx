@@ -53,8 +53,9 @@ export function MonthlyPaymentForm({
   const freqOption = getFeeFrequencyOption(feeFrequency);
   const isOneTime = isOneTimeFee(feeFrequency);
 
+  const firstSelectable = availableCoupons.find((c) => !c.isUsed);
   const [selectedCouponId, setSelectedCouponId] = useState<string>(
-    availableCoupons.length > 0 ? availableCoupons[0].id : ""
+    firstSelectable ? firstSelectable.id : ""
   );
   const [paymentMonth, setPaymentMonth] = useState(defaultMonth ?? String(now.getMonth() + 1).padStart(2, "0"));
   const [paymentYear, setPaymentYear] = useState(defaultYearValue);
@@ -65,7 +66,7 @@ export function MonthlyPaymentForm({
   const [error, setError] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const selectedCoupon = availableCoupons.find((c) => c.id === selectedCouponId);
+  const selectedCoupon = availableCoupons.find((c) => c.id === selectedCouponId && !c.isUsed);
   const currentPercentage = selectedCoupon ? selectedCoupon.percentage : 0;
   const totalAmountPaise = selectedCoupon
     ? calculateDiscountedAmount(baseFeePaise, currentPercentage)

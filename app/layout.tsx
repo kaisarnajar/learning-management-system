@@ -7,6 +7,7 @@ import { ToastProvider } from "@/components/shared/ToastProvider";
 import { Footer } from "@/components/site/Footer";
 import { Header } from "@/components/site/Header";
 import { WhatsAppButton } from "@/components/site/WhatsAppButton";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
@@ -52,6 +53,7 @@ export default function RootLayout({
             </CartProvider>
           </ToastProvider>
         </SessionProvider>
+        <SpeedInsights />
         <Analytics />
       </body>
     </html>

@@ -7,8 +7,10 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { submitMonthlyPayment } from "@/app/actions/payments";
 import { CouponSelector } from "@/components/payment/CouponSelector";
+import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { calculateDiscountedAmount, type ApplicableCoupon } from "@/services/coupons";
 import { formatPrice } from "@/services/courses";
+import type { PaymentSettingsData } from "@/services/payment-settings";
 
 type PaymentMethod = "upi" | "bank";
 
@@ -29,20 +31,24 @@ const MONTHS = [
 
 type MonthlyPaymentFormProps = {
   courseId: string;
+  courseTitle?: string;
   baseFeePaise: number;
   feeFrequency?: string | null;
   defaultMonth?: string;
   defaultYear?: string;
   availableCoupons?: ApplicableCoupon[];
+  paymentSettings: PaymentSettingsData;
 };
 
 export function MonthlyPaymentForm({
   courseId,
+  courseTitle = "Course",
   baseFeePaise,
   feeFrequency,
   defaultMonth,
   defaultYear,
   availableCoupons = [],
+  paymentSettings,
 }: MonthlyPaymentFormProps) {
   const router = useRouter();
   const now = new Date();
@@ -121,7 +127,21 @@ export function MonthlyPaymentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <div className="space-y-8">
+      <PaymentDetailsPanel
+        settings={paymentSettings}
+        amountLabel={totalAmountPaise === 0 ? "FREE" : formatPrice(totalAmountPaise)}
+        amountPaise={totalAmountPaise}
+        paymentNote={`${courseTitle} — ${getFeeFrequencyLabel(feeFrequency)}`.slice(0, 80)}
+      />
+
+      <div className="card-elevated p-6 sm:p-8">
+        <h3 className="text-sm font-bold uppercase tracking-wide text-primary">Submit payment</h3>
+        <p className="mt-2 text-sm text-muted">
+          After paying by UPI or bank transfer, enter your transaction reference below.
+        </p>
+
+        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
       {/* Fee summary badge */}
       <div className="flex items-center justify-between rounded-lg border border-border bg-background/50 px-4 py-3">
         <span className="text-sm text-muted">
@@ -276,6 +296,8 @@ export function MonthlyPaymentForm({
       >
         {loading ? "Submitting…" : isFree ? "Claim Fee Waiver" : "Submit fee payment for verification"}
       </SubmitButton>
-    </form>
+        </form>
+      </div>
+    </div>
   );
 }

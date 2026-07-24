@@ -5,21 +5,27 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { submitEnrollmentPayment } from "@/app/actions/payments";
 import { CouponSelector } from "@/components/payment/CouponSelector";
+import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { calculateDiscountedAmount, type ApplicableCoupon } from "@/services/coupons";
 import { formatPrice } from "@/services/courses";
+import type { PaymentSettingsData } from "@/services/payment-settings";
 
 type PaymentMethod = "upi" | "bank";
 
 type EnrollmentPaymentFormProps = {
   courseId: string;
+  courseTitle?: string;
   baseFeePaise: number;
   availableCoupons?: ApplicableCoupon[];
+  paymentSettings: PaymentSettingsData;
 };
 
 export function EnrollmentPaymentForm({
   courseId,
+  courseTitle = "Course",
   baseFeePaise,
   availableCoupons = [],
+  paymentSettings,
 }: EnrollmentPaymentFormProps) {
   const router = useRouter();
   const firstSelectable = availableCoupons.find((c) => !c.isUsed);
@@ -85,7 +91,22 @@ export function EnrollmentPaymentForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <div className="space-y-8">
+      <PaymentDetailsPanel
+        settings={paymentSettings}
+        amountLabel={currentAmountPaise === 0 ? "FREE" : formatPrice(currentAmountPaise)}
+        amountPaise={currentAmountPaise}
+        paymentNote={`${courseTitle} enrollment`.slice(0, 80)}
+      />
+
+      <div className="card-elevated p-6 sm:p-8">
+        <h3 className="text-sm font-bold uppercase tracking-wide text-primary">Submit payment</h3>
+        <p className="mt-2 text-sm text-muted">
+          After paying by UPI or bank transfer, enter your transaction reference below. The academy will
+          verify your payment and activate your enrollment.
+        </p>
+
+        <form onSubmit={handleSubmit} className="mt-6 space-y-5">
       {/* Fee summary badge */}
       <div className="flex items-center justify-between rounded-lg border border-border bg-background/50 px-4 py-3">
         <span className="text-sm text-muted">
@@ -199,5 +220,7 @@ export function EnrollmentPaymentForm({
         {loading ? "Submitting…" : isFree ? "Claim Fee Waiver & Enroll" : "Submit enrollment fee for verification"}
       </SubmitButton>
     </form>
-  );
+  </div>
+</div>
+);
 }

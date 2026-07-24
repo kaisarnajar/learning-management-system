@@ -68,37 +68,26 @@ export default async function PayFeePage({
       </p>
 
       <div className="mx-auto mt-8 max-w-5xl space-y-8">
-        <PaymentDetailsPanel
-          amountLabel={amountLabel}
-          amountPaise={initialFeePaise}
-          paymentNote={`${course.title} — ${freqLabel}`.slice(0, 80)}
+        <MonthlyPaymentForm
+          courseId={course.id}
+          courseTitle={course.title}
+          baseFeePaise={originalFeePaise}
+          feeFrequency={feeFrequency}
+          availableCoupons={availableCoupons}
+          paymentSettings={paymentSettings}
         />
-        <div className="card-elevated p-6 sm:p-8">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-primary">Submit payment</h3>
-          <p className="mt-2 text-sm text-muted">
-            After paying by UPI or bank transfer, enter your transaction reference below.
-          </p>
-          <div className="mt-6">
-            <MonthlyPaymentForm
-              courseId={course.id}
-              baseFeePaise={originalFeePaise}
-              feeFrequency={feeFrequency}
-              availableCoupons={availableCoupons}
-            />
+        
+        {paymentSettings?.feeWaiverEnabled && (
+          <div className="card-elevated p-6 text-center">
+            <p className="text-sm text-muted mb-2">Are you unable to afford the fee?</p>
+            <Link 
+              href={`/profile/waiver-requests?courseId=${course.id}&type=course`} 
+              className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-light transition-colors"
+            >
+              Request a Fee Waiver
+            </Link>
           </div>
-          
-          {paymentSettings?.feeWaiverEnabled && (
-            <div className="mt-8 border-t border-border pt-6 text-center">
-              <p className="text-sm text-muted mb-2">Are you unable to afford the fee?</p>
-              <Link 
-                href={`/profile/waiver-requests?courseId=${course.id}&type=course`} 
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white hover:bg-primary-light transition-colors"
-              >
-                Request a Fee Waiver
-              </Link>
-            </div>
-          )}
-        </div>
+        )}
       </div>
     </div>
   );

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { BookCheckoutClient } from "@/components/bookstore/BookCheckoutClient";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
+import { getPaymentSettings } from "@/services/payment-settings";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 
@@ -108,6 +109,7 @@ export default async function CartCheckoutPage({
     }
   }
 
+  const paymentSettings = await getPaymentSettings();
   const totalAmountInrPaise = subtotalInrPaise + shippingChargeInrPaise;
 
   const amountLabel = formatPrice(totalAmountInrPaise);
@@ -128,6 +130,7 @@ export default async function CartCheckoutPage({
 
       <div className="mx-auto mt-8 max-w-5xl space-y-8">
         <PaymentDetailsPanel
+          settings={paymentSettings}
           amountLabel={amountLabel}
           amountPaise={totalAmountInrPaise}
           paymentNote="Bookstore order"

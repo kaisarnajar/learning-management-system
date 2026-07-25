@@ -24,10 +24,6 @@ export function dailyInspirationKindLabel(kind: DailyInspirationKind): string {
   return kind === "QURAN" ? "Quranic verse" : "Hadith";
 }
 
-export function dailyInspirationHomeTitle(kind: DailyInspirationKind): string {
-  return kind === "QURAN" ? "Quranic Verse of the Day" : "Hadith of the Day";
-}
-
 export async function getHomepageDailyInspiration(): Promise<DailyInspirationRecord | null> {
   return withDbErrorHandling(() => prisma.dailyInspiration.findFirst({
       where: { published: true },

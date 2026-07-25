@@ -11,6 +11,20 @@ type CourseOption = {
   title: string;
 };
 
+export type AdminCouponItem = {
+  id: string;
+  code: string;
+  type: "DEFAULT" | "SPECIAL";
+  percentage: number;
+  createdAt?: Date | string | null;
+  validUntil: Date | string;
+  gender?: string | null;
+  applyToEnrollment: boolean;
+  applyToCourse: boolean;
+  course?: { title: string } | null;
+  user?: { name: string | null; email: string } | null;
+};
+
 function CouponSectionTable({
   title,
   description,
@@ -20,7 +34,7 @@ function CouponSectionTable({
 }: {
   title: string;
   description: string;
-  coupons: any[];
+  coupons: AdminCouponItem[];
   courses: CourseOption[];
   emptyMessage: string;
 }) {
@@ -110,7 +124,7 @@ export function AdminCouponsTable({
   courses = [],
   type,
 }: {
-  coupons: any[];
+  coupons: AdminCouponItem[];
   courses?: CourseOption[];
   type?: "SPECIAL" | "DEFAULT";
 }) {

@@ -76,10 +76,6 @@ export function EmailGreeting({ name }: { name: string }) {
   return `<p>Assalamu Alaikum <strong>${escapeHtml(name)}</strong>,</p>`;
 }
 
-export function EmailParagraph({ text }: { text: string }) {
-  return `<p>${escapeHtml(text)}</p>`;
-}
-
 export function EmailHeading({ text }: { text: string }) {
   return `<h2 style="color:#1c1917;margin-top:20px;margin-bottom:12px;font-size:18px;">${escapeHtml(text)}</h2>`;
 }

@@ -9,9 +9,18 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { useToast } from "@/components/shared/ToastProvider";
 import { adminActionButtonClassName, adminDestructiveButtonClassName, inputClassName, labelClassName } from "@/utils/form";
 
-export function AdminCouponRequestsTable({ requests }: { requests: any[] }) {
+export type CouponRequestItem = {
+  id: string;
+  createdAt: Date | string;
+  reason: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  user: { name: string | null; email: string };
+  course: { title: string };
+};
+
+export function AdminCouponRequestsTable({ requests }: { requests: CouponRequestItem[] }) {
   const [isPending, startTransition] = useTransition();
-  const [selectedRequest, setSelectedRequest] = useState<any>(null);
+  const [selectedRequest, setSelectedRequest] = useState<CouponRequestItem | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { addToast } = useToast();
 

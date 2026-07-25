@@ -128,15 +128,6 @@ export async function updateCoupon(couponId: string, formData: FormData) {
   }
 }
 
-export async function toggleCouponActive(couponId: string, isActive: boolean) {
-  await requireAdmin();
-  await prisma.coupon.update({
-    where: { id: couponId },
-    data: { isActive },
-  });
-  revalidatePath("/admin/coupons");
-}
-
 export async function deleteCoupon(couponId: string) {
   await requireAdmin();
   try {

@@ -1,4 +1,3 @@
-import QRCode from "qrcode";
 import type { PaymentSettingsData } from "@/services/payment-settings";
 import { getPaymentSettings } from "@/services/payment-settings";
 
@@ -40,12 +39,4 @@ export function buildUpiPaymentUrlFromSettings(
     tr: params.transactionRef.slice(0, 35),
   });
   return `upi://pay?${query.toString()}`;
-}
-
-export async function generateUpiQrDataUrl(upiUrl: string): Promise<string> {
-  return QRCode.toDataURL(upiUrl, {
-    width: 280,
-    margin: 2,
-    color: { dark: "#1c1917", light: "#ffffff" },
-  });
 }

@@ -33,7 +33,7 @@ export function DeleteActionButton({
       variant="destructive"
       size="sm"
       disabled={disabled}
-      onClick={(e) => {
+      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
         if (warningMessage) {
            e.stopPropagation();
            e.preventDefault();

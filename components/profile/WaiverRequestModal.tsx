@@ -12,6 +12,20 @@ type CourseOption = {
   title: string;
 };
 
+const WAIVER_REASON_OPTIONS = [
+  "Financial hardship",
+  "Student / Currently studying",
+  "Unemployed / Job seeking",
+  "Single parent / Primary caregiver",
+  "Orphan / Loss of family breadwinner",
+  "Medical expenses / Health condition",
+  "Disaster / Emergency relief",
+  "Madrasa / Full-time Islamic student",
+  "Revert / New Muslim support",
+  "Senior citizen / Retired with fixed income",
+  "Other",
+];
+
 export function WaiverRequestModal({
   isOpen,
   onClose,
@@ -29,7 +43,7 @@ export function WaiverRequestModal({
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { addToast } = useToast();
   const [error, setError] = useState("");
-  const [reasonCategory, setReasonCategory] = useState("Financial hardship");
+  const [reasonCategory, setReasonCategory] = useState(WAIVER_REASON_OPTIONS[0]);
   const [customReason, setCustomReason] = useState("");
 
   useEffect(() => {
@@ -63,7 +77,7 @@ export function WaiverRequestModal({
     const customReasonInput = formData.get("customReason") as string;
 
     let finalReason = `[Fee Type: ${feeTypeToSubmit === "enrollment" ? "Enrollment Fee" : "Course Fee"}] Reason: ${category}`;
-    if (category === "Other" && customReasonInput) {
+    if (customReasonInput && customReasonInput.trim()) {
       finalReason += ` - ${customReasonInput.trim()}`;
     }
 
@@ -156,30 +170,33 @@ export function WaiverRequestModal({
             onChange={(e) => setReasonCategory(e.target.value)}
             className={inputClassName}
           >
-            <option value="Financial hardship">Financial hardship</option>
-            <option value="Student / Unemployed">Student / Unemployed</option>
-            <option value="Single parent / Primary caregiver">Single parent / Primary caregiver</option>
-            <option value="Other">Other</option>
+            {WAIVER_REASON_OPTIONS.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
           </select>
         </div>
 
-        {reasonCategory === "Other" && (
-          <div>
-            <label htmlFor="customReason" className={labelClassName}>
-              Please specify
-            </label>
-            <textarea
-              id="customReason"
-              name="customReason"
-              required
-              rows={3}
-              value={customReason}
-              onChange={(e) => setCustomReason(e.target.value)}
-              className={inputClassName}
-              placeholder="Write your reason here..."
-            />
-          </div>
-        )}
+        <div>
+          <label htmlFor="customReason" className={labelClassName}>
+            {reasonCategory === "Other" ? "Please specify reason" : "Additional details (optional)"}
+          </label>
+          <textarea
+            id="customReason"
+            name="customReason"
+            required={reasonCategory === "Other"}
+            rows={3}
+            value={customReason}
+            onChange={(e) => setCustomReason(e.target.value)}
+            className={inputClassName}
+            placeholder={
+              reasonCategory === "Other"
+                ? "Describe your reason..."
+                : "Add any additional context for your request (optional)..."
+            }
+          />
+        </div>
 
         <div className="mt-6 flex justify-end gap-3 border-t border-border pt-4">
           <button

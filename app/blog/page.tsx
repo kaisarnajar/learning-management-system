@@ -10,9 +10,33 @@ import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
+const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
+
 export const metadata: Metadata = {
-  title: "Blog",
-  description: `Articles and reflections from ${BRAND_CONFIG.name}.`,
+  title: "Islamic Articles & Reflections",
+  description: `Read insightful Islamic articles, Quranic reflections, Tajweed guides, and news from ${BRAND_CONFIG.name}.`,
+  alternates: {
+    canonical: `${baseUrl}/blog`,
+  },
+  openGraph: {
+    title: `Islamic Articles & Reflections | ${BRAND_CONFIG.name}`,
+    description: `Read insightful Islamic articles, Quranic reflections, Tajweed guides, and news from ${BRAND_CONFIG.name}.`,
+    url: `${baseUrl}/blog`,
+    siteName: BRAND_CONFIG.name,
+    type: "website",
+    images: [
+      {
+        url: BRAND_CONFIG.seo.openGraphImage,
+        alt: `Blog - ${BRAND_CONFIG.name}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Islamic Articles & Reflections | ${BRAND_CONFIG.name}`,
+    description: `Read insightful Islamic articles and reflections from ${BRAND_CONFIG.name}.`,
+    images: [BRAND_CONFIG.seo.openGraphImage],
+  },
 };
 
 export default async function BlogPage({

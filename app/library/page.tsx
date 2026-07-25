@@ -12,9 +12,33 @@ import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
+const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
+
 export const metadata: Metadata = {
-  title: "Library",
-  description: `Browse Islamic books and study materials in the ${BRAND_CONFIG.name} digital library.`,
+  title: "Digital Islamic Library & PDF Resources",
+  description: `Access and download authentic Islamic books, study guides, Quranic resources, and scholarly texts in the ${BRAND_CONFIG.name} digital library.`,
+  alternates: {
+    canonical: `${baseUrl}/library`,
+  },
+  openGraph: {
+    title: `Digital Islamic Library | ${BRAND_CONFIG.name}`,
+    description: `Access and download authentic Islamic books, study guides, Quranic resources, and scholarly texts in the ${BRAND_CONFIG.name} digital library.`,
+    url: `${baseUrl}/library`,
+    siteName: BRAND_CONFIG.name,
+    type: "website",
+    images: [
+      {
+        url: BRAND_CONFIG.seo.openGraphImage,
+        alt: `Digital Library - ${BRAND_CONFIG.name}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Digital Islamic Library | ${BRAND_CONFIG.name}`,
+    description: `Access and download authentic Islamic books and study resources in the ${BRAND_CONFIG.name} digital library.`,
+    images: [BRAND_CONFIG.seo.openGraphImage],
+  },
 };
 
 export default async function LibraryPage({

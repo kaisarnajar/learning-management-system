@@ -8,6 +8,10 @@ import { auth } from "@/services/auth";
 import { isAdminSession } from "@/services/admin";
 import { BlogEngagement } from "./BlogEngagement";
 
+import { BRAND_CONFIG } from "@/config/brand";
+import { JsonLd } from "@/components/site/JsonLd";
+import { getBlogPostingSchema, getBreadcrumbSchema } from "@/services/seo-schema";
+
 type PageProps = {
   params: Promise<{ id: string }>;
 };
@@ -16,9 +20,39 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { id } = await params;
   const post = await getPublishedBlogPostById(id);
   if (!post) return { title: "Post not found" };
+
+  const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
+  const postUrl = `${baseUrl}/blog/${post.id}`;
+  const description = post.excerpt || post.body.slice(0, 160).replace(/[#*`]/g, "");
+  const imageUrl = post.images && post.images.length > 0 ? post.images[0].imagePath : BRAND_CONFIG.seo.openGraphImage;
+
   return {
     title: post.title,
-    description: post.excerpt || post.body.slice(0, 160),
+    description: description,
+    alternates: {
+      canonical: postUrl,
+    },
+    openGraph: {
+      title: `${post.title} | ${BRAND_CONFIG.name}`,
+      description: description,
+      url: postUrl,
+      siteName: BRAND_CONFIG.name,
+      type: "article",
+      publishedTime: new Date(post.createdAt).toISOString(),
+      authors: post.createdBy?.name ? [post.createdBy.name] : [BRAND_CONFIG.name],
+      images: [
+        {
+          url: imageUrl,
+          alt: post.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: description,
+      images: [imageUrl],
+    },
   };
 }
 
@@ -37,8 +71,26 @@ export default async function BlogDetailPage({ params }: PageProps) {
   const initialHasLiked = currentUserId ? (post as any).likes?.some((like: any) => like.userId === currentUserId) : false;
 
 
+  const blogPostingSchema = getBlogPostingSchema({
+    id: post.id,
+    title: post.title,
+    excerpt: post.excerpt ?? undefined,
+    body: post.body,
+    authorName: post.createdBy?.name ?? undefined,
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+    imageUrl: post.images && post.images.length > 0 ? post.images[0].imagePath : undefined,
+  });
+
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: "Blog", url: "/blog" },
+    { name: post.title, url: `/blog/${post.id}` },
+  ]);
+
   return (
     <Section>
+      <JsonLd data={[blogPostingSchema, breadcrumbSchema]} />
       <Link href="/blog" className="text-sm font-medium text-gold hover:underline">
         ← All blog posts
       </Link>

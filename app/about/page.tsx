@@ -8,10 +8,36 @@ import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
+import { BRAND_CONFIG } from "@/config/brand";
+
+const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
+
 export const metadata: Metadata = {
-  title: "About Us",
+  title: "About Us | Authentic Online Islamic Education",
   description:
-    "Darse-Quran is a non-profit Sunni Islamic media group in South Asia. Learn about our mission, online academy, and contact information.",
+    "Learn about Darse Quran Academy, our mission, qualified scholars, Sunni Islamic education values, and online learning infrastructure.",
+  alternates: {
+    canonical: `${baseUrl}/about`,
+  },
+  openGraph: {
+    title: `About Us | ${BRAND_CONFIG.name}`,
+    description: "Discover our mission, qualified Sunni Islamic scholars, and world-class online learning environment.",
+    url: `${baseUrl}/about`,
+    siteName: BRAND_CONFIG.name,
+    type: "website",
+    images: [
+      {
+        url: BRAND_CONFIG.seo.openGraphImage,
+        alt: `About - ${BRAND_CONFIG.name}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `About Us | ${BRAND_CONFIG.name}`,
+    description: "Discover our mission, qualified scholars, and online Islamic studies programs.",
+    images: [BRAND_CONFIG.seo.openGraphImage],
+  },
 };
 
 const values = [

@@ -16,6 +16,10 @@ import { getUserCourseEnrollmentMap } from "@/services/enrollments";
 import { hasPendingEnrollmentFeeSubmission } from "@/services/monthly-payments";
 import { isUserProfileComplete } from "@/services/profile";
 
+import { BRAND_CONFIG } from "@/config/brand";
+import { JsonLd } from "@/components/site/JsonLd";
+import { getCourseSchema, getBreadcrumbSchema } from "@/services/seo-schema";
+
 type CoursePageProps = {
   params: Promise<{ id: string }>;
 };
@@ -24,9 +28,36 @@ export async function generateMetadata({ params }: CoursePageProps): Promise<Met
   const { id } = await params;
   const course = await getPublicCourseById(id);
   if (!course) return { title: "Course not found" };
+
+  const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
+  const courseUrl = `${baseUrl}/courses/${course.id}`;
+  const description = course.description.slice(0, 160);
+
   return {
     title: course.title,
-    description: course.description.slice(0, 160),
+    description: description,
+    alternates: {
+      canonical: courseUrl,
+    },
+    openGraph: {
+      title: `${course.title} | ${BRAND_CONFIG.name}`,
+      description: description,
+      url: courseUrl,
+      siteName: BRAND_CONFIG.name,
+      type: "website",
+      images: [
+        {
+          url: BRAND_CONFIG.seo.openGraphImage,
+          alt: course.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: course.title,
+      description: description,
+      images: [BRAND_CONFIG.seo.openGraphImage],
+    },
   };
 }
 
@@ -49,8 +80,27 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
       : false;
   const levelClass = getCourseLevelClass(course.level);
 
+  const courseSchema = getCourseSchema({
+    id: course.id,
+    title: course.title,
+    description: course.description,
+    category: course.category,
+    level: course.level,
+    duration: course.duration,
+    priceInrPaise: course.priceInrPaise,
+    monthlyFeeInrPaise: course.monthlyFeeInrPaise,
+    teacherName: course.teacher?.name,
+  });
+
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: "Courses", url: "/courses" },
+    { name: course.title, url: `/courses/${course.id}` },
+  ]);
+
   return (
     <Section>
+      <JsonLd data={[courseSchema, breadcrumbSchema]} />
       <Link href="/courses" className="text-sm font-medium text-gold hover:underline">
         ← All courses
       </Link>

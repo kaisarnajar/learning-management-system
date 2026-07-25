@@ -14,9 +14,33 @@ import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
+const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
+
 export const metadata: Metadata = {
-  title: "Courses",
-  description: `View and enroll in upcoming courses at ${BRAND_CONFIG.name}.`,
+  title: "Online Quran & Islamic Courses",
+  description: `Explore and enroll in structured Tajweed, Arabic language, Hifz, and Islamic studies courses at ${BRAND_CONFIG.name}. Qualified teachers & flexible schedules.`,
+  alternates: {
+    canonical: `${baseUrl}/courses`,
+  },
+  openGraph: {
+    title: `Online Quran & Islamic Courses | ${BRAND_CONFIG.name}`,
+    description: `Explore and enroll in structured Tajweed, Arabic language, Hifz, and Islamic studies courses at ${BRAND_CONFIG.name}. Qualified teachers & flexible schedules.`,
+    url: `${baseUrl}/courses`,
+    siteName: BRAND_CONFIG.name,
+    type: "website",
+    images: [
+      {
+        url: BRAND_CONFIG.seo.openGraphImage,
+        alt: `Courses - ${BRAND_CONFIG.name}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Online Quran & Islamic Courses | ${BRAND_CONFIG.name}`,
+    description: `Explore and enroll in structured Tajweed, Arabic language, Hifz, and Islamic studies courses at ${BRAND_CONFIG.name}.`,
+    images: [BRAND_CONFIG.seo.openGraphImage],
+  },
 };
 
 import { Suspense } from "react";

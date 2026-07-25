@@ -12,10 +12,33 @@ import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
+const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
+
 export const metadata: Metadata = {
-  title: "Fatwa Section",
-  description:
-    `Browse answered questions on Islam, Quran, Hadith, Fiqh, and related topics. Submit your own question to ${BRAND_CONFIG.name}.`,
+  title: "Islamic Fatwa & Q&A",
+  description: `Browse answered questions on Islamic jurisprudence, Fiqh, Quran, and daily guidance verified by scholars at ${BRAND_CONFIG.name}.`,
+  alternates: {
+    canonical: `${baseUrl}/fatwa`,
+  },
+  openGraph: {
+    title: `Islamic Fatwa & Q&A | ${BRAND_CONFIG.name}`,
+    description: `Browse answered questions on Islamic jurisprudence, Fiqh, Quran, and daily guidance verified by scholars at ${BRAND_CONFIG.name}.`,
+    url: `${baseUrl}/fatwa`,
+    siteName: BRAND_CONFIG.name,
+    type: "website",
+    images: [
+      {
+        url: BRAND_CONFIG.seo.openGraphImage,
+        alt: `Fatwa - ${BRAND_CONFIG.name}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Islamic Fatwa & Q&A | ${BRAND_CONFIG.name}`,
+    description: `Browse answered questions on Islamic jurisprudence and daily guidance verified by scholars at ${BRAND_CONFIG.name}.`,
+    images: [BRAND_CONFIG.seo.openGraphImage],
+  },
 };
 
 export default async function FatwaPage({

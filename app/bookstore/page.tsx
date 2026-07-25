@@ -12,10 +12,33 @@ import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
+const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
+
 export const metadata: Metadata = {
-  title: "Bookstore",
-  description:
-    `Browse and purchase physical Islamic books from ${BRAND_CONFIG.name}. Add books to your cart and submit your order for approval.`,
+  title: "Islamic Bookstore",
+  description: `Browse and purchase physical Islamic books, Quran copies, and Tajweed learning materials from ${BRAND_CONFIG.name}.`,
+  alternates: {
+    canonical: `${baseUrl}/bookstore`,
+  },
+  openGraph: {
+    title: `Islamic Bookstore | ${BRAND_CONFIG.name}`,
+    description: `Browse and purchase physical Islamic books, Quran copies, and Tajweed learning materials from ${BRAND_CONFIG.name}.`,
+    url: `${baseUrl}/bookstore`,
+    siteName: BRAND_CONFIG.name,
+    type: "website",
+    images: [
+      {
+        url: BRAND_CONFIG.seo.openGraphImage,
+        alt: `Bookstore - ${BRAND_CONFIG.name}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Islamic Bookstore | ${BRAND_CONFIG.name}`,
+    description: `Browse and purchase physical Islamic books and Quran copies from ${BRAND_CONFIG.name}.`,
+    images: [BRAND_CONFIG.seo.openGraphImage],
+  },
 };
 
 import { Suspense } from "react";

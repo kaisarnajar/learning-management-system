@@ -6,9 +6,33 @@ import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
+const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
+
 export const metadata: Metadata = {
   title: "Contact Us",
-  description: `Get in touch with ${BRAND_CONFIG.name} — send your query and we will reply by email.`,
+  description: `Get in touch with ${BRAND_CONFIG.name} — send us your inquiries, course questions, or feedback and our team will get back to you.`,
+  alternates: {
+    canonical: `${baseUrl}/contact`,
+  },
+  openGraph: {
+    title: `Contact Us | ${BRAND_CONFIG.name}`,
+    description: `Get in touch with ${BRAND_CONFIG.name} — support, inquiries, and admissions info.`,
+    url: `${baseUrl}/contact`,
+    siteName: BRAND_CONFIG.name,
+    type: "website",
+    images: [
+      {
+        url: BRAND_CONFIG.seo.openGraphImage,
+        alt: `Contact - ${BRAND_CONFIG.name}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Contact Us | ${BRAND_CONFIG.name}`,
+    description: `Get in touch with ${BRAND_CONFIG.name} for course inquiries and support.`,
+    images: [BRAND_CONFIG.seo.openGraphImage],
+  },
 };
 
 export default async function ContactPage({

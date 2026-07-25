@@ -7,6 +7,10 @@ import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
 import { AddToCartButton } from "@/components/bookstore/AddToCartButton";
 import { getBookById } from "@/services/bookstore";
 
+import { BRAND_CONFIG } from "@/config/brand";
+import { JsonLd } from "@/components/site/JsonLd";
+import { getBookSchema, getBreadcrumbSchema } from "@/services/seo-schema";
+
 type BookPageProps = {
   params: Promise<{ bookId: string }>;
 };
@@ -19,9 +23,41 @@ export async function generateMetadata({ params }: BookPageProps): Promise<Metad
   const { bookId } = await params;
   const book = await getBookById(bookId);
   if (!book || !book.published) return { title: "Book not found" };
+
+  const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
+  const bookUrl = `${baseUrl}/bookstore/${book.id}`;
+  const description = book.description.slice(0, 160);
+  const imageUrl = book.imagePath
+    ? book.imagePath.startsWith("http")
+      ? book.imagePath
+      : `${baseUrl}${book.imagePath}`
+    : BRAND_CONFIG.seo.openGraphImage;
+
   return {
     title: book.title,
-    description: book.description.slice(0, 160),
+    description: description,
+    alternates: {
+      canonical: bookUrl,
+    },
+    openGraph: {
+      title: `${book.title} | ${BRAND_CONFIG.name} Bookstore`,
+      description: description,
+      url: bookUrl,
+      siteName: BRAND_CONFIG.name,
+      type: "website",
+      images: [
+        {
+          url: imageUrl,
+          alt: book.title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: book.title,
+      description: description,
+      images: [imageUrl],
+    },
   };
 }
 
@@ -32,8 +68,25 @@ export default async function BookDetailPage({ params }: BookPageProps) {
   // Return 404 if the book doesn't exist or isn't published
   if (!book || !book.published) notFound();
 
+  const bookSchema = getBookSchema({
+    id: book.id,
+    title: book.title,
+    author: book.author,
+    description: book.description,
+    priceInrPaise: book.priceInrPaise,
+    status: book.status,
+    imagePath: book.imagePath,
+  });
+
+  const breadcrumbSchema = getBreadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: "Bookstore", url: "/bookstore" },
+    { name: book.title, url: `/bookstore/${book.id}` },
+  ]);
+
   return (
     <Section>
+      <JsonLd data={[bookSchema, breadcrumbSchema]} />
       <Link href="/bookstore" className="text-sm font-medium text-gold hover:underline">
         ← Back to Bookstore
       </Link>

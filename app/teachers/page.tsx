@@ -10,9 +10,33 @@ import { Source_Serif_4 } from "next/font/google";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
+const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
+
 export const metadata: Metadata = {
-  title: "Teachers",
-  description: `Meet the qualified scholars and instructors at ${BRAND_CONFIG.name}.`,
+  title: "Qualified Islamic Scholars & Quran Teachers",
+  description: `Meet the certified Quran, Tajweed, and Islamic studies scholars and instructors at ${BRAND_CONFIG.name}.`,
+  alternates: {
+    canonical: `${baseUrl}/teachers`,
+  },
+  openGraph: {
+    title: `Qualified Islamic Scholars & Teachers | ${BRAND_CONFIG.name}`,
+    description: `Meet the certified Quran, Tajweed, and Islamic studies scholars and instructors at ${BRAND_CONFIG.name}.`,
+    url: `${baseUrl}/teachers`,
+    siteName: BRAND_CONFIG.name,
+    type: "website",
+    images: [
+      {
+        url: BRAND_CONFIG.seo.openGraphImage,
+        alt: `Teachers - ${BRAND_CONFIG.name}`,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `Qualified Islamic Scholars & Teachers | ${BRAND_CONFIG.name}`,
+    description: `Meet the certified Quran, Tajweed, and Islamic studies scholars at ${BRAND_CONFIG.name}.`,
+    images: [BRAND_CONFIG.seo.openGraphImage],
+  },
 };
 
 export default async function TeachersPage({

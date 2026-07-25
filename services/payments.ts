@@ -59,7 +59,6 @@ export async function processMonthlyPayment(
   paymentMethod: string | null,
   upiTransactionId: string | null,
   screenshotFile: File | null,
-  paymentType?: string,
   couponId?: string | null
 ) {
   const course = await getCourseById(courseId);
@@ -82,13 +81,13 @@ export async function processMonthlyPayment(
       userId,
       courseId: course.id,
       label,
-      status: { in: [MONTHLY_PAYMENT_PENDING, "approved"] },
+      status: { in: [MONTHLY_PAYMENT_PENDING, MONTHLY_PAYMENT_APPROVED] },
     },
   });
 
   if (duplicatePending) {
     return {
-      error: duplicatePending.status === "approved"
+      error: duplicatePending.status === MONTHLY_PAYMENT_APPROVED
         ? `Payment for ${label} is already recorded.`
         : `A payment for ${label} is already awaiting verification.`,
       status: 400,

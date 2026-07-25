@@ -3,8 +3,8 @@ import { prisma } from "@/utils/prisma";
 import { MONTHLY_PAYMENT_APPROVED, PAYMENT_TYPE_ENROLLMENT } from "@/services/monthly-payment-status";
 import { getCourseIdsByTitleSearch, getAllCourses } from "@/services/courses";
 import { getMonthlyFeePaise, getRegistrationFeePaise } from "@/services/course-pricing";
-import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/pagination";
-import { buildSearchOr, type TextSearchWhere } from "@/utils/text-search";
+import { clampPage, type PaginatedResult } from "@/utils/pagination";
+import { buildSearchOr } from "@/utils/text-search";
 import type { FinanceFilters } from "@/services/finance-filters";
 
 export type FeeWaiverFinanceStats = {

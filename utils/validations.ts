@@ -147,7 +147,6 @@ export const monthlyPaymentSubmitSchema = z.object({
     .optional()
     .or(z.literal(""))
     .or(z.null()),
-  paymentType: z.enum(["monthly", "quarterly", "half_yearly", "yearly", "one_time"]).optional().default("monthly"),
   couponId: z.string().optional().or(z.literal("")).or(z.null()),
 });
 

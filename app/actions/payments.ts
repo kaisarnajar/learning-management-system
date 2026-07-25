@@ -19,7 +19,6 @@ export async function submitMonthlyPayment(formData: FormData) {
       paymentYear: formData.get("paymentYear"),
       paymentMethod: formData.get("paymentMethod"),
       upiTransactionId: formData.get("upiTransactionId"),
-      paymentType: formData.get("paymentType"),
       couponId: formData.get("couponId"),
     });
 
@@ -38,7 +37,6 @@ export async function submitMonthlyPayment(formData: FormData) {
       parsed.data.paymentMethod ?? null,
       parsed.data.upiTransactionId ?? null,
       screenshotFile,
-      parsed.data.paymentType,
       parsed.data.couponId ?? null
     );
 

@@ -27,15 +27,14 @@ export async function getApplicableCoupons(
   const now = new Date();
   // Account for timezones ahead of UTC (e.g. IST +5:30) where local date is today but UTC is previous day
   const timezoneBuffer = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-  const db = prisma as any;
 
   // Find all coupons already used by this student
   const [usedUsages, usedSubmissions] = await Promise.all([
-    db.couponUsage.findMany({
+    prisma.couponUsage.findMany({
       where: { userId },
       select: { couponId: true },
     }),
-    db.coursePaymentSubmission.findMany({
+    prisma.coursePaymentSubmission.findMany({
       where: {
         userId,
         couponId: { not: null },
@@ -127,18 +126,9 @@ export async function getSelectedCoupon(
   return selectableCoupons[0];
 }
 
-/** Backwards-compatible helper returning the selected or default top coupon. */
-export async function getBestApplicableCoupon(
-  userId: string,
-  courseId: string,
-  feeType?: "enrollment" | "course"
-) {
-  return getSelectedCoupon(userId, courseId, feeType);
-}
-
 export async function recordCouponUsage(userId: string, couponId: string) {
   try {
-    await (prisma as any).couponUsage.upsert({
+    await prisma.couponUsage.upsert({
       where: { couponId_userId: { couponId, userId } },
       create: { couponId, userId },
       update: {},

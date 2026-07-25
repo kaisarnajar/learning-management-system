@@ -299,7 +299,7 @@ export async function deleteCouponRequest(requestId: string) {
   if (!request) return { error: "Request not found." };
 
   try {
-    await prisma.$transaction(async (tx: any) => {
+    await prisma.$transaction(async (tx) => {
       // If there's a coupon associated with this request
       if (request.couponId) {
         // Find payment submissions linked to this couponId
@@ -308,10 +308,10 @@ export async function deleteCouponRequest(requestId: string) {
           select: { id: true, paymentRecordId: true },
         });
 
-        const submissionIds = submissions.map((s: { id: string }) => s.id);
+        const submissionIds = submissions.map((s) => s.id);
         const paymentRecordIds = submissions
-          .map((s: { paymentRecordId: string | null }) => s.paymentRecordId)
-          .filter(Boolean);
+          .map((s) => s.paymentRecordId)
+          .filter((id): id is string => Boolean(id));
 
         // Delete PaymentRecords linked to these submissions (removes from Finance & Fee Waiver Finance)
         if (paymentRecordIds.length > 0) {

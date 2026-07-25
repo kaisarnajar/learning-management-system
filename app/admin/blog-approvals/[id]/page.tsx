@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 
 import { getBlogPostForAdmin } from "@/services/blogs";
 import { BlogApprovalActions } from "@/components/admin/BlogApprovalActions";
+import { stripHtml } from "@/utils/html";
 import Image from "next/image";
 
 export default async function AdminBlogApprovalDetailPage({
@@ -53,7 +54,7 @@ export default async function AdminBlogApprovalDetailPage({
         {post.excerpt && (
           <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
             <dt className="shrink-0 font-medium text-foreground sm:w-32">Excerpt</dt>
-            <dd className="text-muted">{post.excerpt}</dd>
+            <dd className="text-muted" dir="auto">{stripHtml(post.excerpt)}</dd>
           </div>
         )}
       </dl>

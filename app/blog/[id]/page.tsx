@@ -7,6 +7,7 @@ import { formatBlogDate, getPublishedBlogPostById } from "@/services/blogs";
 import { auth } from "@/services/auth";
 import { isAdminSession } from "@/services/admin";
 import { BlogEngagement } from "./BlogEngagement";
+import { getBlogExcerpt, stripHtml } from "@/utils/html";
 
 import { BRAND_CONFIG } from "@/config/brand";
 import { JsonLd } from "@/components/site/JsonLd";
@@ -23,7 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
   const postUrl = `${baseUrl}/blog/${post.id}`;
-  const description = post.excerpt || post.body.slice(0, 160).replace(/[#*`]/g, "");
+  const description = getBlogExcerpt(post, 160);
   const imageUrl = post.images && post.images.length > 0 ? post.images[0].imagePath : BRAND_CONFIG.seo.openGraphImage;
 
   return {
@@ -96,14 +97,14 @@ export default async function BlogDetailPage({ params }: PageProps) {
       </Link>
 
       <article className="mx-auto mt-6 max-w-3xl">
-        <h1 className="font-serif text-2xl font-bold text-foreground sm:text-3xl">{post.title}</h1>
+        <h1 className="font-serif text-2xl font-bold text-foreground sm:text-3xl" dir="auto">{post.title}</h1>
         <p className="mt-2 text-sm text-muted">
           {formatBlogDate(post.createdAt)}
           {post.createdBy?.name ? ` · ${post.createdBy.name}` : ""}
         </p>
 
         {post.excerpt && (
-          <p className="mt-4 text-lg leading-relaxed text-muted">{post.excerpt}</p>
+          <p className="mt-4 text-lg leading-relaxed text-muted" dir="auto">{stripHtml(post.excerpt)}</p>
         )}
 
         <div

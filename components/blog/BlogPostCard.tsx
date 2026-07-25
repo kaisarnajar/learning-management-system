@@ -1,5 +1,6 @@
 import type { BlogPostWithImages } from "@/services/blogs";
 import { formatBlogAuthorName, formatBlogDate } from "@/services/blogs";
+import { getBlogExcerpt } from "@/utils/html";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -9,7 +10,7 @@ type BlogPostCardProps = {
 
 export function BlogPostCard({ post }: BlogPostCardProps) {
   const cover = post.images[0];
-  const summary = post.excerpt || post.body.slice(0, 160) + (post.body.length > 160 ? "…" : "");
+  const summary = getBlogExcerpt(post, 160);
   const authorName = formatBlogAuthorName(post.createdBy);
 
   return (
@@ -27,13 +28,13 @@ export function BlogPostCard({ post }: BlogPostCardProps) {
       )}
       <div className="flex flex-1 flex-col p-5">
         <p className="text-xs text-muted">{formatBlogDate(post.createdAt)}</p>
-        <h2 className="mt-2 font-serif text-lg font-semibold text-foreground">
+        <h2 className="mt-2 font-serif text-lg font-semibold text-foreground" dir="auto">
           <Link href={`/blog/${post.id}`} className="line-clamp-2 block hover:text-gold">
             {post.title}
           </Link>
         </h2>
         <p className="mt-1 text-xs text-muted">By {authorName}</p>
-        <p className="mt-2 text-sm leading-relaxed text-muted">{summary}</p>
+        <p className="mt-2 text-sm leading-relaxed text-muted" dir="auto">{summary}</p>
         <Link
           href={`/blog/${post.id}`}
           className="mt-auto pt-4 text-sm font-semibold text-primary hover:underline"

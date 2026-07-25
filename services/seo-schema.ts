@@ -1,4 +1,5 @@
 import { BRAND_CONFIG } from "@/config/brand";
+import { getBlogExcerpt } from "@/utils/html";
 
 /**
  * Organization Schema generator (EducationalOrganization)
@@ -106,7 +107,7 @@ export function getBlogPostingSchema(post: BlogPostingSchemaParams) {
   const postUrl = `${baseUrl}/blog/${post.id}`;
   const publishDate = new Date(post.createdAt).toISOString();
   const modifiedDate = post.updatedAt ? new Date(post.updatedAt).toISOString() : publishDate;
-  const description = post.excerpt || post.body.substring(0, 160).replace(/[#*`]/g, "");
+  const description = getBlogExcerpt(post, 160);
 
   return {
     "@context": "https://schema.org",

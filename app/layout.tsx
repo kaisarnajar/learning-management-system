@@ -28,6 +28,7 @@ const amiri = Amiri({
 import { BRAND_CONFIG } from "@/config/brand";
 import { JsonLd } from "@/components/site/JsonLd";
 import { PwaRegister } from "@/components/site/PwaRegister";
+import { GoogleAnalytics } from "@/components/site/GoogleAnalytics";
 import { getOrganizationSchema } from "@/services/seo-schema";
 
 export const metadata: Metadata = {
@@ -37,6 +38,12 @@ export const metadata: Metadata = {
     template: BRAND_CONFIG.seo.titleTemplate,
   },
   description: BRAND_CONFIG.seo.defaultDescription,
+  verification: {
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
+    other: {
+      "msvalidate.01": process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || "",
+    },
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -101,6 +108,7 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col overflow-x-hidden font-sans" suppressHydrationWarning>
         <JsonLd data={getOrganizationSchema()} />
         <PwaRegister />
+        <GoogleAnalytics />
         <SessionProvider>
           <ToastProvider>
             <CartProvider>

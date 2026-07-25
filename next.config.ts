@@ -6,6 +6,9 @@ const r2Domain = process.env.R2_PUBLIC_URL
   : "cdn.your-academy.com";
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: __dirname,
+  },
   serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core"],
   experimental: {
     serverActions: {

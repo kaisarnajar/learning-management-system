@@ -27,6 +27,7 @@ const amiri = Amiri({
 
 import { BRAND_CONFIG } from "@/config/brand";
 import { JsonLd } from "@/components/site/JsonLd";
+import { PwaRegister } from "@/components/site/PwaRegister";
 import { getOrganizationSchema } from "@/services/seo-schema";
 
 export const metadata: Metadata = {
@@ -36,6 +37,11 @@ export const metadata: Metadata = {
     template: BRAND_CONFIG.seo.titleTemplate,
   },
   description: BRAND_CONFIG.seo.defaultDescription,
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: BRAND_CONFIG.shortName,
+  },
   keywords: [
     "Quran learning",
     "Tajweed online",
@@ -94,6 +100,7 @@ export default function RootLayout({
     <html lang="en" className={`${poppins.variable} ${amiri.variable} ${indoPakArabic.variable} h-full antialiased`} suppressHydrationWarning>
       <body className="flex min-h-full flex-col overflow-x-hidden font-sans" suppressHydrationWarning>
         <JsonLd data={getOrganizationSchema()} />
+        <PwaRegister />
         <SessionProvider>
           <ToastProvider>
             <CartProvider>

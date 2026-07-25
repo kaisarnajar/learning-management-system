@@ -1,38 +1,28 @@
--- CreateEnum
-CREATE TYPE "FeeFrequency" AS ENUM ('MONTHLY', 'EVERY_3_MONTHS', 'EVERY_6_MONTHS', 'YEARLY', 'ONE_TIME');
+-- CreateEnum safely
+DO $$ BEGIN
+    CREATE TYPE "FeeFrequency" AS ENUM ('MONTHLY', 'EVERY_3_MONTHS', 'EVERY_6_MONTHS', 'YEARLY', 'ONE_TIME');
+EXCEPTION
+    WHEN duplicate_object THEN null;
+END $$;
 
--- AlterTable
-ALTER TABLE "Book" ADD COLUMN     "weightInGrams" INTEGER NOT NULL DEFAULT 0;
+-- AlterTable safely
+ALTER TABLE "Book" ADD COLUMN IF NOT EXISTS "weightInGrams" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "BookOrder" ADD COLUMN IF NOT EXISTS "shippingChargeInrPaise" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Course" ADD COLUMN IF NOT EXISTS "feeFrequency" "FeeFrequency";
+ALTER TABLE "Enrollment" ADD COLUMN IF NOT EXISTS "rollNumber" INTEGER;
+ALTER TABLE "PaymentSettings" ADD COLUMN IF NOT EXISTS "upiNumber" TEXT NOT NULL DEFAULT '';
+ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "registrationNumber" TEXT;
 
--- AlterTable
-ALTER TABLE "BookOrder" ADD COLUMN     "shippingChargeInrPaise" INTEGER NOT NULL DEFAULT 0;
+-- DropTable safely
+DROP TABLE IF EXISTS "AcademySettings";
+DROP TABLE IF EXISTS "AnalyticsEvent";
+DROP TABLE IF EXISTS "SocialLinksSettings";
 
--- AlterTable
-ALTER TABLE "Course" ADD COLUMN     "feeFrequency" "FeeFrequency";
+-- DropEnum safely
+DROP TYPE IF EXISTS "AnalyticsEventType";
 
--- AlterTable
-ALTER TABLE "Enrollment" ADD COLUMN     "rollNumber" INTEGER;
-
--- AlterTable
-ALTER TABLE "PaymentSettings" ADD COLUMN     "upiNumber" TEXT NOT NULL DEFAULT '';
-
--- AlterTable
-ALTER TABLE "User" ADD COLUMN     "registrationNumber" TEXT;
-
--- DropTable
-DROP TABLE "AcademySettings";
-
--- DropTable
-DROP TABLE "AnalyticsEvent";
-
--- DropTable
-DROP TABLE "SocialLinksSettings";
-
--- DropEnum
-DROP TYPE "AnalyticsEventType";
-
--- CreateTable
-CREATE TABLE "ShippingChargeSlab" (
+-- CreateTable safely
+CREATE TABLE IF NOT EXISTS "ShippingChargeSlab" (
     "id" TEXT NOT NULL,
     "minWeightGrams" INTEGER NOT NULL,
     "maxWeightGrams" INTEGER NOT NULL,
@@ -43,8 +33,8 @@ CREATE TABLE "ShippingChargeSlab" (
     CONSTRAINT "ShippingChargeSlab_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "CourseAttendance" (
+-- CreateTable safely
+CREATE TABLE IF NOT EXISTS "CourseAttendance" (
     "id" TEXT NOT NULL,
     "courseId" TEXT NOT NULL,
     "date" DATE NOT NULL,
@@ -54,8 +44,8 @@ CREATE TABLE "CourseAttendance" (
     CONSTRAINT "CourseAttendance_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "CourseAttendanceRecord" (
+-- CreateTable safely
+CREATE TABLE IF NOT EXISTS "CourseAttendanceRecord" (
     "id" TEXT NOT NULL,
     "attendanceId" TEXT NOT NULL,
     "enrollmentId" TEXT NOT NULL,
@@ -66,8 +56,8 @@ CREATE TABLE "CourseAttendanceRecord" (
     CONSTRAINT "CourseAttendanceRecord_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "CourseGrade" (
+-- CreateTable safely
+CREATE TABLE IF NOT EXISTS "CourseGrade" (
     "id" TEXT NOT NULL,
     "courseId" TEXT NOT NULL,
     "title" TEXT NOT NULL,
@@ -79,8 +69,8 @@ CREATE TABLE "CourseGrade" (
     CONSTRAINT "CourseGrade_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "CourseGradeRecord" (
+-- CreateTable safely
+CREATE TABLE IF NOT EXISTS "CourseGradeRecord" (
     "id" TEXT NOT NULL,
     "gradeId" TEXT NOT NULL,
     "enrollmentId" TEXT NOT NULL,
@@ -91,56 +81,41 @@ CREATE TABLE "CourseGradeRecord" (
     CONSTRAINT "CourseGradeRecord_pkey" PRIMARY KEY ("id")
 );
 
--- CreateIndex
-CREATE INDEX "ShippingChargeSlab_minWeightGrams_maxWeightGrams_idx" ON "ShippingChargeSlab"("minWeightGrams", "maxWeightGrams");
+-- CreateIndex safely
+CREATE INDEX IF NOT EXISTS "ShippingChargeSlab_minWeightGrams_maxWeightGrams_idx" ON "ShippingChargeSlab"("minWeightGrams", "maxWeightGrams");
+CREATE INDEX IF NOT EXISTS "CourseAttendance_courseId_idx" ON "CourseAttendance"("courseId");
+CREATE INDEX IF NOT EXISTS "CourseAttendance_date_idx" ON "CourseAttendance"("date");
+CREATE UNIQUE INDEX IF NOT EXISTS "CourseAttendance_courseId_date_key" ON "CourseAttendance"("courseId", "date");
+CREATE INDEX IF NOT EXISTS "CourseAttendanceRecord_enrollmentId_idx" ON "CourseAttendanceRecord"("enrollmentId");
+CREATE UNIQUE INDEX IF NOT EXISTS "CourseAttendanceRecord_attendanceId_enrollmentId_key" ON "CourseAttendanceRecord"("attendanceId", "enrollmentId");
+CREATE INDEX IF NOT EXISTS "CourseGrade_courseId_idx" ON "CourseGrade"("courseId");
+CREATE INDEX IF NOT EXISTS "CourseGrade_date_idx" ON "CourseGrade"("date");
+CREATE INDEX IF NOT EXISTS "CourseGradeRecord_enrollmentId_idx" ON "CourseGradeRecord"("enrollmentId");
+CREATE UNIQUE INDEX IF NOT EXISTS "CourseGradeRecord_gradeId_enrollmentId_key" ON "CourseGradeRecord"("gradeId", "enrollmentId");
+CREATE UNIQUE INDEX IF NOT EXISTS "Enrollment_courseId_rollNumber_key" ON "Enrollment"("courseId", "rollNumber");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_registrationNumber_key" ON "User"("registrationNumber");
 
--- CreateIndex
-CREATE INDEX "CourseAttendance_courseId_idx" ON "CourseAttendance"("courseId");
+-- AddForeignKey safely
+DO $$ BEGIN
+    ALTER TABLE "CourseAttendance" ADD CONSTRAINT "CourseAttendance_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
--- CreateIndex
-CREATE INDEX "CourseAttendance_date_idx" ON "CourseAttendance"("date");
+DO $$ BEGIN
+    ALTER TABLE "CourseAttendanceRecord" ADD CONSTRAINT "CourseAttendanceRecord_attendanceId_fkey" FOREIGN KEY ("attendanceId") REFERENCES "CourseAttendance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "CourseAttendance_courseId_date_key" ON "CourseAttendance"("courseId", "date");
+DO $$ BEGIN
+    ALTER TABLE "CourseAttendanceRecord" ADD CONSTRAINT "CourseAttendanceRecord_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "Enrollment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
--- CreateIndex
-CREATE INDEX "CourseAttendanceRecord_enrollmentId_idx" ON "CourseAttendanceRecord"("enrollmentId");
+DO $$ BEGIN
+    ALTER TABLE "CourseGrade" ADD CONSTRAINT "CourseGrade_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "CourseAttendanceRecord_attendanceId_enrollmentId_key" ON "CourseAttendanceRecord"("attendanceId", "enrollmentId");
+DO $$ BEGIN
+    ALTER TABLE "CourseGradeRecord" ADD CONSTRAINT "CourseGradeRecord_gradeId_fkey" FOREIGN KEY ("gradeId") REFERENCES "CourseGrade"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null; END $$;
 
--- CreateIndex
-CREATE INDEX "CourseGrade_courseId_idx" ON "CourseGrade"("courseId");
-
--- CreateIndex
-CREATE INDEX "CourseGrade_date_idx" ON "CourseGrade"("date");
-
--- CreateIndex
-CREATE INDEX "CourseGradeRecord_enrollmentId_idx" ON "CourseGradeRecord"("enrollmentId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "CourseGradeRecord_gradeId_enrollmentId_key" ON "CourseGradeRecord"("gradeId", "enrollmentId");
-
--- CreateIndex
-CREATE UNIQUE INDEX "Enrollment_courseId_rollNumber_key" ON "Enrollment"("courseId", "rollNumber");
-
--- CreateIndex
-CREATE UNIQUE INDEX "User_registrationNumber_key" ON "User"("registrationNumber");
-
--- AddForeignKey
-ALTER TABLE "CourseAttendance" ADD CONSTRAINT "CourseAttendance_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "CourseAttendanceRecord" ADD CONSTRAINT "CourseAttendanceRecord_attendanceId_fkey" FOREIGN KEY ("attendanceId") REFERENCES "CourseAttendance"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "CourseAttendanceRecord" ADD CONSTRAINT "CourseAttendanceRecord_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "Enrollment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "CourseGrade" ADD CONSTRAINT "CourseGrade_courseId_fkey" FOREIGN KEY ("courseId") REFERENCES "Course"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "CourseGradeRecord" ADD CONSTRAINT "CourseGradeRecord_gradeId_fkey" FOREIGN KEY ("gradeId") REFERENCES "CourseGrade"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "CourseGradeRecord" ADD CONSTRAINT "CourseGradeRecord_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "Enrollment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+    ALTER TABLE "CourseGradeRecord" ADD CONSTRAINT "CourseGradeRecord_enrollmentId_fkey" FOREIGN KEY ("enrollmentId") REFERENCES "Enrollment"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null; END $$;

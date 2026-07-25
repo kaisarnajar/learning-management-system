@@ -14,7 +14,10 @@ import {
 } from "./seed-demo-data";
 
 function assertDemoSeedAllowed() {
-  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "true") {
+  const isDevBranch = process.env.VERCEL_GIT_COMMIT_REF === "dev";
+  const isAllowed = process.env.ALLOW_DEMO_SEED === "true" || isDevBranch;
+
+  if (process.env.NODE_ENV === "production" && !isAllowed) {
     console.error(
       "Demo seed is blocked when NODE_ENV=production. Set ALLOW_DEMO_SEED=true to override.",
     );

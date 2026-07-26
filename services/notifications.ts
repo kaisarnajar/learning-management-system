@@ -1,4 +1,5 @@
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import type { StudentNotification, StudentNotificationType } from "@prisma/client";
 import { PENDING_ENROLLMENT_APPROVAL } from "@/services/enrollment-status";
 import {
@@ -22,6 +23,59 @@ import {
   sendBookOrderShippedEmail,
   sendBookOrderRefundedEmail
 } from "@/services/email";
+
+/**
+ * Runs an asynchronous task in the background safely.
+ * Uses Next.js `after()` API when inside a request context to ensure
+ * serverless execution containers do not freeze or terminate prematurely.
+ * Falls back gracefully to Promise execution if called outside a request context.
+ */
+function runInBackground(task: () => Promise<void>) {
+  try {
+    after(task);
+  } catch {
+    Promise.resolve()
+      .then(task)
+      .catch((err) => {
+        console.error("[runInBackground] Fallback execution error:", err);
+      });
+  }
+}
+
+/**
+ * Sends emails to a list of recipients with concurrency control, per-recipient error isolation,
+ * and throttling delays between batches to prevent SMTP rate-limiting and connection limit drops.
+ */
+async function processEmailBatch<T>(
+  items: T[],
+  batchSize: number,
+  delayMs: number,
+  worker: (item: T) => Promise<void>,
+): Promise<{ successCount: number; failureCount: number }> {
+  let successCount = 0;
+  let failureCount = 0;
+
+  for (let i = 0; i < items.length; i += batchSize) {
+    const chunk = items.slice(i, i + batchSize);
+    await Promise.all(
+      chunk.map(async (item) => {
+        try {
+          await worker(item);
+          successCount++;
+        } catch (err) {
+          failureCount++;
+          console.error("[processEmailBatch] Error sending email for item:", item, err);
+        }
+      }),
+    );
+
+    if (i + batchSize < items.length && delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+
+  return { successCount, failureCount };
+}
 
 async function getUserEmailData(userId: string): Promise<{ email: string; name: string } | null> {
   const user = await withDbErrorHandling(() => prisma.user.findUnique({
@@ -218,10 +272,10 @@ export async function notifyPaymentApproved(params: {
   });
   revalidateNotificationPaths(params.userId);
 
-  Promise.resolve().then(async () => {
+  runInBackground(async () => {
     try {
       const user = await getUserEmailData(params.userId);
-      if (user) {
+      if (user && user.email) {
         await sendPaymentApprovedEmail({
           to: user.email,
           studentName: user.name,
@@ -251,10 +305,10 @@ export async function notifyEnrollmentApproved(params: {
   });
   revalidateNotificationPaths(params.userId);
 
-  Promise.resolve().then(async () => {
+  runInBackground(async () => {
     try {
       const user = await getUserEmailData(params.userId);
-      if (user) {
+      if (user && user.email) {
         await sendEnrollmentApprovedEmail({
           to: user.email,
           studentName: user.name,
@@ -284,10 +338,10 @@ export async function notifyEnrollmentRejected(params: {
   });
   revalidateNotificationPaths(params.userId);
 
-  Promise.resolve().then(async () => {
+  runInBackground(async () => {
     try {
       const user = await getUserEmailData(params.userId);
-      if (user) {
+      if (user && user.email) {
         await sendEnrollmentRejectedEmail({
           to: user.email,
           studentName: user.name,
@@ -322,24 +376,28 @@ export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
     revalidateNotificationPaths(userId);
   }
 
-  Promise.resolve().then(async () => {
-    try {
-      for (const userId of userIds) {
+  runInBackground(async () => {
+    const announcementUrl = toAbsoluteUrl(`/profile/courses/${params.courseId}/announcements`);
+    console.info(`[notifyEnrolledStudentsOfCourseAnnouncement] Starting email dispatch for course ${params.courseId} to ${userIds.length} students...`);
+    const { successCount, failureCount } = await processEmailBatch(
+      userIds,
+      5,
+      100,
+      async (userId) => {
         const user = await getUserEmailData(userId);
-        if (user) {
+        if (user && user.email) {
           await sendCourseAnnouncementEmail({
             to: user.email,
             studentName: user.name,
             courseTitle: params.courseTitle,
             announcementTitle: params.title,
             announcementBody: params.body,
-            announcementUrl: toAbsoluteUrl(`/profile/courses/${params.courseId}/announcements`)
+            announcementUrl,
           });
         }
-      }
-    } catch (err) {
-      console.error("[notifyEnrolledStudentsOfCourseAnnouncement] Email send error:", err);
-    }
+      },
+    );
+    console.info(`[notifyEnrolledStudentsOfCourseAnnouncement] Completed course announcement email dispatch. Sent: ${successCount}, Failed: ${failureCount}`);
   });
 }
 
@@ -363,10 +421,10 @@ export async function notifyStudentOfPersonalMessage(params: {
   });
   revalidateNotificationPaths(params.userId);
 
-  Promise.resolve().then(async () => {
+  runInBackground(async () => {
     try {
       const user = await getUserEmailData(params.userId);
-      if (user) {
+      if (user && user.email) {
         await sendPersonalMessageEmail({
           to: user.email,
           studentName: user.name,
@@ -401,23 +459,27 @@ export async function notifyAllStudentsOfSiteAnnouncement(params: {
   revalidatePath("/profile/notifications", "page");
   revalidatePath("/profile", "layout");
 
-  Promise.resolve().then(async () => {
-    try {
-      for (const userId of userIds) {
+  runInBackground(async () => {
+    const announcementUrl = toAbsoluteUrl(`/announcements/${params.announcementId}`);
+    console.info(`[notifyAllStudentsOfSiteAnnouncement] Starting email dispatch for site announcement to ${userIds.length} students...`);
+    const { successCount, failureCount } = await processEmailBatch(
+      userIds,
+      5,
+      100,
+      async (userId) => {
         const user = await getUserEmailData(userId);
-        if (user) {
+        if (user && user.email) {
           await sendSiteAnnouncementEmail({
             to: user.email,
             studentName: user.name,
             announcementTitle: params.title,
             announcementBody: params.body,
-            announcementUrl: toAbsoluteUrl(`/announcements/${params.announcementId}`)
+            announcementUrl,
           });
         }
-      }
-    } catch (err) {
-      console.error("[notifyAllStudentsOfSiteAnnouncement] Email send error:", err);
-    }
+      },
+    );
+    console.info(`[notifyAllStudentsOfSiteAnnouncement] Completed site announcement email dispatch. Sent: ${successCount}, Failed: ${failureCount}`);
   });
 }
 
@@ -510,10 +572,10 @@ export async function notifyBookOrderApproved(params: {
   });
   revalidateNotificationPaths(params.userId);
 
-  Promise.resolve().then(async () => {
+  runInBackground(async () => {
     try {
       const user = await getUserEmailData(params.userId);
-      if (user) {
+      if (user && user.email) {
         await sendBookOrderApprovedEmail({
           to: user.email,
           studentName: user.name,
@@ -542,10 +604,10 @@ export async function notifyBookOrderDeclined(params: {
   });
   revalidateNotificationPaths(params.userId);
 
-  Promise.resolve().then(async () => {
+  runInBackground(async () => {
     try {
       const user = await getUserEmailData(params.userId);
-      if (user) {
+      if (user && user.email) {
         await sendBookOrderDeclinedEmail({
           to: user.email,
           studentName: user.name,
@@ -575,10 +637,10 @@ export async function notifyBookOrderShipped(params: {
   });
   revalidateNotificationPaths(params.userId);
 
-  Promise.resolve().then(async () => {
+  runInBackground(async () => {
     try {
       const user = await getUserEmailData(params.userId);
-      if (user) {
+      if (user && user.email) {
         await sendBookOrderShippedEmail({
           to: user.email,
           studentName: user.name,
@@ -608,10 +670,10 @@ export async function notifyBookOrderRefunded(params: {
   });
   revalidateNotificationPaths(params.userId);
 
-  Promise.resolve().then(async () => {
+  runInBackground(async () => {
     try {
       const user = await getUserEmailData(params.userId);
-      if (user) {
+      if (user && user.email) {
         await sendBookOrderRefundedEmail({
           to: user.email,
           studentName: user.name,

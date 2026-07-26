@@ -14,7 +14,10 @@ import {
 } from "./seed-demo-data";
 
 function assertDemoSeedAllowed() {
-  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DEMO_SEED !== "true") {
+  const isDevBranch = process.env.VERCEL_GIT_COMMIT_REF === "dev";
+  const isAllowed = process.env.ALLOW_DEMO_SEED === "true" || isDevBranch;
+
+  if (process.env.NODE_ENV === "production" && !isAllowed) {
     console.error(
       "Demo seed is blocked when NODE_ENV=production. Set ALLOW_DEMO_SEED=true to override.",
     );
@@ -111,18 +114,34 @@ async function clearDatabase(prisma: PrismaClient) {
   console.log("Database cleared successfully.");
 }
 
+export async function runSeedDemo(prismaClient: PrismaClient) {
+  await assertDatabaseMigrated();
+  await clearDatabase(prismaClient);
+
+  await seedBootstrap(prismaClient);
+  await seedDemoAdmins(prismaClient);
+  await seedDemoTeachers(prismaClient);
+  await seedDemoData(prismaClient);
+  await seedDemoContent(prismaClient);
+  await seedDemoNotifications(prismaClient);
+  await seedDemoBulk(prismaClient);
+
+  return {
+    courses: await prismaClient.course.count(),
+    teachers: await prismaClient.teacher.count(),
+    users: await prismaClient.user.count(),
+    enrollments: await prismaClient.enrollment.count(),
+    books: await prismaClient.book.count(),
+    blogPosts: await prismaClient.blogPost.count(),
+    fatwas: await prismaClient.fatwaQuestion.count(),
+    payments: await prismaClient.paymentRecord.count(),
+    expenses: await prismaClient.expense.count(),
+  };
+}
+
 async function main() {
   assertDemoSeedAllowed();
-  await assertDatabaseMigrated();
-  await clearDatabase(prisma);
-
-  await seedBootstrap(prisma);
-  await seedDemoAdmins(prisma);
-  await seedDemoTeachers(prisma);
-  await seedDemoData(prisma);
-  await seedDemoContent(prisma);
-  await seedDemoNotifications(prisma);
-  await seedDemoBulk(prisma);
+  const summary = await runSeedDemo(prisma);
 
   console.log(
     "Seeded demo data: courses, teachers, library, testimonials, logins, students, finance, contact inquiries, announcements, blogs, verse/hadith, fatwa, notifications, and bulk QA datasets.",

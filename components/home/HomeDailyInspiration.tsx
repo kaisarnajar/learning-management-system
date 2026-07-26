@@ -30,7 +30,7 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
   if (!inspiration) return null;
 
   return (
-    <section className="relative overflow-hidden bg-brand-primary-light-alt py-20 sm:py-24" aria-labelledby="daily-inspiration-heading">
+    <section className="relative overflow-hidden bg-brand-primary-light-alt py-10 sm:py-12" aria-labelledby="daily-inspiration-heading">
       {/* Soft decorative glow */}
       <div className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-gold/15 blur-[100px]" aria-hidden="true"></div>
       <div className="absolute bottom-0 right-0 translate-x-1/4 translate-y-1/4 h-96 w-96 rounded-full bg-gold/10 blur-[100px]" aria-hidden="true"></div>
@@ -40,36 +40,36 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
       <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-gradient-to-r from-gold/0 via-gold/40 to-gold/0" />
 
       {/* Rosette Ornaments in Corners */}
-      <div className="absolute top-12 left-12 text-brand-gold-alt pointer-events-none select-none hidden md:block">
-        <RosetteIcon className="w-24 h-24" />
+      <div className="absolute top-6 left-6 text-brand-gold-alt pointer-events-none select-none hidden md:block">
+        <RosetteIcon className="w-12 h-12" />
       </div>
-      <div className="absolute bottom-12 right-12 text-brand-gold-alt pointer-events-none select-none hidden md:block">
-        <RosetteIcon className="w-24 h-24" />
+      <div className="absolute bottom-6 right-6 text-brand-gold-alt pointer-events-none select-none hidden md:block">
+        <RosetteIcon className="w-12 h-12" />
       </div>
 
-      <div className="relative mx-auto max-w-5xl px-4 text-center sm:px-6">
+      <div className="relative mx-auto max-w-4xl px-4 text-center sm:px-6">
         <div className="flex flex-col items-center">
           {/* Title Header with Lines */}
-          <div className="flex items-center gap-4 text-xs font-bold uppercase tracking-[0.3em] text-brand-gold-alt sm:text-sm">
-            <div className="h-[1.5px] w-6 bg-brand-gold-alt/40 sm:w-10"></div>
+          <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.25em] text-brand-gold-alt sm:text-xs">
+            <div className="h-[1.5px] w-5 bg-brand-gold-alt/40 sm:w-8"></div>
             <span>DAILY WISDOM</span>
-            <div className="h-[1.5px] w-6 bg-brand-gold-alt/40 sm:w-10"></div>
+            <div className="h-[1.5px] w-5 bg-brand-gold-alt/40 sm:w-8"></div>
           </div>
 
           {/* Main Card with Double Border */}
-          <div className="relative mt-10 w-full max-w-3xl mx-auto rounded-3xl border-2 border-gold/40 bg-brand-primary-hover/95 p-1.5 shadow-modal-deep ring-1 ring-gold/10">
-            <div className="border border-gold/20 rounded-ui-lg px-6 py-12 sm:px-12 sm:py-16 md:px-16 md:py-20">
+          <div className="relative mt-7 w-full max-w-xl mx-auto rounded-2xl border-2 border-gold/40 bg-brand-primary-hover/95 p-1.5 shadow-modal-deep ring-1 ring-gold/10">
+            <div className="border border-gold/20 rounded-xl px-5 py-6 sm:px-8 sm:py-8">
               
               {/* Badge Icon Overlap */}
-              <div className="absolute -top-7 left-1/2 -translate-x-1/2 w-14 h-14 rounded-full border-2 border-gold bg-brand-primary-hover text-brand-gold-alt flex items-center justify-center shadow-lg">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-10 h-10 rounded-full border-2 border-gold bg-brand-primary-hover text-brand-gold-alt flex items-center justify-center shadow-lg">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499c.195-.561.986-.561 1.18 0l1.838 5.279a.5.5 0 00.477.347h5.539c.596 0 .843.769.362 1.129l-4.482 3.32a.5.5 0 00-.178.547l1.838 5.279c.196.56-.449 1.03-1.077.569l-4.482-3.32a.5.5 0 00-.58 0l-4.482 3.32c-.628.461-1.273-.01-1.077-.569l1.838-5.279a.5.5 0 00-.178-.547l-4.482-3.32c-.48-.36-.233-1.129.362-1.129h5.539a.5.5 0 00.477-.347L11.48 3.499z" />
                 </svg>
               </div>
 
               {/* Arabic Text */}
               <p
-                className={`${indoPakArabic.className} indo-pak-arabic !text-center text-3xl leading-relaxed text-white drop-shadow-md sm:text-4xl md:text-5xl lg:text-6xl md:leading-[1.8]`}
+                className={`${indoPakArabic.className} indo-pak-arabic !text-center text-xl leading-relaxed text-white drop-shadow-md sm:text-2xl md:text-3xl md:leading-[1.7]`}
                 dir="rtl"
                 lang="ar"
               >
@@ -77,8 +77,8 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
               </p>
 
               {/* Small Rosette Divider */}
-              <div className="flex justify-center items-center my-8">
-                <svg className="w-6 h-6 text-gold/60" fill="currentColor" viewBox="0 0 24 24">
+              <div className="flex justify-center items-center my-4">
+                <svg className="w-5 h-5 text-gold/60" fill="currentColor" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="3" />
                   <circle cx="12" cy="6" r="2" />
                   <circle cx="12" cy="18" r="2" />
@@ -92,13 +92,13 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
               </div>
 
               {/* English Translation */}
-              <div className={`${sourceSerif.className} mx-auto max-w-2xl text-center text-lg leading-relaxed text-zinc-100 sm:text-xl md:text-2xl italic font-light`}>
+              <div className={`${sourceSerif.className} mx-auto max-w-lg text-center text-sm leading-relaxed text-zinc-100 sm:text-base md:text-lg italic font-light`}>
                 &ldquo;{inspiration.englishTranslation}&rdquo;
               </div>
 
               {/* Reference */}
               {inspiration.reference && (
-                <footer className="mt-8 text-center text-xs font-bold tracking-[0.3em] text-brand-gold-alt uppercase sm:text-sm">
+                <footer className="mt-5 text-center text-xs font-bold tracking-[0.25em] text-brand-gold-alt uppercase">
                   {inspiration.reference}
                 </footer>
               )}

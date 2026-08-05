@@ -64,6 +64,7 @@ export async function GET(
       certificateType: (enrollment.certificateType as "APPRECIATION" | "COMPLETION" | null) || "COMPLETION",
       certificateGrade: enrollment.certificateGrade,
       studentPhotoUrl: enrollment.user.image,
+      studentGender: enrollment.user.gender,
     });
 
     return new NextResponse(new Uint8Array(pdfBuffer), {

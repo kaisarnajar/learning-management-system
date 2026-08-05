@@ -22,6 +22,7 @@ export type CertificatePdfParams = {
   certificateType: "APPRECIATION" | "COMPLETION";
   certificateGrade: number | null;
   studentPhotoUrl?: string | null;
+  studentGender?: string | null;
   startDelayMs?: number;
 };
 
@@ -32,7 +33,7 @@ export async function generateCertificatePdf(params: CertificatePdfParams): Prom
   ]);
 
   const { base64Logo, base64Signature, base64Stamp } = await loadStandardPdfAssets();
-  const base64Photo = params.studentPhotoUrl ? await loadProfilePictureAsBase64(params.studentPhotoUrl) : "";
+  const base64Photo = await loadProfilePictureAsBase64(params.studentPhotoUrl, params.studentGender);
 
   const certData = {
     studentName: params.studentName,

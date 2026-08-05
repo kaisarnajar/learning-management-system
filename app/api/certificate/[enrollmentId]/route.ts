@@ -23,7 +23,7 @@ export async function GET(
   const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
       where: { id: enrollmentId },
       include: {
-        user: { select: { id: true, name: true, email: true, address: true, whatsapp: true, image: true } },
+        user: { select: { id: true, name: true, email: true, address: true, whatsapp: true, image: true, gender: true } },
       },
     }), "Database operation failed");
 

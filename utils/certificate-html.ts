@@ -118,24 +118,37 @@ export function renderCertificateToHtml(data: {
   >
     
     <!-- Date & Info -->
-    <div>
-      <div class="translate-y-4">
-        <p class="text-sm text-gray-500 tracking-wide mb-1 font-mono">
-          CERT NO: <span class="font-bold text-gray-800">${data.certificateNumber}</span>
+    <div class="flex flex-col justify-end pb-1">
+      
+      <div class="mb-3">
+        <p class="text-pdf-10 text-brand-gold uppercase tracking-[0.15em] font-bold mb-0.5">
+          Certificate Number
         </p>
+        <p class="text-pdf-16 font-mono font-bold text-brand-primary leading-none mt-1">
+          ${data.certificateNumber}
+        </p>
+      </div>
 
-        <p class="text-gray-600 text-lg">
+      <div class="mb-3">
+        <p class="text-pdf-10 text-brand-gold uppercase tracking-[0.15em] font-bold mb-0.5">
           Date of Issuance
         </p>
-
-        <p class="text-pdf-28 font-semibold text-brand-primary">
+        <p class="text-pdf-26 font-bold text-brand-primary leading-none mt-1">
           ${data.issueDate}
         </p>
       </div>
 
-      <div class="mt-4 text-gray-700 text-pdf-16">
-        <p>${data.academyEmail}</p>
-        <p>${data.academyPhone}</p>
+      <div class="w-16 h-[2px] bg-brand-gold/60 mb-2 rounded-full"></div>
+
+      <div class="flex flex-col gap-1 text-pdf-11 text-gray-700 font-medium tracking-wide">
+        <div class="flex items-center gap-2">
+          <svg class="w-3.5 h-3.5 text-brand-gold flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+          ${data.academyEmail}
+        </div>
+        <div class="flex items-center gap-2">
+          <svg class="w-3.5 h-3.5 text-brand-gold flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+          ${data.academyPhone}
+        </div>
       </div>
     </div>
 

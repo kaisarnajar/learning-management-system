@@ -1,7 +1,7 @@
 import { getSocialLinksSettings, formatWhatsAppForDisplay } from "@/services/social-links";
 import { getAcademySettings } from "@/services/academy-settings";
 import { renderCertificateToHtml } from "@/utils/certificate-html";
-import { generatePdfFromHtml, loadStandardPdfAssets, wrapHtmlForPdf } from "@/services/pdf-generator";
+import { generatePdfFromHtml, loadStandardPdfAssets, loadProfilePictureAsBase64, wrapHtmlForPdf } from "@/services/pdf-generator";
 
 
 export function getCertificateFilename(courseTitle: string, enrollmentId: string): string {
@@ -21,6 +21,7 @@ export type CertificatePdfParams = {
   certificateNumber: string;
   certificateType: "APPRECIATION" | "COMPLETION";
   certificateGrade: number | null;
+  studentPhotoUrl?: string | null;
   startDelayMs?: number;
 };
 
@@ -31,6 +32,7 @@ export async function generateCertificatePdf(params: CertificatePdfParams): Prom
   ]);
 
   const { base64Logo, base64Signature, base64Stamp } = await loadStandardPdfAssets();
+  const base64Photo = params.studentPhotoUrl ? await loadProfilePictureAsBase64(params.studentPhotoUrl) : "";
 
   const certData = {
     studentName: params.studentName,
@@ -46,6 +48,7 @@ export async function generateCertificatePdf(params: CertificatePdfParams): Prom
     certificateNumber: params.certificateNumber,
     certificateType: params.certificateType,
     certificateGrade: params.certificateGrade,
+    studentPhotoUrl: base64Photo || undefined,
   };
 
   const componentHtml = renderCertificateToHtml(certData);

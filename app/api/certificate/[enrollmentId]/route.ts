@@ -23,7 +23,7 @@ export async function GET(
   const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
       where: { id: enrollmentId },
       include: {
-        user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } },
+        user: { select: { id: true, name: true, email: true, address: true, whatsapp: true, image: true } },
       },
     }), "Database operation failed");
 
@@ -63,6 +63,7 @@ export async function GET(
       certificateNumber: enrollment.certificateNumber,
       certificateType: (enrollment.certificateType as "APPRECIATION" | "COMPLETION" | null) || "COMPLETION",
       certificateGrade: enrollment.certificateGrade,
+      studentPhotoUrl: enrollment.user.image,
     });
 
     return new NextResponse(new Uint8Array(pdfBuffer), {

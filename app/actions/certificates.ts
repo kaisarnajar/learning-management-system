@@ -19,7 +19,7 @@ export async function generateCertificate(enrollmentId: string, certificateType:
 
   const enrollment = await prisma.enrollment.findUnique({
     where: { id: enrollmentId },
-    include: { user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } } },
+    include: { user: { select: { id: true, name: true, email: true, address: true, whatsapp: true, image: true } } },
   });
 
   if (!enrollment) {
@@ -100,7 +100,7 @@ export async function sendCertificateToEmailAction(enrollmentId: string): Promis
 
   const enrollment = await prisma.enrollment.findUnique({
     where: { id: enrollmentId },
-    include: { user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } } },
+    include: { user: { select: { id: true, name: true, email: true, address: true, whatsapp: true, image: true } } },
   });
 
   if (!enrollment || !enrollment.certificateGeneratedAt || !enrollment.certificateNumber) {
@@ -125,6 +125,7 @@ export async function sendCertificateToEmailAction(enrollmentId: string): Promis
       certificateNumber: enrollment.certificateNumber,
       certificateType: (enrollment.certificateType as "APPRECIATION" | "COMPLETION" | null) || "COMPLETION",
       certificateGrade: enrollment.certificateGrade,
+      studentPhotoUrl: enrollment.user.image,
     });
     const pdfFilename = getCertificateFilename(courseTitle, enrollmentId);
 

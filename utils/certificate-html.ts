@@ -13,6 +13,7 @@ export function renderCertificateToHtml(data: {
   certificateNumber: string;
   certificateType?: string; // "APPRECIATION" or "COMPLETION"
   certificateGrade?: number | null; // 0-10
+  studentPhotoUrl?: string;
 }) {
   const isCompletion = data.certificateType === "COMPLETION";
   const title = isCompletion ? "Certificate of Completion" : "Certificate of Appreciation";
@@ -67,6 +68,14 @@ export function renderCertificateToHtml(data: {
            <div class="h-[2px] w-10 bg-brand-gold"></div>
         </div>
       </div>
+      
+      ${data.studentPhotoUrl ? `
+      <img
+        src="${data.studentPhotoUrl}"
+        class="w-24 h-24 flex-shrink-0 object-cover rounded-md border-2 border-brand-gold"
+        alt="Student"
+      />
+      ` : '<div class="w-24 h-24 flex-shrink-0"></div>'}
     </div>
 
     <div class="text-center mt-5">

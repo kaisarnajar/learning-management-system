@@ -182,16 +182,11 @@ export async function loadProfilePictureAsBase64(
         upgradedUrl = upgradedUrl.replace(/=s\d+-c/g, "=s1000-c");
       }
       
-      const res = await fetch(upgradedUrl, { 
-        cache: "no-store",
-        headers: { "User-Agent": "Mozilla/5.0" }
-      });
+      const res = await fetch(upgradedUrl, { cache: "no-store" });
       if (res.ok) {
         const buffer = await res.arrayBuffer();
         const mimeType = res.headers.get("content-type") || "image/jpeg";
         return `data:${mimeType};base64,${Buffer.from(buffer).toString('base64')}`;
-      } else {
-        throw new Error(`Failed to fetch profile picture: ${res.status} ${res.statusText}`);
       }
     } else if (effectiveUrl.startsWith("/")) {
       let imgPath = "";

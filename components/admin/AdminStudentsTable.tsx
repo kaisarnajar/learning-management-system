@@ -5,15 +5,94 @@ import { type User } from "@prisma/client";
 
 import { adminActionButtonClassName } from "@/utils/form";
 
-export function AdminStudentsTable({ students }: { students: User[] }) {
+type AdminStudentsTableProps = {
+  students: User[];
+  currentSort?: string;
+  params?: Record<string, string | undefined>;
+};
+
+function buildSortHref(
+  key: "regNo" | "name" | "email" | "date",
+  currentSort: string,
+  params: Record<string, string | undefined>,
+): string {
+  const searchParams = new URLSearchParams();
+  for (const [pKey, pVal] of Object.entries(params)) {
+    if (pVal !== undefined && pVal !== "" && pKey !== "page" && pKey !== "sort") {
+      searchParams.set(pKey, pVal);
+    }
+  }
+
+  let nextSort: string;
+  if (currentSort === `${key}_asc`) {
+    nextSort = `${key}_desc`;
+  } else if (currentSort === `${key}_desc`) {
+    nextSort = `${key}_asc`;
+  } else {
+    nextSort = `${key}_asc`;
+  }
+
+  if (nextSort !== "regNo_asc") {
+    searchParams.set("sort", nextSort);
+  }
+
+  const qs = searchParams.toString();
+  return qs ? `/admin/students?${qs}` : "/admin/students";
+}
+
+function SortHeaderLink({
+  label,
+  sortKey,
+  currentSort,
+  params,
+}: {
+  label: string;
+  sortKey: "regNo" | "name" | "email" | "date";
+  currentSort: string;
+  params: Record<string, string | undefined>;
+}) {
+  const isActive = currentSort.startsWith(`${sortKey}_`);
+  const direction = currentSort === `${sortKey}_desc` ? "desc" : "asc";
+
+  return (
+    <Link
+      href={buildSortHref(sortKey, currentSort, params)}
+      className="group inline-flex items-center gap-1 hover:text-foreground focus:outline-none"
+      title={`Sort by ${label} (${isActive && direction === "asc" ? "Descending" : "Ascending"})`}
+    >
+      <span>{label}</span>
+      <span className="text-xs">
+        {isActive ? (
+          <span className="text-primary">{direction === "asc" ? "▲" : "▼"}</span>
+        ) : (
+          <span className="text-muted/40 group-hover:text-muted">↕</span>
+        )}
+      </span>
+    </Link>
+  );
+}
+
+export function AdminStudentsTable({
+  students,
+  currentSort = "regNo_asc",
+  params = {},
+}: AdminStudentsTableProps) {
   return (
     <table className="w-full min-w-ui-640 text-left text-sm">
       <thead className="border-b border-border bg-background/50 text-muted">
         <tr>
-          <th className="px-4 py-3 font-medium">Registration No</th>
-          <th className="px-4 py-3 font-medium">Student</th>
-          <th className="px-4 py-3 font-medium">Email</th>
-          <th className="px-4 py-3 font-medium">Registered</th>
+          <th className="px-4 py-3 font-medium">
+            <SortHeaderLink label="Registration No" sortKey="regNo" currentSort={currentSort} params={params} />
+          </th>
+          <th className="px-4 py-3 font-medium">
+            <SortHeaderLink label="Student" sortKey="name" currentSort={currentSort} params={params} />
+          </th>
+          <th className="px-4 py-3 font-medium">
+            <SortHeaderLink label="Email" sortKey="email" currentSort={currentSort} params={params} />
+          </th>
+          <th className="px-4 py-3 font-medium">
+            <SortHeaderLink label="Registered" sortKey="date" currentSort={currentSort} params={params} />
+          </th>
           <th className="px-4 py-3 font-medium" />
         </tr>
       </thead>

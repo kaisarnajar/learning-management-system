@@ -5,31 +5,34 @@ import { getStudentUsersPaginated } from "@/services/students";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { AdminStudentsTable } from "@/components/admin/AdminStudentsTable";
+import { StudentSortSelect } from "@/components/admin/StudentSortSelect";
 
 import { Suspense } from "react";
 
 type PageParams = {
-
   deleted?: string;
   page?: string;
   q?: string;
+  sort?: string;
   [key: string]: string | undefined;
 };
 
-async function AdminStudentsList({ params, q }: { params: PageParams; q?: string }) {
+async function AdminStudentsList({ params, q, sort }: { params: PageParams; q?: string; sort?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params);
-  const { items: students, totalCount } = await getStudentUsersPaginated(requestedPage, pageSize, q);
+  const { items: students, totalCount } = await getStudentUsersPaginated(requestedPage, pageSize, q, sort);
   const page = clampPage(requestedPage, totalCount, pageSize);
 
   return (
     <>
-      <div className="mt-6">
+      <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <ListSearchForm
           action="/admin/students"
           query={q}
-          placeholder="Search by name or email"
+          placeholder="Search by registration no, name, or email"
+          preserveParams={{ sort: params.sort }}
           totalCount={q ? totalCount : undefined}
         />
+        <StudentSortSelect currentSort={sort} />
       </div>
 
       <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
@@ -38,7 +41,7 @@ async function AdminStudentsList({ params, q }: { params: PageParams; q?: string
             {q ? "No students match your search." : "No student accounts yet."}
           </p>
         ) : (
-          <AdminStudentsTable students={students} />
+          <AdminStudentsTable students={students} currentSort={sort} params={params} />
         )}
       </div>
 
@@ -69,6 +72,7 @@ export default async function AdminStudentsPage({
 }) {
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
+  const sort = params.sort || "regNo_asc";
 
   return (
     <div>
@@ -83,7 +87,7 @@ export default async function AdminStudentsPage({
       <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Student account deleted." variant="info" />
 
       <Suspense fallback={<TableSkeleton />}>
-        <AdminStudentsList params={params} q={q} />
+        <AdminStudentsList params={params} q={q} sort={sort} />
       </Suspense>
     </div>
   );

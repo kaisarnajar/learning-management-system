@@ -150,6 +150,7 @@ model User {
   coupons                  Coupon[]
   couponRequests           CouponRequest[]
   couponUsages             CouponUsage[]
+  deviceTokens             DeviceToken[]
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
 }
@@ -808,4 +809,18 @@ model CouponUsage {
   @@unique([couponId, userId])
   @@index([userId])
   @@index([couponId])
+}
+
+model DeviceToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  platform  String   @default("android")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
 }

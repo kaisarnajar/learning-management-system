@@ -53,26 +53,31 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       if (user?.id) {
         token.id = user.id;
 
         // Auto-verify email for OAuth providers (e.g. Google) on first sign-in.
-        // Auth.js does not set emailVerified in the DB automatically for OAuth flows.
         if (account && account.provider !== "credentials") {
-          const dbUser = await prisma.user.findUnique({
-            select: { emailVerified: true },
-            where: { id: user.id },
-          });
-          if (dbUser && !dbUser.emailVerified) {
-            await prisma.user.update({
+          try {
+            const dbUser = await prisma.user.findUnique({
+              select: { emailVerified: true },
               where: { id: user.id },
-              data: { emailVerified: new Date() },
             });
+            if (dbUser && !dbUser.emailVerified) {
+              await prisma.user.update({
+                where: { id: user.id },
+                data: { emailVerified: new Date() },
+              });
+            }
+          } catch (e) {
+            console.error("[auth] Error auto-verifying OAuth user:", e);
           }
         }
       }
-      if (token.email) {
+
+      // Fetch user role & profile details on initial sign-in or session update
+      if ((user || !token.role) && token.email) {
         try {
           const dbUser = await prisma.user.findUnique({
             select: { emailVerified: true, name: true, image: true },

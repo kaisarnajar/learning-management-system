@@ -9,7 +9,7 @@ export function getPostLoginPath(
 
   if (role === "DEVELOPER") {
     if (target.startsWith("/developer") || target.startsWith("/admin")) return target;
-    return "/developer";
+    return "/admin";
   }
 
   if (role === "TEACHER") {

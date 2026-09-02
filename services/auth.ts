@@ -46,14 +46,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           id: user.id,
           email: user.email,
           name: user.name,
-          image: user.image,
+          image: user.image && !user.image.startsWith("data:") && user.image.length < 500 ? user.image : null,
         };
       },
     }),
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user, account, trigger }) {
+    async jwt({ token, user, account }) {
       if (user?.id) {
         token.id = user.id;
 
@@ -85,7 +85,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
           token.emailVerified = dbUser?.emailVerified ? dbUser.emailVerified.toISOString() : null;
           if (dbUser?.name) token.name = dbUser.name;
-          if (dbUser?.image) token.picture = dbUser.image;
+          
+          // Never store large base64 data URLs in JWT session cookie header to prevent Vercel 494 (REQUEST_HEADER_TOO_LARGE)
+          if (dbUser?.image && !dbUser.image.startsWith("data:") && dbUser.image.length < 500) {
+            token.picture = dbUser.image;
+          } else {
+            token.picture = null;
+          }
 
           const role = await resolveUserRole(token.email as string);
           token.role = role;

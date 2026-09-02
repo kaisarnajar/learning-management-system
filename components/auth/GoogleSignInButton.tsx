@@ -18,8 +18,12 @@ export function GoogleSignInButton({ callbackUrl = "/", disabled, onClick }: Goo
       if (e.isDefaultPrevented()) return;
     }
     setIsLoading(true);
-    await signIn("google", { callbackUrl });
-    // Keep loading state as the page will redirect
+    try {
+      await signIn("google", { callbackUrl });
+    } catch (err) {
+      console.error("Google sign-in error:", err);
+      setIsLoading(false);
+    }
   };
 
   return (

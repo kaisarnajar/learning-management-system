@@ -3,7 +3,7 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import { Eye, EyeOff } from "lucide-react";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useCallback, useState } from "react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
@@ -23,7 +23,6 @@ const loginSchema = z.object({
 type LoginFormValues = z.infer<typeof loginSchema>;
 
 export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/";
   const registered = searchParams.get("registered") === "1";
@@ -59,21 +58,18 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
 
       if (result?.error) {
         setError("Invalid email or password.");
+        setLoading(false);
         return;
       }
 
       const sessionRes = await fetch("/api/auth/session", { credentials: "include" });
-      if (!sessionRes.ok) {
-        setError("Signed in, but could not load your session. Please refresh the page.");
-        return;
-      }
+      const sessionData = sessionRes.ok ? await sessionRes.json() : null;
+      const targetPath = getPostLoginPath(sessionData?.user?.role, callbackUrl);
 
-      const sessionData = await sessionRes.json();
-      router.push(getPostLoginPath(sessionData?.user?.role, callbackUrl));
-      router.refresh();
+      // Perform hard navigation to guarantee fresh session cookies for Server Components
+      window.location.href = targetPath;
     } catch {
       setError("Unable to sign in right now. Please try again.");
-    } finally {
       setLoading(false);
     }
   }
@@ -189,7 +185,8 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
             )}
           </div>
 
-          <SubmitButton isSubmitting={loading}
+          <SubmitButton
+            isSubmitting={loading}
             type="submit"
             disabled={loading || !isValid}
             className="min-h-11 w-full rounded-full bg-primary px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-primary-light disabled:opacity-60"

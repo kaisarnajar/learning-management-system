@@ -55,7 +55,12 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, fatherName, dateOfBirth, occupation, address, whatsapp, gender } = body;
+    const { name, fatherName, dateOfBirth, occupation, address, whatsapp, gender, image } = body;
+
+    let finalImageUrl: string | undefined = image;
+    if (gender === "FEMALE") {
+      finalImageUrl = "/assets/female_icon.png";
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: user.id },
@@ -67,6 +72,7 @@ export async function PUT(request: NextRequest) {
         ...(address !== undefined && { address }),
         ...(whatsapp !== undefined && { whatsapp }),
         ...(gender !== undefined && { gender }),
+        ...(finalImageUrl !== undefined && { image: finalImageUrl }),
       },
       select: {
         id: true,

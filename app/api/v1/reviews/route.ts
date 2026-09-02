@@ -43,7 +43,6 @@ export async function POST(request: NextRequest) {
     const review = await prisma.studentReview.create({
       data: {
         userId: user.id,
-        name: user.name || "Student",
         rating: Number(rating),
         quote: String(quote).trim(),
         course: course ? String(course).trim() : null,

@@ -38,8 +38,12 @@ export async function getPublicCoursesPaginated(
   page: number,
   pageSize: number,
   searchQuery?: string,
+  category?: string,
 ): Promise<PaginatedResult<CourseWithTeacher>> {
-  const baseWhere = { status: { not: "DRAFT" as const } };
+  const baseWhere: any = { status: { not: "DRAFT" as const } };
+  if (category && category !== "All") {
+    baseWhere.category = { equals: category, mode: "insensitive" };
+  }
   const searchWhere = searchQuery ? buildSearchOr(["title", "description", "category", "level"], [{ relation: "teacher", fields: ["name"] }], searchQuery) : undefined;
   const where = andWhere(baseWhere, searchWhere) || baseWhere;
   const totalCount = await withDbErrorHandling(() => prisma.course.count({ where }), "Database operation failed");

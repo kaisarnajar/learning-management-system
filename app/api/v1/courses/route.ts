@@ -7,8 +7,9 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const pageSize = parseInt(searchParams.get("pageSize") || "20", 10);
     const search = searchParams.get("search") || undefined;
+    const category = searchParams.get("category") || undefined;
 
-    const result = await getPublicCoursesPaginated(page, pageSize, search);
+    const result = await getPublicCoursesPaginated(page, pageSize, search, category);
 
     return NextResponse.json({
       success: true,

@@ -186,6 +186,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    await prisma.userCartItem.deleteMany({
+      where: { userId: user.id },
+    });
+
     return NextResponse.json({
       success: true,
       message: "Order submitted successfully for Admin approval.",

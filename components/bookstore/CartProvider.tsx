@@ -57,14 +57,45 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setItems(loadCart());
+    const localItems = loadCart();
+    setItems(localItems);
     setHydrated(true);
+
+    // Sync from server if authenticated
+    fetch("/api/v1/bookstore/cart")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.success && Array.isArray(data.items)) {
+          if (data.items.length > 0) {
+            setItems(data.items);
+            saveCart(data.items);
+          } else if (localItems.length > 0) {
+            // Push local cart to server if server cart is empty
+            fetch("/api/v1/bookstore/cart", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                items: localItems.map((i) => ({ bookId: i.bookId, quantity: i.quantity })),
+              }),
+            });
+          }
+        }
+      })
+      .catch(() => {
+        // Unauthenticated or network offline
+      });
   }, []);
 
   useEffect(() => {
     if (hydrated) {
       saveCart(items);
+      fetch("/api/v1/bookstore/cart", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: items.map((i) => ({ bookId: i.bookId, quantity: i.quantity })),
+        }),
+      }).catch(() => {});
     }
   }, [items, hydrated]);
 

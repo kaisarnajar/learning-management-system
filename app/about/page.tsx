@@ -10,6 +10,7 @@ import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
 import { BRAND_CONFIG } from "@/config/brand";
+import { CREDITS_CONFIG } from "@/config/credits";
 
 const supervisors = [
   {
@@ -328,11 +329,42 @@ export default async function AboutPage() {
             </div>
           </div>
 
-          <div className="mt-16 text-center motion-safe:animate-fade-up" style={{ animationDelay: '450ms', animationFillMode: 'both' }}>
-            <div className="mx-auto max-w-3xl text-lg text-muted">
-              <span className="font-semibold text-foreground bg-gold/10 px-4 py-2 rounded-full border border-gold/20 inline-block text-sm sm:text-base">
-                Website Developed by <strong className="text-primary font-bold">Kaisar Ahmad Najar</strong>
-              </span>
+          <div className="mt-16 flex justify-center motion-safe:animate-fade-up" style={{ animationDelay: '450ms', animationFillMode: 'both' }}>
+            <div className="card-elevated flex flex-col sm:flex-row items-center gap-4 sm:gap-5 px-6 sm:px-8 py-5 rounded-2xl border border-gold/25 shadow-lg bg-surface max-w-md w-full text-center sm:text-left transition-all hover:border-gold/40">
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full ring-2 ring-gold/40 shadow-md bg-accent-muted/20">
+                <Image
+                  src="/team/kaisar-ahmad-najar.jpg"
+                  alt={CREDITS_CONFIG.developer.name}
+                  fill
+                  sizes="(max-width: 640px) 64px, 80px"
+                  className="object-cover object-top"
+                />
+              </div>
+              <div className="min-w-0">
+                <span className="inline-block text-xs uppercase tracking-wider font-semibold text-gold bg-gold/10 px-2.5 py-0.5 rounded-full mb-1">
+                  Website Developer
+                </span>
+                <h4 className={`${sourceSerif.className} text-lg sm:text-xl font-bold text-primary`}>
+                  {CREDITS_CONFIG.developer.name}
+                </h4>
+                <div className="flex items-center justify-center sm:justify-start gap-3 mt-2 text-xs text-muted">
+                  <a
+                    href={CREDITS_CONFIG.developer.linkedIn}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-gold transition-colors font-medium inline-flex items-center gap-1"
+                  >
+                    LinkedIn
+                  </a>
+                  <span className="opacity-40">•</span>
+                  <a
+                    href={`mailto:${CREDITS_CONFIG.developer.email}`}
+                    className="hover:text-gold transition-colors font-medium"
+                  >
+                    Email
+                  </a>
+                </div>
+              </div>
             </div>
           </div>
 

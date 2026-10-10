@@ -271,13 +271,29 @@ export default async function AboutPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
           <div className="text-center motion-safe:animate-fade-up">
             <SplitSectionTitle muted="Our" accent="Foundation" />
-            <div className="mx-auto mt-6 max-w-3xl text-lg text-muted">
-              <span className="font-semibold text-foreground bg-gold/10 px-4 py-2 rounded-full border border-gold/20 inline-block mb-3 text-sm sm:text-base">
-                Founded by <strong className="text-primary font-bold">Talib Ul Islam</strong>
-              </span>
-              <p className="text-base sm:text-lg">
-                Established under the supervision of distinguished scholars.
-              </p>
+            <div className="mt-8 flex justify-center">
+              <div className="card-elevated inline-flex flex-col sm:flex-row items-center gap-4 sm:gap-5 px-6 sm:px-8 py-5 rounded-2xl border border-gold/25 shadow-md bg-surface text-center sm:text-left transition-all hover:border-gold/40 max-w-lg w-full sm:w-auto">
+                <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full ring-2 ring-gold/40 shadow-md bg-accent-muted/20">
+                  <Image
+                    src="/team/talib-ul-islam.jpg"
+                    alt="Talib Ul Islam"
+                    fill
+                    sizes="(max-width: 640px) 64px, 80px"
+                    className="object-cover object-top"
+                  />
+                </div>
+                <div>
+                  <span className="inline-block text-xs uppercase tracking-wider font-semibold text-gold bg-gold/10 px-2.5 py-0.5 rounded-full mb-1">
+                    Founder
+                  </span>
+                  <h3 className={`${sourceSerif.className} text-xl sm:text-2xl font-bold text-primary`}>
+                    Talib Ul Islam
+                  </h3>
+                  <p className="text-xs sm:text-sm text-muted mt-0.5">
+                    Established under the supervision of distinguished scholars.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 

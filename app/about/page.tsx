@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { ACADEMY_LOCATION, getAcademyLocationEmbedUrl } from "@/services/academy-location";
 import { formatWhatsAppForDisplay, getSocialLinksSettings } from "@/services/social-links";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
@@ -9,6 +10,29 @@ import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
 import { BRAND_CONFIG } from "@/config/brand";
+
+const supervisors = [
+  {
+    name: "Mufti Muzaffar Hussain Qasmi",
+    role: "Shaykh-ul-Hadith, Darul Uloom Sopore",
+    image: "/scholars/mufti-muzaffar-hussain-qasmi.jpg",
+  },
+  {
+    name: "Mufti Sultan Ahmad Qasmi",
+    role: "Shaykh-ul-Hadith & Head Mufti, Siraj-ul-Uloom Srinagar",
+    image: "/scholars/mufti-sultan-ahmad-qasmi.jpg",
+  },
+  {
+    name: "Qazi Muhammad Imran",
+    role: "Shaykh-ul-Hadith, Darul Uloom Bilalya",
+    image: "/scholars/qazi-muhammad-imran.png",
+  },
+  {
+    name: "Mufti Abdur Rashid Qasmi",
+    role: "Mohtamim Darul Uloom Shutloo Rafiabad",
+    image: "/scholars/mufti-abdur-rashid-qasmi.png",
+  },
+];
 
 const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
 
@@ -257,27 +281,35 @@ export default async function AboutPage() {
           </div>
 
           <div className="mt-16 grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="card-elevated p-8 motion-safe:animate-fade-up" style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
-              <h3 className={`${sourceSerif.className} text-xl font-semibold text-primary mb-4`}>Guidance & Supervision</h3>
-              <p className="text-sm text-muted mb-4">Our scholarly guidance shapes the vision and direction of the organization:</p>
-              <ul className="space-y-3 text-sm text-muted">
-                <li className="flex items-start gap-2">
-                  <span className="text-gold mt-0.5">•</span>
-                  <span><strong>Mufti Muzaffar Hussain Qasmi</strong><br/><span className="opacity-80">Shaykh-ul-Hadith, Darul Uloom Sopore</span></span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-gold mt-0.5">•</span>
-                  <span><strong>Mufti Sultan Ahmad Qasmi</strong><br/><span className="opacity-80">Shaykh-ul-Hadith & Head Mufti, Siraj-ul-Uloom Srinagar</span></span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-gold mt-0.5">•</span>
-                  <span><strong>Qazi Muhammad Imran</strong><br/><span className="opacity-80">Shaykh-ul-Hadith, Darul Uloom Bilalya</span></span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-gold mt-0.5">•</span>
-                  <span><strong>Mufti Abdur Rashid Qasmi</strong><br/><span className="opacity-80">Mohtamim Darul Uloom Shutloo Rafiabad</span></span>
-                </li>
-              </ul>
+            <div className="card-elevated p-6 sm:p-8 motion-safe:animate-fade-up" style={{ animationDelay: '150ms', animationFillMode: 'both' }}>
+              <h3 className={`${sourceSerif.className} text-xl font-semibold text-primary mb-2`}>Guidance & Supervision</h3>
+              <p className="text-sm text-muted mb-6">Our scholarly guidance shapes the vision and direction of the organization:</p>
+              <div className="space-y-3.5">
+                {supervisors.map((scholar) => (
+                  <div
+                    key={scholar.name}
+                    className="flex items-center gap-3.5 p-2.5 sm:p-3 rounded-xl transition-all duration-200 hover:bg-gold/5 border border-transparent hover:border-gold/20"
+                  >
+                    <div className="relative h-14 w-14 sm:h-16 sm:w-16 shrink-0 overflow-hidden rounded-full ring-2 ring-gold/35 shadow-sm bg-accent-muted/20">
+                      <Image
+                        src={scholar.image}
+                        alt={scholar.name}
+                        fill
+                        sizes="(max-width: 640px) 56px, 64px"
+                        className="object-cover object-top"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <h4 className="font-bold text-foreground text-sm sm:text-base leading-snug">
+                        {scholar.name}
+                      </h4>
+                      <p className="text-xs sm:text-sm text-muted mt-0.5 leading-snug">
+                        {scholar.role}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="card-elevated p-8 motion-safe:animate-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>

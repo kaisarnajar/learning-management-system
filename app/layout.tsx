@@ -40,7 +40,10 @@ export const metadata: Metadata = {
     statusBarStyle: "default",
   },
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.png", type: "image/png", sizes: "32x32" },
+    ],
     apple: isStaging ? "/icon-512-staging.png" : "/icon-512.png",
   }
 };

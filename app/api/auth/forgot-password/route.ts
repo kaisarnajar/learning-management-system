@@ -20,38 +20,44 @@ export async function POST(request: Request) {
     }
 
     const email = parsed.data.email.toLowerCase().trim();
+    const isProduction = process.env.NODE_ENV === "production";
+    const isEmailConfigured = Boolean(
+      process.env.SMTP_HOST &&
+      process.env.SMTP_USER &&
+      process.env.SMTP_PASS
+    );
+
+    // In production a reset link must only ever travel by email. Fail closed
+    // before creating a token so nothing is leaked when SMTP is misconfigured.
+    if (isProduction && !isEmailConfigured) {
+      console.error("[forgot-password] SMTP is not configured; refusing to issue reset tokens.");
+      return NextResponse.json(
+        { error: "Password reset is temporarily unavailable. Please contact support." },
+        { status: 503 },
+      );
+    }
+
     const token = await createPasswordResetToken(email);
     let debugLink: string | undefined;
 
     if (token) {
       const resetUrl = buildPasswordResetUrl(token);
-      
-      const isEmailConfigured = Boolean(
-        process.env.SMTP_HOST && 
-        process.env.SMTP_USER && 
-        process.env.SMTP_PASS
-      );
 
-      if (process.env.NODE_ENV === "development" || !isEmailConfigured) {
+      // Development convenience only: the link is never included in a production response.
+      if (!isProduction) {
         debugLink = resetUrl;
       }
 
       const emailResult = await sendPasswordResetEmail({ to: email, resetUrl });
-      
+
       if (!emailResult.sent && !emailResult.skipped) {
+        // Log, but respond identically to the unknown-email case so the
+        // response does not reveal whether an account exists.
         console.error("[forgot-password] SMTP send failed:", emailResult.error);
-        console.info("[forgot-password] Reset link (use if email did not arrive):", resetUrl);
-        if (process.env.NODE_ENV === "development") {
-          debugLink = resetUrl;
-        }
-        return NextResponse.json(
-          { error: "Failed to send reset email. Please try again later or contact support." },
-          { status: 500 },
-        );
       }
     }
 
-    return NextResponse.json({ success: true, message: GENERIC_SUCCESS, debugLink });
+    return NextResponse.json({ success: true, message: GENERIC_SUCCESS, ...(debugLink ? { debugLink } : {}) });
   } catch (error) {
     if (isRedirectError(error)) { throw error; }
     console.error("[forgot-password] Request failed:", error);

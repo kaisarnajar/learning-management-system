@@ -1,12 +1,8 @@
 import { BRAND_CONFIG } from "@/config/brand";
+import { escapeHtml } from "@/utils/html-escape";
 
-export function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
-}
+// Re-exported so email components and templates share one implementation.
+export { escapeHtml };
 
 /**
  * Wraps inner body HTML in a full RFC-compliant email HTML document:

@@ -1,5 +1,6 @@
 import type { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
+import { getAuthSecret } from "@/services/auth-secret";
 
 const googleConfigured =
   Boolean(process.env.AUTH_GOOGLE_ID) && Boolean(process.env.AUTH_GOOGLE_SECRET);
@@ -24,7 +25,7 @@ export const authConfig = {
   pages: {
     signIn: "/login",
   },
-  secret: process.env.AUTH_SECRET,
+  secret: getAuthSecret(),
   trustHost: true,
   callbacks: {
     session({ session, token }) {

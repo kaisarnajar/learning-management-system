@@ -13,13 +13,34 @@ import {
   seedDemoTeachers,
 } from "./seed-demo-data";
 
+/**
+ * The demo seed wipes every table. It may only run when BOTH guards pass:
+ *  - ALLOW_DEMO_SEED=true
+ *  - the DATABASE_URL host is listed in SEED_ALLOWED_DB_HOSTS (comma-separated)
+ * There is no branch-based or NODE_ENV-based bypass.
+ */
 function assertDemoSeedAllowed() {
-  const isDevBranch = process.env.VERCEL_GIT_COMMIT_REF === "dev";
-  const isAllowed = process.env.ALLOW_DEMO_SEED === "true" || isDevBranch;
+  if (process.env.ALLOW_DEMO_SEED !== "true") {
+    console.error("Demo seed is blocked. Set ALLOW_DEMO_SEED=true to run it against a disposable database.");
+    process.exit(1);
+  }
 
-  if (process.env.NODE_ENV === "production" && !isAllowed) {
+  const allowedHosts = (process.env.SEED_ALLOWED_DB_HOSTS ?? "")
+    .split(",")
+    .map((host) => host.trim().toLowerCase())
+    .filter(Boolean);
+
+  let dbHost = "";
+  try {
+    dbHost = new URL(process.env.DATABASE_URL ?? "").hostname.toLowerCase();
+  } catch {
+    console.error("Demo seed is blocked: DATABASE_URL is missing or not a valid URL.");
+    process.exit(1);
+  }
+
+  if (allowedHosts.length === 0 || !allowedHosts.includes(dbHost)) {
     console.error(
-      "Demo seed is blocked when NODE_ENV=production. Set ALLOW_DEMO_SEED=true to override.",
+      `Demo seed is blocked: database host "${dbHost}" is not listed in SEED_ALLOWED_DB_HOSTS.`,
     );
     process.exit(1);
   }
@@ -114,7 +135,7 @@ async function clearDatabase(prisma: PrismaClient) {
   console.log("Database cleared successfully.");
 }
 
-export async function runSeedDemo(prismaClient: PrismaClient) {
+async function runSeedDemo(prismaClient: PrismaClient) {
   await assertDatabaseMigrated();
   await clearDatabase(prismaClient);
 

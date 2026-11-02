@@ -1,8 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
+import { OAuth2Client } from "google-auth-library";
 import { prisma } from "@/utils/prisma";
 import { generateApiToken } from "@/services/api-auth";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
+
+const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
+
+const userSelect = {
+  id: true,
+  email: true,
+  name: true,
+  image: true,
+  registrationNumber: true,
+  emailVerified: true,
+} as const;
+
+/**
+ * Verifies a Google ID token issued to THIS application.
+ * Returns null when the token is invalid, issued for another OAuth client,
+ * from a non-Google issuer, or carries an unverified email address.
+ */
+async function verifyGoogleIdToken(idToken: string) {
+  const clientId = process.env.AUTH_GOOGLE_ID;
+  if (!clientId) return { configured: false as const };
+
+  try {
+    const client = new OAuth2Client(clientId);
+    const ticket = await client.verifyIdToken({ idToken, audience: clientId });
+    const payload = ticket.getPayload();
+    if (!payload) return { configured: true as const, payload: null };
+    if (!payload.iss || !GOOGLE_ISSUERS.has(payload.iss)) return { configured: true as const, payload: null };
+    if (payload.aud !== clientId) return { configured: true as const, payload: null };
+    if (payload.email_verified !== true || !payload.email) return { configured: true as const, payload: null };
+    return { configured: true as const, payload };
+  } catch {
+    return { configured: true as const, payload: null };
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,35 +51,27 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify token with Google's public tokeninfo endpoint
-    const googleRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`);
-    if (!googleRes.ok) {
+    const verification = await verifyGoogleIdToken(idToken);
+    if (!verification.configured) {
+      return NextResponse.json(
+        { success: false, error: "Google sign-in is not configured." },
+        { status: 503 }
+      );
+    }
+    if (!verification.payload) {
       return NextResponse.json(
         { success: false, error: "Invalid Google ID token." },
         { status: 401 }
       );
     }
 
-    const payload = await googleRes.json();
-    const email = payload.email ? payload.email.toLowerCase().trim() : "";
-    if (!email) {
-      return NextResponse.json(
-        { success: false, error: "Google token did not contain a valid email address." },
-        { status: 400 }
-      );
-    }
+    const payload = verification.payload;
+    const email = payload.email!.toLowerCase().trim();
 
     // Find or create user
     let user = await prisma.user.findUnique({
       where: { email },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        image: true,
-        registrationNumber: true,
-        emailVerified: true,
-      },
+      select: userSelect,
     });
 
     if (!user) {
@@ -57,28 +84,14 @@ export async function POST(request: NextRequest) {
           policiesAcceptedAt: new Date(),
           policiesAcceptedVersion: CURRENT_POLICIES_VERSION,
         },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          image: true,
-          registrationNumber: true,
-          emailVerified: true,
-        },
+        select: userSelect,
       });
     } else if (!user.emailVerified) {
-      // Auto-verify email upon Google sign-in
+      // Google has verified ownership of this address.
       user = await prisma.user.update({
         where: { id: user.id },
         data: { emailVerified: new Date() },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          image: true,
-          registrationNumber: true,
-          emailVerified: true,
-        },
+        select: userSelect,
       });
     }
 

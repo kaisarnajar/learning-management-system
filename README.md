@@ -72,10 +72,11 @@ If you intend to use the demo seed script (`npm run db:seed:demo`) to populate t
    ```bash
    npm run db:seed
    ```
-   *(Optional)* To populate the database with extensive demo content (dummy courses, students, and payments), ensure `ALLOW_DEMO_SEED="true"` is set in your `.env` and run:
+   *(Optional)* To populate a **disposable** database with extensive demo content (dummy courses, students, and payments), set `ALLOW_DEMO_SEED="true"` and list that database's host in `SEED_ALLOWED_DB_HOSTS` in your `.env`, then run:
    ```bash
    npm run db:seed:demo
    ```
+   The demo seed deletes every row first. It is never run from a build or deploy step; preview/staging environments are seeded manually from a developer machine against their own database.
 
 5. **Start the Development Server:**
    ```bash

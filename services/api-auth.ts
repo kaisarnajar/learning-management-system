@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { decode, encode, getToken } from "next-auth/jwt";
 import { prisma } from "@/utils/prisma";
 import { resolveUserRole } from "@/services/teacher-auth";
+import { getAuthSecret } from "@/services/auth-secret";
 
-const AUTH_SECRET = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET || "default_development_secret_key_darse_quran";
+const AUTH_SECRET = getAuthSecret();
 const TOKEN_SALT = process.env.NODE_ENV === "production" ? "__Secure-authjs.session-token" : "authjs.session-token";
 const FALLBACK_SALT = process.env.NODE_ENV === "production" ? "__Secure-next-auth.session-token" : "next-auth.session-token";
 

@@ -90,6 +90,20 @@ export async function generatePdfFromHtml(
     const viewportHeight = height ? parseInt(height.toString().replace('px', '')) : 800;
     await page.setViewport({ width: viewportWidth, height: viewportHeight, deviceScaleFactor: 3 });
 
+    // The rendered HTML contains user-supplied text. Even though it is escaped,
+    // defence in depth: the page may only load resources from an explicit
+    // allow-list, so an injected <img>/<script>/<iframe> cannot reach internal
+    // services or exfiltrate data from the PDF worker.
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+      if (isAllowedPdfResource(request.url())) {
+        void request.continue();
+      } else {
+        console.warn("[pdf-generator] Blocked request to non-allow-listed URL:", request.url().slice(0, 120));
+        void request.abort("blockedbyclient");
+      }
+    });
+
     await page.setContent(html, { waitUntil: "load" });
 
     // Wait for the Tailwind CDN script + any Google Fonts to fetch and apply
@@ -124,6 +138,68 @@ export async function generatePdfFromHtml(
   } finally {
     await browser.close();
   }
+}
+
+// ---------------------------------------------------------------------------
+// Resource allow-lists
+// ---------------------------------------------------------------------------
+
+/** Hosts the headless page may fetch from while rendering (CSS/fonts only). */
+const PDF_RESOURCE_HOSTS = new Set([
+  "cdn.tailwindcss.com",
+  "fonts.googleapis.com",
+  "fonts.gstatic.com",
+]);
+
+function getR2PublicHost(): string | null {
+  const raw = process.env.R2_PUBLIC_URL;
+  if (!raw) return null;
+  try {
+    return new URL(raw).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+function isAllowedPdfResource(url: string): boolean {
+  if (url.startsWith("data:") || url === "about:blank") return true;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    if (PDF_RESOURCE_HOSTS.has(host)) return true;
+    const r2Host = getR2PublicHost();
+    return r2Host !== null && host === r2Host;
+  } catch {
+    return false;
+  }
+}
+
+/** Remote hosts a stored profile image may be fetched from. */
+function isAllowedProfileImageUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    if (host.endsWith(".googleusercontent.com")) return true;
+    const r2Host = getR2PublicHost();
+    return r2Host !== null && host === r2Host;
+  } catch {
+    return false;
+  }
+}
+
+const MAX_PROFILE_IMAGE_BYTES = 5 * 1024 * 1024;
+const PROFILE_IMAGE_FETCH_TIMEOUT_MS = 5_000;
+
+/** Detects the image type from magic bytes; returns null for anything that is not a raster image. */
+function sniffImageMime(buffer: Buffer): "image/png" | "image/jpeg" | "image/gif" | "image/webp" | null {
+  if (buffer.length < 12) return null;
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return "image/png";
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image/jpeg";
+  if (buffer.toString("ascii", 0, 6) === "GIF87a" || buffer.toString("ascii", 0, 6) === "GIF89a") return "image/gif";
+  if (buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP") return "image/webp";
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -177,29 +253,45 @@ export async function loadProfilePictureAsBase64(
 
   try {
     if (effectiveUrl.startsWith("http")) {
+      // Only fetch from hosts we store images on; user.image is user-controlled.
+      if (!isAllowedProfileImageUrl(effectiveUrl)) {
+        throw new Error("Profile image host is not allow-listed");
+      }
+
       let upgradedUrl = effectiveUrl;
       if (upgradedUrl.includes("googleusercontent.com")) {
         upgradedUrl = upgradedUrl.replace(/=s\d+-c/g, "=s1000-c");
       }
-      
-      const res = await fetch(upgradedUrl, { cache: "no-store" });
+
+      const res = await fetch(upgradedUrl, {
+        cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(PROFILE_IMAGE_FETCH_TIMEOUT_MS),
+      });
       if (res.ok) {
-        const buffer = await res.arrayBuffer();
-        const mimeType = res.headers.get("content-type") || "image/jpeg";
-        return `data:${mimeType};base64,${Buffer.from(buffer).toString('base64')}`;
+        const declaredLength = Number(res.headers.get("content-length") || 0);
+        if (declaredLength > MAX_PROFILE_IMAGE_BYTES) throw new Error("Profile image too large");
+        const buffer = Buffer.from(await res.arrayBuffer());
+        if (buffer.length > MAX_PROFILE_IMAGE_BYTES) throw new Error("Profile image too large");
+        const mimeType = sniffImageMime(buffer);
+        if (!mimeType) throw new Error("Profile image is not a supported raster image");
+        return `data:${mimeType};base64,${buffer.toString('base64')}`;
       }
     } else if (effectiveUrl.startsWith("/")) {
-      let imgPath = "";
+      // Only the two bundled avatar icons may be read from disk; never resolve
+      // arbitrary paths (user.image could contain "../").
+      let imgPath: string | null = null;
       if (effectiveUrl === "/assets/male_icon.png") {
         imgPath = ASSET_LOCAL_PATHS.maleIcon;
       } else if (effectiveUrl === "/assets/female_icon.png") {
         imgPath = ASSET_LOCAL_PATHS.femaleIcon;
-      } else {
-        imgPath = path.join(process.cwd(), "public", effectiveUrl);
+      }
+      if (!imgPath) {
+        throw new Error("Local profile image path is not allow-listed");
       }
       const bytes = await fs.readFile(imgPath);
-      const ext = path.extname(imgPath).substring(1) || "png";
-      return `data:image/${ext};base64,${bytes.toString('base64')}`;
+      const mimeType = sniffImageMime(bytes) ?? "image/png";
+      return `data:${mimeType};base64,${bytes.toString('base64')}`;
     }
   } catch (e) {
     console.error("[pdf-generator] Could not load profile picture:", e);

@@ -718,7 +718,8 @@ Pages that **do** self-protect: `admin/page`, `admin/certificates/{new,[enrollme
 | tables `BlogLike`, `BlogComment` | **No** |
 | tables `Coupon`, `CouponRequest`, `CouponUsage` | **No** |
 | tables `DeviceToken`, `UserCartItem` | **No** |
-| `CourseStatus.COMING_SOON`, `FeeFrequency`, `FatwaApprovalStatus`, certificate/receipt fields, `registrationNumber`, `rollNumber`, shipping/tracking fields, `Book.mrp/purchasePrice/weight/inventory`, attendance/grade tables | Yes |
+| `FeeFrequency`, `FatwaApprovalStatus`, certificate/receipt fields, `registrationNumber`, `rollNumber`, shipping/tracking fields, `Book.mrp/purchasePrice/weight/inventory`, attendance/grade tables | Yes |
+| enum value `CourseStatus.COMING_SOON` | **No** (correction: an earlier draft of this table listed it as present; the baseline migration `20261103000200_sync_schema_baseline` adds it) |
 | `AcademySettings`, `AnalyticsEvent`, `SocialLinksSettings` | Created then dropped (data lost, INF-4) |
 
 Timeline: last migration 2026-07-05 (edited 2026-07-25); schema commits after it: 2026-07-06 (blog like/comment), 07-18 (gender/profile), 07-20 (policies, payment settings), 07-21…07-23 (coupons), 09-01 (device tokens), 09-09 (cart). Pipeline switched from `db push --accept-data-loss` to `fix-migration-lock + migrate deploy` on 2026-07-25.

@@ -1,7 +1,7 @@
 # Incremental Commit Plan — remediation of `LMS_CODE_REVIEW_AND_IMPLEMENTATION_PLAN.md`
 
 **Branch:** all commits land directly on `dev` (currently identical to `master` @ `402ba9c`). No PR, no merge into `master` until the whole plan is reviewed.
-**Status:** DRAFT — awaiting approval. No code has been changed.
+**Status:** EXECUTED on `dev` (2026-11-03) except C74 (Playwright journeys, three of four passing, uncommitted in the batch-2 session), C75 (CI pipeline), C86 (env/README regeneration) and C87 (brand strings), which remain open. See "Execution notes and deviations" below for where the landed code differs from an entry.
 
 ## How to read this plan
 
@@ -634,6 +634,20 @@ Phase 3 can start in parallel with Phase 1 once C26/C27 exist; tests for a behav
 6. **Each commit:** `npm run lint && npx tsc --noEmit && npm run build && npm run db:safety` (and `npm test` once C70 exists) must pass before committing. Commit bodies end with the review IDs and the attribution line required by this repository.
 7. **Out of scope for this plan:** nothing from the register is deferred except the "contract" half of the expand/contract changes (Appendix A), which is intentionally a later release; the only items left to operator judgement are flagged inside commits (CSP enforcement timing in C73, waiver auto-approval setting in C31, GST correction of issued receipts in C33, unsubscribe implementation choice in C80, analytics wiring in C85).
 
+## Execution notes and deviations
+
+Every commit landed with the subject in its entry; where the landed change differs from the entry's text, the commit body says so and this list repeats it:
+
+- **Extra commit after C30:** `fix(db): partial unique index must exclude rejected submissions, not 'declined'` — the one-open-submission-per-label index predicate used `'declined'` while declined submissions are stored as `"rejected"`. The migration had not been applied anywhere, so it was corrected in place.
+- **C53:** indexes are plain `CREATE INDEX IF NOT EXISTS`, not `CONCURRENTLY`. Prisma applies a migration file as one implicit transaction, where `CONCURRENTLY` is refused; the tables are academy-sized, and the Neon-branch rehearsal records the lock time. Rule P5 is therefore satisfied by rehearsal, not by the statement form.
+- **C55 (follow-up fix):** Auth.js's `auth(handler)` form does not act on a falsy `authorized` result by itself; `middleware.ts` enforces the decision explicitly (redirect to `/login` with `callbackUrl` for pages, 401 for API paths) and the security suite tests it.
+- **C57:** `allowDangerousEmailAccountLinking` stays on. The takeover is closed by the credentials provider refusing unverified accounts and by the `signIn` callback nulling the password of an unverified row before Google is linked (`AUTH_GOOGLE_LINK_UNVERIFIED=refuse` turns that into a refusal).
+- **C76:** no page became ISR and the root `force-dynamic` stays. The nonce CSP needs per-request HTML and prerendering content pages made `next build` depend on the production database; instead the homepage queries are cached for five minutes (`services/public-cache.ts`, invalidated by `revalidatePublicContent()` from every content action). A follow-up fix moved the cached readers into `services/home-content.ts` because the domain services are also imported by client components.
+- **C78:** the PDF stylesheet is compiled with the Tailwind v3 engine (`tailwindcss-v3` alias) to match the Play CDN the templates were written for; fonts are self-hosted under `public/fonts` (OFL); the white-background removal uses `sharp` server side so the page runs without JavaScript.
+- **C80:** nodemailer is on the 8.x line, the newest within next-auth's peer range, so a clean install resolves; the plan said v10.
+- **C91:** the server-action body limit was not lowered; the presigned direct-to-R2 upload flow it needs is listed in Appendix A as follow-up work.
+- **C71–C73:** the DB-backed suites skip when `DATABASE_URL_TEST` is absent; the batch-2 session ran them against a Postgres installed outside the repo (no Docker on the machine). The Vitest config is `vitest.config.mts`.
+
 ## Appendix A — "Contract later" backlog (not executed in this plan)
 
 Destructive follow-ups deferred to a separate release after at least one billing cycle on the new columns, a verified backup, and a zero-row fallback report:
@@ -647,6 +661,9 @@ Destructive follow-ups deferred to a separate release after at least one billing
 | `CouponRequest.reason` "[Fee Type: …]" suffix parser | `feeType` | C48 |
 | `token` alias in mobile auth responses; lowercase status strings in mobile API payloads | `accessToken/refreshToken`; enum fields | C58, C52 |
 | Legacy random `DQA-INV-*` / `DQA-CERT-*` numbers | sequential numbers (new documents only) | C34 — legacy numbers are **kept forever**, never renumbered |
+| Server-action `bodySizeLimit` at the blog upload allowance | presigned direct-to-R2 uploads (`/api/uploads/presign`, bucket CORS, four form changes) | C91 (deferred) |
+| Per-request rendering of public pages (root `force-dynamic`) | page caching once the CSP moves from a per-request nonce to a hash-based policy | C76 (deferred) |
+| Attachments and screenshots uploaded before C68 at public URLs | private storage + `/api/files` (new uploads only) | C68 — a move script can migrate old objects later |
 
 ---
 

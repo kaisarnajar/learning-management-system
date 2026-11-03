@@ -23,6 +23,7 @@ export type PaymentSettingsData = {
   bankBranch: string;
   includeGstByDefault: boolean;
   feeWaiverEnabled: boolean;
+  autoApproveFullWaivers: boolean;
 };
 
 function defaultSettings(): PaymentSettingsData {
@@ -37,6 +38,7 @@ function defaultSettings(): PaymentSettingsData {
     bankBranch: "",
     includeGstByDefault: false,
     feeWaiverEnabled: false,
+    autoApproveFullWaivers: false,
   };
 }
 
@@ -51,6 +53,7 @@ function rowToSettings(row: {
   bankBranch: string;
   includeGstByDefault: boolean;
   feeWaiverEnabled: boolean;
+  autoApproveFullWaivers: boolean;
 }): PaymentSettingsData {
   const defaults = defaultSettings();
   return {
@@ -64,6 +67,7 @@ function rowToSettings(row: {
     bankBranch: row.bankBranch.trim(),
     includeGstByDefault: row.includeGstByDefault,
     feeWaiverEnabled: row.feeWaiverEnabled,
+    autoApproveFullWaivers: row.autoApproveFullWaivers,
   };
 }
 

@@ -130,6 +130,7 @@ export const paymentSettingsSchema = z.object({
   bankBranch: z.string().trim().max(200).optional().or(z.literal("")),
   includeGstByDefault: z.boolean().default(false),
   feeWaiverEnabled: z.boolean().default(false),
+  autoApproveFullWaivers: z.boolean().default(false),
 });
 
 /** Amount the client displayed; the server refuses the submission when it differs. */

@@ -27,6 +27,7 @@ const PAYMENT_FIELDS: (keyof PaymentSettingsFormValues)[] = [
   "bankBranch",
   "includeGstByDefault",
   "feeWaiverEnabled",
+  "autoApproveFullWaivers",
 ];
 
 export function PaymentSettingsForm({ settings, action }: PaymentSettingsFormProps) {
@@ -47,6 +48,7 @@ export function PaymentSettingsForm({ settings, action }: PaymentSettingsFormPro
       bankBranch: settings.bankBranch,
       includeGstByDefault: settings.includeGstByDefault,
       feeWaiverEnabled: settings.feeWaiverEnabled,
+      autoApproveFullWaivers: settings.autoApproveFullWaivers,
     },
     fields: PAYMENT_FIELDS,
     validate,
@@ -275,6 +277,19 @@ export function PaymentSettingsForm({ settings, action }: PaymentSettingsFormPro
           />
           <label htmlFor="feeWaiverEnabled" className="text-sm font-medium text-foreground select-none cursor-pointer">
             Enable Fee Waiver & Coupon System
+          </label>
+        </div>
+        <div className="flex items-center gap-2 mt-4">
+          <input
+            id="autoApproveFullWaivers"
+            name="autoApproveFullWaivers"
+            type="checkbox"
+            checked={values.autoApproveFullWaivers}
+            onChange={(e) => updateField("autoApproveFullWaivers", e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+          <label htmlFor="autoApproveFullWaivers" className="text-sm font-medium text-foreground select-none cursor-pointer">
+            Auto-approve 100% fee waivers (skip admin confirmation for fully waived fees)
           </label>
         </div>
       </section>

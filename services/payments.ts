@@ -16,6 +16,7 @@ import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
 import { calculateDiscountedAmount, getSelectedCoupon, recordCouponUsageTx } from "@/services/coupons";
 import { deletePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
 import { assignRollNumberTx } from "@/services/roll-numbers";
+import { getPaymentSettings } from "@/services/payment-settings";
 
 const AMOUNT_MISMATCH_MESSAGE =
   "The payable amount has changed (for example a coupon is no longer available). Please refresh the page and try again.";
@@ -141,6 +142,9 @@ export async function processMonthlyPayment(
     return { error: AMOUNT_MISMATCH_MESSAGE, status: 409 };
   }
   const isFree = amountInrPaise === 0;
+  // A fully waived fee is auto-approved only when the academy opted in;
+  // otherwise it queues for admin confirmation like any other payment.
+  const autoApprove = isFree && (await getPaymentSettings()).autoApproveFullWaivers;
   const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
 
   // Cheap pre-check outside the transaction for a friendly message; the
@@ -176,7 +180,7 @@ export async function processMonthlyPayment(
           paymentType: derivedPaymentType,
           label: finalLabel,
           amountInrPaise,
-          status: isFree ? MONTHLY_PAYMENT_APPROVED : MONTHLY_PAYMENT_PENDING,
+          status: autoApprove ? MONTHLY_PAYMENT_APPROVED : MONTHLY_PAYMENT_PENDING,
           paymentMethod: isFree ? WAIVER_PAYMENT_METHOD : paymentMethod,
           upiTransactionId: isFree ? WAIVER_TRANSACTION_REF : upiTransactionId,
           paymentScreenshotPath: screenshotPath,
@@ -192,8 +196,8 @@ export async function processMonthlyPayment(
         await recordCouponUsageTx(tx, userId, coupon.id);
       }
 
-      if (isFree) {
-        // 100 % waiver: nothing to verify, record it immediately.
+      if (autoApprove) {
+        // 100 % waiver with auto-approval enabled: nothing to verify, record it immediately.
         const record = await tx.paymentRecord.create({
           data: {
             userId,
@@ -270,6 +274,7 @@ export async function processEnrollmentPayment(
     return { error: AMOUNT_MISMATCH_MESSAGE, status: 409 };
   }
   const isFree = enrollmentFeePaise === 0;
+  const autoApprove = isFree && (await getPaymentSettings()).autoApproveFullWaivers;
   const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
 
   const screenshotPath = isFree ? null : await uploadScreenshot(`enrollment-${userId}`, screenshotFile);
@@ -278,10 +283,10 @@ export async function processEnrollmentPayment(
     await prisma.$transaction(async (tx) => {
       await assertUtrNotReused(tx, upiTransactionId, isFree);
 
-      // Free (100 % waiver) enrollments are activated immediately; paid ones
-      // wait for the admin to verify the transfer.
+      // Auto-approved waivers activate the enrollment immediately; everything
+      // else (paid, or waived without auto-approval) waits for the admin.
       const rosterStatus = getRosterEnrollmentStatusForCourse(course.status);
-      const newStatus = isFree ? rosterStatus : AWAITING_ENROLLMENT_FEE;
+      const newStatus = autoApprove ? rosterStatus : AWAITING_ENROLLMENT_FEE;
 
       const upserted = await tx.enrollment.upsert({
         where: { userId_courseId: { userId, courseId } },
@@ -296,7 +301,7 @@ export async function processEnrollmentPayment(
           paymentType: PAYMENT_TYPE_ENROLLMENT,
           label: finalLabel,
           amountInrPaise: enrollmentFeePaise,
-          status: isFree ? MONTHLY_PAYMENT_APPROVED : MONTHLY_PAYMENT_PENDING,
+          status: autoApprove ? MONTHLY_PAYMENT_APPROVED : MONTHLY_PAYMENT_PENDING,
           paymentMethod: isFree ? WAIVER_PAYMENT_METHOD : paymentMethod,
           upiTransactionId: isFree ? WAIVER_TRANSACTION_REF : upiTransactionId,
           paymentScreenshotPath: screenshotPath,
@@ -312,7 +317,7 @@ export async function processEnrollmentPayment(
         await recordCouponUsageTx(tx, userId, coupon.id);
       }
 
-      if (isFree) {
+      if (autoApprove) {
         const record = await tx.paymentRecord.create({
           data: {
             userId,

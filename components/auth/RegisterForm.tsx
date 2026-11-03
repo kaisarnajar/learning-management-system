@@ -8,7 +8,7 @@ import { signIn } from "next-auth/react";
 import { useCallback, useState } from "react";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
-import { authContinueUrl, getPostLoginPath } from "@/services/auth-redirect";
+import { authContinueUrl, getPostLoginPath, safeInternalPath } from "@/services/auth-redirect";
 import { useZodForm } from "@/utils/use-zod-form";
 import { z } from "zod";
 import { zodResultToFormValidation } from "@/utils/form-validation";
@@ -29,7 +29,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export function RegisterForm({ googleEnabled }: { googleEnabled: boolean }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const callbackUrl = safeInternalPath(searchParams.get("callbackUrl"));
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);

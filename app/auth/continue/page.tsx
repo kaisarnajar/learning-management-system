@@ -1,5 +1,5 @@
 import { auth } from "@/services/auth";
-import { getPostLoginPath } from "@/services/auth-redirect";
+import { getPostLoginPath, safeInternalPath } from "@/services/auth-redirect";
 import { isUserProfileComplete } from "@/services/profile";
 import { redirect } from "next/navigation";
 
@@ -12,7 +12,7 @@ type PageProps = {
 export default async function AuthContinuePage({ searchParams }: PageProps) {
   const session = await auth();
   const { callbackUrl } = await searchParams;
-  const target = callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/";
+  const target = safeInternalPath(callbackUrl);
 
   if (!session?.user) {
     redirect(`/login?callbackUrl=${encodeURIComponent(target)}`);

@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { MAX_BLOG_IMAGE_BYTES, MAX_BLOG_IMAGES } from "./services/blog-limits";
+import { STATIC_SECURITY_HEADERS } from "./services/security-headers";
 
 const r2Domain = process.env.R2_PUBLIC_URL 
   ? new URL(process.env.R2_PUBLIC_URL).hostname 
@@ -23,6 +24,14 @@ const nextConfig: NextConfig = {
         hostname: r2Domain,
       },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: STATIC_SECURITY_HEADERS,
+      },
+    ];
   },
 };
 

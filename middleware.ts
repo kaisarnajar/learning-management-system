@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { buildContentSecurityPolicy, generateNonce } from "@/services/security-headers";
 
 const CORS_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 const CORS_HEADERS = "Content-Type, Authorization, X-Requested-With";
@@ -55,6 +56,27 @@ function handleApiV1(request: NextRequest): NextResponse {
   return response;
 }
 
+/**
+ * Per-request nonce-based CSP for HTML pages. Next.js picks the nonce up from
+ * the CSP request header and applies it to its own inline scripts; app code
+ * reads it via `headers().get("x-nonce")`.
+ */
+function withContentSecurityPolicy(request: NextRequest): NextResponse {
+  const nonce = generateNonce();
+  const csp = buildContentSecurityPolicy(nonce);
+  const headerName = CSP_ENFORCE ? "Content-Security-Policy" : "Content-Security-Policy-Report-Only";
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set(headerName, csp);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  response.headers.set(headerName, csp);
+  return response;
+}
+
+const CSP_ENFORCE = process.env.CSP_ENFORCE === "true";
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -62,9 +84,17 @@ export function middleware(request: NextRequest) {
     return handleApiV1(request);
   }
 
-  return NextResponse.next();
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
+  return withContentSecurityPolicy(request);
 }
 
 export const config = {
-  matcher: ["/api/v1/:path*"],
+  matcher: [
+    "/api/v1/:path*",
+    // All pages except static assets and Next internals.
+    "/((?!_next/static|_next/image|favicon.ico|icon.png|apple-icon.png|sw.js|manifest.webmanifest|assets/|icons/|fonts/|.*\\.(?:png|jpg|jpeg|gif|svg|webp|ico|woff2?|ttf|css|js|map|txt|xml)$).*)",
+  ],
 };

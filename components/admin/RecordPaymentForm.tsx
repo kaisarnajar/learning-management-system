@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { recordStudentPayment, type RecordPaymentState } from "@/app/admin/record-payment/actions";
 import { previewStudentAccountForEnrollment } from "@/app/admin/enrollments/actions";
 import { inputClassName, labelClassName } from "@/utils/form";
+import { formatBusinessDate } from "@/services/business-time";
 import type { Course } from "@prisma/client";
 
 type RecordPaymentFormProps = {
@@ -21,7 +22,7 @@ export function RecordPaymentForm({ courses }: RecordPaymentFormProps) {
   const [lookupError, setLookupError] = useState("");
   const [lookupLoading, setLookupLoading] = useState(false);
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = formatBusinessDate(new Date());
 
   async function runLookup(targetEmail: string) {
     const trimmed = targetEmail.trim();

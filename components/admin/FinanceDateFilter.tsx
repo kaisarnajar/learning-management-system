@@ -4,6 +4,7 @@ import {
   FINANCE_DATE_PRESETS,
   type FinanceFilters,
 } from "@/services/finance-filters";
+import { formatBusinessDate } from "@/services/business-time";
 
 type FinanceDateFilterProps = {
   filters: FinanceFilters;
@@ -25,18 +26,18 @@ function hiddenFilterFields(filters: FinanceFilters, exclude: ("preset" | "from"
     fields.push({ name: "preset", value: "custom" });
   }
   if (!exclude.includes("from") && filters.from) {
-    fields.push({ name: "from", value: filters.from.toISOString().slice(0, 10) });
+    fields.push({ name: "from", value: formatBusinessDate(filters.from) });
   }
   if (!exclude.includes("to") && filters.to) {
-    fields.push({ name: "to", value: filters.to.toISOString().slice(0, 10) });
+    fields.push({ name: "to", value: formatBusinessDate(filters.to) });
   }
 
   return fields;
 }
 
 export function FinanceDateFilter({ filters, basePath = "/admin/finance" }: FinanceDateFilterProps) {
-  const customFrom = filters.from?.toISOString().slice(0, 10) ?? "";
-  const customTo = filters.to?.toISOString().slice(0, 10) ?? "";
+  const customFrom = filters.from ? formatBusinessDate(filters.from) : "";
+  const customTo = filters.to ? formatBusinessDate(filters.to) : "";
 
   return (
     <div className="space-y-4">

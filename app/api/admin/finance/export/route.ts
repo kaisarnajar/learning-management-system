@@ -56,14 +56,14 @@ export async function GET(request: Request) {
       const records = await getExpensesAll(filters);
       sheetData = records.map((r) => ({
         "Date": formatDate(r.paidAt),
-        "Category": expenseCategoryLabel(r.category),
+        "Category": r.note ? `${expenseCategoryLabel(r.category)}: ${r.note}` : expenseCategoryLabel(r.category),
         "Teacher Name": r.teacher?.name ?? "—",
         "Amount (INR)": r.amountInrPaise / 100,
         "Description": r.description ?? "—",
       }));
       filename = `Course_Expenses_${new Date().toISOString().slice(0, 10)}.xlsx`;
     } else if (type === "book_sales") {
-      const records = await getBookSalesAll(filters.q);
+      const records = await getBookSalesAll(filters);
       sheetData = records.map((r) => ({
         "Book Title": r.title,
         "Author": r.author,
@@ -88,6 +88,7 @@ export async function GET(request: Request) {
         "Delivery Phone Number": r.deliveryPhoneNumber ?? "—",
         "Status": bookOrderStatusLabel(r.status),
         "Order Total (INR)": r.totalAmountPaise / 100,
+        "Shipping (INR)": r.shippingChargePaise / 100,
         "Refunded (INR)": r.refundedAmountPaise / 100,
         "Net Income (INR)": (r.status === "APPROVED" || r.status === "SHIPPED" ? r.totalAmountPaise : 0) / 100,
         "Profit Contribution (INR)": r.profitContributionPaise / 100,

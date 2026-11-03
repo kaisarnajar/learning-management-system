@@ -7,6 +7,7 @@ import {
   expenseCategoryLabel,
 } from "@/services/expense-categories";
 import type { FinanceFilters } from "@/services/finance-filters";
+import { formatBusinessDate } from "@/services/business-time";
 
 type FinanceExpenseFiltersProps = {
   filters: FinanceFilters;
@@ -20,10 +21,10 @@ function preserveFields(filters: FinanceFilters) {
     fields.push({ name: "preset", value: filters.preset });
   }
   if (filters.from) {
-    fields.push({ name: "from", value: filters.from.toISOString().slice(0, 10) });
+    fields.push({ name: "from", value: formatBusinessDate(filters.from) });
   }
   if (filters.to) {
-    fields.push({ name: "to", value: filters.to.toISOString().slice(0, 10) });
+    fields.push({ name: "to", value: formatBusinessDate(filters.to) });
   }
   if (filters.courseId) fields.push({ name: "courseId", value: filters.courseId });
   if (filters.studentId) fields.push({ name: "studentId", value: filters.studentId });

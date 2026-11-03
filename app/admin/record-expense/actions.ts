@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
-import { EXPENSE_CATEGORY_TEACHER_SALARY } from "@/services/expense-categories";
+import { EXPENSE_CATEGORY_OTHER, EXPENSE_CATEGORY_TEACHER_SALARY } from "@/services/expense-categories";
+import { businessDayStart } from "@/services/business-time";
 import { rupeesToPaise } from "@/utils/form";
 import { prisma } from "@/utils/prisma";
 import { expenseSchema } from "@/utils/validations";
@@ -30,6 +31,7 @@ export async function recordExpense(
     amountInr: formData.get("amountInr"),
     paidAt: formData.get("paidAt"),
     description: formData.get("description") || undefined,
+    note: formData.get("note") || undefined,
     teacherId: formData.get("teacherId") || undefined,
   });
 
@@ -37,8 +39,10 @@ export async function recordExpense(
     return { error: parsed.error.issues[0]?.message ?? "Invalid expense data." };
   }
 
-  const paidAt = new Date(parsed.data.paidAt);
-  if (Number.isNaN(paidAt.getTime())) {
+  // Stored as midnight of that day in the business timezone, so the row
+  // lands in the calendar month the admin picked.
+  const paidAt = businessDayStart(parsed.data.paidAt);
+  if (!paidAt) {
     return { error: "Invalid payment date." };
   }
 
@@ -60,6 +64,7 @@ export async function recordExpense(
         amountInrPaise: rupeesToPaise(parsed.data.amountInr),
         paidAt,
         description: parsed.data.description?.trim() || null,
+        note: parsed.data.category === EXPENSE_CATEGORY_OTHER ? parsed.data.note?.trim() || null : null,
         teacherId,
       },
     }), "Database operation failed");

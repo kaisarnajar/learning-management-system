@@ -4,7 +4,7 @@ import {
   getProfileCountryOrDefault,
   isValidProfileLocalNumber,
 } from "@/services/countries";
-import { EXPENSE_CATEGORY_TEACHER_SALARY } from "@/services/expense-categories";
+import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_OTHER, EXPENSE_CATEGORY_TEACHER_SALARY } from "@/services/expense-categories";
 import { isPaymentYearAllowed } from "@/services/monthly-payments";
 import { OCCUPATION_VALUES } from "@/services/occupations";
 
@@ -336,24 +336,36 @@ export const courseAnnouncementSchema = z.object({
   body: z.string().trim().min(10, "Message must be at least 10 characters.").max(10000),
 });
 
+/** A calendar day as the date input sends it; interpreted in the business timezone. */
+export const calendarDateSchema = z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date.");
+
 export const paymentRecordSchema = z.object({
   courseId: z.string().optional(),
   amountInr: z.coerce.number().positive("Amount must be greater than zero."),
-  paidAt: z.string().min(1, "Payment date is required."),
+  paidAt: calendarDateSchema,
   paymentType: z.enum(["monthly", "quarterly", "half_yearly", "yearly", "one_time", "enrollment", "manual"]),
 });
 
-const expenseCategoryEnum = z.string().trim().min(2, "Category is required.").max(100, "Category is too long.");
+const expenseCategoryEnum = z.enum(EXPENSE_CATEGORIES, { message: "Choose a category." });
 
 export const expenseSchema = z
   .object({
     category: expenseCategoryEnum,
     amountInr: z.coerce.number().positive("Amount must be greater than zero."),
-    paidAt: z.string().min(1, "Payment date is required."),
+    paidAt: calendarDateSchema,
     description: z.string().trim().max(500).optional(),
+    /** Free text naming the category when "Other" is chosen. */
+    note: z.string().trim().max(100, "Keep the category note under 100 characters.").optional(),
     teacherId: z.string().optional(),
   })
   .superRefine((data, ctx) => {
+    if (data.category === EXPENSE_CATEGORY_OTHER && !data.note?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Specify what the expense was for.",
+        path: ["note"],
+      });
+    }
     if (data.category === EXPENSE_CATEGORY_TEACHER_SALARY && !data.teacherId?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,

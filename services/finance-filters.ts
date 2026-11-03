@@ -8,6 +8,13 @@ import {
   type ExpenseCategory,
 } from "@/services/expense-categories";
 import { parseSearchQuery } from "@/utils/text-search";
+import {
+  businessCalendarParts,
+  businessDateString,
+  businessDayEnd,
+  businessDayStart,
+  formatBusinessDate,
+} from "@/services/business-time";
 
 export type FinanceTab = "income" | "expenses";
 
@@ -55,24 +62,6 @@ export type FinanceSearchParams = {
   error?: string;
 };
 
-function startOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function endOfDay(date: Date): Date {
-  const d = new Date(date);
-  d.setHours(23, 59, 59, 999);
-  return d;
-}
-
-function parseDateParam(value: string | undefined): Date | null {
-  if (!value?.trim()) return null;
-  const d = new Date(value);
-  return Number.isNaN(d.getTime()) ? null : startOfDay(d);
-}
-
 type DatePresetBounds = {
   thisMonthStart: Date;
   thisMonthEnd: Date;
@@ -82,17 +71,21 @@ type DatePresetBounds = {
   thisYearEnd: Date;
 };
 
+// Presets are calendar months/years in the business timezone, so "this
+// month" on the 1st at 01:00 IST is already the new month even though the
+// server (UTC) is still on the last day of the previous one.
 function getDatePresetBounds(now: Date): DatePresetBounds {
-  const year = now.getFullYear();
-  const month = now.getMonth();
+  const { year, month } = businessCalendarParts(now);
+  const start = (y: number, m: number, d: number) => businessDayStart(businessDateString(y, m, d))!;
+  const end = (y: number, m: number, d: number) => businessDayEnd(businessDateString(y, m, d))!;
 
   return {
-    thisMonthStart: startOfDay(new Date(year, month, 1)),
-    thisMonthEnd: endOfDay(new Date(year, month + 1, 0)),
-    lastMonthStart: startOfDay(new Date(year, month - 1, 1)),
-    lastMonthEnd: endOfDay(new Date(year, month, 0)),
-    thisYearStart: startOfDay(new Date(year, 0, 1)),
-    thisYearEnd: endOfDay(new Date(year, 11, 31)),
+    thisMonthStart: start(year, month, 1),
+    thisMonthEnd: end(year, month + 1, 0),
+    lastMonthStart: start(year, month - 1, 1),
+    lastMonthEnd: end(year, month, 0),
+    thisYearStart: start(year, 0, 1),
+    thisYearEnd: end(year, 11, 31),
   };
 }
 
@@ -118,14 +111,8 @@ export function parseFinanceFilters(params: FinanceSearchParams, now = new Date(
     to = null;
   } else if (presetParam === "custom" || params.from || params.to) {
     preset = "custom";
-    from = parseDateParam(params.from);
-    to = null;
-    if (params.to?.trim()) {
-      const parsedTo = new Date(params.to);
-      if (!Number.isNaN(parsedTo.getTime())) {
-        to = endOfDay(parsedTo);
-      }
-    }
+    from = businessDayStart(params.from);
+    to = businessDayEnd(params.to);
   }
 
   const paymentType = (INCOME_PAYMENT_TYPES as readonly string[]).includes(params.paymentType ?? "")
@@ -172,10 +159,10 @@ export function buildFinanceQueryString(
   }
 
   if (merged.from) {
-    params.set("from", merged.from.toISOString().slice(0, 10));
+    params.set("from", formatBusinessDate(merged.from));
   }
   if (merged.to) {
-    params.set("to", merged.to.toISOString().slice(0, 10));
+    params.set("to", formatBusinessDate(merged.to));
   }
   if (merged.courseId) params.set("courseId", merged.courseId);
   if (merged.studentId) params.set("studentId", merged.studentId);
@@ -213,8 +200,8 @@ export function buildFinanceSearchPreserveParams(
 
   if (filters.tab === "expenses") params.tab = "expenses";
   if (filters.preset !== "this_month") params.preset = filters.preset;
-  if (filters.from) params.from = filters.from.toISOString().slice(0, 10);
-  if (filters.to) params.to = filters.to.toISOString().slice(0, 10);
+  if (filters.from) params.from = formatBusinessDate(filters.from);
+  if (filters.to) params.to = formatBusinessDate(filters.to);
   if (filters.courseId) params.courseId = filters.courseId;
   if (filters.studentId) params.studentId = filters.studentId;
   if (filters.paymentType) params.paymentType = filters.paymentType;

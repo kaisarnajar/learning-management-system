@@ -6,7 +6,7 @@ import { formatPrice } from "@/services/courses";
 import { incomePaymentTypeLabel } from "@/services/monthly-payment-status";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { deleteManualPaymentRecord } from "@/app/admin/payments/actions";
+import { voidManualPaymentRecord } from "@/app/admin/payments/actions";
 import { useToast } from "@/components/shared/ToastProvider";
 import { getReturnToUrl } from "@/components/shared/ActionButton";
 
@@ -90,8 +90,10 @@ export function ManualTransactionsTable({ records }: ManualTransactionsTableProp
                     label="View Receipt"
                   />
                   <DeleteActionButton
-                    action={async () => {
-                      const result = await deleteManualPaymentRecord(record.id, returnTo);
+                    verb="Void"
+                    reasonLabel="Reason for voiding"
+                    action={async (reason) => {
+                      const result = await voidManualPaymentRecord(record.id, reason, returnTo);
                       if (result && "error" in result && result.error) {
                         addToast(result.error, "error");
                       }

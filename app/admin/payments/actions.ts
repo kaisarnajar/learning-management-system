@@ -17,6 +17,7 @@ import { getCourseById } from "@/services/courses";
 import { notifyPaymentApproved, revalidateNotificationPaths } from "@/services/notifications";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getAppBaseUrl } from "@/services/password-reset";
+import { normalizeReason, softDeleteSubmissionTx, voidPaymentRecordTx, VoidError } from "@/services/payment-voiding";
 
 function revalidatePaymentPaths(userId: string, courseId?: string | null) {
   const paths = [
@@ -199,58 +200,77 @@ export async function declineMonthlyPayment(
   redirect(paymentReturnUrl(returnTo, "declined"));
 }
 
-export async function deleteApprovedPayment(
+/**
+ * Voids an approved fee payment: the PaymentRecord is marked voided (kept for
+ * audit), the submission is soft-deleted, and both are written to the audit
+ * log with the admin's reason. Nothing is hard-deleted.
+ */
+export async function voidApprovedPayment(
   submissionId: string,
+  reason: string | undefined,
   returnTo?: string,
 ): Promise<{ error?: string } | void> {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const normalizedReason = normalizeReason(reason);
+  if (!normalizedReason) {
+    return { error: "Please give a reason (at least 3 characters); it is recorded in the audit log." };
+  }
 
   const submission = await withDbErrorHandling(() => prisma.coursePaymentSubmission.findUnique({
       where: { id: submissionId },
     }), "Database operation failed");
 
-  if (!submission) {
+  if (!submission || submission.deletedAt) {
     return { error: "Payment submission not found." };
   }
 
   if (submission.status !== MONTHLY_PAYMENT_APPROVED) {
-    return { error: "Only approved payments can be deleted." };
+    return { error: "Only approved payments can be voided." };
   }
 
-  if (submission.paymentRecordId) {
-    const recordId = submission.paymentRecordId;
-    await withDbErrorHandling(() => prisma.paymentRecord.delete({
-        where: { id: recordId },
-      }), "Database operation failed");
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (submission.paymentRecordId) {
+        await voidPaymentRecordTx(tx, session, submission.paymentRecordId, normalizedReason);
+      }
+      await softDeleteSubmissionTx(tx, session, submissionId, normalizedReason);
+    });
+  } catch (error) {
+    if (error instanceof VoidError) return { error: error.message };
+    throw error;
   }
-
-  await withDbErrorHandling(() => prisma.coursePaymentSubmission.delete({
-      where: { id: submissionId },
-    }), "Database operation failed");
 
   revalidatePaymentPaths(submission.userId, submission.courseId);
   redirect(paymentReturnUrl(returnTo, "deleted"));
 }
 
-export async function deleteManualPaymentRecord(
+/** Voids a manually recorded payment (kept for audit; excluded from finance). */
+export async function voidManualPaymentRecord(
   recordId: string,
+  reason: string | undefined,
   returnTo?: string,
 ): Promise<{ error?: string } | void> {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const normalizedReason = normalizeReason(reason);
+  if (!normalizedReason) {
+    return { error: "Please give a reason (at least 3 characters); it is recorded in the audit log." };
+  }
 
   const record = await withDbErrorHandling(
     () => prisma.paymentRecord.findUnique({ where: { id: recordId } }),
     "Database operation failed",
   );
 
-  if (!record) {
+  if (!record || record.voidedAt) {
     return { error: "Payment record not found." };
   }
 
-  await withDbErrorHandling(
-    () => prisma.paymentRecord.delete({ where: { id: recordId } }),
-    "Database operation failed",
-  );
+  try {
+    await prisma.$transaction((tx) => voidPaymentRecordTx(tx, session, recordId, normalizedReason));
+  } catch (error) {
+    if (error instanceof VoidError) return { error: error.message };
+    throw error;
+  }
 
   revalidatePaymentPaths(record.userId);
   const param = new URLSearchParams({ type: "manual_transactions", deleted: "1" });

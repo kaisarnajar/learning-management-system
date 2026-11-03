@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import {
   deleteBlogImageFile,
   getBlogImageFiles,
@@ -10,6 +11,23 @@ import { blogPostSchema, teacherBlogPostSchema } from "@/utils/validations";
 import { sanitizeRichText } from "@/services/rich-text";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { deleteManyFromR2, isUploadError } from "@/services/storage";
+import { revalidatePublicContent } from "@/services/public-cache";
+
+/** Cache invalidation after an admin changes a blog post: lists, the public blog and (when known) the post's pages. */
+export function revalidateBlogPaths(postId?: string) {
+  revalidatePath("/");
+
+  revalidatePublicContent();
+  revalidatePath("/blog");
+  revalidatePath("/admin");
+  revalidatePath("/admin/blogs");
+  revalidatePath("/admin/blog-approvals");
+  if (postId) {
+    revalidatePath(`/blog/${postId}`);
+    revalidatePath(`/admin/blog-approvals/${postId}`);
+  }
+  revalidatePath("/teacher/blogs");
+}
 
 /** Rich-text bodies arrive as raw editor HTML; sanitise before validation and storage. */
 function sanitizedBody(formData: FormData): string {

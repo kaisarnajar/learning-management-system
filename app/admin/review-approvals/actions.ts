@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { createAdminCrudActions } from "@/services/admin-crud";
 import { adminReturnUrl } from "@/utils/admin-redirects";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
@@ -130,19 +131,19 @@ export async function saveApprovedReviewHomepageSetting(
   redirect("/admin/review-approvals?saved=1");
 }
 
+const reviewCrud = createAdminCrudActions({
+  label: "review",
+  notFoundMessage: "Review not found.",
+  deleteFailedMessage: "Failed to delete review.",
+  model: {
+    find: (id) => prisma.studentReview.findUnique({ where: { id } }),
+    remove: (id) => prisma.studentReview.delete({ where: { id } }),
+  },
+  paths: { list: "/admin/review-approvals", revalidate: revalidateReviewPaths },
+});
+
 export async function deleteStudentReview(
   reviewId: string,
 ): Promise<{ error?: string }> {
-  await requireAdmin();
-
-  try {
-    await prisma.studentReview.delete({
-      where: { id: reviewId },
-    });
-    revalidateReviewPaths(reviewId);
-    return {};
-  } catch (err) {
-    console.error("Failed to delete review:", err);
-    return { error: "Failed to delete review." };
-  }
+  return reviewCrud.removeById(reviewId);
 }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { requireAdmin } from "@/services/auth-actions";
 import { getFatwaPublicUrl, resolveFatwaFeaturedUpdate } from "@/services/fatwa";
 import { sendFatwaAnswerEmail, sendFatwaStatusTeacherEmail, type EmailSendResult } from "@/services/email";
@@ -44,6 +45,9 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
   }
 
   const wasPending = existing.approvalStatus === "PENDING";
+  // The asker is told once, when the answer first goes live; later edits of
+  // an approved answer must not send the same "your question was answered" mail again.
+  const firstApproval = existing.approvalStatus !== "APPROVED";
 
   await withDbErrorHandling(() => prisma.fatwaQuestion.update({
       where: { id },
@@ -68,7 +72,7 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
   const isAnonymous = existing.askerEmail === `anonymous@${new URL(BRAND_CONFIG.websiteUrl).hostname}` || existing.askerName === "Anonymous";
 
   let emailResult: EmailSendResult = { sent: false, skipped: true };
-  if (!isAnonymous) {
+  if (!isAnonymous && firstApproval) {
     emailResult = await sendFatwaAnswerEmail({
       to: existing.askerEmail,
       askerName: existing.askerName,
@@ -78,22 +82,26 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
   }
 
   if (wasPending && existing.answeredById) {
-    const teacherUser = await withDbErrorHandling(() => prisma.user.findUnique({ where: { id: existing.answeredById! } }), "Database operation failed");
-    if (teacherUser && teacherUser.email) {
-      await sendFatwaStatusTeacherEmail({
-        to: teacherUser.email,
-        teacherName: teacherUser.name || "Teacher",
-        questionTitle: existing.title,
-        status: "approved",
-        fatwaUrl,
-      });
-    }
+    // Courtesy mail to the teacher: sent after the response, never on its critical path.
+    const teacherId = existing.answeredById;
+    after(async () => {
+      const teacherUser = await prisma.user.findUnique({ where: { id: teacherId } }).catch(() => null);
+      if (teacherUser?.email) {
+        await sendFatwaStatusTeacherEmail({
+          to: teacherUser.email,
+          teacherName: teacherUser.name || "Teacher",
+          questionTitle: existing.title,
+          status: "approved",
+          fatwaUrl,
+        });
+      }
+    });
   }
 
   const savedParams = new URLSearchParams({ saved: "1" });
   if (isAnonymous) {
     savedParams.set("email", "anonymous");
-  } else if (!emailResult.sent) {
+  } else if (firstApproval && !emailResult.sent) {
     savedParams.set("email", emailResult.skipped ? "skipped" : "failed");
   }
 
@@ -160,17 +168,19 @@ export async function rejectFatwaQuestion(id: string, formData: FormData) {
   revalidatePath(`/admin/fatwa/${id}`);
 
   if (existing.answeredById) {
-    const teacherUser = await withDbErrorHandling(() => prisma.user.findUnique({ where: { id: existing.answeredById! } }), "Database operation failed");
-    if (teacherUser && teacherUser.email) {
-      const fatwaUrl = getFatwaPublicUrl(id);
-      await sendFatwaStatusTeacherEmail({
-        to: teacherUser.email,
-        teacherName: teacherUser.name || "Teacher",
-        questionTitle: existing.title,
-        status: "rejected",
-        fatwaUrl,
-      });
-    }
+    const teacherId = existing.answeredById;
+    after(async () => {
+      const teacherUser = await prisma.user.findUnique({ where: { id: teacherId } }).catch(() => null);
+      if (teacherUser?.email) {
+        await sendFatwaStatusTeacherEmail({
+          to: teacherUser.email,
+          teacherName: teacherUser.name || "Teacher",
+          questionTitle: existing.title,
+          status: "rejected",
+          fatwaUrl: getFatwaPublicUrl(id),
+        });
+      }
+    });
   }
 
   redirect(`/admin/fatwa/${id}?rejected=1`);

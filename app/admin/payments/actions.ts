@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { requireAdmin } from "@/services/auth-actions";
 import { sendPaymentDeclinedEmail } from "@/services/email";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
@@ -195,12 +196,13 @@ export async function declineMonthlyPayment(
       ? `${base.replace(/\/$/, "")}/profile/courses/${submission.courseId}/enrollment-pay`
       : `${base.replace(/\/$/, "")}/profile/courses/${submission.courseId}/pay`;
 
-  await sendPaymentDeclinedEmail({
+  // The decline is committed; the email goes out after the response.
+  after(() => sendPaymentDeclinedEmail({
     to: submission.user.email,
     studentName: submission.user.name ?? "",
     courseTitle: course.title,
     paymentUrl,
-  });
+  }));
 
   revalidatePaymentPaths(submission.userId, submission.courseId);
   redirect(paymentReturnUrl(returnTo, "declined"));

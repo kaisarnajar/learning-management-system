@@ -10,6 +10,8 @@
     "start": "next start",
     "lint": "eslint",
     "knip": "knip --include files,dependencies",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev --skip-seed",
     "db:drift": "bash scripts/check-migration-drift.sh",
@@ -70,6 +72,7 @@
     "tailwindcss": "^4",
     "tailwindcss-v3": "npm:tailwindcss@^3.4.19",
     "tsx": "^4.22.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.12"
   }
 }

@@ -261,9 +261,17 @@ export async function getApprovedBookPaymentsPaginated(
   pageSize: number,
   search?: string
 ): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
-  // Any order that progressed to APPROVED or beyond has a payment record associated with it.
-  // We exclude PENDING_VERIFICATION and DECLINED because they don't have approved payments.
-  return fetchBookOrdersPaginated({ in: ["APPROVED", "SHIPPED", "REFUNDED"] }, page, pageSize, search, { createdAt: "desc" });
+  // Orders whose payment is still income: approved or shipped. Refunded
+  // orders have their payment record voided and are listed separately.
+  return fetchBookOrdersPaginated({ in: ["APPROVED", "SHIPPED"] }, page, pageSize, search, { createdAt: "desc" });
+}
+
+export async function getRefundedBookOrdersPaginated(
+  page: number,
+  pageSize: number,
+  search?: string
+): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
+  return fetchBookOrdersPaginated("REFUNDED", page, pageSize, search, { updatedAt: "desc" });
 }
 
 export async function getPendingBookOrderCount(): Promise<number> {

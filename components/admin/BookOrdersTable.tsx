@@ -248,6 +248,20 @@ function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "defau
         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${bookOrderStatusClass(order.status)}`}>
           {bookOrderStatusLabel(order.status)}
         </span>
+        {order.status === "SHIPPED" && (
+          <ConfirmationModal
+             title="Refund Order"
+             description="Refund this shipped order? The recorded payment will be voided and the student notified."
+             actionLabel="Refund"
+             onConfirm={async () => {
+               const result = await markBookOrderRefunded(order.id, window.location.pathname + window.location.search);
+               if (result?.error) addToast(result.error, "error");
+             }}
+             trigger={
+                <button type="button" className={adminDestructiveButtonClassName}>Refund</button>
+             }
+          />
+        )}
         {(order.status === "DECLINED" || order.status === "REFUNDED") && (
           <ConfirmationModal
              title="Void Order"

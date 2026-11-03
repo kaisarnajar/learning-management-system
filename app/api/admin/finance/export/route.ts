@@ -88,6 +88,8 @@ export async function GET(request: Request) {
         "Delivery Phone Number": r.deliveryPhoneNumber ?? "—",
         "Status": bookOrderStatusLabel(r.status),
         "Order Total (INR)": r.totalAmountPaise / 100,
+        "Refunded (INR)": r.refundedAmountPaise / 100,
+        "Net Income (INR)": (r.status === "APPROVED" || r.status === "SHIPPED" ? r.totalAmountPaise : 0) / 100,
         "Profit Contribution (INR)": r.profitContributionPaise / 100,
       }));
       filename = `Bookstore_Order_Finance_${new Date().toISOString().slice(0, 10)}.xlsx`;

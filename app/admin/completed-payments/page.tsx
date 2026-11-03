@@ -14,7 +14,7 @@ import {
 import { getIncomeRecordsPaginated } from "@/services/finance-income";
 import { getExpensesPaginated } from "@/services/finance-expenses";
 import { parseFinanceFilters } from "@/services/finance-filters";
-import { getApprovedBookPaymentsPaginated } from "@/services/bookstore";
+import { getApprovedBookPaymentsPaginated, getRefundedBookOrdersPaginated } from "@/services/bookstore";
 import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
@@ -31,6 +31,7 @@ type TabType =
   | "enrollment_waiver"
   | "monthly_waiver"
   | "book_approved"
+  | "book_refunded"
   | "manual_transactions"
   | "manual_expenses";
 
@@ -40,6 +41,7 @@ const ALL_TABS: TabType[] = [
   "enrollment_waiver",
   "monthly_waiver",
   "book_approved",
+  "book_refunded",
   "manual_transactions",
   "manual_expenses",
 ];
@@ -103,6 +105,7 @@ export default async function AdminCompletedPaymentsPage({
 
   const isApprovalTab = APPROVAL_TABLE_TABS.has(type);
   const isBookApproved = type === "book_approved";
+  const isBookRefunded = type === "book_refunded";
   const isManualTransactions = type === "manual_transactions";
   const isManualExpenses = type === "manual_expenses";
 
@@ -134,6 +137,8 @@ export default async function AdminCompletedPaymentsPage({
     // Approved book order payments tab
     isBookApproved
       ? getApprovedBookPaymentsPaginated(requestedPage, pageSize, q)
+      : isBookRefunded
+      ? getRefundedBookOrdersPaginated(requestedPage, pageSize, q)
       : Promise.resolve({ items: [], totalCount: 0 }),
     // Manually added transactions tab
     isManualTransactions
@@ -149,7 +154,7 @@ export default async function AdminCompletedPaymentsPage({
     ? activeIncomeResult.totalCount
     : isManualExpenses
     ? activeExpenseResult.totalCount
-    : isBookApproved
+    : isBookApproved || isBookRefunded
     ? activeBookResult.totalCount
     : activeApprovalResult.totalCount;
 
@@ -162,6 +167,7 @@ export default async function AdminCompletedPaymentsPage({
     { label: "100% Fee Waiver (Enrollment)", value: "enrollment_waiver" as TabType },
     { label: "100% Fee Waiver (Course)", value: "monthly_waiver" as TabType },
     { label: "Book Order Payments", value: "book_approved" as TabType },
+    { label: "Book Order Refunds", value: "book_refunded" as TabType },
     { label: "Manually Added Transactions", value: "manual_transactions" as TabType },
     { label: "Manually Added Expenses", value: "manual_expenses" as TabType },
   ];
@@ -217,12 +223,14 @@ export default async function AdminCompletedPaymentsPage({
                   : "No payments found for this category."
               }
             />
-          ) : isBookApproved ? (
+          ) : isBookApproved || isBookRefunded ? (
             <BookOrdersTable
               orders={activeBookResult.items}
               emptyMessage={
                 q
-                  ? "No book order payments match your search."
+                  ? "No book orders match your search."
+                  : isBookRefunded
+                  ? "No refunded book orders."
                   : "No approved book order payments found."
               }
               showStatusColumn={true}

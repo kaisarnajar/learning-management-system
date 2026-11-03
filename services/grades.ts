@@ -1,6 +1,29 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { ENROLLMENT_STATUS } from "@/config/constants/business";
+
+/**
+ * marksObtained is migrating from Float to DECIMAL(6,2) (expand step:
+ * marksObtainedDecimal). Writes set both; reads prefer the decimal and fall
+ * back to the float, and the Decimal object is stripped so rows stay plain
+ * (serialisable to client components).
+ */
+export function withMarks<T extends { marksObtained: number; marksObtainedDecimal: Prisma.Decimal | null }>(
+  row: T,
+): Omit<T, "marksObtainedDecimal"> {
+  const { marksObtainedDecimal, ...rest } = row;
+  return {
+    ...rest,
+    marksObtained: marksObtainedDecimal != null ? Number(marksObtainedDecimal) : rest.marksObtained,
+  };
+}
+
+/** Both columns for a grade write; marks are stored to two decimals. */
+export function marksData(marks: number): { marksObtained: number; marksObtainedDecimal: number } {
+  const rounded = Math.round(marks * 100) / 100;
+  return { marksObtained: rounded, marksObtainedDecimal: rounded };
+}
 
 export type GradeRecordInput = {
   enrollmentId: string;
@@ -75,7 +98,7 @@ async function assertEnrollmentsBelongToCourse(
 
 export async function getGradeRecordsForGradeIdFromDb(courseId: string, gradeId: string) {
   return withDbErrorHandling(async () => {
-    return prisma.courseGrade.findFirst({
+    const grade = await prisma.courseGrade.findFirst({
       where: { id: gradeId, courseId },
       include: {
         records: {
@@ -94,6 +117,7 @@ export async function getGradeRecordsForGradeIdFromDb(courseId: string, gradeId:
         }
       }
     });
+    return grade ? { ...grade, records: grade.records.map(withMarks) } : null;
   }, "Failed to fetch grade records");
 }
 
@@ -148,11 +172,9 @@ export async function saveCourseGradeToDb(
           create: {
             gradeId: grade.id,
             enrollmentId: record.enrollmentId,
-            marksObtained: record.marksObtained,
+            ...marksData(record.marksObtained),
           },
-          update: {
-            marksObtained: record.marksObtained,
-          }
+          update: marksData(record.marksObtained),
         });
       }
     });
@@ -161,7 +183,7 @@ export async function saveCourseGradeToDb(
 
 export async function getStudentGradeRecordsFromDb(enrollmentId: string) {
   return withDbErrorHandling(async () => {
-    return prisma.courseGradeRecord.findMany({
+    const records = await prisma.courseGradeRecord.findMany({
       where: {
         enrollmentId,
       },
@@ -180,6 +202,7 @@ export async function getStudentGradeRecordsFromDb(enrollmentId: string) {
         }
       }
     });
+    return records.map(withMarks);
   }, "Failed to fetch student grades");
 }
 
@@ -242,7 +265,7 @@ export async function getStudentGradeReportFromDb(enrollmentId: string) {
     return {
       enrollment,
       course,
-      records,
+      records: records.map(withMarks),
     };
   }, "Failed to fetch student grade report");
 }

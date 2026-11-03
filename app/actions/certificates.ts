@@ -36,11 +36,11 @@ export async function generateCertificate(enrollmentId: string, certificateType:
     if (
       certificateGrade === undefined ||
       certificateGrade === null ||
-      Number.isNaN(certificateGrade) ||
+      !Number.isInteger(certificateGrade) ||
       certificateGrade < 0 ||
       certificateGrade > 10
     ) {
-      return { error: "A valid grade between 0 and 10 is required for a Certificate of Completion." };
+      return { error: "A whole-number grade from 0 to 10 is required for a Certificate of Completion." };
     }
   }
 

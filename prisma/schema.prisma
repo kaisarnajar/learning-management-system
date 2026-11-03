@@ -200,6 +200,7 @@ model User {
   couponRequests           CouponRequest[]
   couponUsages             CouponUsage[]
   deviceTokens             DeviceToken[]
+  teacherProfile           Teacher?
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
 
@@ -239,6 +240,7 @@ model VerificationToken {
   expires    DateTime
 
   @@id([identifier, token])
+  @@index([expires])
 }
 
 /**
@@ -252,6 +254,7 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@index([email])
+  @@index([expiresAt])
 }
 
 model Course {
@@ -294,8 +297,11 @@ model Teacher {
   initials       String
   imageUrl       String?
   published      Boolean              @default(true)
+  /// The sign-in account of this teacher; null until linked (by backfill or at sign-in).
+  userId         String?              @unique
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
+  user           User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   courses        Course[]
   announcements  CourseAnnouncement[]
   expenses       Expense[]
@@ -323,6 +329,7 @@ model CourseAnnouncement {
   @@index([courseId, createdAt])
   @@index([enrollmentId])
   @@index([courseId, enrollmentId])
+  @@index([teacherId])
 }
 
 model SiteAnnouncement {
@@ -375,6 +382,7 @@ model BlogPost {
   @@index([published, approvalStatus, createdAt])
   @@index([approvalStatus, createdAt])
   @@index([featuredOnHomepage, featuredAt])
+  @@index([createdById])
 }
 
 model BlogLike {
@@ -498,6 +506,12 @@ model Enrollment {
   @@unique([userId, courseId])
   @@unique([courseId, rollNumber])
   @@index([courseId])
+  @@index([status])
+  @@index([userId, status])
+  @@index([courseId, status])
+  @@index([statusEnum])
+  @@index([userId, statusEnum])
+  @@index([courseId, statusEnum])
 }
 
 model FatwaQuestion {
@@ -522,6 +536,7 @@ model FatwaQuestion {
   @@index([category])
   @@index([answeredAt])
   @@index([featuredOnHomepage, featuredAt])
+  @@index([approvalStatus])
 }
 
 model ContactInquiry {
@@ -600,6 +615,7 @@ model Expense {
   @@index([category])
   @@index([paidAt])
   @@index([teacherId])
+  @@index([paidAt, category])
 }
 
 /**
@@ -659,6 +675,7 @@ model CoursePaymentSubmission {
   @@index([status])
   @@index([paymentType])
   @@index([couponId])
+  @@index([userId, courseId, label, status])
 }
 
 model StudentNotification {
@@ -814,15 +831,18 @@ model CourseGrade {
 
   @@index([courseId])
   @@index([date])
+  @@index([courseId, date])
 }
 
 model CourseGradeRecord {
-  id            String   @id @default(cuid())
-  gradeId       String
-  enrollmentId  String
-  marksObtained Float
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  gradeId              String
+  enrollmentId         String
+  marksObtained        Float
+  /// Exact twin of `marksObtained`; null until backfilled. Read through services/grades.ts.
+  marksObtainedDecimal Decimal? @db.Decimal(6, 2)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   grade      CourseGrade @relation(fields: [gradeId], references: [id], onDelete: Cascade)
   enrollment Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
@@ -875,7 +895,6 @@ model Coupon {
 
   @@index([courseId])
   @@index([userId])
-  @@index([code])
 }
 
 model CouponRequest {
@@ -925,7 +944,6 @@ model DeviceToken {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([token])
 }
 
 model UserCartItem {

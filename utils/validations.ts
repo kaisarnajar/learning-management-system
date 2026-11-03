@@ -171,7 +171,8 @@ export const genderEnum = z.enum(["MALE", "FEMALE"], {
   message: "Gender is required.",
 });
 
-export const profileUpdateSchema = z
+/** Base profile field rules shared by the web form and the mobile API. */
+export const profileFieldsSchema = z
   .object({
     name: z.string().trim().min(2, "Name must be at least 2 characters.").max(100),
     fatherName: z.string().trim().min(2, "Father's name must be at least 2 characters.").max(100),
@@ -196,7 +197,9 @@ export const profileUpdateSchema = z
     country: profileCountryEnum,
     whatsapp: z.string().trim(),
     gender: genderEnum,
-  })
+  });
+
+export const profileUpdateSchema = profileFieldsSchema
   .superRefine((data, ctx) => {
     const country = getProfileCountryOrDefault(data.country);
     const digits = data.whatsapp.replace(/\D/g, "");
@@ -222,6 +225,45 @@ export const profileUpdateSchema = z
       });
     }
   });
+
+/**
+ * Profile image URLs may only point at hosts the application itself stores
+ * images on. user.image is later fetched server-side for the ID card, so an
+ * arbitrary URL or local path would be an SSRF / file-read vector.
+ */
+export function isAllowedProfileImageUrl(value: string): boolean {
+  if (value === "/assets/male_icon.png" || value === "/assets/female_icon.png") return true;
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    if (host.endsWith(".googleusercontent.com")) return true;
+    const r2 = process.env.R2_PUBLIC_URL;
+    if (!r2) return false;
+    return host === new URL(r2).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+export const profileImageUrlSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine(isAllowedProfileImageUrl, "Profile image must be hosted on the academy's storage.");
+
+/** Mobile API profile update: every field optional, no unknown keys, image host-restricted. */
+export const apiProfileUpdateSchema = profileFieldsSchema
+  .omit({ country: true })
+  .extend({
+    whatsapp: z
+      .string()
+      .trim()
+      .regex(/^\+?\d{7,15}$/, "WhatsApp number must be 7 to 15 digits."),
+    image: profileImageUrlSchema.nullable(),
+  })
+  .partial()
+  .strict();
 
 export const announcementCategoryEnum = z.enum([
   "EXAMS_TESTS",

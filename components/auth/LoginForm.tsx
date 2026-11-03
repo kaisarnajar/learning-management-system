@@ -28,8 +28,11 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
   const registered = searchParams.get("registered") === "1";
   const passwordReset = searchParams.get("reset") === "1";
   const teacherProfileError = searchParams.get("error") === "teacher-profile";
+  const unverifiedLinkError = searchParams.get("error") === "unverified-link";
 
   const [error, setError] = useState("");
+  const [unverifiedEmail, setUnverifiedEmail] = useState("");
+  const [resendState, setResendState] = useState<"idle" | "sending" | "sent">("idle");
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -41,11 +44,27 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
     validate,
   });
 
+  async function resendVerification() {
+    if (!unverifiedEmail || resendState !== "idle") return;
+    setResendState("sending");
+    try {
+      await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: unverifiedEmail }),
+      });
+    } catch {
+      // The response is deliberately the same either way; nothing to show.
+    }
+    setResendState("sent");
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!isValid || loading) return;
 
     setError("");
+    setUnverifiedEmail("");
     setLoading(true);
 
     try {
@@ -57,7 +76,12 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
       });
 
       if (result?.error) {
-        setError("Invalid email or password.");
+        if (result.code === "email_not_verified") {
+          setError("Please verify your email address before signing in. Check your inbox (and spam folder) for the verification link.");
+          setUnverifiedEmail(values.email.trim());
+        } else {
+          setError("Invalid email or password.");
+        }
         setLoading(false);
         return;
       }
@@ -101,9 +125,25 @@ export function LoginForm({ googleEnabled }: { googleEnabled: boolean }) {
         </p>
       )}
 
+      {unverifiedLinkError && (
+        <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-center text-sm text-warning-text" role="alert">
+          This email is registered with a password that has not been verified yet. Verify the email first, then sign in with Google.
+        </p>
+      )}
+
       {error && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-center text-sm text-destructive-text" role="alert">
           {error}
+          {unverifiedEmail && (
+            <button
+              type="button"
+              onClick={resendVerification}
+              disabled={resendState !== "idle"}
+              className="mt-2 block w-full text-center font-semibold underline disabled:no-underline disabled:opacity-70"
+            >
+              {resendState === "sent" ? "Verification email sent" : resendState === "sending" ? "Sending…" : "Resend verification email"}
+            </button>
+          )}
         </p>
       )}
 

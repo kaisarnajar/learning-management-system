@@ -52,6 +52,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!user.emailVerified) {
+      return NextResponse.json(
+        {
+          success: false,
+          code: "email_not_verified",
+          error: "Please verify your email address before signing in. Check your inbox for the verification link.",
+        },
+        { status: 403 }
+      );
+    }
+
     const role = await resolveUserRole(user.email);
     const token = await generateApiToken({
       id: user.id,

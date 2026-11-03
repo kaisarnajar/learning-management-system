@@ -17,6 +17,13 @@ export const authConfig = {
           Google({
             clientId: process.env.AUTH_GOOGLE_ID!,
             clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+            // Linking by email stays on so a student who registered with a
+            // password can later use Google. The pre-verification takeover it
+            // allows (attacker registers the victim's address, victim links
+            // Google, attacker's password still works) is closed in the signIn
+            // callback of services/auth.ts, which scrubs the password of an
+            // unverified row before the link, and by the credentials provider
+            // refusing unverified accounts.
             allowDangerousEmailAccountLinking: true,
           }),
         ]

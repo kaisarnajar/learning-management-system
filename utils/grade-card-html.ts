@@ -5,6 +5,7 @@ import { getAcademySettings } from "@/services/academy-settings";
 import { BRAND_CONFIG } from "@/config/brand";
 import { AUTHORITY_SIGNATURE } from "@/services/academy-contact";
 import { formatRollNumber } from "@/services/roll-numbers";
+import { escapeHtml as e } from "@/utils/html-escape";
 
 
 export type GradeCardExamData = {
@@ -54,7 +55,7 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
   <div class="max-w-4xl mx-auto border-pdf-thick border-brand-primary rounded-xl p-8 bg-surface-cream relative" style="min-height: 720px;">
     <!-- Watermark -->
     <div class="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-      <img src="${data.logoUrl}" class="w-[350px] process-white-bg" alt="Watermark" />
+      <img src="${e(data.logoUrl)}" class="w-[350px] process-white-bg" alt="Watermark" />
     </div>
 
     <div class="relative z-10">
@@ -63,12 +64,12 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
         <div class="flex justify-between items-center w-full">
           <!-- Top Left: Logo -->
           <div class="relative w-28 h-28">
-            <img src="${data.logoUrl}" alt="${data.academyName} Logo" class="object-contain w-full h-full process-white-bg" />
+            <img src="${e(data.logoUrl)}" alt="${e(data.academyName)} Logo" class="object-contain w-full h-full process-white-bg" />
           </div>
           <!-- Top Right: Academy Name & Arabic Verse -->
           <div class="text-right flex flex-col items-end">
             <h1 class="text-3xl font-serif font-bold text-brand-primary tracking-wide mb-1 uppercase">
-              ${data.academyName}
+              ${e(data.academyName)}
             </h1>
             <h2 class="text-xl font-bold text-brand-primary mt-1" style="font-family: 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">
               خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ
@@ -77,9 +78,9 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
         </div>
         <!-- Academy info below header -->
         <div class="text-center mt-4 text-pdf-11 text-slate-600 flex justify-between items-center w-full border-t border-slate-200 pt-3">
-          <span>Address: ${data.academyAddress}</span>
-          <span>Phone: ${data.academyPhone} | Email: ${data.academyEmail}</span>
-          <span>Website: ${data.academyWebsite}</span>
+          <span>Address: ${e(data.academyAddress)}</span>
+          <span>Phone: ${e(data.academyPhone)} | Email: ${e(data.academyEmail)}</span>
+          <span>Website: ${e(data.academyWebsite)}</span>
         </div>
       </header>
 
@@ -94,14 +95,14 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
       <div class="grid grid-cols-2 gap-8 mb-8 bg-white border-l-4 border-brand-primary p-5 rounded-r border border-slate-100 shadow-sm">
         <div class="space-y-1">
           <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Student Information</h3>
-          <p class="font-bold text-base text-slate-800">${data.studentName}</p>
-          <p class="text-slate-600 text-xs">Roll Number: <span class="font-semibold">${data.rollNumber}</span></p>
-          <p class="text-slate-600 text-xs">Email: <span class="font-medium">${data.studentEmail}</span></p>
+          <p class="font-bold text-base text-slate-800">${e(data.studentName)}</p>
+          <p class="text-slate-600 text-xs">Roll Number: <span class="font-semibold">${e(data.rollNumber)}</span></p>
+          <p class="text-slate-600 text-xs">Email: <span class="font-medium">${e(data.studentEmail)}</span></p>
         </div>
         <div class="space-y-1">
           <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Academic Course</h3>
-          <p class="font-bold text-base text-brand-primary">${data.courseTitle}</p>
-          <p class="text-slate-600 text-xs">Issue Date: <span class="font-medium">${data.issueDate}</span></p>
+          <p class="font-bold text-base text-brand-primary">${e(data.courseTitle)}</p>
+          <p class="text-slate-600 text-xs">Issue Date: <span class="font-medium">${e(data.issueDate)}</span></p>
         </div>
       </div>
 
@@ -125,10 +126,10 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
               </tr>
             ` : data.exams.map(exam => `
               <tr class="hover:bg-slate-50/50">
-                <td class="py-3 px-4 font-medium text-slate-800">${exam.title}</td>
-                <td class="py-3 px-4 text-slate-500">${exam.date}</td>
-                <td class="py-3 px-4 text-right font-mono font-bold text-emerald-600">${exam.marksObtained}</td>
-                <td class="py-3 px-4 text-right font-mono text-slate-500">${exam.maxMarks}</td>
+                <td class="py-3 px-4 font-medium text-slate-800">${e(exam.title)}</td>
+                <td class="py-3 px-4 text-slate-500">${e(exam.date)}</td>
+                <td class="py-3 px-4 text-right font-mono font-bold text-emerald-600">${e(exam.marksObtained)}</td>
+                <td class="py-3 px-4 text-right font-mono text-slate-500">${e(exam.maxMarks)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -139,23 +140,23 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
       <div class="grid grid-cols-5 gap-4 bg-white border-y-2 border-brand-primary py-4 px-5 mb-10 text-center rounded shadow-sm border border-slate-100">
         <div>
           <div class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Total Exams</div>
-          <div class="text-lg font-bold text-slate-800">${data.totalExams}</div>
+          <div class="text-lg font-bold text-slate-800">${e(data.totalExams)}</div>
         </div>
         <div>
           <div class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Obtained</div>
-          <div class="text-lg font-bold text-emerald-600">${data.totalMarksObtained}</div>
+          <div class="text-lg font-bold text-emerald-600">${e(data.totalMarksObtained)}</div>
         </div>
         <div>
           <div class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Max Marks</div>
-          <div class="text-lg font-bold text-slate-800">${data.totalMaxMarks}</div>
+          <div class="text-lg font-bold text-slate-800">${e(data.totalMaxMarks)}</div>
         </div>
         <div>
           <div class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Percentage</div>
-          <div class="text-lg font-bold text-brand-primary">${data.percentage}%</div>
+          <div class="text-lg font-bold text-brand-primary">${e(data.percentage)}%</div>
         </div>
         <div>
           <div class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Overall Grade</div>
-          <div class="text-lg font-bold text-amber-600">${data.overallGrade}</div>
+          <div class="text-lg font-bold text-amber-600">${e(data.overallGrade)}</div>
         </div>
       </div>
 
@@ -163,17 +164,17 @@ export function renderGradeCardToHtml(data: GradeCardData): string {
       <div class="flex justify-between items-end mt-12 break-inside-avoid">
         <div class="w-7/12 pr-6">
           <p class="text-pdf-10 text-slate-500 leading-relaxed bg-white border border-slate-200/80 rounded p-3 italic shadow-sm">
-            This Grade Card is an official academic record issued by ${BRAND_CONFIG.name}.
+            This Grade Card is an official academic record issued by ${e(BRAND_CONFIG.name)}.
           </p>
         </div>
         <div class="w-5/12 text-center flex flex-col items-center relative">
           <div class="relative flex justify-center items-center h-[100px] w-full">
-            ${data.stampUrl ? `<img src="${data.stampUrl}" alt="Official Stamp" class="w-20 absolute z-10 opacity-90 process-white-bg mix-blend-multiply" style="top: 50%; left: 50%; transform: translate(-50%, -50%);" />` : ''}
-            ${data.signatureUrl ? `<img src="${data.signatureUrl}" alt="Authorized Signature" class="max-h-[85px] max-w-[160px] object-contain relative z-20 translate-y-2 process-white-bg" />` : ''}
+            ${data.stampUrl ? `<img src="${e(data.stampUrl)}" alt="Official Stamp" class="w-20 absolute z-10 opacity-90 process-white-bg mix-blend-multiply" style="top: 50%; left: 50%; transform: translate(-50%, -50%);" />` : ''}
+            ${data.signatureUrl ? `<img src="${e(data.signatureUrl)}" alt="Authorized Signature" class="max-h-[85px] max-w-[160px] object-contain relative z-20 translate-y-2 process-white-bg" />` : ''}
           </div>
           <div class="w-full border-t border-slate-300 pt-2 relative z-30">
-            <p class="font-bold text-xs text-slate-850">${data.authorityName}</p>
-            <p class="text-pdf-10 text-slate-500">${data.authorityDesignation}</p>
+            <p class="font-bold text-xs text-slate-850">${e(data.authorityName)}</p>
+            <p class="text-pdf-10 text-slate-500">${e(data.authorityDesignation)}</p>
           </div>
         </div>
     </div>

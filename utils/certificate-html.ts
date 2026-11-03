@@ -1,3 +1,4 @@
+import { escapeHtml as e } from "@/utils/html-escape";
 
 export function renderCertificateToHtml(data: {
   studentName: string;
@@ -16,7 +17,7 @@ export function renderCertificateToHtml(data: {
 }) {
   const isCompletion = data.certificateType === "COMPLETION";
   const title = isCompletion ? "Certificate of Completion" : "Certificate of Appreciation";
-  const gradeText = (isCompletion && data.certificateGrade != null) ? ` and has obtained a Grade of <strong class="text-brand-primary">${data.certificateGrade}/10</strong>` : "";
+  const gradeText = (isCompletion && data.certificateGrade != null) ? ` and has obtained a Grade of <strong class="text-brand-primary">${e(data.certificateGrade)}/10</strong>` : "";
 
   return `
 <link href="https://fonts.googleapis.com/css2?family=Scheherazade+New:wght@400;700&family=Amiri:wght@400;700&display=swap" rel="stylesheet" />
@@ -40,7 +41,7 @@ export function renderCertificateToHtml(data: {
     class="absolute inset-0 flex items-center justify-center opacity-[0.04]"
   >
     <img
-      src="${data.sealUrl}"
+      src="${e(data.sealUrl)}"
       class="w-[450px] process-white-bg"
     />
   </div>
@@ -49,7 +50,7 @@ export function renderCertificateToHtml(data: {
   <div class="pt-14 relative z-10">
     <div class="flex items-center justify-center gap-6 max-w-[800px] mx-auto">
       <img
-        src="${data.sealUrl}"
+        src="${e(data.sealUrl)}"
         class="w-20 h-20 process-white-bg flex-shrink-0"
         alt="Logo"
       />
@@ -58,7 +59,7 @@ export function renderCertificateToHtml(data: {
         <h1
           class="text-pdf-34 font-serif font-bold tracking-wide text-brand-primary uppercase leading-tight"
         >
-          ${data.academyName}
+          ${e(data.academyName)}
         </h1>
         
         <div class="flex items-center gap-4 mt-2">
@@ -90,23 +91,23 @@ export function renderCertificateToHtml(data: {
       class="text-pdf-44 font-bold mt-2 text-brand-primary leading-tight max-w-[900px] mx-auto"
       style="font-family: 'Georgia', 'Cormorant Garamond', serif;"
     >
-      ${data.studentName}
+      ${e(data.studentName)}
     </h3>
 
     <div class="w-80 h-[2px] bg-brand-gold mx-auto my-3"></div>
 
     <p class="text-pdf-22 text-gray-700 leading-snug max-w-[950px] mx-auto">
       residing at
-      <strong>${data.address}</strong>,
+      <strong>${e(data.address)}</strong>,
       in recognition of their commitment, diligence,
       and outstanding efforts in pursuing Islamic education
-      at ${data.academyName}.
+      at ${e(data.academyName)}.
     </p>
 
     <p class="text-pdf-22 text-gray-700 leading-snug max-w-[950px] mx-auto mt-3">
       The student has demonstrated admirable effort, discipline,
       and enthusiasm throughout the successful completion of the
-      <strong>${data.courseName}</strong> course${gradeText},
+      <strong>${e(data.courseName)}</strong> course${gradeText},
       reflecting excellent character, academic achievement, and devotion
       to Islamic learning.
     </p>
@@ -125,7 +126,7 @@ export function renderCertificateToHtml(data: {
           Certificate Number
         </p>
         <p class="text-pdf-16 font-mono font-bold text-brand-primary leading-none mt-1">
-          ${data.certificateNumber}
+          ${e(data.certificateNumber)}
         </p>
       </div>
 
@@ -134,7 +135,7 @@ export function renderCertificateToHtml(data: {
           Date of Issuance
         </p>
         <p class="text-pdf-26 font-bold text-brand-primary leading-none mt-1">
-          ${data.issueDate}
+          ${e(data.issueDate)}
         </p>
       </div>
     </div>
@@ -145,14 +146,14 @@ export function renderCertificateToHtml(data: {
       <div class="relative flex justify-center items-center h-[110px] w-full">
         <!-- Stamp as background layer -->
         <img
-          src="${data.stampUrl || data.sealUrl}"
+          src="${e(data.stampUrl || data.sealUrl)}"
           class="w-24 absolute z-10 opacity-90 process-white-bg mix-blend-multiply"
           style="top: 50%; left: 50%; transform: translate(-50%, -50%);"
         />
         <!-- Signature as foreground layer -->
         <img
           id="signature-image"
-          src="${data.signatureUrl}"
+          src="${e(data.signatureUrl)}"
           class="max-h-[110px] max-w-[240px] object-contain relative z-20 translate-y-1 process-white-bg"
         />
       </div>

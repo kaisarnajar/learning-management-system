@@ -100,6 +100,31 @@ export async function getEnrollmentsForCoursePaginated(
   }, page, pageSize) as unknown as Promise<PaginatedResult<CourseEnrollmentWithUser>>;
 }
 
+/** Enrollment statuses that grant access to course content and appear on teacher rosters. */
+export const APPROVED_ENROLLMENT_STATUSES = ["active", "completed"] as const;
+
+/**
+ * Approved (active or completed) enrollments for a course. Pending applicants
+ * and students still awaiting the enrollment fee are excluded.
+ */
+export async function getApprovedEnrollmentsForCoursePaginated(
+  courseId: string,
+  page: number,
+  pageSize: number,
+): Promise<PaginatedResult<CourseEnrollmentWithUser>> {
+  noStore();
+  const where = { courseId, status: { in: [...APPROVED_ENROLLMENT_STATUSES] } };
+  return paginateQuery(prisma.enrollment, {
+    where,
+    orderBy: { rollNumber: { sort: "asc", nulls: "last" } },
+    include: {
+      user: {
+        select: { id: true, name: true, email: true },
+      },
+    },
+  }, page, pageSize) as unknown as Promise<PaginatedResult<CourseEnrollmentWithUser>>;
+}
+
 /** Active roster for in-progress courses; completed roster when the course is completed. */
 export function getRosterEnrollmentStatusForCourse(courseStatus: CourseStatus): "active" | "completed" {
   return courseStatus === "COMPLETED" ? "completed" : "active";

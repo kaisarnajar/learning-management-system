@@ -72,11 +72,11 @@ export function WaiverRequestModal({
 
   async function action(formData: FormData) {
     setError("");
-    const feeTypeToSubmit = defaultType || (formData.get("feeType") as string);
     const category = formData.get("reasonCategory") as string;
     const customReasonInput = formData.get("customReason") as string;
 
-    let finalReason = `[Fee Type: ${feeTypeToSubmit === "enrollment" ? "Enrollment Fee" : "Course Fee"}] Reason: ${category}`;
+    // The fee type travels as its own field; the reason is just the reason.
+    let finalReason = category;
     if (customReasonInput && customReasonInput.trim()) {
       finalReason += ` - ${customReasonInput.trim()}`;
     }
@@ -188,6 +188,7 @@ export function WaiverRequestModal({
             required={reasonCategory === "Other"}
             rows={3}
             value={customReason}
+            maxLength={900}
             onChange={(e) => setCustomReason(e.target.value)}
             className={inputClassName}
             placeholder={

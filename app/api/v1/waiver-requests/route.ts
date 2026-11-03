@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
+import { createWaiverRequest, resolveWaiverFeeType } from "@/services/waiver-requests";
+import { waiverRequestSchema } from "@/utils/validations";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -18,7 +20,8 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: requests,
+      // feeType is filled from the legacy reason prefix for rows that predate the column.
+      data: requests.map((request) => ({ ...request, feeType: resolveWaiverFeeType(request) })),
     });
   } catch (error) {
     console.error("[api/v1/waiver-requests] GET Error:", error);
@@ -34,39 +37,32 @@ export async function POST(request: NextRequest) {
   if (errorResponse) return errorResponse;
 
   try {
-    const body = await request.json();
-    const { courseId, reason } = body;
-
-    if (!courseId || !reason || reason.length < 10) {
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ success: false, error: "Invalid request body." }, { status: 400 });
+    }
+    const raw = (body ?? {}) as Record<string, unknown>;
+    const parsed = waiverRequestSchema.safeParse({
+      courseId: raw.courseId,
+      // Older app builds send no feeType; they always meant both fees.
+      feeType: typeof raw.feeType === "string" ? raw.feeType.toLowerCase() : "both",
+      reason: raw.reason,
+    });
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "Please select a course and provide a reason (at least 10 characters)." },
+        { success: false, error: parsed.error.issues[0]?.message ?? "Invalid request." },
         { status: 400 }
       );
     }
 
-    const existing = await prisma.couponRequest.findFirst({
-      where: {
-        userId: user.id,
-        courseId,
-        status: "PENDING",
-      },
-    });
-
-    if (existing) {
-      return NextResponse.json(
-        { success: false, error: "You already have a pending waiver request for this course." },
-        { status: 400 }
-      );
+    const result = await createWaiverRequest(user.id, parsed.data);
+    if (!result.ok) {
+      return NextResponse.json({ success: false, error: result.error }, { status: result.status });
     }
 
-    const created = await prisma.couponRequest.create({
-      data: {
-        userId: user.id,
-        courseId,
-        reason,
-        status: "PENDING",
-      },
-    });
+    const created = await prisma.couponRequest.findUnique({ where: { id: result.id } });
 
     return NextResponse.json({
       success: true,

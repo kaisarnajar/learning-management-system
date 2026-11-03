@@ -2,7 +2,7 @@ import { StarRating } from "@/components/reviews/StarRating";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { WriteReviewLink } from "@/components/home/WriteReviewLink";
 import type { HomepageReview } from "@/services/student-reviews";
-import { getFeaturedHomepageReviews } from "@/services/student-reviews";
+import { getCachedFeaturedHomepageReviews as getFeaturedHomepageReviews } from "@/services/home-content";
 
 function TestimonialCard({ item }: { item: HomepageReview }) {
   return (

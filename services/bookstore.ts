@@ -5,7 +5,6 @@ import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { resolveHomepageFeaturedUpdate } from "@/services/homepage-featured";
 import { PAYMENTS } from "@/config/constants/payments";
-import { cachedPublic } from "@/services/public-cache";
 
 export { BookStatus };
 
@@ -320,16 +319,13 @@ export async function getBookCount(): Promise<number> {
 
 export const HOMEPAGE_FEATURED_BOOKS_MAX = 4;
 
-async function fetchGetFeaturedHomepageBooks(): Promise<BookWithDetails[]> {
+export async function getFeaturedHomepageBooks(): Promise<BookWithDetails[]> {
   return withDbErrorHandling(() => prisma.book.findMany({
       where: { featuredOnHomepage: true, published: true },
       orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
       take: HOMEPAGE_FEATURED_BOOKS_MAX,
     }), "Database operation failed");
 }
-
-/** Homepage section: cached across requests (services/public-cache.ts). */
-export const getFeaturedHomepageBooks = cachedPublic("featured-books", fetchGetFeaturedHomepageBooks);
 
 export async function getFeaturedHomepageBookCount(): Promise<number> {
   return withDbErrorHandling(() => prisma.book.count({

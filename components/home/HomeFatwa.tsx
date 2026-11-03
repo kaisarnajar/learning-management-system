@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { FatwaCard } from "@/components/fatwa/FatwaCard";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
-import { getFeaturedHomepageFatwas } from "@/services/fatwa";
+import { getCachedFeaturedHomepageFatwas as getFeaturedHomepageFatwas } from "@/services/home-content";
 
 export async function HomeFatwa() {
   const fatwas = await getFeaturedHomepageFatwas();

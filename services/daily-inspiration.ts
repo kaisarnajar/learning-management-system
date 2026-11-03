@@ -3,7 +3,6 @@ import type { DailyInspirationKind } from "@prisma/client";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/pagination";
 import { buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { cachedPublic } from "@/services/public-cache";
 
 function dailyInspirationAdminWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -25,7 +24,7 @@ export function dailyInspirationKindLabel(kind: DailyInspirationKind): string {
   return kind === "QURAN" ? "Quranic verse" : "Hadith";
 }
 
-async function fetchGetHomepageDailyInspiration(): Promise<DailyInspirationRecord | null> {
+export async function getHomepageDailyInspiration(): Promise<DailyInspirationRecord | null> {
   return withDbErrorHandling(() => prisma.dailyInspiration.findFirst({
       where: { published: true },
       orderBy: { updatedAt: "desc" },
@@ -41,9 +40,6 @@ async function fetchGetHomepageDailyInspiration(): Promise<DailyInspirationRecor
       },
     }), "Database operation failed");
 }
-
-/** Homepage section: cached across requests (services/public-cache.ts). */
-export const getHomepageDailyInspiration = cachedPublic("daily-inspiration", fetchGetHomepageDailyInspiration);
 
 const dailyInspirationAdminSelect = {
   id: true,

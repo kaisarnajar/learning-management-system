@@ -1,7 +1,7 @@
 import { LibraryCard } from "@/components/LibraryCard";
 import Link from "next/link";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
-import { getFeaturedHomepageLibraryItems } from "@/services/library";
+import { getCachedFeaturedHomepageLibraryItems as getFeaturedHomepageLibraryItems } from "@/services/home-content";
 
 export async function FeaturedResources() {
   const items = await getFeaturedHomepageLibraryItems();

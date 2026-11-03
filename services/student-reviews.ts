@@ -5,7 +5,6 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/paginat
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { cachedPublic } from "@/services/public-cache";
 
 function studentReviewSearchWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -86,7 +85,7 @@ export function canStudentDeleteReview(
   return review.userId === userId;
 }
 
-async function fetchGetFeaturedHomepageReviews(): Promise<HomepageReview[]> {
+export async function getFeaturedHomepageReviews(): Promise<HomepageReview[]> {
   const reviews = await withDbErrorHandling(() => prisma.studentReview.findMany({
       where: { status: "APPROVED", featuredOnHomepage: true },
       orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
@@ -98,9 +97,6 @@ async function fetchGetFeaturedHomepageReviews(): Promise<HomepageReview[]> {
 
   return reviews.map(toHomepageReview);
 }
-
-/** Homepage section: cached across requests (services/public-cache.ts). */
-export const getFeaturedHomepageReviews = cachedPublic("featured-reviews", fetchGetFeaturedHomepageReviews);
 
 export async function getFeaturedHomepageReviewCount(): Promise<number> {
   return withDbErrorHandling(() => prisma.studentReview.count({

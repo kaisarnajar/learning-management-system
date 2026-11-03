@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
+import { toEnrollmentDto } from "@/services/api-dto";
 import { prisma } from "@/utils/prisma";
 import { getCourseById } from "@/services/courses";
 import { isCourseEnrollmentOpen } from "@/services/course-status";
@@ -25,9 +26,11 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: "desc" },
     });
 
+    const items = enrollments.map((e) => toEnrollmentDto(e, e.course));
+
     return NextResponse.json({
       success: true,
-      data: enrollments,
+      data: items,
     });
   } catch (error) {
     console.error("[api/v1/enrollments] Error:", error);

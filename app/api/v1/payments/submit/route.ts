@@ -3,6 +3,8 @@ import { requireStudentApiAuth } from "@/services/api-auth";
 import { processMonthlyPayment, processEnrollmentPayment } from "@/services/payments";
 import { isUpiConfigured } from "@/services/upi";
 import { paymentTypeFromText } from "@/services/status-compat";
+import { validatePaymentScreenshot } from "@/services/payment-upload";
+import { enrollmentPaymentSubmitSchema, monthlyPaymentSubmitSchema } from "@/utils/validations";
 
 export async function POST(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -17,44 +19,23 @@ export async function POST(request: NextRequest) {
 
   try {
     const contentType = request.headers.get("content-type") || "";
-    let courseId = "";
-    let paymentType = "monthly"; // "enrollment" | "monthly"
-    let paymentMonth = 1;
-    let paymentYear = new Date().getFullYear();
-    let paymentMethod = "UPI";
-    let upiTransactionId = "";
-    let couponId: string | null = null;
-    let expectedAmountPaise: number | null = null;
+    let raw: Record<string, unknown>;
     let screenshotFile: File | null = null;
 
     if (contentType.includes("multipart/form-data")) {
       const formData = await request.formData();
-      courseId = (formData.get("courseId") as string) || "";
-      paymentType = (formData.get("paymentType") as string) || "monthly";
-      paymentMonth = parseInt((formData.get("paymentMonth") as string) || "1", 10);
-      paymentYear = parseInt((formData.get("paymentYear") as string) || String(new Date().getFullYear()), 10);
-      paymentMethod = (formData.get("paymentMethod") as string) || "UPI";
-      upiTransactionId = (formData.get("upiTransactionId") as string) || "";
-      couponId = (formData.get("couponId") as string) || null;
-      const expectedRaw = formData.get("expectedAmountPaise");
-      expectedAmountPaise = typeof expectedRaw === "string" && /^\d+$/.test(expectedRaw) ? Number(expectedRaw) : null;
-
+      raw = Object.fromEntries(
+        [...formData.entries()].filter(([, value]) => typeof value === "string"),
+      );
       const file = formData.get("screenshot");
       if (file instanceof File) {
         screenshotFile = file;
       }
     } else {
-      const body = await request.json();
-      courseId = body.courseId || "";
-      paymentType = body.paymentType || "monthly";
-      paymentMonth = body.paymentMonth || 1;
-      paymentYear = body.paymentYear || new Date().getFullYear();
-      paymentMethod = body.paymentMethod || "UPI";
-      upiTransactionId = body.upiTransactionId || "";
-      couponId = body.couponId || null;
-      expectedAmountPaise = Number.isInteger(body.expectedAmountPaise) ? body.expectedAmountPaise : null;
+      raw = (await request.json()) ?? {};
     }
 
+    const courseId = typeof raw.courseId === "string" ? raw.courseId : "";
     if (!courseId) {
       return NextResponse.json(
         { success: false, error: "Course ID is required." },
@@ -62,28 +43,72 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const paymentType = raw.paymentType ?? "monthly";
+    if (paymentType !== "enrollment" && paymentType !== "monthly") {
+      return NextResponse.json(
+        { success: false, error: "Payment type must be \"enrollment\" or \"monthly\"." },
+        { status: 400 }
+      );
+    }
+
+    // Mobile clients historically send "UPI" and a numeric month; the shared
+    // schemas (also used by the web) expect "upi" and a zero-padded month.
+    const common = {
+      courseId,
+      paymentMethod: typeof raw.paymentMethod === "string" ? raw.paymentMethod.toLowerCase() : "upi",
+      upiTransactionId: raw.upiTransactionId ?? "",
+      couponId: raw.couponId ?? null,
+      expectedAmountPaise: raw.expectedAmountPaise,
+    };
+
+    const screenshotValidation = validatePaymentScreenshot(screenshotFile);
+    if (screenshotValidation.error) {
+      return NextResponse.json(
+        { success: false, error: screenshotValidation.error },
+        { status: 400 }
+      );
+    }
+
     let result;
     if (paymentTypeFromText(paymentType) === "ENROLLMENT") {
+      const parsed = enrollmentPaymentSubmitSchema.safeParse(common);
+      if (!parsed.success) {
+        return NextResponse.json(
+          { success: false, error: parsed.error.issues[0]?.message ?? "Invalid payment details." },
+          { status: 400 }
+        );
+      }
       result = await processEnrollmentPayment(
         user.id,
-        courseId,
-        paymentMethod,
-        upiTransactionId,
+        parsed.data.courseId,
+        parsed.data.paymentMethod ?? null,
+        parsed.data.upiTransactionId ?? null,
         screenshotFile,
-        couponId,
-        expectedAmountPaise,
+        parsed.data.couponId ?? null,
+        parsed.data.expectedAmountPaise ?? null,
       );
     } else {
+      const parsed = monthlyPaymentSubmitSchema.safeParse({
+        ...common,
+        paymentMonth: String(raw.paymentMonth ?? "1").padStart(2, "0"),
+        paymentYear: String(raw.paymentYear ?? new Date().getFullYear()),
+      });
+      if (!parsed.success) {
+        return NextResponse.json(
+          { success: false, error: parsed.error.issues[0]?.message ?? "Invalid payment details." },
+          { status: 400 }
+        );
+      }
       result = await processMonthlyPayment(
         user.id,
-        courseId,
-        String(paymentMonth),
-        String(paymentYear),
-        paymentMethod,
-        upiTransactionId,
+        parsed.data.courseId,
+        parsed.data.paymentMonth,
+        parsed.data.paymentYear,
+        parsed.data.paymentMethod ?? null,
+        parsed.data.upiTransactionId ?? null,
         screenshotFile,
-        couponId,
-        expectedAmountPaise,
+        parsed.data.couponId ?? null,
+        parsed.data.expectedAmountPaise ?? null,
       );
     }
 

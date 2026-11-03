@@ -4,6 +4,7 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import { useCallback } from "react";
 import type { StudentReview } from "@prisma/client";
 import { BRAND_CONFIG } from "@/config/brand";
+import { HOMEPAGE_FEATURED_REVIEWS_MAX } from "@/config/constants/business";
 import { StarRatingInput } from "@/components/reviews/StarRatingInput";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
@@ -140,7 +141,7 @@ export function StudentReviewForm({
 
       <p className="rounded-md bg-warning-bg px-3 py-2 text-sm text-warning-text">
         Your review will be sent to the admin for verification. If approved, it may appear on the
-        homepage (up to six student reviews are shown at a time).
+        homepage (up to {HOMEPAGE_FEATURED_REVIEWS_MAX} student reviews are shown at a time).
       </p>
 
       <SubmitButton

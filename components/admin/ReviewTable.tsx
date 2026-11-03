@@ -53,7 +53,7 @@ function ReviewActions({
       )}
       {pending && (
         <>
-          <ConfirmationModal title="Approve Review" description="Approve this review and display it on the public course page?" actionLabel="Approve" variant="primary" onConfirm={async () => { const result = await approveStudentReview(reviewId, false); if (result?.error) addToast(result.error, "error"); }} trigger={<button type="button" className={adminActionButtonClassName}>Approve</button>} />
+          <ConfirmationModal title="Approve Review" description="Approve this review and display it on the homepage?" actionLabel="Approve" variant="primary" onConfirm={async () => { const result = await approveStudentReview(reviewId, false); if (result?.error) addToast(result.error, "error"); }} trigger={<button type="button" className={adminActionButtonClassName}>Approve</button>} />
           <ConfirmationModal title="Reject Review" description="Reject this review and mark it as declined?" actionLabel="Reject" variant="destructive" onConfirm={async () => { const result = await rejectStudentReview(reviewId); if (result?.error) addToast(result.error, "error"); }} trigger={<button type="button" className={adminDestructiveButtonClassName}>Reject</button>} />
         </>
       )}

@@ -4,6 +4,8 @@ import { useState, useTransition } from "react";
 import { Heart, MessageCircle, Share2, MoreVertical, Edit2, Trash2, User as UserIcon } from "lucide-react";
 import Image from "next/image";
 import { toggleLike, addComment, deleteComment, editComment } from "./actions";
+import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
+import { useToast } from "@/components/shared/ToastProvider";
 
 type User = {
   name: string | null;
@@ -35,6 +37,7 @@ export function BlogEngagement({
   currentUserId,
   isAdmin,
 }: BlogEngagementProps) {
+  const { addToast } = useToast();
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [hasLiked, setHasLiked] = useState(initialHasLiked);
   const [isPendingLike, startTransitionLike] = useTransition();
@@ -63,7 +66,7 @@ export function BlogEngagement({
       if (res?.error) {
         setHasLiked(hasLiked);
         setLikeCount(hasLiked ? likeCount : likeCount - 1);
-        alert(res.error);
+        addToast(res.error, "error");
       }
     });
   };
@@ -80,8 +83,12 @@ export function BlogEngagement({
         console.error("Error sharing:", err);
       }
     } else {
-      navigator.clipboard.writeText(url);
-      alert("Link copied to clipboard!");
+      try {
+        await navigator.clipboard.writeText(url);
+        addToast("Link copied to clipboard.", "success");
+      } catch {
+        addToast("Could not copy the link.", "error");
+      }
     }
   };
 
@@ -109,8 +116,6 @@ export function BlogEngagement({
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm("Are you sure you want to delete this comment?")) return;
-    
     setOpenMenuId(null);
     const originalComments = [...comments];
     setComments(comments.filter((c) => c.id !== commentId));
@@ -118,7 +123,7 @@ export function BlogEngagement({
     const res = await deleteComment(commentId);
     if (res?.error) {
       setComments(originalComments);
-      alert(res.error);
+      addToast(res.error, "error");
     }
   };
 
@@ -142,7 +147,7 @@ export function BlogEngagement({
     const res = await editComment(commentId, editContent);
     if (res?.error) {
       setComments(originalComments);
-      alert(res.error);
+      addToast(res.error, "error");
     }
   };
 
@@ -267,12 +272,20 @@ export function BlogEngagement({
                               <Edit2 className="mr-2 h-4 w-4" /> Edit
                             </button>
                           )}
-                          <button
-                            onClick={() => handleDeleteComment(comment.id)}
-                            className="flex w-full items-center px-4 py-2 text-sm text-red-500 hover:bg-red-500/10"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </button>
+                          <ConfirmationModal
+                            title="Delete comment"
+                            description="Are you sure you want to delete this comment? This cannot be undone."
+                            actionLabel="Delete"
+                            onConfirm={() => handleDeleteComment(comment.id)}
+                            trigger={
+                              <button
+                                type="button"
+                                className="flex w-full items-center px-4 py-2 text-sm text-red-500 hover:bg-red-500/10"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                              </button>
+                            }
+                          />
                         </div>
                       )}
                     </div>

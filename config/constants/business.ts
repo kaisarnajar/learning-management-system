@@ -97,6 +97,11 @@ export const PAGINATION = {
  */
 export const MAX_ORDER_QTY = 20;
 
+/**
+ * Number of student reviews the homepage shows at a time.
+ */
+export const HOMEPAGE_FEATURED_REVIEWS_MAX = 4;
+
 export const DOCUMENT_TYPES = {
   CERTIFICATE: "certificate",
   PAYMENT_RECEIPT: "payment_receipt",

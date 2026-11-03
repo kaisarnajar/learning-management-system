@@ -5,9 +5,20 @@ import { BRAND_CONFIG } from "@/config/brand";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
+const pageUrl = `${BRAND_CONFIG.websiteUrl.replace(/\/$/, "")}/terms-and-conditions`;
+
 export const metadata: Metadata = {
   title: "Terms & Conditions",
   description: "Read the Terms & Conditions for accessing and using Darse Quran Academy services, courses, publications, and platform.",
+  alternates: { canonical: pageUrl },
+  openGraph: {
+    title: `Terms & Conditions | ${BRAND_CONFIG.name}`,
+    description: "Read the Terms & Conditions for accessing and using Darse Quran Academy services, courses, publications, and platform.",
+    url: pageUrl,
+    siteName: BRAND_CONFIG.name,
+    type: "website",
+    images: [{ url: BRAND_CONFIG.seo.openGraphImage, alt: BRAND_CONFIG.name }],
+  },
 };
 
 const termsSections = [

@@ -142,7 +142,7 @@ export default async function CoursesPage({
         <div className="mx-auto max-w-4xl text-center">
           <div className="motion-safe:animate-fade-up">
             <h1 className={`${sourceSerif.className} text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl`}>
-              Course Announcements
+              Courses
             </h1>
             <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-brand-gold-alt"></div>
             <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">

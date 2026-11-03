@@ -71,7 +71,8 @@ export const libraryItemSchema = z.object({
     .string()
     .trim()
     .min(1, "PDF URL is required.")
-    .url("Enter a valid PDF URL."),
+    .url("Enter a valid PDF URL.")
+    .refine((value) => /^https?:\/\//i.test(value), "PDF URL must start with http:// or https://."),
   published: z.coerce.boolean(),
 });
 

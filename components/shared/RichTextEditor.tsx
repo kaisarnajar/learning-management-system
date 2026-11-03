@@ -17,6 +17,7 @@ import {
   Redo,
 } from "lucide-react";
 import { isAllowedLinkUrl, sanitizeRichText } from "@/services/rich-text";
+import { useToast } from "@/components/shared/ToastProvider";
 
 interface RichTextEditorProps {
   value: string;
@@ -31,6 +32,7 @@ export function RichTextEditor({
   placeholder = "Write your content here...",
   readOnly = false,
 }: RichTextEditorProps) {
+  const { addToast } = useToast();
   const editorRef = useRef<HTMLDivElement>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
@@ -71,7 +73,7 @@ export function RichTextEditor({
     if (url && isAllowedLinkUrl(url)) {
       executeCommand("createLink", url.trim());
     } else if (url) {
-      alert("Only http://, https:// and mailto: links are allowed.");
+      addToast("Only http://, https:// and mailto: links are allowed.", "warning");
     }
   };
 

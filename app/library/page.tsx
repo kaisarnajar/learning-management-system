@@ -74,7 +74,7 @@ export default async function LibraryPage({
             </h1>
             <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-brand-gold-alt"></div>
             <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">
-              A curated collection of Islamic books and materials for students. PDF downloads will be available in a future update.
+              A curated collection of Islamic books and materials for students. Open any title to read or download its PDF.
             </p>
           </div>
         </div>

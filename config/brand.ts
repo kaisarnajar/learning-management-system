@@ -66,6 +66,8 @@ export type BrandConfig = {
   content: BrandContent;
   footer: BrandFooter;
   documentNumbering: BrandDocumentNumbering;
+  /** Prefix of student registration numbers, e.g. DQA2026-00042. */
+  registrationPrefix: string;
 };
 
 export const BRAND_CONFIG: BrandConfig = {
@@ -121,4 +123,5 @@ export const BRAND_CONFIG: BrandConfig = {
     invoicePrefix: "DQA-INV",
     certificatePrefix: "DQA-CERT",
   },
+  registrationPrefix: "DQA",
 };

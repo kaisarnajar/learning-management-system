@@ -10,6 +10,7 @@ import { profileUpdateSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { saveProfileImage, validateProfileImage, deleteProfileImage } from "@/services/profile-upload";
 import { isUploadError } from "@/services/storage";
+import { generateNextRegistrationNumberTx } from "@/services/registration";
 import { getUserProfile } from "@/services/profile";
 
 export type ProfileUpdateState = {
@@ -112,17 +113,21 @@ export async function updateProfile(
       currentProfile?.email?.trim()
   );
 
-  if (isNowComplete && !currentProfile?.registrationNumber) {
-    const { generateNextRegistrationNumber } = await import("@/services/registration");
-    // Registration year is when the user account was created
-    const registrationYear = currentProfile?.createdAt?.getFullYear() ?? new Date().getFullYear();
-    updateData.registrationNumber = await generateNextRegistrationNumber(registrationYear);
-  }
+  const needsRegistrationNumber = isNowComplete && !currentProfile?.registrationNumber;
+  // Registration year is when the user account was created
+  const registrationYear = currentProfile?.createdAt?.getFullYear() ?? new Date().getFullYear();
 
   try {
-    await withDbErrorHandling(() => prisma.user.update({
-        where: { id: session.user.id },
-        data: updateData,
+    // The number is allocated and stored in one transaction, so a rolled-back
+    // update never burns a number and two concurrent completions cannot share one.
+    await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
+        if (needsRegistrationNumber) {
+          updateData.registrationNumber = await generateNextRegistrationNumberTx(tx, registrationYear);
+        }
+        await tx.user.update({
+          where: { id: session.user.id },
+          data: updateData,
+        });
       }), "Database operation failed");
   } catch (error) {
     // The row still points at the old photo; drop the one we just stored.

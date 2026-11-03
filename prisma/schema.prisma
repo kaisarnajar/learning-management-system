@@ -998,6 +998,13 @@ model RateLimitBucket {
  * Per-financial-year counters for sequential invoice/certificate numbers
  * (services/document-numbers.ts). Allocated with an atomic upsert.
  */
+/// Per-year counter behind student registration numbers (services/registration.ts).
+model RegistrationSequence {
+  year      Int      @id
+  next      Int      @default(0)
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
 model DocumentSequence {
   kind      String
   period    String

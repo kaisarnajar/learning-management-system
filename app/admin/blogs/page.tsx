@@ -1,17 +1,14 @@
 import Link from "next/link";
+import { AdminListPage } from "@/components/shared/AdminListPage";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteBlogPost } from "@/app/admin/blogs/actions";
-import { ListSearchForm } from "@/components/shared/ListSearchForm";
-import { Pagination } from "@/components/shared/Pagination";
 import { blogApprovalStatusClass, blogApprovalStatusLabel } from "@/services/blog-approval";
 import { getAllBlogPostsForAdminPaginated, isBlogPubliclyVisible } from "@/services/blogs";
-import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import type { BlogPost } from "@prisma/client";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
-import { Suspense } from "react";
 
 type PageParams = {
 
@@ -34,32 +31,50 @@ function statusBadge(post: Pick<BlogPost, "approvalStatus" | "published">) {
 import { adminActionButtonClassName } from "@/utils/form";
 import { requireAdmin } from "@/services/auth-actions";
 
-async function AdminBlogsList({ params, q }: { params: PageParams; q?: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
-  const { items: posts, totalCount } = await getAllBlogPostsForAdminPaginated(
-    requestedPage,
-    pageSize,
-    q,
-  );
-  const page = clampPage(requestedPage, totalCount, pageSize);
+export default async function AdminBlogsPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  await requireAdmin();
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
 
   return (
-    <>
-      <div className="mt-6">
-        <ListSearchForm
-          action="/admin/blogs"
-          query={q}
-          placeholder="Search by title or author"
-          totalCount={q ? totalCount : undefined}
-        />
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-primary">Blogs</h1>
+          <p className="mt-1 text-sm text-muted">
+            Write articles or review teacher submissions in Blog approvals.
+          </p>
+        </div>
+        <Link
+          href="/admin/blogs/new"
+          className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-light"
+        >
+          New blog post
+        </Link>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-        {totalCount === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted">
-            {q ? "No blog posts match your search." : "No blog posts yet."}
-          </p>
-        ) : (
+      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Blog post created." variant="info" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Blog post updated." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Blog post deleted." variant="info" />
+      {params.error === "notfound" && (
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Blog post not found.</p>
+      )}
+
+      <AdminListPage
+        basePath="/admin/blogs"
+        params={params}
+        q={q}
+        searchPlaceholder="Search by title or author"
+        emptyText="No blog posts yet."
+        noMatchText="No blog posts match your search."
+        emptyPaddingClassName="py-10"
+        load={(page, pageSize) => getAllBlogPostsForAdminPaginated(page, pageSize, q)}
+      >
+        {({ items: posts }) => (
           <table className="w-full min-w-[920px] text-left text-sm">
             <thead className="border-b border-border bg-background/50 text-muted">
               <tr>
@@ -124,64 +139,7 @@ async function AdminBlogsList({ params, q }: { params: PageParams; q?: string })
             </tbody>
           </table>
         )}
-      </div>
-
-      <Pagination
-        basePath="/admin/blogs"
-        params={params}
-        page={page}
-        totalCount={totalCount}
-        pageSize={pageSize}
-      />
-    </>
-  );
-}
-
-function TableSkeleton() {
-  return (
-    <>
-      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
-      <div className="mt-4 h-ui-400 w-full rounded-lg bg-border/40 animate-pulse" />
-    </>
-  );
-}
-
-export default async function AdminBlogsPage({
-  searchParams,
-}: {
-  searchParams: Promise<PageParams>;
-}) {
-  await requireAdmin();
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
-
-  return (
-    <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Blogs</h1>
-          <p className="mt-1 text-sm text-muted">
-            Write articles or review teacher submissions in Blog approvals.
-          </p>
-        </div>
-        <Link
-          href="/admin/blogs/new"
-          className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-light"
-        >
-          New blog post
-        </Link>
-      </div>
-
-      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Blog post created." variant="info" />
-      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Blog post updated." variant="info" />
-      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Blog post deleted." variant="info" />
-      {params.error === "notfound" && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Blog post not found.</p>
-      )}
-
-      <Suspense fallback={<TableSkeleton />}>
-        <AdminBlogsList params={params} q={q} />
-      </Suspense>
+      </AdminListPage>
     </div>
   );
 }

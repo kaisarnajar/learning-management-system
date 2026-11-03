@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { formatPrice } from "@/utils/money";
 import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
@@ -29,10 +30,6 @@ type PastOrder = {
   receiptGeneratedAt?: Date | null;
 };
 
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
-
 function PastOrderCard({ order }: { order: PastOrder }) {
   return (
     <div className="flex flex-col h-full rounded-xl border border-border bg-surface p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -46,7 +43,7 @@ function PastOrderCard({ order }: { order: PastOrder }) {
             })}
           </p>
           <p className="mt-1 font-semibold text-foreground">
-            {formatPrice(order.totalAmountInrPaise)}
+            {formatPrice(order.totalAmountInrPaise, { exact: true })}
           </p>
         </div>
         <div className="flex flex-col items-end gap-2">
@@ -85,7 +82,7 @@ function PastOrderCard({ order }: { order: PastOrder }) {
             <div className="shrink-0 text-right text-xs text-muted">
               × {item.quantity}
               <span className="ml-2 text-foreground font-medium">
-                {formatPrice(item.priceAtPurchaseInrPaise * item.quantity)}
+                {formatPrice(item.priceAtPurchaseInrPaise * item.quantity, { exact: true })}
               </span>
             </div>
           </li>
@@ -208,9 +205,9 @@ export function CartPageClient({
                     <p className="font-medium text-foreground line-clamp-1">{item.title}</p>
                     <p className="text-sm text-muted">{item.author}</p>
                     <div className="mt-1 flex items-baseline gap-2">
-                      <p className="font-semibold text-primary">{formatPrice(item.priceInrPaise)}</p>
+                      <p className="font-semibold text-primary">{formatPrice(item.priceInrPaise, { exact: true })}</p>
                       {item.mrpInrPaise > item.priceInrPaise && (
-                        <p className="text-sm text-muted line-through">{formatPrice(item.mrpInrPaise)}</p>
+                        <p className="text-sm text-muted line-through">{formatPrice(item.mrpInrPaise, { exact: true })}</p>
                       )}
                     </div>
                   </div>
@@ -255,7 +252,7 @@ export function CartPageClient({
                 {selectedItems.length} item{selectedItems.length !== 1 ? "s" : ""} selected
               </p>
               <p className="font-semibold text-foreground">
-                Total: <span className="text-primary">{formatPrice(selectedTotal)}</span>
+                Total: <span className="text-primary">{formatPrice(selectedTotal, { exact: true })}</span>
               </p>
             </div>
             {!emailVerified ? (

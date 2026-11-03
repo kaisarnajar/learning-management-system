@@ -1,4 +1,4 @@
-import { formatPrice } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import type { BookOrderFinanceRecord } from "@/services/finance-bookstore";
 import { bookOrderStatusClass, bookOrderStatusLabel } from "@/services/bookstore";
 import Link from "next/link";

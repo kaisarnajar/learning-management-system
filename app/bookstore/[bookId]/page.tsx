@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { formatPrice } from "@/utils/money";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -14,10 +15,6 @@ import { getBookSchema, getBreadcrumbSchema } from "@/services/seo-schema";
 type BookPageProps = {
   params: Promise<{ bookId: string }>;
 };
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
 
 export async function generateMetadata({ params }: BookPageProps): Promise<Metadata> {
   const { bookId } = await params;
@@ -151,9 +148,9 @@ export default async function BookDetailPage({ params }: BookPageProps) {
             <p className="mt-2 text-lg text-muted">by {book.author}</p>
 
             <div className="mt-6 flex items-baseline gap-3">
-              <span className="text-3xl font-bold text-primary">{formatPrice(book.priceInrPaise)}</span>
+              <span className="text-3xl font-bold text-primary">{formatPrice(book.priceInrPaise, { exact: true })}</span>
               {book.mrpInrPaise > book.priceInrPaise && (
-                <span className="text-lg text-muted line-through">{formatPrice(book.mrpInrPaise)}</span>
+                <span className="text-lg text-muted line-through">{formatPrice(book.mrpInrPaise, { exact: true })}</span>
               )}
             </div>
 

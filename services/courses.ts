@@ -26,13 +26,7 @@ export type CourseWithTeacher = Course & {
 
 const courseWithTeacherInclude = { teacher: true } as const;
 
-export function formatPrice(paise: number): string {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(paise / 100);
-}
+export { formatPrice } from "@/utils/money";
 
 export async function getPublicCoursesPaginated(
   page: number,

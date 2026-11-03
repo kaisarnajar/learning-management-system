@@ -5,6 +5,7 @@ import { ACADEMY_LOCATION, getAcademyLocationEmbedUrl } from "@/services/academy
 import { formatWhatsAppForDisplay, getSocialLinksSettings } from "@/services/social-links";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { Source_Serif_4 } from "next/font/google";
+import { PageHero } from "@/components/shared/PageHero";
 import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
@@ -102,21 +103,7 @@ export default async function AboutPage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#003527] via-teal-900 to-[#002117] px-4 py-24 sm:px-6 lg:px-8">
-        <div className="pattern-islamic absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none" />
-        <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-[#cca72f]/0 via-[#cca72f] to-[#cca72f]/0 opacity-50"></div>
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="motion-safe:animate-fade-up">
-            <h1 className={`${sourceSerif.className} text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl`}>
-              Our Story
-            </h1>
-            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-brand-gold-alt"></div>
-            <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">
-              Darse-Quran is a non-profit Sunni Islamic media and educational organization based in Jammu & Kashmir, South Asia. Established with the objective of spreading the authentic teachings of Islam, Darse-Quran strives to convey the message of the Holy Qur&apos;an and Sunnah to people across the globe through education, media, publications, and community engagement.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero tall title="Our Story" description={<>Darse-Quran is a non-profit Sunni Islamic media and educational organization based in Jammu & Kashmir, South Asia. Established with the objective of spreading the authentic teachings of Islam, Darse-Quran strives to convey the message of the Holy Qur&apos;an and Sunnah to people across the globe through education, media, publications, and community engagement.</>} />
 
       {/* Vision & Mission */}
       <section className="bg-surface py-20 sm:py-24">

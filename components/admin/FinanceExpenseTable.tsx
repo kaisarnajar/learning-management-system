@@ -1,5 +1,5 @@
 import { expenseCategoryLabel } from "@/services/expense-categories";
-import { formatPrice } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteExpenseById } from "@/app/admin/finance/actions";
 

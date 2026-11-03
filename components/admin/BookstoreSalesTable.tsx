@@ -1,4 +1,4 @@
-import { formatPrice } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import type { BookSalesRecord } from "@/services/finance-bookstore";
 import Link from "next/link";
 

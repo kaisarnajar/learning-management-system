@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { adminReturnUrl, revalidateAdminPaths } from "@/utils/admin-redirects";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 
@@ -33,21 +34,7 @@ function revalidateEnrollmentPaths(courseId: string) {
     "/courses",
   ];
 
-  for (const path of paths) {
-    revalidatePath(path, "layout");
-    revalidatePath(path, "page");
-  }
-}
-
-function enrollmentReturnUrl(returnTo: string | undefined, event?: "approved" | "rejected"): string {
-  if (!returnTo?.startsWith("/admin")) return "/admin/enrollments";
-  const [pathname, query = ""] = returnTo.split("?");
-  const params = new URLSearchParams(query);
-  if (event) {
-    params.set(event, "1");
-  }
-  const qs = params.toString();
-  return qs ? `${pathname}?${qs}` : pathname;
+  revalidateAdminPaths(paths);
 }
 
 /** Approve a free-course enrollment request. */
@@ -69,7 +56,7 @@ export async function approveEnrollmentRequest(
   const currentStatus = enrollmentStatusOf(enrollment);
 
   if (currentStatus === "ACTIVE") {
-    redirect(enrollmentReturnUrl(returnTo));
+    redirect(adminReturnUrl(returnTo, "/admin/enrollments"));
   }
 
   if (currentStatus === "COMPLETED") {
@@ -114,7 +101,7 @@ export async function approveEnrollmentRequest(
   revalidateEnrollmentPaths(courseId);
   revalidatePath(`/admin/students/${enrollment.userId}`, "page");
 
-  redirect(enrollmentReturnUrl(returnTo, "approved"));
+  redirect(adminReturnUrl(returnTo, "/admin/enrollments", "approved"));
 }
 
 /** Reject a student's pending enrollment request. */
@@ -161,7 +148,7 @@ export async function rejectEnrollmentRequest(
   revalidateEnrollmentPaths(courseId);
   revalidatePath(`/admin/students/${enrollment.userId}`, "page");
 
-  redirect(enrollmentReturnUrl(returnTo, "rejected"));
+  redirect(adminReturnUrl(returnTo, "/admin/enrollments", "rejected"));
 }
 
 export type AdminEnrollUserState = {

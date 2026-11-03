@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useDialog } from "@/components/shared/useDialog";
 
 type ViewAnnouncementModalProps = {
   title: string;
@@ -8,35 +8,12 @@ type ViewAnnouncementModalProps = {
 };
 
 export function ViewAnnouncementModal({ title, body }: ViewAnnouncementModalProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (isOpen && dialog && !dialog.open) {
-      dialog.showModal();
-    } else if (!isOpen && dialog && dialog.open) {
-      dialog.close();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    const handleCancel = (e: Event) => {
-      e.preventDefault();
-      setIsOpen(false);
-    };
-
-    dialog.addEventListener("cancel", handleCancel);
-    return () => dialog.removeEventListener("cancel", handleCancel);
-  }, []);
+  const { dialogRef, open, close } = useDialog();
 
   // Close when clicking outside the dialog content
   const handleBackdropClick = (e: React.MouseEvent<HTMLDialogElement>) => {
     if (e.target === dialogRef.current) {
-      setIsOpen(false);
+      close();
     }
   };
 
@@ -44,7 +21,7 @@ export function ViewAnnouncementModal({ title, body }: ViewAnnouncementModalProp
     <>
       <button
         type="button"
-        onClick={() => setIsOpen(true)}
+        onClick={() => open()}
         className="group inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap text-xs font-medium text-primary transition-colors hover:text-primary-light"
       >
         View Announcement
@@ -69,7 +46,7 @@ export function ViewAnnouncementModal({ title, body }: ViewAnnouncementModalProp
           <h2 className="text-xl md:text-2xl font-serif font-semibold text-foreground break-words">{title}</h2>
           <button
             type="button"
-            onClick={() => setIsOpen(false)}
+            onClick={() => close()}
             className="text-muted hover:text-foreground transition-colors shrink-0 p-1"
             aria-label="Close dialog"
           >
@@ -85,7 +62,7 @@ export function ViewAnnouncementModal({ title, body }: ViewAnnouncementModalProp
         <div className="mt-8 flex justify-end">
           <button
             type="button"
-            onClick={() => setIsOpen(false)}
+            onClick={() => close()}
             className="px-4 py-2 text-sm font-medium text-foreground bg-surface-muted hover:bg-border rounded-md transition-colors"
           >
             Close

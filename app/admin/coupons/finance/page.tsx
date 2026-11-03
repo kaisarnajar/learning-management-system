@@ -5,7 +5,8 @@ import { FinanceIncomeFilters } from "@/components/admin/FinanceIncomeFilters";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
-import { getAllCourses, formatPrice } from "@/services/courses";
+import { getAllCourses } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import {
   buildFinanceSearchPreserveParams,
   parseFinanceFilters,

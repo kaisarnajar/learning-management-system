@@ -4,7 +4,8 @@ import { EnrollmentPaymentForm } from "@/components/payment/EnrollmentPaymentFor
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { requireUser } from "@/services/auth-actions";
 import { getRegistrationFeePaise } from "@/services/course-pricing";
-import { formatPrice, getCourseById } from "@/services/courses";
+import { getCourseById } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import { hasPendingEnrollmentFeeSubmission } from "@/services/monthly-payments";
 import { prisma } from "@/utils/prisma";
 import { isUpiConfigured } from "@/services/upi";

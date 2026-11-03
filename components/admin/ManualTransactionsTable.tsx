@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { formatPrice } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import { incomePaymentTypeLabel } from "@/services/monthly-payment-status";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";

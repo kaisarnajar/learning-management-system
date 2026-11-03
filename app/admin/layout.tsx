@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { AdminSidebar } from "@/components/admin/AdminSidebar";
-import { DeveloperSidebar } from "@/components/developer/DeveloperSidebar";
 import { requireAdmin } from "@/services/auth-actions";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +15,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="min-h-[calc(100vh-4rem)] md:flex">
-      {isDeveloper ? <DeveloperSidebar /> : <AdminSidebar />}
+      {isDeveloper ? <AdminSidebar title="Developer Panel" showDeveloperItems /> : <AdminSidebar />}
       <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8">{children}</main>
     </div>
   );

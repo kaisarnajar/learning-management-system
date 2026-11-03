@@ -1,7 +1,8 @@
 import Link from "next/link";
 
 import { Pagination } from "@/components/shared/Pagination";
-import { formatPrice, getAllCourses } from "@/services/courses";
+import { getAllCourses } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import { requireUser } from "@/services/auth-actions";
 import {
   monthlyPaymentStatusClass,

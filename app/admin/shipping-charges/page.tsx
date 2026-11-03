@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { formatPrice } from "@/utils/money";
 import { requireAdmin } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
@@ -9,10 +10,6 @@ export const metadata: Metadata = {
   title: "Shipping Charges — Admin",
   description: "Configure shipping charges based on weight slabs.",
 };
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
 
 export default async function AdminShippingChargesPage() {
   await requireAdmin();
@@ -53,7 +50,7 @@ export default async function AdminShippingChargesPage() {
                         {slab.minWeightGrams}g – {slab.maxWeightGrams}g
                       </td>
                       <td className="px-4 py-3 font-medium text-foreground">
-                        {formatPrice(slab.chargeInrPaise)}
+                        {formatPrice(slab.chargeInrPaise, { exact: true })}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <DeleteActionButton

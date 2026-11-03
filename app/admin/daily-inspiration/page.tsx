@@ -1,19 +1,16 @@
 import Link from "next/link";
+import { AdminListPage } from "@/components/shared/AdminListPage";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteDailyInspiration } from "@/app/admin/daily-inspiration/actions";
-import { ListSearchForm } from "@/components/shared/ListSearchForm";
-import { Pagination } from "@/components/shared/Pagination";
 import {
   dailyInspirationKindLabel,
   getAllDailyInspirationsForAdminPaginated,
   getHomepageDailyInspirationId,
 } from "@/services/daily-inspiration";
-import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
-import { Suspense } from "react";
 
 type PageParams = {
 
@@ -29,31 +26,56 @@ type PageParams = {
 import { adminActionButtonClassName } from "@/utils/form";
 import { requireAdmin } from "@/services/auth-actions";
 
-async function AdminDailyInspirationList({ params, q }: { params: PageParams; q?: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
-  const [{ items, totalCount }, homepageId] = await Promise.all([
-    getAllDailyInspirationsForAdminPaginated(requestedPage, pageSize, q),
-    getHomepageDailyInspirationId(),
-  ]);
-  const page = clampPage(requestedPage, totalCount, pageSize);
+export default async function AdminDailyInspirationPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  await requireAdmin();
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
 
   return (
-    <>
-      <div className="mt-6">
-        <ListSearchForm
-          action="/admin/daily-inspiration"
-          query={q}
-          placeholder="Search by Arabic text, translation, or reference"
-          totalCount={q ? totalCount : undefined}
-        />
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-primary">Verse &amp; Hadith of the Day</h1>
+          <p className="mt-1 text-sm text-muted">
+            Post a Quranic verse or Hadith for the homepage. The latest published entry is shown.
+          </p>
+        </div>
+        <Link
+          href="/admin/daily-inspiration/new"
+          className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-light"
+        >
+          New post
+        </Link>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-        {totalCount === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted">
-            {q ? "No entries match your search." : "No verses or hadith posted yet."}
-          </p>
-        ) : (
+      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Entry created." variant="info" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Entry updated." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Entry deleted." variant="info" />
+      {params.error === "notfound" && (
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Entry not found.</p>
+      )}
+
+      <AdminListPage
+        basePath="/admin/daily-inspiration"
+        params={params}
+        q={q}
+        searchPlaceholder="Search by Arabic text, translation, or reference"
+        emptyText="No verses or hadith posted yet."
+        noMatchText="No entries match your search."
+        emptyPaddingClassName="py-10"
+        load={async (page, pageSize) => {
+          const [{ items, totalCount }, homepageId] = await Promise.all([
+            getAllDailyInspirationsForAdminPaginated(page, pageSize, q),
+            getHomepageDailyInspirationId(),
+          ]);
+          return { items, totalCount, homepageId };
+        }}
+      >
+        {({ items, homepageId }) => (
           <table className="w-full min-w-ui-720 text-left text-sm">
             <thead className="border-b border-border bg-background/50 text-muted">
               <tr>
@@ -125,64 +147,7 @@ async function AdminDailyInspirationList({ params, q }: { params: PageParams; q?
             </tbody>
           </table>
         )}
-      </div>
-
-      <Pagination
-        basePath="/admin/daily-inspiration"
-        params={params}
-        page={page}
-        totalCount={totalCount}
-        pageSize={pageSize}
-      />
-    </>
-  );
-}
-
-function TableSkeleton() {
-  return (
-    <>
-      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
-      <div className="mt-4 h-ui-400 w-full rounded-lg bg-border/40 animate-pulse" />
-    </>
-  );
-}
-
-export default async function AdminDailyInspirationPage({
-  searchParams,
-}: {
-  searchParams: Promise<PageParams>;
-}) {
-  await requireAdmin();
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
-
-  return (
-    <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Verse &amp; Hadith of the Day</h1>
-          <p className="mt-1 text-sm text-muted">
-            Post a Quranic verse or Hadith for the homepage. The latest published entry is shown.
-          </p>
-        </div>
-        <Link
-          href="/admin/daily-inspiration/new"
-          className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-light"
-        >
-          New post
-        </Link>
-      </div>
-
-      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Entry created." variant="info" />
-      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Entry updated." variant="info" />
-      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Entry deleted." variant="info" />
-      {params.error === "notfound" && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Entry not found.</p>
-      )}
-
-      <Suspense fallback={<TableSkeleton />}>
-        <AdminDailyInspirationList params={params} q={q} />
-      </Suspense>
+      </AdminListPage>
     </div>
   );
 }

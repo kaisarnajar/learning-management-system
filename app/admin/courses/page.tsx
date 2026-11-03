@@ -1,13 +1,10 @@
 import Link from "next/link";
-import { ListSearchForm } from "@/components/shared/ListSearchForm";
-import { Pagination } from "@/components/shared/Pagination";
+import { AdminListPage } from "@/components/shared/AdminListPage";
 import { getAllCoursesPaginated } from "@/services/courses";
 import { getEnrollmentCountsByCourse } from "@/services/enrollments";
-import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { AdminCoursesTable } from "@/components/admin/AdminCoursesTable";
-import { Suspense } from "react";
 import { requireAdmin } from "@/services/auth-actions";
 import { readFlash } from "@/utils/flash";
 
@@ -22,55 +19,6 @@ type PageParams = {
   q?: string;
   [key: string]: string | undefined;
 };
-
-async function AdminCoursesList({ params, q }: { params: PageParams; q?: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
-  const [{ items: courses, totalCount }, enrollmentCounts] = await Promise.all([
-    getAllCoursesPaginated(requestedPage, pageSize, q),
-    getEnrollmentCountsByCourse(),
-  ]);
-  const page = clampPage(requestedPage, totalCount, pageSize);
-
-  return (
-    <>
-      <div className="mt-6">
-        <ListSearchForm
-          action="/admin/courses"
-          query={q}
-          placeholder="Search by title, category, or instructor"
-          totalCount={q ? totalCount : undefined}
-        />
-      </div>
-
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-        {totalCount === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted">
-            {q ? "No courses match your search." : "No courses yet."}
-          </p>
-        ) : (
-          <AdminCoursesTable courses={courses} enrollmentCounts={enrollmentCounts} />
-        )}
-      </div>
-
-      <Pagination
-        basePath="/admin/courses"
-        params={params}
-        page={page}
-        totalCount={totalCount}
-        pageSize={pageSize}
-      />
-    </>
-  );
-}
-
-function TableSkeleton() {
-  return (
-    <>
-      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
-      <div className="mt-4 h-ui-400 w-full rounded-lg bg-border/40 animate-pulse" />
-    </>
-  );
-}
 
 export default async function AdminCoursesPage({
   searchParams,
@@ -105,9 +53,25 @@ export default async function AdminCoursesPage({
         </p>
       )}
 
-      <Suspense fallback={<TableSkeleton />}>
-        <AdminCoursesList params={params} q={q} />
-      </Suspense>
+      <AdminListPage
+        basePath="/admin/courses"
+        params={params}
+        q={q}
+        searchPlaceholder="Search by title, category, or instructor"
+        emptyText="No courses yet."
+        noMatchText="No courses match your search."
+        load={async (page, pageSize) => {
+          const [{ items, totalCount }, enrollmentCounts] = await Promise.all([
+            getAllCoursesPaginated(page, pageSize, q),
+            getEnrollmentCountsByCourse(),
+          ]);
+          return { items, totalCount, enrollmentCounts };
+        }}
+      >
+        {({ items: courses, enrollmentCounts }) => (
+          <AdminCoursesTable courses={courses} enrollmentCounts={enrollmentCounts} />
+        )}
+      </AdminListPage>
     </div>
   );
 }

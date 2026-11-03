@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { formatPrice } from "@/utils/money";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { bookstoreCheckoutSchema } from "@/utils/validations";
@@ -10,10 +11,6 @@ import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { computeShippingCharge, getShippingSlabs } from "@/services/book-orders";
 import { requireUser } from "@/services/auth-actions";
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -124,7 +121,7 @@ export default async function CartCheckoutPage({
   const paymentSettings = await getPaymentSettings();
   const totalAmountInrPaise = subtotalInrPaise + shippingChargeInrPaise;
 
-  const amountLabel = formatPrice(totalAmountInrPaise);
+  const amountLabel = formatPrice(totalAmountInrPaise, { exact: true });
 
   return (
     <div>

@@ -1,7 +1,7 @@
 import { hash } from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/utils/prisma";
-import { generateApiToken } from "@/services/api-auth";
+import { issueApiSession } from "@/services/api-auth";
 import { buildVerificationUrl, generateVerificationToken } from "@/services/tokens";
 import { registerSchema } from "@/utils/validations";
 import { sendVerificationEmail } from "@/services/email";
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       console.error("[api/v1/auth/register] Failed to send verification email:", emailErr);
     }
 
-    const token = await generateApiToken({
+    const tokens = await issueApiSession({
       id: user.id,
       email: user.email,
       name: user.name,
@@ -70,7 +70,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      token,
+      // `token` is the legacy name for the access token; kept for one release.
+      token: tokens.accessToken,
+      ...tokens,
       user: {
         id: user.id,
         email: user.email,

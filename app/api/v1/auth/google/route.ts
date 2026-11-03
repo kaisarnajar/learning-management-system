@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OAuth2Client } from "google-auth-library";
 import { prisma } from "@/utils/prisma";
-import { generateApiToken } from "@/services/api-auth";
+import { issueApiSession } from "@/services/api-auth";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     }
 
     const role = await resolveUserRole(user.email);
-    const token = await generateApiToken({
+    const tokens = await issueApiSession({
       id: user.id,
       email: user.email,
       name: user.name,
@@ -121,7 +121,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      token,
+      // `token` is the legacy name for the access token; kept for one release.
+      token: tokens.accessToken,
+      ...tokens,
       user: {
         id: user.id,
         email: user.email,

@@ -12,6 +12,7 @@ import { prisma } from "@/utils/prisma";
 import { createWithUniqueSlug } from "@/utils/slug";
 import { teacherAdminSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function parseTeacherForm(formData: FormData) {
   return teacherAdminSchema.safeParse({
@@ -69,6 +70,8 @@ export async function createTeacher(formData: FormData) {
 
   revalidatePath("/teachers");
   revalidatePath("/");
+
+  revalidatePublicContent();
   revalidatePath("/admin/teachers");
   redirect(teacherFormPath("", "?created=1"));
 }
@@ -113,6 +116,8 @@ export async function updateTeacher(id: string, formData: FormData) {
 
   revalidatePath("/teachers");
   revalidatePath("/");
+
+  revalidatePublicContent();
   revalidatePath("/admin/teachers");
   revalidatePath(`/admin/teachers/${id}`);
   revalidatePath(`/teachers/${id}`);
@@ -141,6 +146,8 @@ export async function deleteTeacherById(id: string): Promise<{ error?: string }>
 
   revalidatePath("/teachers");
   revalidatePath("/");
+
+  revalidatePublicContent();
   revalidatePath("/admin/teachers");
   revalidatePath(`/admin/teachers/${id}`);
   revalidatePath(`/teachers/${id}`);

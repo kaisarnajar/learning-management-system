@@ -3,6 +3,7 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/paginat
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { cachedPublic } from "@/services/public-cache";
 
 function siteAnnouncementAdminWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -49,7 +50,7 @@ export async function getPublishedSiteAnnouncementsPaginated(
   return { items, totalCount };
 }
 
-export async function getHomepageSiteAnnouncements(
+async function fetchHomepageSiteAnnouncements(
   limit = HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX,
 ) {
   return withDbErrorHandling(() => prisma.siteAnnouncement.findMany({
@@ -62,6 +63,9 @@ export async function getHomepageSiteAnnouncements(
       },
     }), "Database operation failed");
 }
+
+/** Homepage section: cached across requests (services/public-cache.ts). */
+export const getHomepageSiteAnnouncements = cachedPublic("homepage-announcements", fetchHomepageSiteAnnouncements);
 
 export async function getFeaturedHomepageAnnouncementCount(): Promise<number> {
   return withDbErrorHandling(() => prisma.siteAnnouncement.count({

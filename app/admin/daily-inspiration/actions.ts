@@ -6,6 +6,7 @@ import { requireAdmin } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
 import { dailyInspirationSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function adminListPath(suffix = "") {
   return `/admin/daily-inspiration${suffix}`;
@@ -23,6 +24,8 @@ function parseDailyInspirationForm(formData: FormData) {
 
 function revalidateDailyInspirationPaths() {
   revalidatePath("/");
+
+  revalidatePublicContent();
   revalidatePath("/admin");
   revalidatePath("/admin/daily-inspiration");
 }

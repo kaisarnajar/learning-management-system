@@ -5,6 +5,7 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/paginat
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { cachedPublic } from "@/services/public-cache";
 
 function allLibraryItemsWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -41,7 +42,7 @@ export async function getPublishedLibraryItemsPaginated(
   return { items, totalCount };
 }
 
-export async function getFeaturedHomepageLibraryItems(): Promise<LibraryItem[]> {
+async function fetchGetFeaturedHomepageLibraryItems(): Promise<LibraryItem[]> {
   const items = await withDbErrorHandling(() => prisma.libraryItem.findMany({
       where: { featuredOnHomepage: true, published: true },
       orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
@@ -49,6 +50,9 @@ export async function getFeaturedHomepageLibraryItems(): Promise<LibraryItem[]> 
     }), "Database operation failed");
   return items;
 }
+
+/** Homepage section: cached across requests (services/public-cache.ts). */
+export const getFeaturedHomepageLibraryItems = cachedPublic("featured-library", fetchGetFeaturedHomepageLibraryItems);
 
 export async function getFeaturedHomepageLibraryCount(): Promise<number> {
   return withDbErrorHandling(() => prisma.libraryItem.count({

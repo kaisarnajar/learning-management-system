@@ -6,9 +6,12 @@ import { requireAdmin } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
 import { HOMEPAGE_FEATURED_REVIEWS_MAX, getFeaturedHomepageReviewCount } from "@/services/student-reviews";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function revalidateReviewPaths(reviewId?: string) {
   revalidatePath("/");
+
+  revalidatePublicContent();
   revalidatePath("/profile/reviews");
   revalidatePath("/admin/review-approvals");
   if (reviewId) {

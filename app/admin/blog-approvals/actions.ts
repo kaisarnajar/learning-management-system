@@ -5,9 +5,12 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function revalidateBlogPaths(postId?: string) {
   revalidatePath("/");
+
+  revalidatePublicContent();
   revalidatePath("/blog");
   revalidatePath("/admin");
   revalidatePath("/admin/blogs");

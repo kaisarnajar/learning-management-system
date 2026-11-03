@@ -9,6 +9,7 @@ import { isTeacherSubmittedBlog } from "@/services/blog-approval";
 import { resolveBlogFeaturedUpdate } from "@/services/blogs";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function adminListPath(suffix = "") {
   return `/admin/blogs${suffix}`;
@@ -16,6 +17,8 @@ function adminListPath(suffix = "") {
 
 function revalidateBlogPaths(postId?: string) {
   revalidatePath("/");
+
+  revalidatePublicContent();
   revalidatePath("/blog");
   revalidatePath("/admin");
   revalidatePath("/admin/blogs");

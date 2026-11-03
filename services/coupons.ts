@@ -39,6 +39,7 @@ export async function getApplicableCoupons(
       where: {
         userId,
         couponId: { not: null },
+        deletedAt: null,
         status: { in: ["pending_verification", "approved"] },
       },
       select: { couponId: true },

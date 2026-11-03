@@ -56,7 +56,7 @@ export async function getBookstoreFinanceSummary(filters: Pick<FinanceFilters, "
             },
           }), "Database operation failed"),
     withDbErrorHandling(() => prisma.bookOrder.findMany({
-            where: dateWhere,
+            where: { ...dateWhere, deletedAt: null },
             include: {
               items: {
                 include: {
@@ -196,7 +196,7 @@ export async function getBookOrderFinancePaginated(
     : {};
 
   const where: Prisma.BookOrderWhereInput = {
-    AND: [dateWhere, searchWhere],
+    AND: [dateWhere, searchWhere, { deletedAt: null }],
   };
 
   const totalCount = await withDbErrorHandling(() => prisma.bookOrder.count({ where }), "Database operation failed");
@@ -304,7 +304,7 @@ export async function getBookOrderFinanceAll(
     : {};
 
   const where: Prisma.BookOrderWhereInput = {
-    AND: [dateWhere, searchWhere],
+    AND: [dateWhere, searchWhere, { deletedAt: null }],
   };
 
   const orders = await withDbErrorHandling(() => prisma.bookOrder.findMany({

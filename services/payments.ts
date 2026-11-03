@@ -63,7 +63,7 @@ export async function getPaymentRecordsForUserPaginated(
   page: number,
   pageSize: number,
 ): Promise<PaginatedResult<PaymentRecord>> {
-  const where = { userId };
+  const where = { userId, voidedAt: null };
   const totalCount = await withDbErrorHandling(() => prisma.paymentRecord.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
@@ -76,7 +76,7 @@ export async function getPaymentRecordsForUserPaginated(
 
 export async function getPaymentSubmissionsForUser(userId: string) {
   return withDbErrorHandling(() => prisma.coursePaymentSubmission.findMany({
-      where: { userId },
+      where: { userId, deletedAt: null },
       orderBy: { createdAt: "desc" },
     }), "Database operation failed");
 }
@@ -154,6 +154,7 @@ export async function processMonthlyPayment(
       userId,
       courseId: course.id,
       label: { in: [label, finalLabel] },
+      deletedAt: null,
       status: { in: [MONTHLY_PAYMENT_PENDING, MONTHLY_PAYMENT_APPROVED] },
     },
     select: { status: true },
@@ -254,6 +255,7 @@ export async function processEnrollmentPayment(
       userId,
       courseId,
       paymentType: PAYMENT_TYPE_ENROLLMENT,
+      deletedAt: null,
       status: { in: [MONTHLY_PAYMENT_PENDING, MONTHLY_PAYMENT_APPROVED] },
     },
     select: { status: true },

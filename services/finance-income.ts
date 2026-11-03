@@ -22,6 +22,7 @@ function buildIncomeWhere(filters: FinanceFilters) {
   const paidAt = financePaidAtWhere(filters);
 
   const base: Prisma.PaymentRecordWhereInput = {
+    voidedAt: null,
     ...(filters.courseId ? { courseId: filters.courseId } : {}),
     ...(filters.studentId ? { userId: filters.studentId } : {}),
     paymentType: filters.paymentType ? filters.paymentType : { not: "book_purchase" },

@@ -9,11 +9,11 @@ export async function GET(request: NextRequest) {
   try {
     const [submissions, records] = await Promise.all([
       prisma.coursePaymentSubmission.findMany({
-        where: { userId: user.id },
+        where: { userId: user.id, deletedAt: null },
         orderBy: { createdAt: "desc" },
       }),
       prisma.paymentRecord.findMany({
-        where: { userId: user.id },
+        where: { userId: user.id, voidedAt: null },
         orderBy: { paidAt: "desc" },
       }),
     ]);

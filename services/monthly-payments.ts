@@ -66,6 +66,7 @@ export async function getPendingMonthlyPaymentsPaginated(
   noStore();
   const base = {
     status: MONTHLY_PAYMENT_PENDING,
+    deletedAt: null,
     paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY, PAYMENT_TYPE_ONE_TIME] }
   };
   const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
@@ -88,7 +89,7 @@ export async function getPendingEnrollmentFeePaymentsPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
-  const base = { status: MONTHLY_PAYMENT_PENDING, paymentType: PAYMENT_TYPE_ENROLLMENT };
+  const base = { status: MONTHLY_PAYMENT_PENDING, paymentType: PAYMENT_TYPE_ENROLLMENT, deletedAt: null };
   const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
   const totalCount = await withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
@@ -106,7 +107,7 @@ export async function getPendingEnrollmentFeePaymentsPaginated(
 export async function getPendingPaymentCount(): Promise<number> {
   noStore();
   return withDbErrorHandling(() => prisma.coursePaymentSubmission.count({
-      where: { status: MONTHLY_PAYMENT_PENDING },
+      where: { status: MONTHLY_PAYMENT_PENDING, deletedAt: null },
     }), "Database operation failed");
 }
 
@@ -187,6 +188,7 @@ export async function hasPendingEnrollmentFeeSubmission(
         courseId,
         paymentType: PAYMENT_TYPE_ENROLLMENT,
         status: MONTHLY_PAYMENT_PENDING,
+        deletedAt: null,
       },
       select: { id: true },
     }), "Database operation failed");
@@ -199,6 +201,7 @@ export async function getPendingEnrollmentFeeSubmissionMap(userId: string) {
         userId,
         paymentType: PAYMENT_TYPE_ENROLLMENT,
         status: MONTHLY_PAYMENT_PENDING,
+        deletedAt: null,
       },
       select: { courseId: true },
     }), "Database operation failed");
@@ -214,6 +217,7 @@ export async function getApprovedMonthlyPaymentsPaginated(
   noStore();
   const base: Record<string, unknown> = {
     status: MONTHLY_PAYMENT_APPROVED,
+    deletedAt: null,
     paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY, PAYMENT_TYPE_ONE_TIME] }
   };
   if (filterType === "paid") {
@@ -246,7 +250,7 @@ export async function getApprovedEnrollmentFeePaymentsPaginated(
   filterType: "all" | "paid" | "waiver" = "all",
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
-  const base: Record<string, unknown> = { status: MONTHLY_PAYMENT_APPROVED, paymentType: PAYMENT_TYPE_ENROLLMENT };
+  const base: Record<string, unknown> = { status: MONTHLY_PAYMENT_APPROVED, paymentType: PAYMENT_TYPE_ENROLLMENT, deletedAt: null };
   if (filterType === "paid") {
     base.amountInrPaise = { gt: 0 };
   } else if (filterType === "waiver") {

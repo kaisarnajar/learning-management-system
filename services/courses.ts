@@ -168,12 +168,4 @@ export const getPublicCourseById = cache(async (id: string): Promise<CourseWithT
   return course;
 });
 
-export async function getCoursesByIds(ids: string[]): Promise<Map<string, CourseWithTeacher>> {
-  if (ids.length === 0) return new Map();
-  const courses = await withDbErrorHandling(() => prisma.course.findMany({
-    where: { id: { in: ids } },
-    include: courseWithTeacherInclude,
-  }), "Database operation failed");
-  return new Map(courses.map(c => [c.id, c]));
-}
 

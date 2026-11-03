@@ -19,26 +19,14 @@ export async function GET(request: NextRequest) {
         user: {
           select: { id: true, name: true, email: true, registrationNumber: true },
         },
+        course: { include: { teacher: true } },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    // Fetch course details for each enrollment
-    const courseIds = enrollments.map((e) => e.courseId);
-    const courses = await prisma.course.findMany({
-      where: { id: { in: courseIds } },
-      include: { teacher: true },
-    });
-    const courseMap = new Map(courses.map((c) => [c.id, c]));
-
-    const items = enrollments.map((e) => ({
-      ...e,
-      course: courseMap.get(e.courseId) || null,
-    }));
-
     return NextResponse.json({
       success: true,
-      data: items,
+      data: enrollments,
     });
   } catch (error) {
     console.error("[api/v1/enrollments] Error:", error);

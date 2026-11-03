@@ -209,7 +209,7 @@ model PasswordResetToken {
 }
 
 model Course {
-  id                 String               @id
+  id                 String                    @id
   title              String
   description        String
   startDate          String
@@ -220,13 +220,15 @@ model Course {
   monthlyFeeInrPaise Int
   feeFrequency       FeeFrequency?
   teacherId          String?
-  status             CourseStatus         @default(PUBLISHED)
-  featuredOnHomepage Boolean              @default(false)
+  status             CourseStatus              @default(PUBLISHED)
+  featuredOnHomepage Boolean                   @default(false)
   featuredAt         DateTime?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  teacher            Teacher?             @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  teacher            Teacher?                  @relation(fields: [teacherId], references: [id], onDelete: SetNull)
   paymentRecords     PaymentRecord[]
+  enrollments        Enrollment[]
+  paymentSubmissions CoursePaymentSubmission[]
   announcements      CourseAnnouncement[]
   attendances        CourseAttendance[]
   grades             CourseGrade[]
@@ -438,6 +440,7 @@ model Enrollment {
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
   user                   User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course                 Course                   @relation(fields: [courseId], references: [id], onDelete: Restrict)
   announcements          CourseAnnouncement[]
   attendanceRecords      CourseAttendanceRecord[]
   gradeRecords           CourseGradeRecord[]
@@ -491,33 +494,33 @@ model ContactInquiry {
 }
 
 model PaymentRecord {
-  id                    String                   @id @default(cuid())
-  userId                String
-  courseId              String?
-  amountInrPaise        Int
-  paidAt                DateTime
-  paymentType           String?
-  invoiceNumber         String?                  @unique
-  description           String?
-  receiptEmailSentAt    DateTime?
-  receiptGeneratedAt    DateTime?
-  receiptIncludesGst    Boolean?
-  receiptFeeAmountPaise Int?
-  receiptGstAmountPaise Int?
+  id                         String                   @id @default(cuid())
+  userId                     String
+  courseId                   String?
+  amountInrPaise             Int
+  paidAt                     DateTime
+  paymentType                String?
+  invoiceNumber              String?                  @unique
+  description                String?
+  receiptEmailSentAt         DateTime?
+  receiptGeneratedAt         DateTime?
+  receiptIncludesGst         Boolean?
+  receiptFeeAmountPaise      Int?
+  receiptGstAmountPaise      Int?
   /// Set when an admin voids the record; voided records are excluded from finance and receipts.
-  voidedAt              DateTime?
-  voidReason            String?
-  voidedById            String?
+  voidedAt                   DateTime?
+  voidReason                 String?
+  voidedById                 String?
   /// The book order this record paid for (book_purchase records only).
-  bookOrderId           String?                  @unique
+  bookOrderId                String?                  @unique
   /// Shipping component captured when the receipt was generated.
   receiptShippingAmountPaise Int?
-  createdAt             DateTime                 @default(now())
-  updatedAt             DateTime                 @updatedAt
-  user                  User                     @relation(fields: [userId], references: [id], onDelete: Restrict)
-  course                Course?                  @relation(fields: [courseId], references: [id], onDelete: SetNull)
-  bookOrder             BookOrder?               @relation(fields: [bookOrderId], references: [id], onDelete: SetNull)
-  submission            CoursePaymentSubmission?
+  createdAt                  DateTime                 @default(now())
+  updatedAt                  DateTime                 @updatedAt
+  user                       User                     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  course                     Course?                  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  bookOrder                  BookOrder?               @relation(fields: [bookOrderId], references: [id], onDelete: SetNull)
+  submission                 CoursePaymentSubmission?
 
   @@index([userId])
   @@index([paidAt])
@@ -549,20 +552,20 @@ model Expense {
  * Academy UPI and bank details (single row, id = "default"). Editable in admin.
  */
 model PaymentSettings {
-  id                  String   @id @default("default")
-  upiId               String   @default("")
-  upiNumber           String   @default("")
-  upiPayeeName        String   @default("Darse Quran Academy")
-  bankAccountName     String   @default("Darse Quran Academy")
-  bankName            String   @default("")
-  bankAccountNumber   String   @default("")
-  bankIfsc            String   @default("")
-  bankBranch          String   @default("")
-  includeGstByDefault Boolean  @default(false)
-  feeWaiverEnabled    Boolean  @default(false)
+  id                     String   @id @default("default")
+  upiId                  String   @default("")
+  upiNumber              String   @default("")
+  upiPayeeName           String   @default("Darse Quran Academy")
+  bankAccountName        String   @default("Darse Quran Academy")
+  bankName               String   @default("")
+  bankAccountNumber      String   @default("")
+  bankIfsc               String   @default("")
+  bankBranch             String   @default("")
+  includeGstByDefault    Boolean  @default(false)
+  feeWaiverEnabled       Boolean  @default(false)
   /// When false (default) a 100% fee waiver still needs admin confirmation like any other payment.
-  autoApproveFullWaivers Boolean @default(false)
-  updatedAt           DateTime @updatedAt
+  autoApproveFullWaivers Boolean  @default(false)
+  updatedAt              DateTime @updatedAt
 }
 
 /**
@@ -587,6 +590,7 @@ model CoursePaymentSubmission {
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt
   user                  User           @relation(fields: [userId], references: [id], onDelete: Restrict)
+  course                Course         @relation(fields: [courseId], references: [id], onDelete: Restrict)
   paymentRecord         PaymentRecord? @relation(fields: [paymentRecordId], references: [id], onDelete: SetNull)
   coupon                Coupon?        @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
@@ -619,22 +623,22 @@ model StudentNotification {
  * Physical books available for purchase in the bookstore.
  */
 model Book {
-  id                    String          @id @default(cuid())
+  id                    String              @id @default(cuid())
   title                 String
   author                String
   description           String
   priceInrPaise         Int
-  mrpInrPaise           Int             @default(0)
-  purchasePriceInrPaise Int             @default(0)
-  weightInGrams         Int             @default(0)
-  inventoryPurchased    Int             @default(0)
-  status                BookStatus      @default(AVAILABLE)
+  mrpInrPaise           Int                 @default(0)
+  purchasePriceInrPaise Int                 @default(0)
+  weightInGrams         Int                 @default(0)
+  inventoryPurchased    Int                 @default(0)
+  status                BookStatus          @default(AVAILABLE)
   imagePath             String?
-  published             Boolean         @default(true)
-  featuredOnHomepage    Boolean         @default(false)
+  published             Boolean             @default(true)
+  featuredOnHomepage    Boolean             @default(false)
   featuredAt            DateTime?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
   orderItems            BookOrderItem[]
   userCartItems         UserCartItem[]
   stockMovements        BookStockMovement[]
@@ -647,25 +651,25 @@ model Book {
  * A user's book purchase order submitted for admin approval.
  */
 model BookOrder {
-  id                     String          @id @default(cuid())
+  id                     String              @id @default(cuid())
   userId                 String
   totalAmountInrPaise    Int
-  shippingChargeInrPaise Int             @default(0)
-  status                 BookOrderStatus @default(PENDING_VERIFICATION)
+  shippingChargeInrPaise Int                 @default(0)
+  status                 BookOrderStatus     @default(PENDING_VERIFICATION)
   paymentMethod          String?
   upiTransactionId       String?
   paymentScreenshotPath  String?
   notes                  String?
-  deliveryAddress        String          @default("No address provided")
+  deliveryAddress        String              @default("No address provided")
   deliveryPinCode        String?
   deliveryPhoneNumber    String?
   courierServiceName     String?
   trackingId             String?
   /// Soft delete; rows with deletedAt set are hidden from every list.
   deletedAt              DateTime?
-  createdAt              DateTime        @default(now())
-  updatedAt              DateTime        @updatedAt
-  user                   User            @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  user                   User                @relation(fields: [userId], references: [id], onDelete: Restrict)
   items                  BookOrderItem[]
   paymentRecords         PaymentRecord[]
   stockMovements         BookStockMovement[]
@@ -825,10 +829,10 @@ model CouponRequest {
 }
 
 model CouponUsage {
-  id        String   @id @default(cuid())
-  couponId  String
-  userId    String
-  usedAt    DateTime @default(now())
+  id       String   @id @default(cuid())
+  couponId String
+  userId   String
+  usedAt   DateTime @default(now())
 
   coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Restrict)
   user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
@@ -920,13 +924,13 @@ model AuditLog {
  * see services/inventory.ts.
  */
 model BookStockMovement {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   bookId      String
   orderId     String?
   delta       Int
   reason      String
   createdById String?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime @default(now())
 
   book  Book       @relation(fields: [bookId], references: [id], onDelete: Restrict)
   order BookOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)

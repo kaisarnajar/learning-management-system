@@ -856,3 +856,16 @@ model RateLimitBucket {
 
   @@index([windowStart])
 }
+
+/**
+ * Per-financial-year counters for sequential invoice/certificate numbers
+ * (services/document-numbers.ts). Allocated with an atomic upsert.
+ */
+model DocumentSequence {
+  kind      String
+  period    String
+  next      Int      @default(0)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@id([kind, period])
+}

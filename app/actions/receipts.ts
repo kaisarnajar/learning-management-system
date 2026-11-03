@@ -12,7 +12,7 @@ import { renderReceiptToHtml } from "@/utils/receipt-html";
 import { prepareReceiptData } from "@/services/payment-receipt";
 import { getCourseById } from "@/services/courses";
 import { getPaymentSettings } from "@/services/payment-settings";
-import crypto from "crypto";
+import { allocateDocumentNumber } from "@/services/document-numbers";
 
 export async function generateReceipt(paymentRecordId: string) {
   const session = await auth();
@@ -40,8 +40,6 @@ export async function generateReceipt(paymentRecordId: string) {
   if (record.receiptGeneratedAt) {
     throw new Error("Receipt has already been generated.");
   }
-
-  const invoiceNumber = `DQA-INV-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
 
   let baseAmount = record.amountInrPaise;
   let gstAmount = 0;
@@ -75,15 +73,25 @@ export async function generateReceipt(paymentRecordId: string) {
     baseAmount = itemTotalPaise;
   }
 
-  await prisma.paymentRecord.update({
-    where: { id: paymentRecordId },
-    data: {
-      receiptGeneratedAt: new Date(),
-      invoiceNumber,
-      receiptIncludesGst: includeGst,
-      receiptFeeAmountPaise: baseAmount,
-      receiptGstAmountPaise: gstAmount,
-    },
+  // Allocate the sequential number and mark the receipt generated atomically.
+  // The updateMany guard makes a concurrent second click a no-op instead of
+  // a second invoice number.
+  const invoiceNumber = await prisma.$transaction(async (tx) => {
+    const number = await allocateDocumentNumber(tx, "invoice");
+    const updated = await tx.paymentRecord.updateMany({
+      where: { id: paymentRecordId, receiptGeneratedAt: null },
+      data: {
+        receiptGeneratedAt: new Date(),
+        invoiceNumber: number,
+        receiptIncludesGst: includeGst,
+        receiptFeeAmountPaise: baseAmount,
+        receiptGstAmountPaise: gstAmount,
+      },
+    });
+    if (updated.count === 0) {
+      throw new Error("Receipt has already been generated.");
+    }
+    return number;
   });
 
   return { success: true, invoiceNumber };

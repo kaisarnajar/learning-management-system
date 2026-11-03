@@ -7,7 +7,7 @@ import { prisma } from "@/utils/prisma";
 import { sendCertificateEmail } from "@/services/email";
 import { getCertificateFilename, generateCertificatePdf } from "@/services/certificate";
 import { getCourseById } from "@/services/courses";
-import crypto from "crypto";
+import { allocateDocumentNumber } from "@/services/document-numbers";
 
 export async function generateCertificate(enrollmentId: string, certificateType: "APPRECIATION" | "COMPLETION", certificateGrade?: number) {
   const session = await auth();
@@ -42,17 +42,32 @@ export async function generateCertificate(enrollmentId: string, certificateType:
     }
   }
 
-  const certificateNumber = `DQA-CERT-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-
-  await prisma.enrollment.update({
-    where: { id: enrollmentId },
-    data: {
-      certificateGeneratedAt: new Date(),
-      certificateNumber,
-      certificateType,
-      certificateGrade: certificateType === "COMPLETION" ? certificateGrade : null,
-    },
-  });
+  // Sequential number + generation flag in one transaction; a concurrent
+  // second click finds no row to update and reports the duplicate.
+  let certificateNumber: string;
+  try {
+    certificateNumber = await prisma.$transaction(async (tx) => {
+      const number = await allocateDocumentNumber(tx, "certificate");
+      const updated = await tx.enrollment.updateMany({
+        where: { id: enrollmentId, certificateGeneratedAt: null },
+        data: {
+          certificateGeneratedAt: new Date(),
+          certificateNumber: number,
+          certificateType,
+          certificateGrade: certificateType === "COMPLETION" ? certificateGrade : null,
+        },
+      });
+      if (updated.count === 0) {
+        throw new Error("ALREADY_GENERATED");
+      }
+      return number;
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "ALREADY_GENERATED") {
+      return { error: "Certificate has already been generated." };
+    }
+    throw error;
+  }
 
   return { success: "Certificate generated successfully.", certificateNumber };
 }

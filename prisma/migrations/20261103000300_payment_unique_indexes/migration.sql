@@ -20,7 +20,7 @@ END $$;
 DO $$ BEGIN
     CREATE UNIQUE INDEX IF NOT EXISTS "CoursePaymentSubmission_userId_courseId_label_partial_key"
         ON "CoursePaymentSubmission"("userId", "courseId", "label")
-        WHERE "status" <> 'declined';
+        WHERE "status" <> 'rejected';
 EXCEPTION WHEN unique_violation THEN
     RAISE WARNING 'Skipped CoursePaymentSubmission_userId_courseId_label_partial_key: duplicate fee submissions exist. Run scripts/report-duplicate-payment-keys.ts.';
 END $$;

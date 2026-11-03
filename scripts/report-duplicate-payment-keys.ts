@@ -27,7 +27,7 @@ async function main() {
   const labelDupes = await prisma.$queryRaw<Array<{ userId: string; courseId: string; label: string; count: number; ids: string[] }>>`
     SELECT "userId", "courseId", "label", COUNT(*)::int AS count, array_agg("id") AS ids
     FROM "CoursePaymentSubmission"
-    WHERE "status" <> 'declined'
+    WHERE "status" <> 'rejected'
     GROUP BY "userId", "courseId", "label" HAVING COUNT(*) > 1`;
 
   const orderDupes = await prisma.$queryRaw<Array<{ upiTransactionId: string; count: number; ids: string[] }>>`

@@ -1,18 +1,15 @@
 import { hash } from "bcryptjs";
 import type { PrismaClient } from "@prisma/client";
-import { getAdminEmails } from '../services/admin';
 
 import { syncEnrollmentsWithCourseStatus } from '../services/completion';
 import { courses } from "../content/courses";
 import {
-  DEMO_ADMIN_PASSWORD,
   DEMO_STUDENT_COUNT,
-  DEMO_STUDENT_PASSWORD,
   demoStudents,
   type DemoEnrollment,
   type DemoPayment,
 } from "../content/demo-students";
-import { DEMO_TEACHER_PASSWORD, teachers } from "../content/teachers";
+import { teachers } from "../content/teachers";
 import {
   buildEnrollmentFeeLabel,
   buildMonthlyFeeLabel,
@@ -297,11 +294,19 @@ function demoAdminDisplayName(email: string) {
     .join(" ");
 }
 
-export async function seedDemoAdmins(prisma: PrismaClient) {
-  const emails = getAdminEmails();
+/**
+ * Demo admin accounts come from DEMO_ADMIN_EMAILS, never from ADMIN_EMAIL:
+ * the real admin addresses must never receive a seeded password.
+ */
+export function getDemoAdminEmails(): string[] {
+  return [...new Set((process.env.DEMO_ADMIN_EMAILS ?? "").split(/[,;]/).map((e) => e.trim().toLowerCase()).filter(Boolean))];
+}
+
+export async function seedDemoAdmins(prisma: PrismaClient, password: string) {
+  const emails = getDemoAdminEmails();
   if (emails.length === 0) return;
 
-  const hashedPassword = await hash(DEMO_ADMIN_PASSWORD, 12);
+  const hashedPassword = await hash(password, 12);
 
   for (const [index, email] of emails.entries()) {
     const userId = demoAdminUserId(index);
@@ -323,8 +328,8 @@ export async function seedDemoAdmins(prisma: PrismaClient) {
 }
 
 /** Demo teacher login accounts matching seeded teacher profiles (local / QA). */
-export async function seedDemoTeachers(prisma: PrismaClient) {
-  const hashedPassword = await hash(DEMO_TEACHER_PASSWORD, 12);
+export async function seedDemoTeachers(prisma: PrismaClient, password: string) {
+  const hashedPassword = await hash(password, 12);
 
   for (const teacher of teachers) {
     const userId = demoTeacherUserId(teacher.id);
@@ -347,7 +352,7 @@ export async function seedDemoTeachers(prisma: PrismaClient) {
 }
 
 /** Demo students with enrollments, enrollment fees, and monthly payments (local / QA). */
-export async function seedDemoData(prisma: PrismaClient) {
+export async function seedDemoData(prisma: PrismaClient, studentPassword: string) {
   const courses = await prisma.course.findMany({
     select: {
       id: true,
@@ -367,7 +372,7 @@ export async function seedDemoData(prisma: PrismaClient) {
     ]),
   );
 
-  const hashedPassword = await hash(DEMO_STUDENT_PASSWORD, 12);
+  const hashedPassword = await hash(studentPassword, 12);
 
   for (const student of demoStudents) {
     const userId = demoUserId(student.id);
@@ -558,21 +563,21 @@ async function seedDemoStudentReviews(prisma: PrismaClient) {
 
 export function demoStudentLoginHint(): string {
   const last = String(DEMO_STUDENT_COUNT).padStart(2, "0");
-  return `Demo students: demo-student-01@seed.local … demo-student-${last}@seed.local — password ${DEMO_STUDENT_PASSWORD}`;
+  return `Demo students: demo-student-01@seed.local … demo-student-${last}@seed.local (password in .seed-credentials.local.json)`;
 }
 
 export function demoTeacherLoginHint(): string {
   const first = teachers[0]?.email ?? "teacher@seed.local";
   const last = teachers[teachers.length - 1]?.email ?? first;
-  return `Demo teachers: ${first} … ${last} — password ${DEMO_TEACHER_PASSWORD}`;
+  return `Demo teachers: ${first} … ${last} (password in .seed-credentials.local.json)`;
 }
 
 export function demoAdminLoginHint(): string {
-  const emails = getAdminEmails();
+  const emails = getDemoAdminEmails();
   if (emails.length === 0) {
-    return "Demo admins: none — set ADMIN_EMAIL in .env and re-run seed.";
+    return "Demo admins: none — set DEMO_ADMIN_EMAILS in .env and re-run seed.";
   }
-  return `Demo admins: ${emails.join(", ")} — password ${DEMO_ADMIN_PASSWORD}`;
+  return `Demo admins: ${emails.join(", ")} (password in .seed-credentials.local.json)`;
 }
 
 export function demoDataSummaryHint(): string {

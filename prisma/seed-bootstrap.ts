@@ -161,31 +161,24 @@ export async function seedBootstrap(prisma: PrismaClient) {
 
   await prisma.paymentSettings.upsert({
     where: { id: PAYMENT_SETTINGS_ID },
+    // Bank/UPI details are never seeded: an environment with placeholder
+    // account numbers would show students a fake account to pay into. The
+    // admin fills these in under Payment Settings.
     create: {
       id: PAYMENT_SETTINGS_ID,
-      upiId: "darsequran.demo@oksbi",
-      upiNumber: "9876543210",
+      upiId: "",
+      upiNumber: "",
       upiPayeeName: BRAND_CONFIG.name,
       bankAccountName: BRAND_CONFIG.name,
-      bankName: "State Bank of India",
-      bankAccountNumber: "123456789012",
-      bankIfsc: "SBIN0001234",
-      bankBranch: "Srinagar Main Branch",
-      feeWaiverEnabled: true,
+      bankName: "",
+      bankAccountNumber: "",
+      bankIfsc: "",
+      bankBranch: "",
+      feeWaiverEnabled: false,
       includeGstByDefault: false,
     },
-    update: {
-      upiId: "darsequran.demo@oksbi",
-      upiNumber: "9876543210",
-      upiPayeeName: BRAND_CONFIG.name,
-      bankAccountName: BRAND_CONFIG.name,
-      bankName: "State Bank of India",
-      bankAccountNumber: "123456789012",
-      bankIfsc: "SBIN0001234",
-      bankBranch: "Srinagar Main Branch",
-      feeWaiverEnabled: true,
-      includeGstByDefault: false,
-    },
+    // Never overwrite an existing row: production settings are admin-managed.
+    update: {},
   });
 
   const defaultCoupons = [

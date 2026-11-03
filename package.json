@@ -15,10 +15,11 @@
     "db:drift": "bash scripts/check-migration-drift.sh",
     "db:safety": "bash scripts/check-migration-safety.sh",
     "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
     "db:seed:demo": "tsx prisma/seed-demo.ts"
   },
   "prisma": {
-    "seed": "tsx prisma/seed-demo.ts"
+    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.3",

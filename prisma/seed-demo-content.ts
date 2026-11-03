@@ -1,5 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
-import { getAdminEmails } from '../services/admin';
+import { getDemoAdminEmails } from './seed-demo-data';
 import {
   demoAdminUserId,
   demoStudentUserId,
@@ -201,7 +201,7 @@ export async function seedDemoContent(prisma: PrismaClient) {
       ? new Date(createdAt.getTime() + 86_400_000)
       : null;
     
-    const hasAdmin = getAdminEmails().length > 0;
+    const hasAdmin = getDemoAdminEmails().length > 0;
     const repliedById = (item.repliedByAdminIndex !== undefined && hasAdmin)
       ? demoAdminUserId(0)
       : null;

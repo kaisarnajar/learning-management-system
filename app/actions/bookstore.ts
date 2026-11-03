@@ -1,9 +1,9 @@
 "use server";
 
 import { auth } from "@/services/auth";
-import { prisma } from "@/utils/prisma";
-import { validatePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
+import { validatePaymentScreenshot } from "@/services/payment-upload";
 import { bookstoreCheckoutSchema } from "@/utils/validations";
+import { createBookOrder } from "@/services/book-orders";
 
 export async function submitBookOrder(formData: FormData) {
   const session = await auth();
@@ -12,7 +12,8 @@ export async function submitBookOrder(formData: FormData) {
 
   const userId = session.user.id;
   const rawItems = formData.get("items");
-  const screenshotFile = formData.get("screenshot") as File | null;
+  const screenshot = formData.get("screenshot");
+  const screenshotFile = screenshot instanceof File ? screenshot : null;
 
   if (!rawItems) return { error: "No items provided.", status: 400 };
 
@@ -37,93 +38,13 @@ export async function submitBookOrder(formData: FormData) {
     return { error: validation.error.issues[0]?.message ?? "Invalid form data.", status: 400 };
   }
 
-  const body = validation.data;
-
   if (screenshotFile && screenshotFile.size > 0) {
     const { error } = validatePaymentScreenshot(screenshotFile);
     if (error) return { error, status: 400 };
   }
 
-  const bookIds = body.items.map((i) => i.bookId);
-  const books = await prisma.book.findMany({
-    where: { id: { in: bookIds }, published: true },
-  });
+  const result = await createBookOrder({ userId, input: validation.data, screenshotFile });
+  if (!result.ok) return { error: result.error, status: result.status };
 
-  if (books.length !== bookIds.length) return { error: "One or more books are unavailable.", status: 400 };
-
-  const unavailable = books.filter((b) => b.status !== "AVAILABLE");
-  if (unavailable.length > 0) {
-    return { error: `Some books are not available: ${unavailable.map((b) => b.title).join(", ")}`, status: 400 };
-  }
-
-  const bookMap = new Map(books.map((b) => [b.id, b]));
-  let subtotalAmountInrPaise = 0;
-  let totalWeightGrams = 0;
-
-  for (const item of body.items) {
-    const book = bookMap.get(item.bookId);
-    if (!book) return { error: "Invalid book in cart.", status: 400 };
-    subtotalAmountInrPaise += book.priceInrPaise * item.quantity;
-    totalWeightGrams += book.weightInGrams * item.quantity;
-  }
-
-  const slabs = await prisma.shippingChargeSlab.findMany({
-    orderBy: { maxWeightGrams: "asc" },
-  });
-
-  let shippingChargeInrPaise = 0;
-  if (slabs.length > 0) {
-    const applicableSlab = slabs.find(
-      (slab) => totalWeightGrams >= slab.minWeightGrams && totalWeightGrams <= slab.maxWeightGrams
-    );
-    if (applicableSlab) {
-      shippingChargeInrPaise = applicableSlab.chargeInrPaise;
-    } else {
-      const highestSlab = slabs[slabs.length - 1];
-      const lowestSlab = slabs[0];
-      if (totalWeightGrams > highestSlab.maxWeightGrams) {
-        shippingChargeInrPaise = highestSlab.chargeInrPaise;
-      } else if (totalWeightGrams < lowestSlab.minWeightGrams) {
-        shippingChargeInrPaise = 0;
-      }
-    }
-  }
-
-  const totalAmountInrPaise = subtotalAmountInrPaise + shippingChargeInrPaise;
-
-  let paymentScreenshotPath: string | null = null;
-  if (screenshotFile && screenshotFile.size > 0) {
-    const tempId = `book-order-${userId}-${Date.now()}`;
-    paymentScreenshotPath = await savePaymentScreenshot(tempId, screenshotFile);
-  }
-
-  try {
-    const order = await prisma.bookOrder.create({
-      data: {
-        userId,
-        totalAmountInrPaise,
-        shippingChargeInrPaise,
-        paymentMethod: body.paymentMethod,
-        upiTransactionId: body.upiTransactionId.trim() || null,
-        paymentScreenshotPath,
-        deliveryAddress: body.deliveryAddress,
-        deliveryPinCode: body.deliveryPinCode,
-        deliveryPhoneNumber: body.deliveryPhoneNumber,
-        notes: body.notes?.trim() || null,
-        status: "PENDING_VERIFICATION",
-        items: {
-          create: body.items.map((item) => ({
-            bookId: item.bookId,
-            quantity: item.quantity,
-            priceAtPurchaseInrPaise: bookMap.get(item.bookId)!.priceInrPaise,
-          })),
-        },
-      },
-    });
-
-    return { orderId: order.id, redirectUrl: "/profile/cart?submitted=1" };
-  } catch (error) {
-    console.error("Database operation failed:", error);
-    return { error: "Database operation failed. Please try again.", status: 500 };
-  }
+  return { orderId: result.order.id, redirectUrl: "/profile/cart?submitted=1" };
 }

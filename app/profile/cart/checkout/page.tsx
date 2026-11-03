@@ -5,6 +5,7 @@ import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { getPaymentSettings } from "@/services/payment-settings";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { computeShippingCharge, getShippingSlabs } from "@/services/book-orders";
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
@@ -84,30 +85,8 @@ export default async function CartCheckoutPage({
     0,
   );
 
-  // Fetch applicable shipping charge
-  const slabs = await prisma.shippingChargeSlab.findMany({
-    orderBy: { maxWeightGrams: "asc" },
-  });
-
-  let shippingChargeInrPaise = 0;
-  if (slabs.length > 0) {
-    const applicableSlab = slabs.find(
-      (slab) => totalWeightGrams >= slab.minWeightGrams && totalWeightGrams <= slab.maxWeightGrams
-    );
-    if (applicableSlab) {
-      shippingChargeInrPaise = applicableSlab.chargeInrPaise;
-    } else {
-      // If it exceeds all, pick the highest slab. 
-      // If it's lower than all (e.g. 0), pick the lowest.
-      const highestSlab = slabs[slabs.length - 1];
-      const lowestSlab = slabs[0];
-      if (totalWeightGrams > highestSlab.maxWeightGrams) {
-        shippingChargeInrPaise = highestSlab.chargeInrPaise;
-      } else if (totalWeightGrams < lowestSlab.minWeightGrams) {
-        shippingChargeInrPaise = 0; // or lowestSlab.chargeInrPaise depending on business logic, here we do 0
-      }
-    }
-  }
+  // Shipping preview uses the same rule as order submission.
+  const shippingChargeInrPaise = computeShippingCharge(totalWeightGrams, await getShippingSlabs());
 
   const paymentSettings = await getPaymentSettings();
   const totalAmountInrPaise = subtotalInrPaise + shippingChargeInrPaise;

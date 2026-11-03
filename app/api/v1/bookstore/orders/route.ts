@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { getBookOrdersForUser } from "@/services/bookstore";
-import { prisma } from "@/utils/prisma";
-import { validatePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
+import { validatePaymentScreenshot } from "@/services/payment-upload";
 import { bookstoreCheckoutSchema } from "@/utils/validations";
+import { createBookOrder } from "@/services/book-orders";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -98,103 +98,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const bookIds = body.items.map((i) => i.bookId);
-    const books = await prisma.book.findMany({
-      where: { id: { in: bookIds }, published: true },
+    const result = await createBookOrder({
+      userId: user.id,
+      input: body,
+      screenshotFile: screenshotFile && screenshotFile.size > 0 ? screenshotFile : null,
     });
 
-    if (books.length !== bookIds.length) {
-      return NextResponse.json({ success: false, error: "One or more books are unavailable." }, { status: 400 });
+    if (!result.ok) {
+      return NextResponse.json({ success: false, error: result.error }, { status: result.status });
     }
-
-    const unavailable = books.filter((b) => b.status !== "AVAILABLE");
-    if (unavailable.length > 0) {
-      return NextResponse.json(
-        { success: false, error: `Some books are not available: ${unavailable.map((b) => b.title).join(", ")}` },
-        { status: 400 }
-      );
-    }
-
-    const bookMap = new Map(books.map((b) => [b.id, b]));
-    let subtotalAmountInrPaise = 0;
-    let totalWeightGrams = 0;
-
-    for (const item of body.items) {
-      const book = bookMap.get(item.bookId);
-      if (!book) return NextResponse.json({ success: false, error: "Invalid book in cart." }, { status: 400 });
-      subtotalAmountInrPaise += book.priceInrPaise * item.quantity;
-      totalWeightGrams += book.weightInGrams * item.quantity;
-    }
-
-    const slabs = await prisma.shippingChargeSlab.findMany({
-      orderBy: { maxWeightGrams: "asc" },
-    });
-
-    let shippingChargeInrPaise = 0;
-    if (slabs.length > 0) {
-      const applicableSlab = slabs.find(
-        (slab) => totalWeightGrams >= slab.minWeightGrams && totalWeightGrams <= slab.maxWeightGrams
-      );
-      if (applicableSlab) {
-        shippingChargeInrPaise = applicableSlab.chargeInrPaise;
-      } else {
-        const highestSlab = slabs[slabs.length - 1];
-        const lowestSlab = slabs[0];
-        if (totalWeightGrams > highestSlab.maxWeightGrams) {
-          shippingChargeInrPaise = highestSlab.chargeInrPaise;
-        } else if (totalWeightGrams < lowestSlab.minWeightGrams) {
-          shippingChargeInrPaise = 0;
-        }
-      }
-    }
-
-    const totalAmountInrPaise = subtotalAmountInrPaise + shippingChargeInrPaise;
-
-    let paymentScreenshotPath: string | null = null;
-    if (screenshotFile && screenshotFile.size > 0) {
-      const tempId = `book-order-${user.id}-${Date.now()}`;
-      paymentScreenshotPath = await savePaymentScreenshot(tempId, screenshotFile);
-    }
-
-    const order = await prisma.bookOrder.create({
-      data: {
-        userId: user.id,
-        totalAmountInrPaise,
-        shippingChargeInrPaise,
-        paymentMethod: body.paymentMethod,
-        upiTransactionId: body.upiTransactionId.trim() || null,
-        paymentScreenshotPath,
-        deliveryAddress: body.deliveryAddress,
-        deliveryPinCode: body.deliveryPinCode,
-        deliveryPhoneNumber: body.deliveryPhoneNumber,
-        notes: body.notes?.trim() || null,
-        status: "PENDING_VERIFICATION",
-        items: {
-          create: body.items.map((item) => ({
-            bookId: item.bookId,
-            quantity: item.quantity,
-            priceAtPurchaseInrPaise: bookMap.get(item.bookId)!.priceInrPaise,
-          })),
-        },
-      },
-      include: {
-        items: {
-          include: {
-            book: true,
-          },
-        },
-      },
-    });
-
-    await prisma.userCartItem.deleteMany({
-      where: { userId: user.id },
-    });
 
     return NextResponse.json({
       success: true,
       message: "Order submitted successfully for Admin approval.",
-      orderId: order.id,
-      order,
+      orderId: result.order.id,
+      order: result.order,
     });
   } catch (error) {
     console.error("[api/v1/bookstore/orders] POST Error:", error);

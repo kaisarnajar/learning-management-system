@@ -25,7 +25,7 @@ export default async function AdminShippingChargesPage() {
     <div>
       <h1 className="font-serif text-2xl font-bold text-primary">Shipping Charges</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted">
-        Configure shipping charges based on order weight. If an order&apos;s total weight exceeds all slabs, the highest slab&apos;s charge is applied. If it falls below all slabs, no charge is applied. (Unless you configure a slab starting from 0g).
+        Configure shipping charges based on order weight. Slabs must be contiguous starting from 0 g. An order heavier than the highest slab pays the highest slab&apos;s charge; an order lighter than the lowest slab (for example books without a recorded weight) pays the lowest slab&apos;s charge.
       </p>
 
       <div className="mt-8 grid gap-8 lg:grid-cols-2 lg:items-start">

@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { getAdminEmails } from "@/services/admin";
+import { getDeveloperEmails } from "@/services/developer";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/pagination";
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
@@ -37,19 +38,35 @@ export function getStudentOrderBy(sort?: string): Prisma.UserOrderByWithRelation
   }
 }
 
-function studentUsersWhere(searchQuery?: string) {
-  const adminEmails = getAdminEmails();
+/** Accounts that are not students: admins, developers and teachers (matched by e-mail). */
+async function nonStudentEmails(): Promise<string[]> {
+  const teachers = await withDbErrorHandling(() => prisma.teacher.findMany({
+    where: { email: { not: null } },
+    select: { email: true },
+  }), "Database operation failed");
+  return [
+    ...new Set([
+      ...getAdminEmails(),
+      ...getDeveloperEmails(),
+      ...teachers.flatMap((t) => (t.email ? [t.email.toLowerCase()] : [])),
+    ]),
+  ];
+}
+
+async function studentUsersWhere(searchQuery?: string) {
+  const excluded = await nonStudentEmails();
   const base = {
     deletedAt: null,
-    ...(adminEmails.length > 0 ? { email: { notIn: adminEmails } } : {}),
+    ...(excluded.length > 0 ? { email: { notIn: excluded } } : {}),
   };
   if (!searchQuery) return base;
   return andWhere(base, buildSearchOr(["name", "email", "registrationNumber"], [], searchQuery));
 }
 
 export async function getStudentUsers() {
+  const where = await studentUsersWhere();
   return withDbErrorHandling(() => prisma.user.findMany({
-      where: studentUsersWhere(),
+      where,
       orderBy: getStudentOrderBy(),
     }), "Database operation failed");
 }
@@ -60,7 +77,7 @@ export async function getStudentUsersPaginated(
   searchQuery?: string,
   sort?: string,
 ): Promise<PaginatedResult<Awaited<ReturnType<typeof getStudentUsers>>[number]>> {
-  const where = studentUsersWhere(searchQuery);
+  const where = await studentUsersWhere(searchQuery);
   const totalCount = await withDbErrorHandling(() => prisma.user.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.user.findMany({
@@ -83,16 +100,13 @@ export async function getStudentUserById(id: string) {
       },
     }), "Database operation failed");
 
-  if (!user) return null;
+  if (!user || user.deletedAt) return null;
   if (adminEmails.includes(user.email.toLowerCase())) return null;
 
   return user;
 }
 
 export async function getStudentCount() {
-  const adminEmails = getAdminEmails();
-
-  return withDbErrorHandling(() => prisma.user.count({
-      where: adminEmails.length > 0 ? { email: { notIn: adminEmails } } : undefined,
-    }), "Database operation failed");
+  const where = await studentUsersWhere();
+  return withDbErrorHandling(() => prisma.user.count({ where }), "Database operation failed");
 }

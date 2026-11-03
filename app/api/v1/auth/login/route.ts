@@ -33,10 +33,11 @@ export async function POST(request: NextRequest) {
         image: true,
         registrationNumber: true,
         emailVerified: true,
+        deletedAt: true,
       },
     });
 
-    if (!user || !user.password) {
+    if (!user || !user.password || user.deletedAt) {
       return NextResponse.json(
         { success: false, error: "Invalid email or password." },
         { status: 401 }

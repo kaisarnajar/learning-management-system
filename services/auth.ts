@@ -49,7 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
         const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { email } }), "Database operation failed");
 
-        if (!user?.password) return null;
+        if (!user?.password || user.deletedAt) return null;
 
         const valid = await compare(String(credentials.password), user.password);
         if (!valid) return null;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { decode, encode, getToken } from "next-auth/jwt";
+import { decode, encode } from "next-auth/jwt";
 import { prisma } from "@/utils/prisma";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { getAuthSecret } from "@/services/auth-secret";
@@ -66,14 +66,8 @@ export async function authenticateApiRequest(req: NextRequest): Promise<{ user: 
       }
     }
 
-    if (!tokenPayload) {
-      // Fallback to NextAuth default cookie or header extraction
-      tokenPayload = await getToken({ req, secret: AUTH_SECRET, salt: TOKEN_SALT });
-      if (!tokenPayload) {
-        tokenPayload = await getToken({ req, secret: AUTH_SECRET, salt: FALLBACK_SALT });
-      }
-    }
-
+    // Deliberately no cookie fallback: the mobile API is Bearer-only so a
+    // browser session cookie can never be used for cross-site requests here.
     if (!tokenPayload || (!tokenPayload.email && !tokenPayload.id)) {
       return { user: null, error: "Unauthorized: Invalid or missing token" };
     }

@@ -6,7 +6,7 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { formatInputDateValue } from "@/utils/form-date";
 import { notifyAllStudentsOfSiteAnnouncement } from "@/services/notifications";
-import { enforceHomepageAnnouncementLimit, resolveAnnouncementFeaturedUpdate, getSiteAnnouncementById } from "@/services/site-announcements";
+import { enforceHomepageAnnouncementLimit, resolveAnnouncementFeaturedUpdate, getSiteAnnouncementForAdmin } from "@/services/site-announcements";
 import { siteAnnouncementSchema } from "@/utils/validations";
 import {
   addImagesToAnnouncement,
@@ -124,7 +124,8 @@ export async function updateSiteAnnouncement(id: string, formData: FormData) {
 
   let existing;
   try {
-    existing = await getSiteAnnouncementById(id);
+    // Admins edit drafts too; the public getter only returns published rows.
+    existing = await getSiteAnnouncementForAdmin(id);
   } catch (error) {
     if (isRedirectError(error)) { throw error; }
     console.error("Database error fetching site announcement:", error);
@@ -185,7 +186,7 @@ export async function updateSiteAnnouncement(id: string, formData: FormData) {
 export async function toggleSiteAnnouncementHomepage(id: string) {
   await requireAdmin();
 
-  const existing = await getSiteAnnouncementById(id);
+  const existing = await getSiteAnnouncementForAdmin(id);
   if (!existing) {
     redirect(`${adminListPath()}?error=notfound`);
   }
@@ -219,7 +220,7 @@ export async function deleteSiteAnnouncement(id: string) {
 
   let existing;
   try {
-    existing = await getSiteAnnouncementById(id);
+    existing = await getSiteAnnouncementForAdmin(id);
   } catch (error) {
     if (isRedirectError(error)) { throw error; }
     console.error("Database error fetching site announcement:", error);

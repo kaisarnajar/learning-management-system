@@ -2,7 +2,7 @@
 import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import type { User } from "@prisma/client";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import {
   type StudentFormValues,
   validateStudentForm,
@@ -29,8 +29,14 @@ const STUDENT_FIELDS: (keyof StudentFormValues)[] = [
   "gender",
 ];
 
+/** The form holds raw strings; the schema turns them into enums on submit. */
+type StudentFormState = Record<keyof StudentFormValues, string>;
+
 export function StudentForm({ student, action, submitLabel, error }: StudentFormProps) {
-  const validate = useCallback((values: StudentFormValues) => validateStudentForm(values), []);
+  const validate = useCallback(
+    (values: StudentFormState) => validateStudentForm(values as unknown as StudentFormValues),
+    [],
+  );
 
   const { values, updateField, markTouched, showError, errors, isValid } = useZodForm({
     initialValues: {
@@ -40,13 +46,18 @@ export function StudentForm({ student, action, submitLabel, error }: StudentForm
       occupation: student.occupation ?? "",
       address: student.address ?? "",
       whatsapp: student.whatsapp ?? "",
-      gender: (student.gender ?? "") as any,
-    },
+      gender: student.gender ?? "",
+    } as StudentFormState,
     fields: STUDENT_FIELDS,
     validate,
   });
 
-  const canSubmit = isValid;
+  // Choosing "female" replaces the profile picture with the female avatar,
+  // which deletes an uploaded photo; that needs an explicit confirmation.
+  const hasUploadedPhoto = Boolean(student.image) && !student.image!.startsWith("/assets/");
+  const needsPhotoConfirmation = values.gender === "FEMALE" && hasUploadedPhoto;
+  const [photoConfirmed, setPhotoConfirmed] = useState(false);
+  const canSubmit = isValid && (!needsPhotoConfirmation || photoConfirmed);
 
   return (
     <form action={action} className="mx-auto max-w-2xl space-y-5">
@@ -240,6 +251,21 @@ export function StudentForm({ student, action, submitLabel, error }: StudentForm
           </p>
         )}
       </div>
+
+      {needsPhotoConfirmation && (
+        <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-warning-text/30 bg-warning-bg px-4 py-3 text-sm text-warning-text">
+          <input
+            type="checkbox"
+            name="confirmReplacePhoto"
+            checked={photoConfirmed}
+            onChange={(e) => setPhotoConfirmed(e.target.checked)}
+            className="mt-1 rounded border-border"
+          />
+          <span>
+            Replace the uploaded photo with the female avatar. The student&apos;s current photo will be deleted and cannot be restored.
+          </span>
+        </label>
+      )}
 
       <div className="pt-4">
         <SubmitButton

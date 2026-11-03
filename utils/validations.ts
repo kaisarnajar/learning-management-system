@@ -615,15 +615,12 @@ export const slabSchema = z.object({
   path: ["maxWeightGrams"]
 });
 
-export const adminStudentSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  fatherName: z.string().min(2, "Father's name is required"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  occupation: z.string().min(1, "Occupation is required"),
-  address: z.string().min(5, "Address is required"),
-  whatsapp: z.string().min(5, "WhatsApp is required"),
-  gender: z.enum(["MALE", "FEMALE"], {
-    message: "Gender is required.",
-  }),
+/**
+ * Admin edit of a student profile: the same field rules the student's own
+ * profile form enforces (occupation and gender as enums, real date of birth,
+ * address length), minus the country, which the admin form does not edit.
+ */
+export const adminStudentSchema = profileFieldsSchema.omit({ country: true }).extend({
+  whatsapp: z.string().trim().min(5, "WhatsApp number is required.").max(20, "WhatsApp number is too long."),
 });
 

@@ -41,6 +41,9 @@ export function ScreenshotPreview({ path }: { path: string }) {
               alt="Payment screenshot"
               width={600}
               height={800}
+              // Private screenshots are served through /api/files with the viewer's
+              // session; the image optimizer has no session, so it must not proxy them.
+              unoptimized={path.startsWith("/api/files/")}
               className="rounded-lg object-contain"
             />
           </div>

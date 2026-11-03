@@ -44,6 +44,17 @@ Every successful sign-in returns:
 Access tokens issued before this scheme (signed like the web session
 cookie) are no longer accepted; clients on those tokens must sign in again.
 
+### Private files
+
+Course-announcement attachments and payment screenshots are returned as
+app paths of the form `/api/files/private/...`. Request them with the
+same `Authorization: Bearer <accessToken>` header; the server checks that
+the user may see the file (enrolled student or course teacher for an
+attachment, the paying student for a screenshot) and answers `302` with a
+URL that is valid for five minutes. Follow the redirect without re-sending
+the Authorization header. Files uploaded before this change keep their
+public URLs.
+
 ### Errors
 
 Responses are `{ success: false, error: "<message>" }`, with an optional

@@ -170,13 +170,19 @@ describe("page protection", () => {
     expect(response.status).toBe(200);
   });
 
-  // KNOWN GAP, not yet fixed: middleware.ts wraps its handler in Auth.js's `auth(handler)`. In that form
-  // Auth.js runs the handler and ignores a falsy `authorized` result (see node_modules/next-auth/lib/index.js),
-  // so the `authorized` callback in services/auth.config.ts no longer redirects anonymous visitors from
-  // /admin, /developer, /teacher and /profile at the edge. Those areas are still protected inside the app:
-  // each layout calls requireAdmin/requireDeveloper/requireUser and scripts/check-page-auth.sh (run in CI)
-  // makes sure every page does too. Turn this into a real test when the edge redirect is restored.
-  it.todo("redirects anonymous visitors from /admin, /developer, /teacher and /profile to /login at the edge");
+  // Auth.js's `auth(handler)` form runs the handler and does not act on a falsy `authorized` result by
+  // itself; middleware.ts enforces the decision explicitly (redirect for pages, 401 for API paths).
+  it.each(["/admin/courses", "/developer", "/teacher/blogs", "/profile/payments"])(
+    "redirects anonymous visitors from %s to /login at the edge",
+    async (pathname) => {
+      const middleware = (await import("@/middleware")).default as unknown as Middleware;
+      const response = await middleware(new NextRequest(new URL(`${pathname}?tab=1`, "http://localhost:3000")), {});
+      expect(response.status).toBe(307);
+      const location = new URL(response.headers.get("location") ?? "", "http://localhost:3000");
+      expect(location.pathname).toBe("/login");
+      expect(location.searchParams.get("callbackUrl")).toBe(`${pathname}?tab=1`);
+    },
+  );
 });
 
 describe.skipIf(SKIP_WITHOUT_DB)("rate limiting", () => {

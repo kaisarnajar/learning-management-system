@@ -1,4 +1,4 @@
-import NextAuth from "next-auth";
+import NextAuth, { type NextAuthRequest } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authConfig } from "@/services/auth.config";
 import { buildContentSecurityPolicy, generateNonce } from "@/services/security-headers";
@@ -98,7 +98,27 @@ function handleRequest(request: NextRequest) {
   return withContentSecurityPolicy(request);
 }
 
-export default auth((request) => handleRequest(request));
+/**
+ * What the `authorized` callback refuses. Auth.js only acts on that callback
+ * by itself when `auth` is exported without a handler; with the handler
+ * below the decision has to be enforced here: pages go to the sign-in form
+ * (with the original URL as callbackUrl), API paths get a 401.
+ */
+function denied(request: NextAuthRequest): NextResponse {
+  const { pathname, search, origin } = request.nextUrl;
+  if (pathname.startsWith("/api/")) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+  const login = new URL("/login", origin);
+  login.searchParams.set("callbackUrl", `${pathname}${search}`);
+  return NextResponse.redirect(login);
+}
+
+export default auth((request) => {
+  const allowed = authConfig.callbacks.authorized({ auth: request.auth, request });
+  if (!allowed) return denied(request);
+  return handleRequest(request);
+});
 
 export const config = {
   matcher: [

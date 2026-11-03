@@ -842,3 +842,15 @@ model UserCartItem {
   @@index([userId])
   @@index([bookId])
 }
+
+/**
+ * Fixed-window counters for the Postgres-backed rate limiter (services/rate-limit.ts).
+ * Rows are tiny and overwritten in place; stale rows may be pruned at any time.
+ */
+model RateLimitBucket {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+
+  @@index([windowStart])
+}

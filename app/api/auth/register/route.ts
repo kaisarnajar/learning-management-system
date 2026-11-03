@@ -5,8 +5,12 @@ import { prisma } from "@/utils/prisma";
 import { generateVerificationToken } from "@/services/tokens";
 import { sendVerificationEmail } from "@/services/email";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
+import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 
 export async function POST(request: Request) {
+  const limited = await enforceRateLimit(RATE_LIMITS.REGISTER_IP, getClientIp(request.headers));
+  if (limited) return limited;
+
   try {
     const body = await request.json();
     const name = typeof body.name === "string" ? body.name.trim() : "";

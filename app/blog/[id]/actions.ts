@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { ensureAuth } from "@/utils/auth-utils";
 import { prisma } from "@/utils/prisma";
 import { isAdminSession } from "@/services/admin";
+import { rateLimit, RATE_LIMIT_MESSAGE, RATE_LIMITS } from "@/services/rate-limit";
 
 export async function toggleLike(blogPostId: string) {
   const { session, error } = await ensureAuth();
@@ -46,6 +47,9 @@ export async function toggleLike(blogPostId: string) {
 export async function addComment(blogPostId: string, content: string) {
   const { session, error } = await ensureAuth();
   if (error || !session) return { error };
+
+  const limit = await rateLimit(RATE_LIMITS.COMMENT_USER, session.user.id);
+  if (!limit.ok) return { error: RATE_LIMIT_MESSAGE };
 
   if (!content || content.trim().length === 0) {
     return { error: "Comment content cannot be empty" };

@@ -1,6 +1,8 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { getClientIp, rateLimit, RATE_LIMIT_MESSAGE, RATE_LIMITS } from "@/services/rate-limit";
 import { auth } from "@/services/auth";
 import { normalizeContactPhone } from "@/services/contact-inquiries";
 import { prisma } from "@/utils/prisma";
@@ -25,6 +27,11 @@ export async function submitContactInquiry(
 
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
+  }
+
+  const limit = await rateLimit(RATE_LIMITS.CONTACT_IP, getClientIp(await headers()));
+  if (!limit.ok) {
+    return { error: RATE_LIMIT_MESSAGE };
   }
 
   const name = session?.user?.name?.trim() || parsed.data.name;

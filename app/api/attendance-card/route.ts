@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/services/auth";
+import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { generateAttendanceCardPdf } from "@/utils/attendance-card-html";
@@ -9,6 +10,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const session = await auth();
+  const limited = await enforceRateLimit(RATE_LIMITS.DOCUMENT_USER, session?.user?.id ?? "anonymous");
+  if (limited) return limited;
   if (!isAdminSession(session)) {
     return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
   }

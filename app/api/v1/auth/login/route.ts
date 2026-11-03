@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/utils/prisma";
 import { generateApiToken } from "@/services/api-auth";
 import { resolveUserRole } from "@/services/teacher-auth";
+import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,6 +17,11 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    const limited =
+      (await enforceRateLimit(RATE_LIMITS.LOGIN, email, { success: false, error: "Too many attempts. Please wait a few minutes and try again." })) ??
+      (await enforceRateLimit(RATE_LIMITS.LOGIN_IP, getClientIp(request.headers), { success: false, error: "Too many attempts. Please wait a few minutes and try again." }));
+    if (limited) return limited;
 
     const user = await prisma.user.findUnique({
       where: { email },

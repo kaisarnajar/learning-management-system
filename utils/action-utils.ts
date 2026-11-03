@@ -1,16 +1,38 @@
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { redirect } from "next/navigation";
+import { DbError } from "@/utils/db-error";
+import { type FlashCode, withFlash } from "@/utils/flash";
 
 /**
- * Executes a server action block. If an error is thrown:
- * - If it's a Next.js redirect error (internal navigation mechanism), it is rethrown so Next.js handles it.
- * - Otherwise, it logs the error and redirects to the error route with the message URL-encoded.
+ * An error whose message was written for the user (a validation message, a
+ * business rule such as "this course still has students"). Throw it inside a
+ * server action to send that message back with the redirect; any other
+ * exception is logged and reported as a generic failure.
+ */
+export class ActionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "ActionError";
+  }
+}
+
+const DB_CODE_TO_FLASH: Record<DbError["code"], FlashCode> = {
+  UNIQUE: "duplicate",
+  NOT_FOUND: "not_found",
+  FK: "linked",
+  UNKNOWN: "unexpected",
+};
+
+/**
+ * Runs a server action. A Next.js redirect passes through. An ActionError
+ * redirects with its message (`?msg=`); a DbError with the matching flash
+ * code; anything else is logged and redirected as `?err=unexpected`, so
+ * exception internals never appear in a URL.
  */
 export async function executeServerAction<T>(
   action: () => Promise<T>,
   redirectPathOnError: string,
   logMessage: string = "Server Action error",
-  errorParamName: string = "saveError"
 ): Promise<T> {
   try {
     return await action();
@@ -18,9 +40,14 @@ export async function executeServerAction<T>(
     if (isRedirectError(error)) {
       throw error;
     }
+    if (error instanceof ActionError) {
+      redirect(withFlash(redirectPathOnError, { message: error.message }));
+    }
+    if (error instanceof DbError) {
+      console.error(`[Server Action Error] ${logMessage}:`, error.code, error.message);
+      redirect(withFlash(redirectPathOnError, { code: DB_CODE_TO_FLASH[error.code] }));
+    }
     console.error(`[Server Action Error] ${logMessage}:`, error);
-    const message = error instanceof Error ? error.message : "An unexpected error occurred.";
-    const separator = redirectPathOnError.includes("?") ? "&" : "?";
-    redirect(`${redirectPathOnError}${separator}${errorParamName}=${encodeURIComponent(message)}`);
+    redirect(withFlash(redirectPathOnError, { code: "unexpected" }));
   }
 }

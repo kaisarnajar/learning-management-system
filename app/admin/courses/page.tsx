@@ -9,13 +9,15 @@ import { ActionToast } from "@/components/shared/ToastProvider";
 import { AdminCoursesTable } from "@/components/admin/AdminCoursesTable";
 import { Suspense } from "react";
 import { requireAdmin } from "@/services/auth-actions";
+import { readFlash } from "@/utils/flash";
 
 type PageParams = {
 
   deleted?: string;
   created?: string;
   saved?: string;
-  deleteError?: string;
+  err?: string;
+  msg?: string;
   page?: string;
   q?: string;
   [key: string]: string | undefined;
@@ -97,9 +99,9 @@ export default async function AdminCoursesPage({
       <ActionToast trigger={params.saved === "1"} paramName="saved" message="Course updated successfully." variant="success" />
       <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Course deleted successfully." variant="success" />
       
-      {params.deleteError && (
+      {readFlash(params) && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
-          {decodeURIComponent(params.deleteError)}
+          {readFlash(params)}
         </p>
       )}
 

@@ -13,6 +13,7 @@ import {
 import { getTeacherBlogPostsPaginated } from "@/services/blogs";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { readFlash, type FlashParams } from "@/utils/flash";
 
 
 export default async function TeacherBlogsPage({
@@ -24,7 +25,7 @@ export default async function TeacherBlogsPage({
     deleted?: string;
     error?: string;
     page?: string;
-  }>;
+  } & FlashParams>;
 }) {
   const params = await searchParams;
   const { session } = await requireTeacher();
@@ -58,6 +59,9 @@ export default async function TeacherBlogsPage({
       <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Blog post deleted." variant="info" />
       {params.error === "notfound" && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Blog post not found.</p>
+      )}
+      {readFlash(params) && (
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{readFlash(params)}</p>
       )}
       {params.error === "locked" && (
         <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">

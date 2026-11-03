@@ -7,6 +7,7 @@ import { prisma } from "@/utils/prisma";
 import { getTeacherByEmail, resolveUserRole } from "@/services/teacher-auth";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
+import { getClientIp, rateLimit, RATE_LIMITS } from "@/services/rate-limit";
 
 const prismaAdapter = PrismaAdapter(prisma);
 const originalCreateUser = prismaAdapter.createUser;
@@ -31,10 +32,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) return null;
 
         const email = String(credentials.email).toLowerCase().trim();
+
+        // Brute-force protection: per e-mail and per client IP.
+        const ip = getClientIp(request.headers);
+        const [byEmail, byIp] = await Promise.all([
+          rateLimit(RATE_LIMITS.LOGIN, email),
+          rateLimit(RATE_LIMITS.LOGIN_IP, ip),
+        ]);
+        if (!byEmail.ok || !byIp.ok) {
+          console.warn(`[auth] Login rate limit hit for ${email} from ${ip}`);
+          return null;
+        }
         const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { email } }), "Database operation failed");
 
         if (!user?.password) return null;

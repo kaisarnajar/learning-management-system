@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/services/auth";
+import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { isAdminSession } from "@/services/admin";
 import { BRAND_CONFIG } from "@/config/brand";
 import { getCourseById } from "@/services/courses";
@@ -21,6 +22,8 @@ export async function GET(
   }
 
   const session = await auth();
+  const limited = await enforceRateLimit(RATE_LIMITS.DOCUMENT_USER, session?.user?.id ?? "anonymous");
+  if (limited) return limited;
   const isOwner = session?.user?.id === record.userId;
   const isAdmin = isAdminSession(session);
 

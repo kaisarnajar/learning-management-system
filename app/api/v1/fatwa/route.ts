@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAnsweredFatwasPaginated } from "@/services/fatwa";
 import { prisma } from "@/utils/prisma";
+import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +30,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const limited = await enforceRateLimit(RATE_LIMITS.FATWA_ASK_IP, getClientIp(request.headers), {
+    success: false,
+    error: "Too many questions submitted from this network. Please try again later.",
+  });
+  if (limited) return limited;
+
   try {
     const body = await request.json();
     const { title, question, category, askerName, askerEmail } = body;

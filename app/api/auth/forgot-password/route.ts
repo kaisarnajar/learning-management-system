@@ -3,11 +3,15 @@ import { NextResponse } from "next/server";
 import { sendPasswordResetEmail } from "@/services/email";
 import { buildPasswordResetUrl, createPasswordResetToken } from "@/services/password-reset";
 import { forgotPasswordSchema } from "@/utils/validations";
+import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 
 const GENERIC_SUCCESS =
   "If an account with that email exists and uses a password, we sent reset instructions. Please check your Inbox. If you don't see it, check your Spam/Junk folder as well.";
 
 export async function POST(request: Request) {
+  const limitedByIp = await enforceRateLimit(RATE_LIMITS.FORGOT_PASSWORD_IP, getClientIp(request.headers));
+  if (limitedByIp) return limitedByIp;
+
   try {
     const body = await request.json();
     const parsed = forgotPasswordSchema.safeParse(body);
@@ -20,6 +24,9 @@ export async function POST(request: Request) {
     }
 
     const email = parsed.data.email.toLowerCase().trim();
+    const limitedByEmail = await enforceRateLimit(RATE_LIMITS.FORGOT_PASSWORD_EMAIL, email);
+    if (limitedByEmail) return limitedByEmail;
+
     const isProduction = process.env.NODE_ENV === "production";
     const isEmailConfigured = Boolean(
       process.env.SMTP_HOST &&

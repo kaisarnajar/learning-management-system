@@ -3,6 +3,7 @@ import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import { generateVerificationToken } from "@/services/tokens";
 import { sendVerificationEmail } from "@/services/email";
+import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 
 export async function POST(request: Request) {
   try {
@@ -15,6 +16,9 @@ export async function POST(request: Request) {
     if (session.user.emailVerified) {
       return NextResponse.json({ error: "Email is already verified" }, { status: 400 });
     }
+
+    const limited = await enforceRateLimit(RATE_LIMITS.RESEND_VERIFICATION, session.user.email);
+    if (limited) return limited;
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },

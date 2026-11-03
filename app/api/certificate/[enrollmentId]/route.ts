@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/services/auth";
+import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { isAdminSession } from "@/services/admin";
 import { getCourseById } from "@/services/courses";
 import { getCertificateFilename, generateCertificatePdf } from "@/services/certificate";
@@ -14,6 +15,8 @@ export async function GET(
   const inline = new URL(request.url).searchParams.get("inline") === "1";
 
   const session = await auth();
+  const limited = await enforceRateLimit(RATE_LIMITS.DOCUMENT_USER, session?.user?.id ?? "anonymous");
+  if (limited) return limited;
   const isAdmin = isAdminSession(session);
 
   if (!isAdmin) {

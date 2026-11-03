@@ -4,6 +4,7 @@ import { prisma } from "@/utils/prisma";
 import { generateApiToken } from "@/services/api-auth";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
+import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 
 const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
 
@@ -40,6 +41,12 @@ async function verifyGoogleIdToken(idToken: string) {
 }
 
 export async function POST(request: NextRequest) {
+  const limited = await enforceRateLimit(RATE_LIMITS.GOOGLE_IP, getClientIp(request.headers), {
+    success: false,
+    error: "Too many attempts. Please wait a few minutes and try again.",
+  });
+  if (limited) return limited;
+
   try {
     const body = await request.json();
     const idToken = typeof body.idToken === "string" ? body.idToken : (typeof body.token === "string" ? body.token : "");

@@ -1,5 +1,5 @@
 import { BRAND_CONFIG } from "@/config/brand";
-import { getBlogExcerpt } from "@/utils/html";
+import { getBlogExcerpt, stripHtml } from "@/utils/html";
 
 /**
  * Organization Schema generator (EducationalOrganization)
@@ -200,12 +200,12 @@ export function getFatwaSchema(fatwa: FatwaSchemaParams) {
     mainEntity: [
       {
         "@type": "Question",
-        name: fatwa.title,
-        text: fatwa.question,
+        name: stripHtml(fatwa.title).slice(0, 300),
+        text: stripHtml(fatwa.question).slice(0, 2000),
         url: fatwaUrl,
         acceptedAnswer: {
           "@type": "Answer",
-          text: fatwa.answer,
+          text: stripHtml(fatwa.answer).slice(0, 5000),
         },
       },
     ],

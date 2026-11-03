@@ -2,8 +2,9 @@
  * Content-Security-Policy construction shared by the middleware (per-request
  * nonce) and tests. Kept free of Node-only imports so it runs on the edge.
  *
- * The policy is emitted as Report-Only first (C15) and switched to enforcing
- * once the security regression suite confirms no inline-script violations.
+ * The policy is emitted as Report-Only unless the CSP_ENFORCE environment
+ * variable is "true" (see middleware.ts and docs/TESTING.md); CI runs the
+ * end-to-end journeys with it enabled before production is switched over.
  */
 export function buildContentSecurityPolicy(nonce: string, options?: { enforce?: boolean }): string {
   const isDev = process.env.NODE_ENV !== "production";

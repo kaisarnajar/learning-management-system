@@ -3,7 +3,7 @@ import { escapeHtml as e } from "@/utils/html-escape";
 
 export function renderReceiptToHtml(data: ReceiptData): string {
   const { academy, student, payment, authority, termsAndConditions } = data;
-  const currencySymbol = payment.currency || '₹';
+  const currencySymbol = e(payment.currency || '₹');
 
   const termsHtml = termsAndConditions
     .map(term => `<li>${e(term)}</li>`)

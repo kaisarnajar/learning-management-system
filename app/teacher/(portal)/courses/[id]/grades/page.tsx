@@ -1,4 +1,6 @@
 import { requireTeacher } from "@/services/auth-actions";
+import { getTeacherCourseForPortal } from "@/services/teacher-portal";
+import { notFound } from "next/navigation";
 import { getCourseGradeCards } from "@/app/actions/grades";
 import { GradeList } from "@/components/grades/GradeList";
 
@@ -7,8 +9,9 @@ export default async function TeacherCourseGradesPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireTeacher();
+  const { teacher } = await requireTeacher();
   const { id } = await params;
+  if (!(await getTeacherCourseForPortal(teacher.id, id))) notFound();
   const grades = await getCourseGradeCards(id);
 
   return (

@@ -1,4 +1,5 @@
 import { requireTeacher } from "@/services/auth-actions";
+import { getTeacherCourseForPortal } from "@/services/teacher-portal";
 import { getEnrolledStudentsForGrades, getGradeRecordsForGradeId } from "@/app/actions/grades";
 import { GradeForm } from "@/components/grades/GradeForm";
 import { notFound } from "next/navigation";
@@ -8,8 +9,9 @@ export default async function TeacherEditGradePage({
 }: {
   params: Promise<{ id: string; gradeId: string }>;
 }) {
-  await requireTeacher();
+  const { teacher } = await requireTeacher();
   const { id, gradeId } = await params;
+  if (!(await getTeacherCourseForPortal(teacher.id, id))) notFound();
   
   const [students, gradeData] = await Promise.all([
     getEnrolledStudentsForGrades(id),

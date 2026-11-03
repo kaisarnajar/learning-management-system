@@ -5,8 +5,10 @@ import { useActionState, useState } from "react";
 import { recordExpense, type RecordExpenseState } from "@/app/admin/record-expense/actions";
 import {
   EXPENSE_CATEGORY_OPTIONS,
+  EXPENSE_CATEGORY_OTHER,
   EXPENSE_CATEGORY_TEACHER_SALARY,
 } from "@/services/expense-categories";
+import { formatBusinessDate } from "@/services/business-time";
 import { inputClassName, labelClassName } from "@/utils/form";
 
 type RecordExpenseFormProps = {
@@ -18,8 +20,8 @@ const initialState: RecordExpenseState = {};
 export function RecordExpenseForm({ teachers }: RecordExpenseFormProps) {
   const [state, formAction, pending] = useActionState(recordExpense, initialState);
   const [category, setCategory] = useState<string>(EXPENSE_CATEGORY_OPTIONS[0].value);
-  const isCustomCategory = category === "other";
-  const today = new Date().toISOString().slice(0, 10);
+  const isOtherCategory = category === EXPENSE_CATEGORY_OTHER;
+  const today = formatBusinessDate(new Date());
 
   const showTeacherField = category === EXPENSE_CATEGORY_TEACHER_SALARY;
 
@@ -39,7 +41,7 @@ export function RecordExpenseForm({ teachers }: RecordExpenseFormProps) {
             </label>
             <select
               id="expense-category-input"
-              name={isCustomCategory ? "categorySelect" : "category"}
+              name="category"
               required
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -52,17 +54,18 @@ export function RecordExpenseForm({ teachers }: RecordExpenseFormProps) {
               ))}
             </select>
           </div>
-          {isCustomCategory && (
+          {isOtherCategory && (
             <div>
-              <label htmlFor="customCategory" className={labelClassName}>
-                Specify Category <span className="text-destructive-text">*</span>
+              <label htmlFor="expense-note" className={labelClassName}>
+                Specify category <span className="text-destructive-text">*</span>
               </label>
               <input
-                id="customCategory"
-                name="category"
+                id="expense-note"
+                name="note"
                 type="text"
                 required
-                placeholder="Enter custom category"
+                maxLength={100}
+                placeholder="e.g. Printing, travel"
                 className={inputClassName}
               />
             </div>

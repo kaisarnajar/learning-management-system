@@ -15,6 +15,7 @@ import {
   getBookOrderFinancePaginated,
 } from "@/services/finance-bookstore";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { formatBusinessDate } from "@/services/business-time";
 import Link from "next/link";
 
 export default async function AdminBookstoreFinancePage({
@@ -38,8 +39,8 @@ export default async function AdminBookstoreFinancePage({
 
   const searchPreserveParams: Record<string, string> = {};
   if (filters.preset !== "this_month") searchPreserveParams.preset = filters.preset;
-  if (filters.from) searchPreserveParams.from = filters.from.toISOString().slice(0, 10);
-  if (filters.to) searchPreserveParams.to = filters.to.toISOString().slice(0, 10);
+  if (filters.from) searchPreserveParams.from = formatBusinessDate(filters.from);
+  if (filters.to) searchPreserveParams.to = formatBusinessDate(filters.to);
   if (view === "orders") searchPreserveParams.view = "orders";
 
   let salesData = null;
@@ -48,7 +49,7 @@ export default async function AdminBookstoreFinancePage({
   let totalCount = 0;
 
   if (view === "sales") {
-    salesData = await getBookSalesPaginated(requestedPage, pageSize, filters.q);
+    salesData = await getBookSalesPaginated(filters, requestedPage, pageSize);
     totalCount = salesData.totalCount;
     page = clampPage(requestedPage, totalCount, pageSize);
   } else {

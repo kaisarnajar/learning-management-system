@@ -10,6 +10,12 @@ import {
 } from "@prisma/client";
 
 /**
+ * The academy's timezone. Finance date filters, "paid on" dates and
+ * calendar presets are interpreted in this zone, never in the server's.
+ */
+export const BUSINESS_TIMEZONE = "Asia/Kolkata";
+
+/**
  * Standard Roles across the application
  */
 export const ROLES = {

@@ -8,6 +8,7 @@ import { notifyPaymentApproved } from "@/services/notifications";
 import { prisma } from "@/utils/prisma";
 import { paymentRecordSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { businessDayStart } from "@/services/business-time";
 import { redirect } from "next/navigation";
 import { previewStudentAccountForEnrollment } from "@/app/admin/enrollments/actions";
 
@@ -44,13 +45,9 @@ export async function recordStudentPayment(
     return { error: lookup.error ?? "Student not found." };
   }
 
-  // Get the actual user ID from DB now that we verified the email
-  const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { email: email.trim() } }), "Database operation failed");
-  if (!user) {
-    return { error: "Student not found in database." };
-  }
-
-  const userId = user.id;
+  // The lookup already resolved the normalised email to the account; a second
+  // query by the raw input could match a different (or no) row.
+  const userId = lookup.userId;
   const courseId = parsed.data.courseId?.trim() || null;
   let courseTitle = "your account";
   if (courseId) {
@@ -61,8 +58,8 @@ export async function recordStudentPayment(
     courseTitle = course.title;
   }
 
-  const paidAt = new Date(parsed.data.paidAt);
-  if (Number.isNaN(paidAt.getTime())) {
+  const paidAt = businessDayStart(parsed.data.paidAt);
+  if (!paidAt) {
     return { error: "Invalid payment date." };
   }
 

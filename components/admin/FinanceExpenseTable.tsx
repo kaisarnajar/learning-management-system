@@ -9,6 +9,8 @@ type ExpenseRecord = {
   amountInrPaise: number;
   paidAt: Date;
   description: string | null;
+  /** Names the category when it is "Other". */
+  note?: string | null;
   teacher: { id: string; name: string } | null;
 };
 
@@ -52,7 +54,10 @@ export function FinanceExpenseTable({ expenses, returnQuery, basePath = "/admin/
         {expenses.map((expense) => (
           <tr key={expense.id} className="hover:bg-background/30">
             <td className="px-4 py-3 text-muted">{formatDate(expense.paidAt)}</td>
-            <td className="px-4 py-3 text-muted">{expenseCategoryLabel(expense.category)}</td>
+            <td className="px-4 py-3 text-muted">
+              {expenseCategoryLabel(expense.category)}
+              {expense.note ? <span className="block text-xs">{expense.note}</span> : null}
+            </td>
             <td className="px-4 py-3 text-muted">{expense.teacher?.name ?? "—"}</td>
             <td className="px-4 py-3 font-medium text-destructive-text">{formatPrice(expense.amountInrPaise)}</td>
             <td className="px-4 py-3 text-muted">{expense.description ?? "—"}</td>

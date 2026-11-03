@@ -55,6 +55,7 @@ export async function getBookstoreFinanceSummary(filters: Pick<FinanceFilters, "
             select: {
               inventoryPurchased: true,
               purchasePriceInrPaise: true,
+              stockMovements: { select: { delta: true } },
             },
           }), "Database operation failed"),
     withDbErrorHandling(() => prisma.bookOrder.findMany({
@@ -109,7 +110,14 @@ export async function getBookstoreFinanceSummary(filters: Pick<FinanceFilters, "
     }
   }
 
-  const currentInventoryCount = totalBooksPurchased - totalBooksSold;
+  // Inventory is a point-in-time figure: it must ignore the report's date
+  // filter and include manual stock adjustments.
+  const totalAdjustments = books.reduce((sum, b) => sum + b.stockMovements.reduce((s, m) => s + m.delta, 0), 0);
+  const committedAllTime = await withDbErrorHandling(() => prisma.bookOrderItem.aggregate({
+    where: { order: { status: { in: ["APPROVED", "SHIPPED"] }, deletedAt: null } },
+    _sum: { quantity: true },
+  }), "Database operation failed");
+  const currentInventoryCount = totalBooksPurchased + totalAdjustments - (committedAllTime._sum.quantity ?? 0);
   const averageOrderValuePaise = validOrderCount > 0 ? Math.round(totalSalesRevenuePaise / validOrderCount) : 0;
 
   return {
@@ -141,9 +149,10 @@ export async function getBookSalesPaginated(
       include: {
         orderItems: {
           where: {
-            order: { status: { in: ["APPROVED", "SHIPPED"] } },
+            order: { status: { in: ["APPROVED", "SHIPPED"] }, deletedAt: null },
           },
         },
+        stockMovements: { select: { delta: true } },
       },
       orderBy: { title: "asc" },
       ...paginationArgs(safePage, pageSize),
@@ -158,7 +167,8 @@ export async function getBookSalesPaginated(
       revenuePaise += item.quantity * item.priceAtPurchaseInrPaise;
     }
 
-    const remainingStock = book.inventoryPurchased - quantitySold;
+    const adjustments = book.stockMovements.reduce((sum, m) => sum + m.delta, 0);
+    const remainingStock = book.inventoryPurchased + adjustments - quantitySold;
     const costOfGoodsSold = quantitySold * book.purchasePriceInrPaise;
     const profitPaise = revenuePaise - costOfGoodsSold;
 
@@ -168,7 +178,7 @@ export async function getBookSalesPaginated(
       author: book.author,
       purchasePriceInrPaise: book.purchasePriceInrPaise,
       sellingPriceInrPaise: book.priceInrPaise,
-      quantityPurchased: book.inventoryPurchased,
+      quantityPurchased: book.inventoryPurchased + adjustments,
       quantitySold,
       remainingStock,
       revenuePaise,
@@ -255,9 +265,10 @@ export async function getBookSalesAll(q?: string): Promise<BookSalesRecord[]> {
       include: {
         orderItems: {
           where: {
-            order: { status: { in: ["APPROVED", "SHIPPED"] } },
+            order: { status: { in: ["APPROVED", "SHIPPED"] }, deletedAt: null },
           },
         },
+        stockMovements: { select: { delta: true } },
       },
       orderBy: { title: "asc" },
     }), "Database operation failed");
@@ -271,7 +282,8 @@ export async function getBookSalesAll(q?: string): Promise<BookSalesRecord[]> {
       revenuePaise += item.quantity * item.priceAtPurchaseInrPaise;
     }
 
-    const remainingStock = book.inventoryPurchased - quantitySold;
+    const adjustments = book.stockMovements.reduce((sum, m) => sum + m.delta, 0);
+    const remainingStock = book.inventoryPurchased + adjustments - quantitySold;
     const costOfGoodsSold = quantitySold * book.purchasePriceInrPaise;
     const profitPaise = revenuePaise - costOfGoodsSold;
 
@@ -281,7 +293,7 @@ export async function getBookSalesAll(q?: string): Promise<BookSalesRecord[]> {
       author: book.author,
       purchasePriceInrPaise: book.purchasePriceInrPaise,
       sellingPriceInrPaise: book.priceInrPaise,
-      quantityPurchased: book.inventoryPurchased,
+      quantityPurchased: book.inventoryPurchased + adjustments,
       quantitySold,
       remainingStock,
       revenuePaise,

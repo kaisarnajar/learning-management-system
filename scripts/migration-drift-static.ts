@@ -102,7 +102,7 @@ function applySql(state: SchemaState, sql: string) {
     } else if ((m = stmt.match(/^ALTER TABLE "([^"]+)" ([\s\S]*)$/i))) {
       const table = state.tables.get(m[1]);
       const ops = m[2];
-      const fk = ops.match(/ADD CONSTRAINT "([^"]+)" FOREIGN KEY/i);
+      const fk = ops.match(/ADD CONSTRAINT "([^"]+)"\s+FOREIGN KEY/i);
       if (fk) {
         state.foreignKeys.set(fk[1], stmt);
         continue;

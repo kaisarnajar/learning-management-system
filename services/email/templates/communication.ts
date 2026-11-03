@@ -169,9 +169,11 @@ export async function sendCourseAnnouncementEmail(
     announcementTitle: string;
     announcementBody: string;
     announcementUrl: string;
+    /** Per-recipient opt-out link (services/email-unsubscribe.ts). */
+    unsubscribeUrl: string;
   },
 ) {
-  const { to, studentName, courseTitle, announcementTitle, announcementBody, announcementUrl } = params;
+  const { to, studentName, courseTitle, announcementTitle, announcementBody, announcementUrl, unsubscribeUrl } = params;
   const displayName = studentName || "Student";
   const subject = `${courseTitle} — ${announcementTitle}`;
   const preview = announcementBody.slice(0, 120);
@@ -196,7 +198,7 @@ export async function sendCourseAnnouncementEmail(
     ${EmailButton({ href: announcementUrl, label: "View Full Announcement", color: "#3730a3" })}
   `;
 
-  const html = buildHtmlEmail({ previewText: preview, bodyHtml, unsubscribeUrl: announcementUrl });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml, unsubscribeUrl });
 
   return deliverMail({
     to,
@@ -204,7 +206,7 @@ export async function sendCourseAnnouncementEmail(
     text,
     html,
     preview: announcementBody.slice(0, 100),
-    listUnsubscribeUrl: announcementUrl,
+    listUnsubscribeUrl: unsubscribeUrl,
   });
 }
 
@@ -254,9 +256,11 @@ export async function sendSiteAnnouncementEmail(
     announcementTitle: string;
     announcementBody: string;
     announcementUrl: string;
+    /** Per-recipient opt-out link (services/email-unsubscribe.ts). */
+    unsubscribeUrl: string;
   },
 ) {
-  const { to, studentName, announcementTitle, announcementBody, announcementUrl } = params;
+  const { to, studentName, announcementTitle, announcementBody, announcementUrl, unsubscribeUrl } = params;
   const displayName = studentName || "Student";
   const subject = `Announcement: ${announcementTitle}`;
   const preview = announcementBody.slice(0, 120);
@@ -279,7 +283,7 @@ export async function sendSiteAnnouncementEmail(
     ${EmailButton({ href: announcementUrl, label: "View Announcement", color: "#3730a3" })}
   `;
 
-  const html = buildHtmlEmail({ previewText: preview, bodyHtml, unsubscribeUrl: announcementUrl });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml, unsubscribeUrl });
 
   return deliverMail({
     to,
@@ -287,6 +291,6 @@ export async function sendSiteAnnouncementEmail(
     text,
     html,
     preview: announcementBody.slice(0, 100),
-    listUnsubscribeUrl: announcementUrl,
+    listUnsubscribeUrl: unsubscribeUrl,
   });
 }

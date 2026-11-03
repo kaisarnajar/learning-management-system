@@ -27,6 +27,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // A token identifies one app install. It may be re-registered by the
+    // same account (platform refresh) but never moved to another account:
+    // that would route one student's notifications to someone else's phone.
+    const existing = await prisma.deviceToken.findUnique({ where: { token }, select: { userId: true } });
+    if (existing && existing.userId !== user.id) {
+      return NextResponse.json(
+        { success: false, error: "This device is registered to another account. Sign out there first." },
+        { status: 409 }
+      );
+    }
+
     const deviceToken = await prisma.deviceToken.upsert({
       where: { token },
       create: {
@@ -35,7 +46,6 @@ export async function POST(request: NextRequest) {
         ...devicePlatformData(platform),
       },
       update: {
-        userId: user.id,
         ...devicePlatformData(platform),
       },
     });

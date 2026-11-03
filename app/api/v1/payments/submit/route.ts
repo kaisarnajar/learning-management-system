@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { processMonthlyPayment, processEnrollmentPayment } from "@/services/payments";
 import { isUpiConfigured } from "@/services/upi";
+import { paymentTypeFromText } from "@/services/status-compat";
 
 export async function POST(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     }
 
     let result;
-    if (paymentType === "enrollment") {
+    if (paymentTypeFromText(paymentType) === "ENROLLMENT") {
       result = await processEnrollmentPayment(
         user.id,
         courseId,

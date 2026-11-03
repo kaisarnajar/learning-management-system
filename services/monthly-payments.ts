@@ -14,6 +14,7 @@ import { APPROVAL_PAGE_SIZE, clampPage, paginationArgs, type PaginatedResult } f
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr, type TextSearchWhere } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { paymentTypeFromText } from "@/services/status-compat";
 
 async function paymentSubmissionSearchWhere(
   searchQuery?: string,
@@ -159,16 +160,17 @@ export function buildMonthlyFeeLabel(month: string, year: string, paymentType: s
   const index = Number.parseInt(month, 10) - 1;
   const monthName = monthNames[index] ?? month;
 
-  if (paymentType === "quarterly") {
+  const type = paymentTypeFromText(paymentType);
+  if (type === "QUARTERLY") {
     return `Quarterly fee — starting ${monthName} ${year}`;
   }
-  if (paymentType === "half_yearly") {
+  if (type === "HALF_YEARLY") {
     return `Half Yearly fee — starting ${monthName} ${year}`;
   }
-  if (paymentType === "yearly") {
+  if (type === "YEARLY") {
     return `Yearly fee — starting ${monthName} ${year}`;
   }
-  if (paymentType === "one_time") {
+  if (type === "ONE_TIME") {
     return `One-Time fee — ${year}`;
   }
   return `Monthly fee — ${monthName} ${year}`;

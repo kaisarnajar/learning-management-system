@@ -6,6 +6,7 @@
  *
  * Legacy courses (feeFrequency = null) are treated as MONTHLY.
  */
+import { PAYMENTS } from "@/config/constants/payments";
 
 export type FeeFrequencyValue =
   | "MONTHLY"
@@ -34,35 +35,35 @@ export const FEE_FREQUENCY_OPTIONS: FeeFrequencyOption[] = [
     value: "MONTHLY",
     label: "Monthly",
     suffix: "/ month",
-    paymentType: "monthly",
+    paymentType: PAYMENTS.TYPES.MONTHLY_FEE,
     multiplier: 1,
   },
   {
     value: "EVERY_3_MONTHS",
     label: "Every 3 Months",
     suffix: "/ 3 months",
-    paymentType: "quarterly",
+    paymentType: PAYMENTS.TYPES.QUARTERLY_FEE,
     multiplier: 3,
   },
   {
     value: "EVERY_6_MONTHS",
     label: "Every 6 Months",
     suffix: "/ 6 months",
-    paymentType: "half_yearly",
+    paymentType: PAYMENTS.TYPES.HALF_YEARLY_FEE,
     multiplier: 6,
   },
   {
     value: "YEARLY",
     label: "Yearly",
     suffix: "/ year",
-    paymentType: "yearly",
+    paymentType: PAYMENTS.TYPES.YEARLY_FEE,
     multiplier: 12,
   },
   {
     value: "ONE_TIME",
     label: "One-Time",
     suffix: "(one-time)",
-    paymentType: "one_time",
+    paymentType: PAYMENTS.TYPES.ONE_TIME,
     multiplier: 1,
   },
 ];

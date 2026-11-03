@@ -8,8 +8,10 @@ import { sendCertificateEmail } from "@/services/email";
 import { getCertificateFilename, generateCertificatePdf } from "@/services/certificate";
 import { getCourseById } from "@/services/courses";
 import { allocateDocumentNumber } from "@/services/document-numbers";
+import { certificateTypeData, certificateTypeOf } from "@/services/status-compat";
+import type { CertificateType } from "@prisma/client";
 
-export async function generateCertificate(enrollmentId: string, certificateType: "APPRECIATION" | "COMPLETION", certificateGrade?: number) {
+export async function generateCertificate(enrollmentId: string, certificateType: CertificateType, certificateGrade?: number) {
   const session = await auth();
   const isAdmin = isAdminSession(session);
 
@@ -53,7 +55,7 @@ export async function generateCertificate(enrollmentId: string, certificateType:
         data: {
           certificateGeneratedAt: new Date(),
           certificateNumber: number,
-          certificateType,
+          ...certificateTypeData(certificateType),
           certificateGrade: certificateType === "COMPLETION" ? certificateGrade : null,
         },
       });
@@ -97,7 +99,7 @@ export async function deleteCertificate(enrollmentId: string) {
     data: {
       certificateGeneratedAt: null,
       certificateNumber: null,
-      certificateType: null,
+      ...certificateTypeData(null),
       certificateGrade: null,
     },
   });
@@ -138,7 +140,7 @@ export async function sendCertificateToEmailAction(enrollmentId: string): Promis
       courseTitle,
       issueDate,
       certificateNumber: enrollment.certificateNumber,
-      certificateType: (enrollment.certificateType as "APPRECIATION" | "COMPLETION" | null) || "COMPLETION",
+      certificateType: certificateTypeOf(enrollment) ?? "COMPLETION",
       certificateGrade: enrollment.certificateGrade,
     });
     const pdfFilename = getCertificateFilename(courseTitle, enrollmentId);

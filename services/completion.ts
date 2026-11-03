@@ -1,5 +1,7 @@
 import type { CourseStatus } from "@prisma/client";
+import { ENROLLMENT_STATUS } from "@/config/constants/business";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
+import { enrollmentStatusData } from "@/services/status-compat";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 
@@ -10,16 +12,16 @@ export async function syncEnrollmentsWithCourseStatus(
 ): Promise<void> {
   const rosterStatus = getRosterEnrollmentStatusForCourse(courseStatus);
 
-  if (rosterStatus === "completed") {
+  if (rosterStatus === "COMPLETED") {
     await withDbErrorHandling(() => prisma.enrollment.updateMany({
-          where: { courseId, status: "active" },
-          data: { status: "completed", completedAt: new Date() },
+          where: { courseId, status: ENROLLMENT_STATUS.ACTIVE },
+          data: { ...enrollmentStatusData("COMPLETED"), completedAt: new Date() },
         }), "Database operation failed");
     return;
   }
 
   await withDbErrorHandling(() => prisma.enrollment.updateMany({
-      where: { courseId, status: "completed" },
-      data: { status: "active", completedAt: null },
+      where: { courseId, status: ENROLLMENT_STATUS.COMPLETED },
+      data: { ...enrollmentStatusData("ACTIVE"), completedAt: null },
     }), "Database operation failed");
 }

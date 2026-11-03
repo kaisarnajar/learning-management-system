@@ -4,15 +4,17 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { sendPaymentDeclinedEmail } from "@/services/email";
-import { AWAITING_ENROLLMENT_FEE } from "@/services/enrollment-status";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
 import {
-  MONTHLY_PAYMENT_APPROVED,
-  MONTHLY_PAYMENT_DECLINED,
-  MONTHLY_PAYMENT_PENDING,
-  PAYMENT_TYPE_ENROLLMENT,
-} from "@/services/monthly-payment-status";
+  enrollmentStatusData,
+  enrollmentStatusOf,
+  paymentTypeOf,
+  paymentTypeWrite,
+  submissionStatusData,
+  submissionStatusOf,
+} from "@/services/status-compat";
 import { prisma } from "@/utils/prisma";
+import { ENROLLMENT_STATUS } from "@/config/constants/business";
 import { getCourseById } from "@/services/courses";
 import { notifyPaymentApproved, revalidateNotificationPaths } from "@/services/notifications";
 import { withDbErrorHandling } from "@/utils/db-error";
@@ -66,28 +68,31 @@ export async function confirmMonthlyPayment(
     return { error: "Payment submission not found." };
   }
 
-  if (submission.status === MONTHLY_PAYMENT_APPROVED) {
+  const submissionStatus = submissionStatusOf(submission);
+  const isEnrollmentFee = paymentTypeOf(submission) === "ENROLLMENT";
+
+  if (submissionStatus === "APPROVED") {
     redirect(paymentReturnUrl(returnTo, "confirmed"));
   }
 
-  if (submission.status !== MONTHLY_PAYMENT_PENDING) {
+  if (submissionStatus !== "PENDING_VERIFICATION") {
     return { error: "This payment cannot be confirmed." };
   }
 
-  if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT) {
+  if (isEnrollmentFee) {
     const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
           where: {
             userId_courseId: { userId: submission.userId, courseId: submission.courseId },
           },
         }), "Database operation failed");
 
-    if (!enrollment || enrollment.status !== AWAITING_ENROLLMENT_FEE) {
+    if (!enrollment || enrollmentStatusOf(enrollment) !== "AWAITING_ENROLLMENT_FEE") {
       return { error: "Enrollment is not awaiting an enrollment fee payment." };
     }
   }
 
   const course = await getCourseById(submission.courseId);
-  if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT && !course) {
+  if (isEnrollmentFee && !course) {
     return { error: "Course not found." };
   }
 
@@ -98,7 +103,7 @@ export async function confirmMonthlyPayment(
         courseId: submission.courseId,
         amountInrPaise: submission.amountInrPaise,
         paidAt: new Date(),
-        paymentType: submission.paymentType,
+        ...paymentTypeWrite(submission.paymentType),
         description: submission.label,
       },
     });
@@ -106,24 +111,24 @@ export async function confirmMonthlyPayment(
     await tx.coursePaymentSubmission.update({
       where: { id: submissionId },
       data: {
-        status: MONTHLY_PAYMENT_APPROVED,
+        ...submissionStatusData("APPROVED"),
         paymentRecordId: record.id,
       },
     });
 
-      if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT && course) {
+      if (isEnrollmentFee && course) {
         await tx.enrollment.updateMany({
           where: {
             userId: submission.userId,
             courseId: submission.courseId,
-            status: AWAITING_ENROLLMENT_FEE,
+            status: ENROLLMENT_STATUS.AWAITING_FEE,
           },
-          data: { status: getRosterEnrollmentStatusForCourse(course.status) },
+          data: enrollmentStatusData(getRosterEnrollmentStatusForCourse(course.status)),
         });
       }
     }), "Database operation failed");
 
-    if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT && course && getRosterEnrollmentStatusForCourse(course.status) === "active") {
+    if (isEnrollmentFee && course && getRosterEnrollmentStatusForCourse(course.status) === "ACTIVE") {
       const enrollment = await prisma.enrollment.findUnique({
         where: { userId_courseId: { userId: submission.userId, courseId: submission.courseId } },
         select: { id: true },
@@ -164,7 +169,7 @@ export async function declineMonthlyPayment(
     return { error: "Payment submission not found." };
   }
 
-  if (submission.status !== MONTHLY_PAYMENT_PENDING) {
+  if (submissionStatusOf(submission) !== "PENDING_VERIFICATION") {
     return { error: "Only pending payments can be declined." };
   }
 
@@ -176,16 +181,17 @@ export async function declineMonthlyPayment(
   await withDbErrorHandling(() => prisma.coursePaymentSubmission.update({
       where: { id: submissionId },
       data: {
-        status: MONTHLY_PAYMENT_DECLINED,
+        ...submissionStatusData("DECLINED"),
         upiTransactionId: null,
         paymentScreenshotPath: null,
         paymentMethod: null,
+        paymentMethodEnum: null,
       },
     }), "Database operation failed");
 
   const base = getAppBaseUrl();
   const paymentUrl =
-    submission.paymentType === PAYMENT_TYPE_ENROLLMENT
+    paymentTypeOf(submission) === "ENROLLMENT"
       ? `${base.replace(/\/$/, "")}/profile/courses/${submission.courseId}/enrollment-pay`
       : `${base.replace(/\/$/, "")}/profile/courses/${submission.courseId}/pay`;
 
@@ -224,7 +230,7 @@ export async function voidApprovedPayment(
     return { error: "Payment submission not found." };
   }
 
-  if (submission.status !== MONTHLY_PAYMENT_APPROVED) {
+  if (submissionStatusOf(submission) !== "APPROVED") {
     return { error: "Only approved payments can be voided." };
   }
 

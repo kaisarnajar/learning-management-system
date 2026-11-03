@@ -16,6 +16,7 @@ import { normalizeReason } from "@/services/payment-voiding";
 import { PAYMENTS } from "@/config/constants/payments";
 import type { BookOrderStatus } from "@prisma/client";
 import { findStockShortages, formatShortages, lockBooksForUpdate } from "@/services/inventory";
+import { paymentTypeData } from "@/services/status-compat";
 
 function revalidateOrderPaths(userId: string) {
   const paths = [
@@ -107,7 +108,7 @@ export async function approveBookOrder(
         bookOrderId: orderId,
         amountInrPaise: order.totalAmountInrPaise,
         paidAt: new Date(),
-        paymentType: PAYMENTS.TYPES.BOOK_ORDER,
+        ...paymentTypeData("BOOK_PURCHASE"),
         description: `Book order #${orderId.slice(-6).toUpperCase()}`,
       },
     });

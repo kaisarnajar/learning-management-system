@@ -19,7 +19,7 @@ export function canReapplyForEnrollment(status: string): boolean {
  * Pending, awaiting-fee and rejected requests never unlock course content.
  */
 export function hasCourseContentAccess(status: string): boolean {
-  return status === "active" || status === "completed";
+  return status === ENROLLMENT_STATUS.ACTIVE || status === ENROLLMENT_STATUS.COMPLETED;
 }
 
 export function canApproveEnrollment(status: string): boolean {

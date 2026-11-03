@@ -6,13 +6,17 @@ import { getMonthlyFeePaise, getRegistrationFeePaise } from "@/services/course-p
 import { getCourseById } from "@/services/courses";
 import { buildMonthlyFeeLabel, buildEnrollmentFeeLabel } from "@/services/monthly-payments";
 import { getFeeFrequencyPaymentType } from "@/services/fee-frequency";
-import {
-  MONTHLY_PAYMENT_PENDING,
-  MONTHLY_PAYMENT_APPROVED,
-  PAYMENT_TYPE_ENROLLMENT,
-} from "@/services/monthly-payment-status";
-import { AWAITING_ENROLLMENT_FEE } from "@/services/enrollment-status";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
+import { PAYMENTS } from "@/config/constants/payments";
+import {
+  enrollmentStatusData,
+  isApprovedEnrollment,
+  paymentMethodWrite,
+  paymentTypeData,
+  paymentTypeWrite,
+  submissionStatusData,
+  submissionStatusOf,
+} from "@/services/status-compat";
 import { calculateDiscountedAmount, getSelectedCoupon, recordCouponUsageTx } from "@/services/coupons";
 import { deletePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
 import { assignRollNumberTx } from "@/services/roll-numbers";
@@ -129,7 +133,7 @@ export async function processMonthlyPayment(
     where: { userId_courseId: { userId, courseId: course.id } },
   });
 
-  if (!enrollment || (enrollment.status !== "active" && enrollment.status !== "completed")) {
+  if (!enrollment || !isApprovedEnrollment(enrollment)) {
     return { error: "You must be enrolled and approved in this course before paying course fees.", status: 400 };
   }
 
@@ -155,13 +159,13 @@ export async function processMonthlyPayment(
       courseId: course.id,
       label: { in: [label, finalLabel] },
       deletedAt: null,
-      status: { in: [MONTHLY_PAYMENT_PENDING, MONTHLY_PAYMENT_APPROVED] },
+      status: { in: [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED] },
     },
-    select: { status: true },
+    select: { status: true, statusEnum: true },
   });
   if (duplicatePending) {
     return {
-      error: duplicatePending.status === MONTHLY_PAYMENT_APPROVED
+      error: submissionStatusOf(duplicatePending) === "APPROVED"
         ? `Payment for ${label} is already recorded.`
         : `A payment for ${label} is already awaiting verification.`,
       status: 400,
@@ -178,11 +182,11 @@ export async function processMonthlyPayment(
         data: {
           userId,
           courseId: course.id,
-          paymentType: derivedPaymentType,
+          ...paymentTypeWrite(derivedPaymentType),
           label: finalLabel,
           amountInrPaise,
-          status: autoApprove ? MONTHLY_PAYMENT_APPROVED : MONTHLY_PAYMENT_PENDING,
-          paymentMethod: isFree ? WAIVER_PAYMENT_METHOD : paymentMethod,
+          ...submissionStatusData(autoApprove ? "APPROVED" : "PENDING_VERIFICATION"),
+          ...paymentMethodWrite(isFree ? WAIVER_PAYMENT_METHOD : paymentMethod),
           upiTransactionId: isFree ? WAIVER_TRANSACTION_REF : upiTransactionId,
           paymentScreenshotPath: screenshotPath,
           couponId: coupon?.id ?? null,
@@ -205,7 +209,7 @@ export async function processMonthlyPayment(
             courseId,
             amountInrPaise: 0,
             paidAt: new Date(),
-            paymentType: derivedPaymentType,
+            ...paymentTypeWrite(derivedPaymentType),
             description: `${label} (100% Fee Waiver)`,
           },
         });
@@ -244,7 +248,7 @@ export async function processEnrollmentPayment(
     where: { userId_courseId: { userId, courseId } },
   });
 
-  if (enrollment?.status === "active" || enrollment?.status === "completed") {
+  if (enrollment && isApprovedEnrollment(enrollment)) {
     return { error: "You are already enrolled and approved in this course.", status: 400 };
   }
 
@@ -254,16 +258,16 @@ export async function processEnrollmentPayment(
     where: {
       userId,
       courseId,
-      paymentType: PAYMENT_TYPE_ENROLLMENT,
+      paymentType: PAYMENTS.TYPES.ENROLLMENT,
       deletedAt: null,
-      status: { in: [MONTHLY_PAYMENT_PENDING, MONTHLY_PAYMENT_APPROVED] },
+      status: { in: [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED] },
     },
-    select: { status: true },
+    select: { status: true, statusEnum: true },
   });
 
   if (duplicatePending) {
     return {
-      error: duplicatePending.status === MONTHLY_PAYMENT_APPROVED
+      error: submissionStatusOf(duplicatePending) === "APPROVED"
         ? "Your enrollment fee is already recorded."
         : "Your enrollment fee payment is already awaiting verification.",
       status: 400,
@@ -288,23 +292,23 @@ export async function processEnrollmentPayment(
       // Auto-approved waivers activate the enrollment immediately; everything
       // else (paid, or waived without auto-approval) waits for the admin.
       const rosterStatus = getRosterEnrollmentStatusForCourse(course.status);
-      const newStatus = autoApprove ? rosterStatus : AWAITING_ENROLLMENT_FEE;
+      const newStatus = autoApprove ? rosterStatus : "AWAITING_ENROLLMENT_FEE";
 
       const upserted = await tx.enrollment.upsert({
         where: { userId_courseId: { userId, courseId } },
-        create: { userId, courseId, status: newStatus },
-        update: { status: newStatus },
+        create: { userId, courseId, ...enrollmentStatusData(newStatus) },
+        update: enrollmentStatusData(newStatus),
       });
 
       const submission = await tx.coursePaymentSubmission.create({
         data: {
           userId,
           courseId,
-          paymentType: PAYMENT_TYPE_ENROLLMENT,
+          ...paymentTypeData("ENROLLMENT"),
           label: finalLabel,
           amountInrPaise: enrollmentFeePaise,
-          status: autoApprove ? MONTHLY_PAYMENT_APPROVED : MONTHLY_PAYMENT_PENDING,
-          paymentMethod: isFree ? WAIVER_PAYMENT_METHOD : paymentMethod,
+          ...submissionStatusData(autoApprove ? "APPROVED" : "PENDING_VERIFICATION"),
+          ...paymentMethodWrite(isFree ? WAIVER_PAYMENT_METHOD : paymentMethod),
           upiTransactionId: isFree ? WAIVER_TRANSACTION_REF : upiTransactionId,
           paymentScreenshotPath: screenshotPath,
           couponId: coupon?.id ?? null,
@@ -326,7 +330,7 @@ export async function processEnrollmentPayment(
             courseId,
             amountInrPaise: 0,
             paidAt: new Date(),
-            paymentType: PAYMENT_TYPE_ENROLLMENT,
+            ...paymentTypeData("ENROLLMENT"),
             description: `${label} (100% Fee Waiver)`,
           },
         });
@@ -334,7 +338,7 @@ export async function processEnrollmentPayment(
           where: { id: submission.id },
           data: { paymentRecordId: record.id },
         });
-        if (rosterStatus === "active") {
+        if (rosterStatus === "ACTIVE") {
           await assignRollNumberTx(tx, upserted.id, courseId);
         }
       }

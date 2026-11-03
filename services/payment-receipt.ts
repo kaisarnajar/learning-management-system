@@ -6,6 +6,7 @@ import { ReceiptData } from "@/types/receipt";
 import { incomePaymentTypeLabel } from "@/services/monthly-payment-status";
 import { loadStandardPdfAssets } from "@/services/pdf-generator";
 import { PAYMENTS } from "@/config/constants/payments";
+import { paymentMethodFromText, paymentTypeOf } from "@/services/status-compat";
 
 
 /**
@@ -103,7 +104,7 @@ export async function prepareReceiptData(
     Boolean(record.submission?.couponId) ||
     Boolean(record.description?.toLowerCase().includes("waiver")) ||
     Boolean(record.submission?.label?.toLowerCase().includes("waiver")) ||
-    record.submission?.paymentMethod === "waiver";
+    paymentMethodFromText(record.submission?.paymentMethod) === "WAIVER";
 
   if (record.courseId && isWaiverOrDiscountUsed) {
     const { getCourseById } = await import("@/services/courses");
@@ -111,7 +112,7 @@ export async function prepareReceiptData(
     const course = await getCourseById(record.courseId);
 
     if (course) {
-      const fullFeePaise = record.paymentType === "enrollment"
+      const fullFeePaise = paymentTypeOf(record) === "ENROLLMENT"
         ? getRegistrationFeePaise(course)
         : getMonthlyFeePaise(course);
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
+import { formatCalendarDate, toDateInputValue } from "@/utils/calendar-date";
 
 export type AttendanceViewRecord = {
   rollNumber: number | null;
@@ -33,7 +34,7 @@ export function AttendanceView({ courseId, baseUrl, date, records }: AttendanceV
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-foreground">
-            Attendance Record - {new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(date)}
+            Attendance Record - {formatCalendarDate(date)}
           </h1>
           <p className="text-sm text-muted">
             Summary: {present} Present, {absent} Absent ({total} Total Enrolled)
@@ -99,7 +100,7 @@ export function AttendanceView({ courseId, baseUrl, date, records }: AttendanceV
           Back to History
         </Link>
         <Link
-          href={`${baseUrl}/${courseId}/attendance/${date.toISOString().split("T")[0]}/edit`}
+          href={`${baseUrl}/${courseId}/attendance/${toDateInputValue(date)}/edit`}
           className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
         >
           Edit Records

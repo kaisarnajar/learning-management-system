@@ -4,6 +4,7 @@ import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteCourseAttendance } from "@/app/actions/attendance";
 import { adminActionButtonClassName } from "@/utils/form";
+import { formatCalendarDate, toDateInputValue } from "@/utils/calendar-date";
 
 export type AttendanceListProps = {
   courseId: string;
@@ -57,12 +58,12 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
                 const total = record._count.records;
                 const present = record.records.length;
                 const absent = total - present;
-                const dateStrFormatted = new Date(record.date).toISOString().split('T')[0];
+                const dateStrFormatted = toDateInputValue(record.date);
                 
                 return (
                   <tr key={record.id} className="hover:bg-background/30">
                     <td className="px-4 py-3 font-medium text-foreground">
-                      {new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(record.date))}
+                      {formatCalendarDate(record.date)}
                     </td>
                     <td className="px-4 py-3 text-muted">
                       <span className="text-emerald-600 dark:text-emerald-400 font-semibold">{present}</span> 
@@ -90,7 +91,7 @@ export function AttendanceList({ courseId, baseUrl, dates }: AttendanceListProps
                           action={async () => {
                             await deleteCourseAttendance(courseId, new Date(record.date));
                           }}
-                          itemName={`Attendance for ${new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(record.date))}`}
+                          itemName={`Attendance for ${formatCalendarDate(record.date)}`}
                         />
                       </div>
                     </td>

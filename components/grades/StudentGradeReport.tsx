@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
+import { formatCalendarDate, formatMarks } from "@/utils/calendar-date";
 
 export type GradeReportRecord = {
   id: string;
-  marksObtained: number;
+  /** `null` = not graded (shown as "—" and left out of the totals). */
+  marksObtained: number | null;
   grade: {
     title: string;
     date: Date;
@@ -34,11 +36,12 @@ export function StudentGradeReport({
   courseId,
   enrollmentId,
 }: StudentGradeReportProps) {
-  const totalExams = records.length;
+  const totalExams = records.filter((r) => r.marksObtained !== null).length;
   let totalMarksObtained = 0;
   let totalMaxMarks = 0;
 
   for (const record of records) {
+    if (record.marksObtained === null) continue;
     totalMarksObtained += record.marksObtained;
     totalMaxMarks += record.grade.maxMarks;
   }
@@ -83,7 +86,7 @@ export function StudentGradeReport({
             <div className="text-xs text-muted uppercase tracking-wide">Exams</div>
           </div>
           <div>
-            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{totalMarksObtained}</div>
+            <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{formatMarks(totalMarksObtained)}</div>
             <div className="text-xs text-muted uppercase tracking-wide">Obtained</div>
           </div>
           <div>
@@ -126,14 +129,21 @@ export function StudentGradeReport({
                     {record.grade.title}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-muted">
-                    {new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(
-                      new Date(record.grade.date),
-                    )}
+                    {formatCalendarDate(record.grade.date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
-                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">{record.marksObtained}</span>
-                    <span className="text-muted mx-1">/</span>
-                    <span className="text-muted">{record.grade.maxMarks}</span>
+                    {record.marksObtained === null ? (
+                      <span className="text-muted" aria-label="Not graded">—</span>
+                    ) : (
+                      <>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">{formatMarks(record.marksObtained)}</span>
+                        <span className="text-muted mx-1">/</span>
+                        <span className="text-muted">{record.grade.maxMarks}</span>
+                        {record.marksObtained === 0 && (
+                          <span className="ml-2 text-xs text-muted">recorded as 0</span>
+                        )}
+                      </>
+                    )}
                   </td>
                 </tr>
               ))}

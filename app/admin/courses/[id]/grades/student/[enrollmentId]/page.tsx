@@ -1,16 +1,18 @@
 import { requireAdmin } from "@/services/auth-actions";
 import { getStudentGradeReport } from "@/app/actions/grades";
 import { StudentGradeReport } from "@/components/grades/StudentGradeReport";
+import { notFound } from "next/navigation";
 
 export default async function AdminStudentGradeReportPage({
   params,
 }: {
-  params: Promise<{ id: string; studentId: string }>;
+  params: Promise<{ id: string; enrollmentId: string }>;
 }) {
   await requireAdmin();
-  const { id, studentId } = await params;
-  
-  const report = await getStudentGradeReport(studentId);
+  const { id, enrollmentId } = await params;
+
+  const report = await getStudentGradeReport(enrollmentId);
+  if (report.course.id !== id) notFound();
 
   return (
     <div className="py-6">
@@ -22,7 +24,7 @@ export default async function AdminStudentGradeReportPage({
         records={report.records}
         isAdmin={true}
         courseId={id}
-        enrollmentId={studentId}
+        enrollmentId={enrollmentId}
       />
     </div>
   );

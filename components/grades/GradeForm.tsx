@@ -6,6 +6,7 @@ import Link from "next/link";
 import { saveCourseGrade } from "@/app/actions/grades";
 import type { GradeRecordInput } from "@/services/grades";
 import { inputClassName, labelClassName } from "@/utils/form";
+import { toDateInputValue, todayDateInputValue } from "@/utils/calendar-date";
 
 export type StudentForGrades = {
   id: string;
@@ -47,9 +48,7 @@ export function GradeForm({
   );
   
   const [dateStr, setDateStr] = useState(
-    initialDate 
-      ? initialDate.toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0]
+    initialDate ? toDateInputValue(initialDate) : todayDateInputValue()
   );
 
   // Maintain grades state
@@ -83,20 +82,30 @@ export function GradeForm({
       setError("Please provide an exam title.");
       return;
     }
-    if (maxMarks === "" || maxMarks <= 0) {
-      setError("Maximum marks must be greater than 0.");
+    if (maxMarks === "" || !Number.isInteger(maxMarks) || maxMarks <= 0) {
+      setError("Maximum marks must be a whole number greater than 0.");
       return;
     }
 
+    // A blank mark means "not graded": it is sent as null and no row is stored.
     const records: GradeRecordInput[] = students.map(s => ({
       enrollmentId: s.id,
-      marksObtained: gradesState[s.id] === "" ? 0 : Number(gradesState[s.id]),
+      marksObtained: gradesState[s.id] === "" ? null : Number(gradesState[s.id]),
     }));
+
+    if (records.some(r => r.marksObtained !== null && (r.marksObtained < 0 || r.marksObtained > maxMarks))) {
+      setError(`Marks must be between 0 and ${maxMarks}.`);
+      return;
+    }
 
     startTransition(async () => {
       try {
         const parsedDate = new Date(dateStr);
-        await saveCourseGrade(initialGradeId, courseId, title, parsedDate, maxMarks, records);
+        const result = await saveCourseGrade(initialGradeId, courseId, title, parsedDate, maxMarks, records);
+        if (result?.error) {
+          setError(result.error);
+          return;
+        }
         router.push(`${baseUrl}/${courseId}/grades`);
         router.refresh();
       } catch (err) {
@@ -139,6 +148,7 @@ export function GradeForm({
               id="max-marks"
               type="number"
               min="1"
+              step="1"
               required
               value={maxMarks}
               onChange={(e) => setMaxMarks(e.target.value === "" ? "" : Number(e.target.value))}
@@ -196,6 +206,8 @@ export function GradeForm({
                         min="0"
                         max={maxMarks}
                         step="0.01"
+                        placeholder="—"
+                        aria-label={`Marks for ${student.user.name ?? student.user.email}`}
                         value={mark}
                         onChange={(e) => handleMarkChange(student.id, e.target.value)}
                         className={`${inputClassName} w-32 text-right inline-block`}

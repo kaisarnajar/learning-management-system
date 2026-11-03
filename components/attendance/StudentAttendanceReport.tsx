@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
+import { formatCalendarDate } from "@/utils/calendar-date";
 
 export type AttendanceReportRecord = {
   id: string;
@@ -112,9 +113,7 @@ export function StudentAttendanceReport({
               {records.map((record) => (
                 <tr key={record.id} className="hover:bg-surface-muted-hover transition-colors">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-foreground">
-                    {new Intl.DateTimeFormat("en-US", { month: "long", day: "numeric", year: "numeric" }).format(
-                      new Date(record.attendance.date),
-                    )}
+                    {formatCalendarDate(record.attendance.date)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     {record.isPresent ? (

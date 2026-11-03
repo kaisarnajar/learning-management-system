@@ -16,7 +16,11 @@ export function BlogPostCard({ post }: BlogPostCardProps) {
   return (
     <article className="card-elevated flex h-full flex-col overflow-hidden transition-transform hover:-translate-y-0.5">
       {cover && (
-        <Link href={`/blog/${post.id}`} className="relative block aspect-[16/10] bg-background">
+        <Link
+          href={`/blog/${post.id}`}
+          aria-label={post.title}
+          className="relative block aspect-[16/10] bg-background"
+        >
           <Image
             src={cover.imagePath}
             alt=""

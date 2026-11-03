@@ -37,7 +37,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   return (
     <ToastContext.Provider value={{ addToast, removeToast }}>
       {children}
-      <div className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-3">
+      <div
+        role="status"
+        aria-live="polite"
+        className="fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 flex-col items-center gap-3"
+      >
         {toasts.map((toast) => (
           <div
             key={toast.id}
@@ -73,10 +77,12 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             )}
             <p className="text-base font-medium text-foreground">{toast.message}</p>
             <button
+              type="button"
               onClick={() => removeToast(toast.id)}
+              aria-label="Dismiss notification"
               className="ml-auto text-muted hover:text-foreground transition-colors"
             >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>

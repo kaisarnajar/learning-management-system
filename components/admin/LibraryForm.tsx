@@ -93,7 +93,7 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
   return (
     <form action={action} className="mx-auto max-w-2xl space-y-5">
       <div>
-        <label className="block text-sm font-medium text-foreground">
+        <label htmlFor="image" className="block text-sm font-medium text-foreground">
           Cover image <span className="font-normal text-muted">(optional, max 2 MB)</span>
         </label>
         {imagePreview && (
@@ -118,6 +118,7 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
         )}
         <input
           ref={fileRef}
+          id="image"
           name="image"
           type="file"
           accept="image/jpeg,image/png,image/webp,image/gif"

@@ -101,7 +101,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
               ${payment.discountPercentage ? `<span class="inline-block mt-1 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">${e(payment.discountPercentage)}% Fee Waived Off</span>` : (payment.amount === 0 ? `<span class="inline-block mt-1 bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold uppercase tracking-wider">100% Fee Waived Off</span>` : '')}
             </td>
             <td class="py-3 px-4 text-right font-mono text-base text-slate-800">
-              ${currencySymbol} ${(payment.originalAmount ?? (payment.baseAmount ?? (payment.amount - (payment.shippingAmount || 0)))).toFixed(2)}
+              ${currencySymbol} ${(payment.originalAmount ?? (payment.amount - (payment.shippingAmount || 0))).toFixed(2)}
             </td>
           </tr>
           ${payment.discountAmount ? `
@@ -124,16 +124,6 @@ export function renderReceiptToHtml(data: ReceiptData): string {
             </td>
           </tr>
           ` : ""}
-          ${payment.gstAmount ? `
-          <tr class="border-b border-slate-200">
-            <td class="py-3 px-4 text-right text-xs text-slate-600">
-              GST (18% inclusive)
-            </td>
-            <td class="py-3 px-4 text-right font-mono text-base text-slate-800">
-              ${currencySymbol} ${payment.gstAmount.toFixed(2)}
-            </td>
-          </tr>
-          ` : ""}
           <tr class="bg-slate-50 border-y-2 border-brand-primary-light" style="border-color: #1a4d2e;">
             <td class="py-3 px-4 text-right font-bold text-base text-brand-primary-light" style="color: #1a4d2e;">Grand Total:</td>
             <td class="py-3 px-4 text-right font-bold font-mono text-lg text-brand-primary-light" style="color: #1a4d2e;">
@@ -141,6 +131,14 @@ export function renderReceiptToHtml(data: ReceiptData): string {
               ${payment.amount === 0 ? `<div class="text-xs text-emerald-700 font-bold uppercase mt-0.5 font-sans">(100% Waived Off)</div>` : ''}
             </td>
           </tr>
+          ${payment.gstAmount ? `
+          <!-- GST is INCLUDED in the amounts above; shown as a memo line so the rows still sum to the total. -->
+          <tr>
+            <td class="py-2 px-4 text-right text-xs text-slate-500 italic" colspan="2">
+              Includes GST (${e(payment.gstRatePercent ?? 18)}% inclusive): ${currencySymbol} ${payment.gstAmount.toFixed(2)}${payment.baseAmount !== undefined ? ` · Taxable value: ${currencySymbol} ${payment.baseAmount.toFixed(2)}` : ""}
+            </td>
+          </tr>
+          ` : ""}
         </tbody>
       </table>
 

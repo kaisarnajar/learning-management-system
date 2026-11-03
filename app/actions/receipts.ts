@@ -3,7 +3,7 @@
 import { auth } from "@/services/auth";
 import { BRAND_CONFIG } from "@/config/brand";
 
-import { PAYMENTS } from "@/config/constants/payments";
+import { splitInclusiveGst } from "@/services/gst";
 import { isAdminSession } from "@/services/admin";
 import { prisma } from "@/utils/prisma";
 import { sendReceiptEmail } from "@/services/email";
@@ -67,10 +67,10 @@ export async function generateReceipt(paymentRecordId: string) {
   const itemTotalPaise = record.amountInrPaise - shippingAmountPaise;
 
   if (includeGst) {
-    // "Total: ₹100, GST: ₹18, Fee: ₹82" => GST is calculated from config
-    const gstRate = PAYMENTS.GST_PERCENTAGE / 100;
-    gstAmount = Math.round(itemTotalPaise * gstRate);
-    baseAmount = itemTotalPaise - gstAmount;
+    // Prices are GST-inclusive: ₹100 total → base ₹84.75 + GST ₹15.25 (18/118).
+    const split = splitInclusiveGst(itemTotalPaise);
+    gstAmount = split.gstPaise;
+    baseAmount = split.basePaise;
   } else {
     baseAmount = itemTotalPaise;
   }

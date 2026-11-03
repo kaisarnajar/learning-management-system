@@ -5,6 +5,7 @@ import { INVOICE_TERMS, AUTHORITY_SIGNATURE } from "@/services/academy-contact";
 import { ReceiptData } from "@/types/receipt";
 import { incomePaymentTypeLabel } from "@/services/monthly-payment-status";
 import { loadStandardPdfAssets } from "@/services/pdf-generator";
+import { PAYMENTS } from "@/config/constants/payments";
 
 
 export function getReceiptFilename(courseTitle: string, paymentRecordId: string): string {
@@ -155,6 +156,7 @@ export async function prepareReceiptData(
       amount: record.amountInrPaise / 100,
       baseAmount: baseAmount ? baseAmount / 100 : undefined,
       gstAmount: gstAmount ? gstAmount / 100 : undefined,
+      gstRatePercent: gstAmount ? PAYMENTS.GST_PERCENTAGE : undefined,
       shippingAmount: shippingAmount > 0 ? shippingAmount : undefined,
       discountAmount,
       discountPercentage,

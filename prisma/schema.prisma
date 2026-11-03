@@ -31,6 +31,52 @@ enum Occupation {
   UNEMPLOYED
 }
 
+/// Typed twins of the legacy free-text status/type columns. Each model keeps
+/// its text column until the contract step; code writes both and reads the
+/// enum with a fallback to the text (services/status-compat.ts).
+enum EnrollmentStatus {
+  PENDING_APPROVAL
+  AWAITING_ENROLLMENT_FEE
+  ACTIVE
+  COMPLETED
+  REJECTED
+}
+
+enum PaymentSubmissionStatus {
+  PENDING_VERIFICATION
+  APPROVED
+  DECLINED
+}
+
+enum PaymentType {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+  ONE_TIME
+  ENROLLMENT
+  MANUAL
+  BOOK_PURCHASE
+}
+
+enum PaymentMethod {
+  UPI
+  BANK
+  WAIVER
+  CASH
+}
+
+enum CertificateType {
+  APPRECIATION
+  COMPLETION
+}
+
+enum DevicePlatform {
+  ANDROID
+  IOS
+  WEB
+}
+
 enum CourseStatus {
   DRAFT
   PUBLISHED
@@ -428,10 +474,14 @@ model Enrollment {
   userId                 String
   courseId               String
   status                 String                   @default("pending_approval")
+  /// Typed twin of `status`; null until backfilled.
+  statusEnum             EnrollmentStatus?
   rollNumber             Int?
   certificateNumber      String?                  @unique
   certificateGeneratedAt DateTime?
   certificateType        String?
+  /// Typed twin of `certificateType`; null until backfilled.
+  certificateTypeEnum    CertificateType?
   certificateGrade       Int?
   completedAt            DateTime?
   certificateEmailSentAt DateTime?
@@ -500,6 +550,8 @@ model PaymentRecord {
   amountInrPaise             Int
   paidAt                     DateTime
   paymentType                String?
+  /// Typed twin of `paymentType`; null until backfilled.
+  paymentTypeEnum            PaymentType?
   invoiceNumber              String?                  @unique
   description                String?
   receiptEmailSentAt         DateTime?
@@ -574,27 +626,33 @@ model PaymentSettings {
  * Student-submitted monthly or enrollment course fees awaiting admin approval.
  */
 model CoursePaymentSubmission {
-  id                    String         @id @default(cuid())
+  id                    String                   @id @default(cuid())
   userId                String
   courseId              String
-  paymentType           String         @default("monthly")
+  paymentType           String                   @default("monthly")
+  /// Typed twin of `paymentType`; null until backfilled.
+  paymentTypeEnum       PaymentType?
   label                 String
   amountInrPaise        Int
-  status                String         @default("pending_verification")
+  status                String                   @default("pending_verification")
+  /// Typed twin of `status`; null until backfilled.
+  statusEnum            PaymentSubmissionStatus?
   paymentMethod         String?
+  /// Typed twin of `paymentMethod`; null until backfilled.
+  paymentMethodEnum     PaymentMethod?
   upiTransactionId      String?
   paymentScreenshotPath String?
-  paymentReference      String?        @unique
-  paymentRecordId       String?        @unique
+  paymentReference      String?                  @unique
+  paymentRecordId       String?                  @unique
   couponId              String?
   /// Soft delete; rows with deletedAt set are hidden from every list.
   deletedAt             DateTime?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  user                  User           @relation(fields: [userId], references: [id], onDelete: Restrict)
-  course                Course         @relation(fields: [courseId], references: [id], onDelete: Restrict)
-  paymentRecord         PaymentRecord? @relation(fields: [paymentRecordId], references: [id], onDelete: SetNull)
-  coupon                Coupon?        @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  user                  User                     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  course                Course                   @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  paymentRecord         PaymentRecord?           @relation(fields: [paymentRecordId], references: [id], onDelete: SetNull)
+  coupon                Coupon?                  @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([courseId])
@@ -800,6 +858,8 @@ model Coupon {
   validUntil        DateTime
   courseId          String?
   gender            String?
+  /// Typed twin of `gender`; null until backfilled.
+  genderEnum        Gender?
   userId            String?
   isActive          Boolean    @default(true)
   applyToEnrollment Boolean    @default(true)
@@ -853,12 +913,14 @@ model CouponUsage {
 }
 
 model DeviceToken {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   @unique
-  platform  String   @default("android")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String          @id @default(cuid())
+  userId       String
+  token        String          @unique
+  platform     String          @default("android")
+  /// Typed twin of `platform`; null until backfilled.
+  platformEnum DevicePlatform?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

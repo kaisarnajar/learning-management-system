@@ -5,10 +5,11 @@ import { auth } from "@/services/auth";
 import { isAdminSession } from "@/services/admin";
 import { prisma } from "@/utils/prisma";
 import { sendCertificateEmail } from "@/services/email";
-import { getCertificateFilename, generateCertificatePdf } from "@/services/certificate";
+
 import { getCourseById } from "@/services/courses";
 import { allocateDocumentNumber } from "@/services/document-numbers";
-import { certificateTypeData, certificateTypeOf } from "@/services/status-compat";
+import { deleteStoredCertificatePdf, getCertificatePdf, storeCertificatePdf } from "@/services/documents";
+import { certificateTypeData } from "@/services/status-compat";
 import type { CertificateType } from "@prisma/client";
 
 export async function generateCertificate(enrollmentId: string, certificateType: CertificateType, certificateGrade?: number) {
@@ -71,6 +72,15 @@ export async function generateCertificate(enrollmentId: string, certificateType:
     throw error;
   }
 
+  // Render once now and keep the file; a failure is logged and the first
+  // download renders instead.
+  const issued = await prisma.enrollment.findUnique({
+    where: { id: enrollmentId },
+    include: { user: { select: { name: true, address: true } } },
+  });
+  const course = await getCourseById(enrollment.courseId);
+  if (issued && course) await storeCertificatePdf(issued, course.title);
+
   return { success: "Certificate generated successfully.", certificateNumber };
 }
 
@@ -101,8 +111,10 @@ export async function deleteCertificate(enrollmentId: string) {
       certificateNumber: null,
       ...certificateTypeData(null),
       certificateGrade: null,
+      certificatePdfKey: null,
     },
   });
+  await deleteStoredCertificatePdf(enrollment);
 
   return { success: "Certificate deleted successfully." };
 }
@@ -128,22 +140,8 @@ export async function sendCertificateToEmailAction(enrollmentId: string): Promis
     const course = await getCourseById(enrollment.courseId);
     const courseTitle = course?.title ?? "Course";
 
-    const issueDate = enrollment.certificateGeneratedAt.toLocaleDateString("en-IN", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-
-    const pdfBuffer = await generateCertificatePdf({
-      studentName: enrollment.user.name || "Student",
-      studentAddress: enrollment.user.address,
-      courseTitle,
-      issueDate,
-      certificateNumber: enrollment.certificateNumber,
-      certificateType: certificateTypeOf(enrollment) ?? "COMPLETION",
-      certificateGrade: enrollment.certificateGrade,
-    });
-    const pdfFilename = getCertificateFilename(courseTitle, enrollmentId);
+    // Reuses the stored PDF; renders only when none is stored.
+    const { pdf: pdfBuffer, filename: pdfFilename } = await getCertificatePdf(enrollment, courseTitle);
 
     const result = await sendCertificateEmail({
       to: enrollment.user.email,

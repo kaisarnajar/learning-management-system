@@ -166,6 +166,36 @@ export async function uploadPrivateToR2(prefix: StoragePrefix, idPrefix: string,
   return `${PRIVATE_FILE_ROUTE}${key}`;
 }
 
+/** Stores a server-generated file (a rendered PDF) privately under an explicit key. */
+export async function putPrivateObject(key: string, body: Buffer, contentType: string): Promise<void> {
+  await r2Client.send(new PutObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key, Body: body, ContentType: contentType }));
+}
+
+/** Reads a private object into memory; null when it does not exist (or cannot be read). */
+export async function getPrivateObject(key: string): Promise<Buffer | null> {
+  try {
+    const result = await r2Client.send(new GetObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key }));
+    if (!result.Body) return null;
+    return Buffer.from(await result.Body.transformToByteArray());
+  } catch (error) {
+    const name = (error as { name?: string }).name;
+    if (name !== "NoSuchKey" && name !== "NotFound") {
+      console.error(`[storage] Failed to read ${key} from R2:`, error);
+    }
+    return null;
+  }
+}
+
+/** Best-effort delete of a private object by key; never throws. */
+export async function deletePrivateObject(key: string | null | undefined): Promise<void> {
+  if (!key) return;
+  try {
+    await r2Client.send(new DeleteObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key }));
+  } catch (error) {
+    console.error(`[storage] Failed to delete ${key} from R2:`, error);
+  }
+}
+
 /** A presigned GET for a private key, valid for PRIVATE_URL_TTL_SECONDS. */
 export function presignPrivateObject(key: string, downloadName?: string): Promise<string> {
   const safeName = downloadName?.replace(/["\\\r\n]/g, "_");

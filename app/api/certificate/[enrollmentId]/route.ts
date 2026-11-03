@@ -3,10 +3,9 @@ import { auth } from "@/services/auth";
 import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { isAdminSession } from "@/services/admin";
 import { getCourseById } from "@/services/courses";
-import { getCertificateFilename, generateCertificatePdf } from "@/services/certificate";
+import { getCertificatePdf } from "@/services/documents";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { certificateTypeOf } from "@/services/status-compat";
 
 // Chromium cold start plus rendering can exceed the default function timeout.
 export const maxDuration = 60;
@@ -47,30 +46,10 @@ export async function GET(
     return NextResponse.json({ error: "Certificate has not been generated yet." }, { status: 400 });
   }
 
-  const filename = getCertificateFilename(course.title, enrollmentId);
-  
-  const issueDate = enrollment.certificateGeneratedAt 
-    ? enrollment.certificateGeneratedAt.toLocaleDateString("en-IN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : new Date().toLocaleDateString("en-IN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-
   try {
-    const pdfBuffer = await generateCertificatePdf({
-      studentName: enrollment.user.name || "Student",
-      studentAddress: enrollment.user.address,
-      courseTitle: course.title,
-      issueDate,
-      certificateNumber: enrollment.certificateNumber,
-      certificateType: certificateTypeOf(enrollment) ?? "COMPLETION",
-      certificateGrade: enrollment.certificateGrade,
-    });
+    // The stored file when the certificate was rendered at issue time;
+    // Chromium only for enrollments without one.
+    const { pdf: pdfBuffer, filename } = await getCertificatePdf(enrollment, course.title);
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,

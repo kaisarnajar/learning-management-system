@@ -9,9 +9,7 @@ import { findBookOrderForRecord } from "@/services/payment-receipt";
 import { isAdminSession } from "@/services/admin";
 import { prisma } from "@/utils/prisma";
 import { sendReceiptEmail } from "@/services/email";
-import { generatePdfFromHtml, wrapHtmlForPdf } from "@/services/pdf-generator";
-import { renderReceiptToHtml } from "@/utils/receipt-html";
-import { prepareReceiptData } from "@/services/payment-receipt";
+import { deleteStoredReceiptPdf, getReceiptPdf, storeReceiptPdf } from "@/services/documents";
 import { getCourseById } from "@/services/courses";
 import { getPaymentSettings } from "@/services/payment-settings";
 import { allocateDocumentNumber } from "@/services/document-numbers";
@@ -87,6 +85,17 @@ export async function generateReceipt(paymentRecordId: string) {
     return number;
   });
 
+  // Render once now and keep the file; downloads and emails reuse it. A
+  // failure here is logged and the first download renders instead.
+  const issued = await prisma.paymentRecord.findUnique({
+    where: { id: paymentRecordId },
+    include: {
+      user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } },
+      submission: { select: { paymentMethod: true, upiTransactionId: true, label: true, couponId: true } },
+    },
+  });
+  if (issued) await storeReceiptPdf(issued);
+
   return { success: true, invoiceNumber };
 }
 
@@ -119,8 +128,10 @@ export async function deleteReceipt(paymentRecordId: string) {
       receiptFeeAmountPaise: null,
       receiptGstAmountPaise: null,
       receiptEmailSentAt: null,
+      receiptPdfKey: null,
     },
   });
+  await deleteStoredReceiptPdf(record);
 
   return { success: true };
 }
@@ -149,17 +160,8 @@ export async function sendReceiptToEmailAction(paymentRecordId: string): Promise
     const course = record.courseId ? await getCourseById(record.courseId) : null;
     const courseTitle = course?.title ?? `${BRAND_CONFIG.name}`;
 
-    const { receiptData, filename: pdfFilename } = await prepareReceiptData(record, courseTitle, {
-      invoiceNumberOverride: record.invoiceNumber,
-      includeGstOverride: record.receiptIncludesGst ?? false,
-      baseAmountPaiseOverride: record.receiptFeeAmountPaise ?? record.amountInrPaise,
-      gstAmountPaiseOverride: record.receiptGstAmountPaise ?? 0,
-    });
-
-    const componentHtml = renderReceiptToHtml(receiptData);
-    const fullHtml = await wrapHtmlForPdf(componentHtml, { landscape: false });
-
-    const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false });
+    // Reuses the stored PDF; renders only when none is stored.
+    const { pdf: pdfBuffer, filename: pdfFilename } = await getReceiptPdf(record);
     const amountStr = `₹${(record.amountInrPaise / 100).toFixed(2)}`;
 
     const result = await sendReceiptEmail({

@@ -494,6 +494,8 @@ model Enrollment {
   certificateGrade       Int?
   completedAt            DateTime?
   certificateEmailSentAt DateTime?
+  /// Private storage key of the rendered certificate PDF; null = render on demand.
+  certificatePdfKey      String?
   /// Set when an admin rejects the enrollment request (kept for history instead of deleting).
   rejectedAt             DateTime?
   createdAt              DateTime                 @default(now())
@@ -583,6 +585,8 @@ model PaymentRecord {
   bookOrderId                String?                  @unique
   /// Shipping component captured when the receipt was generated.
   receiptShippingAmountPaise Int?
+  /// Private storage key of the rendered receipt PDF; null = render on demand.
+  receiptPdfKey              String?
   createdAt                  DateTime                 @default(now())
   updatedAt                  DateTime                 @updatedAt
   user                       User                     @relation(fields: [userId], references: [id], onDelete: Restrict)

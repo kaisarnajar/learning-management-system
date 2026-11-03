@@ -172,6 +172,7 @@ async function fetchBookOrdersPaginated(
 ): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
   const where: Prisma.BookOrderWhereInput = {
     status: statusCondition,
+    deletedAt: null,
     ...(search
       ? {
           OR: [
@@ -205,6 +206,7 @@ async function fetchBookOrdersPaginated(
     const paymentRecords = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
       where: {
         paymentType: "book_purchase",
+        voidedAt: null,
         userId: { in: items.map((o) => o.userId) },
       },
     }), "Database operation failed");
@@ -258,12 +260,12 @@ export async function getApprovedBookPaymentsPaginated(
 }
 
 export async function getPendingBookOrderCount(): Promise<number> {
-  return withDbErrorHandling(() => prisma.bookOrder.count({ where: { status: "PENDING_VERIFICATION" } }), "Database operation failed");
+  return withDbErrorHandling(() => prisma.bookOrder.count({ where: { status: "PENDING_VERIFICATION", deletedAt: null } }), "Database operation failed");
 }
 
 export async function getBookOrdersForUser(userId: string): Promise<BookOrderWithItems[]> {
   const items = await withDbErrorHandling(() => prisma.bookOrder.findMany({
-      where: { userId },
+      where: { userId, deletedAt: null },
       include: {
         user: { select: { name: true, email: true } },
         items: {
@@ -278,6 +280,7 @@ export async function getBookOrdersForUser(userId: string): Promise<BookOrderWit
   const paymentRecords = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
     where: {
       paymentType: "book_purchase",
+      voidedAt: null,
       userId,
     },
   }), "Database operation failed");

@@ -248,7 +248,7 @@ async function getNonTeacherUserIds(): Promise<string[]> {
   );
 
   const users = await withDbErrorHandling(() => prisma.user.findMany({
-      where: teacherEmails.length > 0 ? { email: { notIn: teacherEmails } } : {},
+      where: { deletedAt: null, ...(teacherEmails.length > 0 ? { email: { notIn: teacherEmails } } : {}) },
       select: { id: true },
     }), "Database operation failed");
 

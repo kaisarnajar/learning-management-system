@@ -37,6 +37,7 @@ export type ClaimedFeeWaiverItem = {
 async function buildWaiverSearchWhere(filters: FinanceFilters): Promise<Record<string, unknown>> {
   const where: Record<string, unknown> = {
     status: MONTHLY_PAYMENT_APPROVED,
+    deletedAt: null,
   };
 
   // Date filtering

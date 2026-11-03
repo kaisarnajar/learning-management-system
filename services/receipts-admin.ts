@@ -52,7 +52,7 @@ export async function getGeneratedReceiptsPaginated(
   noStore();
   
   return withDbErrorHandling(async () => {
-    const baseWhere = { receiptGeneratedAt: { not: null } };
+    const baseWhere = { receiptGeneratedAt: { not: null }, voidedAt: null };
     const searchWhere = await receiptSearchWhere(searchQuery);
     const where = andWhere(baseWhere, searchWhere);
 

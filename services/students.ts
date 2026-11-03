@@ -39,7 +39,10 @@ export function getStudentOrderBy(sort?: string): Prisma.UserOrderByWithRelation
 
 function studentUsersWhere(searchQuery?: string) {
   const adminEmails = getAdminEmails();
-  const base = adminEmails.length > 0 ? { email: { notIn: adminEmails } } : undefined;
+  const base = {
+    deletedAt: null,
+    ...(adminEmails.length > 0 ? { email: { notIn: adminEmails } } : {}),
+  };
   if (!searchQuery) return base;
   return andWhere(base, buildSearchOr(["name", "email", "registrationNumber"], [], searchQuery));
 }

@@ -3,6 +3,7 @@ import type { CourseStatus, Prisma } from "@prisma/client";
 import {
   AWAITING_ENROLLMENT_FEE,
   PENDING_ENROLLMENT_APPROVAL,
+  REJECTED_ENROLLMENT,
 } from "@/services/enrollment-status";
 import { getCourseIdsByTitleSearch } from "@/services/courses";
 import { type PaginatedResult } from "@/utils/pagination";
@@ -42,6 +43,35 @@ export type CourseEnrollmentWithUser = {
   };
 };
 
+/**
+ * Creates a student's enrollment row for a course, or resets a previously
+ * rejected one (same row, so the (userId, courseId) unique index holds and
+ * the request history stays in one place).
+ */
+export async function startEnrollment(
+  userId: string,
+  courseId: string,
+  status: typeof AWAITING_ENROLLMENT_FEE | typeof PENDING_ENROLLMENT_APPROVAL,
+) {
+  return withDbErrorHandling(() => prisma.$transaction(async (tx) => {
+    const existing = await tx.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+      select: { id: true, status: true },
+    });
+    if (!existing) {
+      return tx.enrollment.create({ data: { userId, courseId, status } });
+    }
+    if (existing.status !== REJECTED_ENROLLMENT) {
+      // Someone else (or a double click) already created it; leave it as is.
+      return tx.enrollment.findUniqueOrThrow({ where: { id: existing.id } });
+    }
+    return tx.enrollment.update({
+      where: { id: existing.id },
+      data: { status, rejectedAt: null, rollNumber: null },
+    });
+  }), "Database operation failed");
+}
+
 export async function getUserCourseEnrollmentMap(userId: string) {
   const rows = await withDbErrorHandling(() => prisma.enrollment.findMany({ where: { userId } }), "Database operation failed");
   return new Map(rows.map((row) => [row.courseId, row]));
@@ -77,6 +107,7 @@ export function enrollmentStatusLabel(status: string) {
   if (status === AWAITING_ENROLLMENT_FEE) return "Awaiting enrollment fee";
   if (status === "completed") return "Completed";
   if (status === "active") return "Active";
+  if (status === REJECTED_ENROLLMENT) return "Rejected";
   return status.replace(/_/g, " ");
 }
 
@@ -85,6 +116,7 @@ export function enrollmentStatusClass(status: string) {
   if (status === "active") return "bg-info-bg text-info-text";
   if (status === PENDING_ENROLLMENT_APPROVAL) return "bg-warning-bg text-warning-text";
   if (status === AWAITING_ENROLLMENT_FEE) return "bg-warning-bg text-warning-text";
+  if (status === REJECTED_ENROLLMENT) return "bg-destructive-bg text-destructive-text";
   return "bg-surface-muted-hover text-muted";
 }
 

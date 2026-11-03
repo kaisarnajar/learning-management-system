@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import {
   AWAITING_ENROLLMENT_FEE,
   PENDING_ENROLLMENT_APPROVAL,
+  REJECTED_ENROLLMENT,
 } from "@/services/enrollment-status";
 import { enrollmentStatusLabel, getUserEnrollmentsPaginated } from "@/services/enrollments";
 import { getPendingEnrollmentFeeSubmissionMap } from "@/services/monthly-payments";
@@ -104,6 +105,21 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
 
                 {enrollment.status === PENDING_ENROLLMENT_APPROVAL && (
                   <p className="mt-4 text-sm text-warning-text">Awaiting enrollment approval by the academy.</p>
+                )}
+
+                {enrollment.status === REJECTED_ENROLLMENT && (
+                  <>
+                    <p className="mt-4 text-sm text-destructive-text">
+                      This request was not approved
+                      {enrollment.rejectedAt ? ` on ${enrollment.rejectedAt.toLocaleDateString("en-IN")}` : ""}. Contact the academy if you have questions.
+                    </p>
+                    <Link
+                      href={`/courses/${course.id}`}
+                      className="mt-3 flex min-h-11 items-center justify-center rounded-full border border-border bg-surface px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-accent-muted/30"
+                    >
+                      Apply again
+                    </Link>
+                  </>
                 )}
 
                 {isActive && enrollment.status === "active" && (

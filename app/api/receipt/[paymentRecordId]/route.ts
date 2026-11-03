@@ -2,11 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/services/auth";
 import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { isAdminSession } from "@/services/admin";
-import { BRAND_CONFIG } from "@/config/brand";
-import { getCourseById } from "@/services/courses";
-import { prepareReceiptData } from "@/services/payment-receipt";
-import { renderReceiptToHtml } from "@/utils/receipt-html";
-import { generatePdfFromHtml, wrapHtmlForPdf } from "@/services/pdf-generator";
+import { getReceiptPdf } from "@/services/documents";
 import { getPaymentRecordById } from "@/services/payments";
 
 // Chromium cold start plus rendering can exceed the default function timeout.
@@ -40,19 +36,10 @@ export async function GET(
     return NextResponse.json({ error: "Receipt has not been generated yet." }, { status: 400 });
   }
 
-  const course = record.courseId ? await getCourseById(record.courseId) : null;
-  const courseTitle = course?.title ?? BRAND_CONFIG.name;
-
-  const { receiptData, filename } = await prepareReceiptData(record, courseTitle);
-
-  // 4. Generate HTML String using the robust string template generator
-  const componentHtml = renderReceiptToHtml(receiptData);
-
-  // 5. Wrap in isolated HTML document with Tailwind CDN
-  const fullHtml = await wrapHtmlForPdf(componentHtml, { landscape: false });
-
   try {
-    const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false });
+    // The stored file when the receipt was rendered at issue time; Chromium
+    // only for records without one.
+    const { pdf: pdfBuffer, filename } = await getReceiptPdf(record);
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,

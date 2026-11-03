@@ -1,3 +1,4 @@
+import { escapeHtml } from "../layout";
 import { deliverMail, EmailSendResult, NotificationEmailBaseParams } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailButton, EmailFallbackLink, EmailInfoCard } from "../components";
@@ -25,7 +26,7 @@ export async function sendPaymentApprovedEmail(
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>Your payment for <strong>${courseTitle}</strong> has been <strong style="color:#166534;">successfully verified</strong>. Jazakallah Khair!</p>
+    <p>Your payment for <strong>${escapeHtml(courseTitle)}</strong> has been <strong style="color:#166534;">successfully verified</strong>. Jazakallah Khair!</p>
     ${EmailButton({ href: paymentUrl, label: "View Payment & Receipt", color: "#166534" })}
     ${EmailFallbackLink({ href: paymentUrl })}
   `;
@@ -66,7 +67,7 @@ export async function sendPaymentDeclinedEmail(params: PaymentDeclinedEmailParam
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>We could not verify your registration payment for <strong>${courseTitle}</strong> at ${BRAND_CONFIG.name}.</p>
+    <p>We could not verify your registration payment for <strong>${escapeHtml(courseTitle)}</strong> at ${BRAND_CONFIG.name}.</p>
     <p>Please submit your payment details again (UPI reference or bank transfer proof):</p>
     ${EmailButton({ href: paymentUrl, label: "Resubmit Payment", color: "#b91c1c" })}
     ${EmailFallbackLink({ href: paymentUrl })}
@@ -111,7 +112,7 @@ export async function sendReceiptEmail(params: ReceiptEmailParams): Promise<Emai
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>Thank you for your payment for <strong>${courseTitle}</strong> at ${BRAND_CONFIG.name}.</p>
+    <p>Thank you for your payment for <strong>${escapeHtml(courseTitle)}</strong> at ${BRAND_CONFIG.name}.</p>
     ${EmailInfoCard({
       title: "Payment Confirmed",
       items: [
@@ -184,7 +185,7 @@ export async function sendFeeWaiverApprovedEmail(params: FeeWaiverApprovedEmailP
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>Good news! Your fee waiver request for <strong>${courseTitle}</strong> has been <strong style="color:#166534;">approved</strong> by ${BRAND_CONFIG.name}.</p>
+    <p>Good news! Your fee waiver request for <strong>${escapeHtml(courseTitle)}</strong> has been <strong style="color:#166534;">approved</strong> by ${BRAND_CONFIG.name}.</p>
     ${EmailInfoCard({
       title: "Fee Waiver Coupon Approved",
       items: [
@@ -234,7 +235,7 @@ export async function sendFeeWaiverRejectedEmail(params: FeeWaiverRejectedEmailP
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>Your fee waiver request for <strong>${courseTitle}</strong> was not approved by ${BRAND_CONFIG.name} at this time.</p>
+    <p>Your fee waiver request for <strong>${escapeHtml(courseTitle)}</strong> was not approved by ${BRAND_CONFIG.name} at this time.</p>
     <p>If you believe this was a mistake or need financial assistance options, please feel free to reply to this email or contact our support team.</p>
     ${courseUrl ? EmailButton({ href: courseUrl, label: "View Courses", color: "#3730a3" }) : ""}
     ${courseUrl ? EmailFallbackLink({ href: courseUrl }) : ""}

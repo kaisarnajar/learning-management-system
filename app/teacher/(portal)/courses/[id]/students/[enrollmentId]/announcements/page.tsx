@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TeacherCourseAnnouncementCard } from "@/components/teacher/TeacherCourseAnnouncementCard";
+import { AnnouncementCard } from "@/components/announcements/AnnouncementCard";
+import { AnnouncementManageActions } from "@/components/announcements/AnnouncementManageActions";
+import { deleteStudentCourseAnnouncement } from "@/services/course-announcement-actions";
 import { Pagination } from "@/components/shared/Pagination";
 import { requireTeacher } from "@/services/auth-actions";
 import {
@@ -76,9 +78,8 @@ export default async function TeacherStudentAnnouncementsPage({
             const canManage = canTeacherManageCourseAnnouncement(announcement, teacher.id);
             return (
               <li key={announcement.id} className="h-full">
-                <TeacherCourseAnnouncementCard
-                  courseId={course.id}
-                  announcementId={announcement.id}
+                <AnnouncementCard
+                  variant="manage"
                   category={announcement.category}
                   title={announcement.title}
                   body={announcement.body}
@@ -87,8 +88,15 @@ export default async function TeacherStudentAnnouncementsPage({
                   updatedAt={announcement.updatedAt}
                   attachmentPath={announcement.attachmentPath}
                   attachmentName={announcement.attachmentName}
-                  canManage={canManage}
-                  enrollmentId={enrollment.id}
+                  actions={
+                    canManage ? (
+                      <AnnouncementManageActions
+                        editHref={`/teacher/courses/${course.id}/students/${enrollment.id}/announcements/${announcement.id}/edit`}
+                        deleteAction={deleteStudentCourseAnnouncement.bind(null, course.id, enrollment.id, announcement.id)}
+                        itemName="message"
+                      />
+                    ) : undefined
+                  }
                   audienceLabel={`For ${studentName}`}
                 />
               </li>

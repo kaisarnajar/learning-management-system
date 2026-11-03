@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { updateStudentCourseAnnouncement } from "@/services/course-announcement-actions";
-import { AnnouncementForm } from "@/components/teacher/AnnouncementForm";
+import { AnnouncementFormPage } from "@/components/announcements/AnnouncementFormPage";
 import { requireTeacher } from "@/services/auth-actions";
 import { canTeacherManageCourseAnnouncement, getAnnouncementForCourse } from "@/services/announcements";
 import { getTeacherEnrollmentInCourse } from "@/services/teacher-portal";
@@ -26,25 +25,15 @@ export default async function EditStudentCourseAnnouncementPage({
   });
   if (!announcement || !canTeacherManageCourseAnnouncement(announcement, teacher.id)) notFound();
 
-  const action = updateStudentCourseAnnouncement.bind(null, course.id, enrollment.id, announcement.id);
-
   return (
-    <div>
-      <Link
-        href={`/teacher/courses/${course.id}/students/${enrollment.id}/announcements`}
-        className="text-sm font-medium text-primary hover:underline"
-      >
-        ← Back to messages
-      </Link>
-      <h2 className="mt-4 font-serif text-xl font-semibold text-foreground">Edit message</h2>
-      <div className="mt-6">
-        <AnnouncementForm
-          action={action}
-          submitLabel="Save changes"
-          announcement={announcement}
-          error={error ? decodeURIComponent(error) : undefined}
-        />
-      </div>
-    </div>
+    <AnnouncementFormPage
+      backHref={`/teacher/courses/${course.id}/students/${enrollment.id}/announcements`}
+      backLabel="← Back to messages"
+      heading="Edit message"
+      action={updateStudentCourseAnnouncement.bind(null, course.id, enrollment.id, announcement.id)}
+      submitLabel="Save changes"
+      announcement={announcement}
+      error={error ? decodeURIComponent(error) : undefined}
+    />
   );
 }

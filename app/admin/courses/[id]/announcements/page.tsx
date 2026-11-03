@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { deleteAdminCourseAnnouncement } from "@/services/course-announcement-actions";
-import { AdminCourseAnnouncementCard } from "@/components/admin/AdminCourseAnnouncementCard";
+import { AnnouncementCard } from "@/components/announcements/AnnouncementCard";
+import { AnnouncementManageActions } from "@/components/announcements/AnnouncementManageActions";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { requireAdmin } from "@/services/auth-actions";
@@ -78,9 +79,8 @@ export default async function AdminCourseAnnouncementsPage({
         <ul className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {announcements.map((announcement) => (
             <li key={announcement.id} className="h-full">
-              <AdminCourseAnnouncementCard
-                courseId={course.id}
-                announcementId={announcement.id}
+              <AnnouncementCard
+                variant="manage"
                 category={announcement.category}
                 title={announcement.title}
                 body={announcement.body}
@@ -89,7 +89,12 @@ export default async function AdminCourseAnnouncementsPage({
                 updatedAt={announcement.updatedAt}
                 attachmentPath={announcement.attachmentPath}
                 attachmentName={announcement.attachmentName}
-                deleteAction={deleteAdminCourseAnnouncement}
+                actions={
+                  <AnnouncementManageActions
+                    editHref={`/admin/courses/${course.id}/announcements/${announcement.id}/edit`}
+                    deleteAction={deleteAdminCourseAnnouncement.bind(null, course.id, announcement.id)}
+                  />
+                }
               />
             </li>
           ))}

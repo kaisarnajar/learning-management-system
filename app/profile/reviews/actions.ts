@@ -11,6 +11,7 @@ import {
 } from "@/services/student-reviews";
 import { studentReviewSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function reviewsPath(suffix = "") {
   return `/profile/reviews${suffix}`;
@@ -18,6 +19,8 @@ function reviewsPath(suffix = "") {
 
 function revalidateReviewPaths() {
   revalidatePath("/");
+
+  revalidatePublicContent();
   revalidatePath("/profile/reviews");
   revalidatePath("/admin/review-approvals");
 }

@@ -18,6 +18,7 @@ import {
   deleteSiteAnnouncementRecord
 } from "@/services/site-announcement-mutations";
 import { deleteAnnouncementImageFile } from "@/services/site-announcement-upload";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function adminListPath(query = "") {
   return `/admin/announcements${query}`;
@@ -248,6 +249,8 @@ export async function deleteSiteAnnouncement(id: string) {
 
 function revalidateSiteAnnouncementPaths() {
   revalidatePath("/");
+
+  revalidatePublicContent();
   revalidatePath("/announcements");
   revalidatePath("/admin/announcements");
   revalidatePath("/profile/notifications");

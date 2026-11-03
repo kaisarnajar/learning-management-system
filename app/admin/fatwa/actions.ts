@@ -11,6 +11,7 @@ import { fatwaAnswerSchema } from "@/utils/validations";
 import { sanitizeRichText } from "@/services/rich-text";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { BRAND_CONFIG } from "@/config/brand";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 export async function answerFatwaQuestion(id: string, formData: FormData) {
   const session = await requireAdmin();
@@ -63,6 +64,9 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
     }), "Database operation failed");
 
   revalidatePath("/");
+
+
+  revalidatePublicContent();
   revalidatePath("/fatwa");
   revalidatePath(`/fatwa/${id}`);
   revalidatePath("/admin/fatwa");
@@ -119,6 +123,9 @@ export async function deleteFatwaQuestion(id: string): Promise<{ error?: string;
   await withDbErrorHandling(() => prisma.fatwaQuestion.delete({ where: { id } }), "Database operation failed");
 
   revalidatePath("/");
+
+
+  revalidatePublicContent();
   revalidatePath("/fatwa");
   revalidatePath(`/fatwa/${id}`);
   revalidatePath("/admin/fatwa");
@@ -162,6 +169,9 @@ export async function rejectFatwaQuestion(id: string, formData: FormData) {
     }), "Database operation failed");
 
   revalidatePath("/");
+
+
+  revalidatePublicContent();
   revalidatePath("/fatwa");
   revalidatePath(`/fatwa/${id}`);
   revalidatePath("/admin/fatwa");

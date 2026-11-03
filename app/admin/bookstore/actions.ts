@@ -9,6 +9,7 @@ import { isUploadError } from "@/services/storage";
 import { prisma } from "@/utils/prisma";
 import { resolveBookFeaturedUpdate } from "@/services/bookstore";
 import { bookSchema } from "@/utils/validations";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function parseBookForm(formData: FormData) {
   return bookSchema.safeParse({
@@ -30,6 +31,8 @@ function revalidateBookstorePaths() {
   revalidatePath("/admin/bookstore", "page");
   revalidatePath("/admin/bookstore", "layout");
   revalidatePath("/bookstore", "page");
+
+  revalidatePublicContent();
   revalidatePath("/admin", "page");
 }
 

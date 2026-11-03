@@ -14,6 +14,7 @@ import { courseSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
 
 import { ActionError, executeServerAction } from "@/utils/action-utils";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function parseCourseForm(formData: FormData) {
   const level = String(formData.get("level") ?? "Beginner");
@@ -87,6 +88,9 @@ export async function createCourse(formData: FormData) {
     );
 
     revalidatePath("/");
+
+
+    revalidatePublicContent();
     revalidatePath("/courses");
     revalidatePath("/admin/courses");
     redirect("/admin/courses?created=1");
@@ -148,6 +152,9 @@ export async function updateCourse(id: string, formData: FormData) {
     }
 
     revalidatePath("/");
+
+
+    revalidatePublicContent();
     revalidatePath("/courses");
     revalidatePath("/admin/courses");
     revalidatePath(`/admin/courses/${id}/edit`);
@@ -222,6 +229,9 @@ export async function deleteCourse(id: string) {
     }
 
     revalidatePath("/");
+
+
+    revalidatePublicContent();
     revalidatePath("/courses");
     revalidatePath("/admin/courses");
     redirect("/admin/courses?deleted=1");

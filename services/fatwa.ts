@@ -5,6 +5,7 @@ import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getAppBaseUrl } from "@/services/password-reset";
+import { cachedPublic } from "@/services/public-cache";
 
 /** Admin-only search: may match asker name and e-mail. */
 function fatwaAdminSearchWhere(searchQuery?: string) {
@@ -58,7 +59,7 @@ export function isFatwaAnswered(fatwa: Pick<FatwaQuestion, "answer" | "approvalS
   return fatwa.approvalStatus === "APPROVED" && fatwa.answer != null && fatwa.answer.trim().length > 0;
 }
 
-export async function getFeaturedHomepageFatwas(): Promise<FatwaQuestion[]> {
+async function fetchGetFeaturedHomepageFatwas(): Promise<FatwaQuestion[]> {
   const fatwas = await withDbErrorHandling(() => prisma.fatwaQuestion.findMany({
       where: { featuredOnHomepage: true, answer: { not: null }, approvalStatus: "APPROVED" },
       orderBy: [{ featuredAt: "desc" }, { answeredAt: "desc" }],
@@ -66,6 +67,9 @@ export async function getFeaturedHomepageFatwas(): Promise<FatwaQuestion[]> {
     }), "Database operation failed");
   return fatwas.filter(isFatwaAnswered);
 }
+
+/** Homepage section: cached across requests (services/public-cache.ts). */
+export const getFeaturedHomepageFatwas = cachedPublic("featured-fatwas", fetchGetFeaturedHomepageFatwas);
 
 export async function getFeaturedHomepageFatwaCount(): Promise<number> {
   const fatwas = await withDbErrorHandling(() => prisma.fatwaQuestion.findMany({

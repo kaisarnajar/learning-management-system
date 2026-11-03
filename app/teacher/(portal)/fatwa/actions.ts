@@ -10,6 +10,7 @@ import { fatwaAnswerSchema } from "@/utils/validations";
 import { sanitizeRichText } from "@/services/rich-text";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { BRAND_CONFIG } from "@/config/brand";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 export async function submitTeacherFatwaAnswer(id: string, formData: FormData) {
   const { session, teacher } = await requireTeacher();
@@ -45,6 +46,9 @@ export async function submitTeacherFatwaAnswer(id: string, formData: FormData) {
     }), "Database operation failed");
 
   revalidatePath("/");
+
+
+  revalidatePublicContent();
   revalidatePath("/fatwa");
   revalidatePath(`/fatwa/${id}`);
   revalidatePath("/admin/fatwa");

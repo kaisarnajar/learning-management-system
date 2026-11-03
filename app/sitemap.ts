@@ -2,7 +2,8 @@ import { MetadataRoute } from "next";
 import { prisma } from "@/utils/prisma";
 import { BRAND_CONFIG } from "@/config/brand";
 
-export const dynamic = "force-dynamic";
+// Regenerated at most once an hour; content actions do not need to invalidate it.
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");

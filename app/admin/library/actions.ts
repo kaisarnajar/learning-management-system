@@ -12,6 +12,7 @@ import { withDbErrorHandling } from "@/utils/db-error";
 import { ActionError, executeServerAction } from "@/utils/action-utils";
 import { withFlash } from "@/utils/flash";
 import { isUploadError } from "@/services/storage";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function parseLibraryForm(formData: FormData) {
   const pdfUrl = formData.get("pdfUrl");
@@ -78,6 +79,9 @@ export async function createLibraryItem(formData: FormData) {
   );
 
   revalidatePath("/");
+
+
+  revalidatePublicContent();
   revalidatePath("/library");
   revalidatePath("/admin/library");
   redirect("/admin/library?created=1");
@@ -145,6 +149,9 @@ export async function updateLibraryItem(id: string, formData: FormData) {
   }
 
   revalidatePath("/");
+
+
+  revalidatePublicContent();
   revalidatePath("/library");
   revalidatePath("/admin/library");
   revalidatePath(`/admin/library/${id}`);
@@ -167,6 +174,9 @@ export async function deleteLibraryItemById(id: string): Promise<{ error?: strin
   await withDbErrorHandling(() => prisma.libraryItem.delete({ where: { id } }), "Database operation failed");
 
   revalidatePath("/");
+
+
+  revalidatePublicContent();
   revalidatePath("/library");
   revalidatePath("/admin/library");
   revalidatePath(`/admin/library/${id}`);

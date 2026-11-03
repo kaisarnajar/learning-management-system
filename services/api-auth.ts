@@ -75,6 +75,7 @@ export async function authenticateApiRequest(req: NextRequest): Promise<{ user: 
     // 2. Fetch user from DB to verify active account
     const dbUser = await prisma.user.findFirst({
       where: {
+        deletedAt: null,
         OR: [
           tokenPayload.id ? { id: tokenPayload.id as string } : undefined,
           tokenPayload.email ? { email: (tokenPayload.email as string).toLowerCase().trim() } : undefined,

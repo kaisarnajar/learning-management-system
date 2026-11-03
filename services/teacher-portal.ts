@@ -2,7 +2,7 @@ import { cache } from "react";
 import type { Course, CourseStatus } from "@prisma/client";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/pagination";
 import { prisma } from "@/utils/prisma";
-import { getEnrollmentsForCoursePaginated } from "@/services/enrollments";
+import { APPROVED_ENROLLMENT_STATUSES, getApprovedEnrollmentsForCoursePaginated } from "@/services/enrollments";
 import { withDbErrorHandling } from "@/utils/db-error";
 
 export type TeacherCourse = Course & {
@@ -17,7 +17,7 @@ export async function getCoursesForTeacher(teacherId: string): Promise<TeacherCo
 
   const counts = await withDbErrorHandling(() => prisma.enrollment.groupBy({
       by: ["courseId"],
-      where: { courseId: { in: courses.map((c) => c.id) } },
+      where: { courseId: { in: courses.map((c) => c.id) }, status: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
       _count: { _all: true },
     }), "Database operation failed");
   const countByCourse = new Map(counts.map((row) => [row.courseId, row._count._all]));
@@ -72,7 +72,7 @@ export async function getTeacherCourseStudentsPaginated(
   const course = await getTeacherCourseForPortal(teacherId, courseId);
   if (!course) return null;
 
-  const { items, totalCount } = await getEnrollmentsForCoursePaginated(courseId, page, pageSize);
+  const { items, totalCount } = await getApprovedEnrollmentsForCoursePaginated(courseId, page, pageSize);
   return { course, enrollments: items, totalCount };
 }
 
@@ -84,8 +84,10 @@ export const getTeacherEnrollmentInCourse = cache(async (
   const course = await getTeacherCourseForPortal(teacherId, courseId);
   if (!course) return null;
 
+  // Teachers may only see students whose enrollment has been approved;
+  // applicants' personal details stay private until the academy approves them.
   const enrollment = await withDbErrorHandling(() => prisma.enrollment.findFirst({
-      where: { id: enrollmentId, courseId },
+      where: { id: enrollmentId, courseId, status: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
       include: {
         user: {
           select: {
@@ -123,7 +125,7 @@ export async function getTeacherDashboardStats(teacherId: string) {
 
   const courseIds = courses.map((c) => c.id);
   const uniqueStudents = await withDbErrorHandling(() => prisma.enrollment.findMany({
-      where: { courseId: { in: courseIds } },
+      where: { courseId: { in: courseIds }, status: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
       distinct: ['userId'],
       select: { userId: true },
     }), "Database operation failed");

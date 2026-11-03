@@ -491,6 +491,57 @@ export const bookstoreCheckoutSchema = z.object({
   notes: z.string().trim().optional(),
 });
 
+const isoDateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date.")
+  .refine((value) => !Number.isNaN(Date.parse(value)), "Enter a valid date.");
+
+const couponPercentage = z.coerce
+  .number("Discount must be a number.")
+  .int("Discount must be a whole number.")
+  .min(1, "Discount must be at least 1%.")
+  .max(100, "Discount cannot exceed 100%.");
+
+const couponDateOrder = (value: { validFrom: string; validUntil: string }) =>
+  value.validFrom <= value.validUntil;
+const COUPON_DATE_ORDER_MESSAGE = "Valid until must be on or after valid from.";
+
+const couponFieldsSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .min(3, "Code must be at least 3 characters.")
+    .max(32, "Code must be at most 32 characters.")
+    .regex(/^[A-Za-z0-9_-]+$/, "Code may only contain letters, numbers, hyphens and underscores.")
+    .toUpperCase(),
+  percentage: couponPercentage,
+  validFrom: isoDateString,
+  validUntil: isoDateString,
+  courseId: z.string().optional().or(z.literal("")),
+  gender: z.enum(["MALE", "FEMALE"]).optional().or(z.literal("")),
+  isActive: z.boolean().default(true),
+  applyTo: z.enum(["BOTH", "ENROLLMENT", "COURSE"]).default("BOTH"),
+});
+
+/** Create or edit a DEFAULT (public) coupon. A future `validFrom` schedules the coupon. */
+export const couponSchema = couponFieldsSchema.refine(couponDateOrder, {
+  message: COUPON_DATE_ORDER_MESSAGE,
+  path: ["validUntil"],
+});
+
+/** SPECIAL (per-student waiver) coupons only allow dates, percentage and active state to change. */
+export const specialCouponUpdateSchema = couponFieldsSchema
+  .pick({ percentage: true, validFrom: true, validUntil: true, isActive: true })
+  .refine(couponDateOrder, { message: COUPON_DATE_ORDER_MESSAGE, path: ["validUntil"] });
+
+export const couponRequestApprovalSchema = z.object({
+  percentage: couponPercentage,
+  validUntil: isoDateString.refine(
+    (value) => value >= new Date().toISOString().slice(0, 10),
+    "Valid until cannot be in the past.",
+  ),
+});
+
 export const slabSchema = z.object({
   minWeightGrams: z.coerce.number().int().min(0, "Minimum weight must be 0 or more."),
   maxWeightGrams: z.coerce.number().int().min(1, "Maximum weight must be at least 1."),

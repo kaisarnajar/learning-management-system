@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { format } from "date-fns";
+import type { Coupon } from "@prisma/client";
 import { updateCoupon } from "@/app/admin/coupons/actions";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 import { useToast } from "@/components/shared/ToastProvider";
@@ -12,13 +13,29 @@ type CourseOption = {
   title: string;
 };
 
+export type EditableCoupon = Pick<
+  Coupon,
+  | "id"
+  | "code"
+  | "type"
+  | "percentage"
+  | "validFrom"
+  | "validUntil"
+  | "courseId"
+  | "gender"
+  | "isActive"
+  | "applyToEnrollment"
+  | "applyToCourse"
+>;
+
 export function EditCouponDialog({
   coupon,
   courses,
 }: {
-  coupon: any;
+  coupon: EditableCoupon;
   courses: CourseOption[];
 }) {
+  const isSpecial = coupon.type === "SPECIAL";
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -98,17 +115,23 @@ export function EditCouponDialog({
             </p>
           )}
 
-          <div>
-            <label className={labelClassName}>Code</label>
-            <input
-              required
-              type="text"
-              name="code"
-              defaultValue={coupon.code}
-              className={inputClassName}
-              placeholder="e.g. SUMMER50"
-            />
-          </div>
+          {isSpecial ? (
+            <p className="rounded-lg bg-accent-muted/40 px-4 py-3 text-xs text-muted">
+              This is a student-specific waiver coupon. Only the discount, validity dates and active state can be changed.
+            </p>
+          ) : (
+            <div>
+              <label className={labelClassName}>Code</label>
+              <input
+                required
+                type="text"
+                name="code"
+                defaultValue={coupon.code}
+                className={inputClassName}
+                placeholder="e.g. SUMMER50"
+              />
+            </div>
+          )}
 
           <div>
             <label className={labelClassName}>Discount Percentage (%)</label>
@@ -117,6 +140,7 @@ export function EditCouponDialog({
               type="number"
               min="1"
               max="100"
+              step="1"
               name="percentage"
               defaultValue={coupon.percentage}
               className={inputClassName}
@@ -147,35 +171,44 @@ export function EditCouponDialog({
             </div>
           </div>
 
-          <div>
-            <label className={labelClassName}>Course (Optional)</label>
-            <select name="courseId" defaultValue={coupon.courseId || ""} className={inputClassName}>
-              <option value="">All Courses</option>
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.title}
-                </option>
-              ))}
-            </select>
-          </div>
+          {!isSpecial && (
+            <>
+              <div>
+                <label className={labelClassName}>Course (Optional)</label>
+                <select name="courseId" defaultValue={coupon.courseId || ""} className={inputClassName}>
+                  <option value="">All Courses</option>
+                  {courses.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          <div>
-            <label className={labelClassName}>Gender (Optional)</label>
-            <select name="gender" defaultValue={coupon.gender || ""} className={inputClassName}>
-              <option value="">All Genders</option>
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-            </select>
-          </div>
+              <div>
+                <label className={labelClassName}>Gender (Optional)</label>
+                <select name="gender" defaultValue={coupon.gender || ""} className={inputClassName}>
+                  <option value="">All Genders</option>
+                  <option value="MALE">Male</option>
+                  <option value="FEMALE">Female</option>
+                </select>
+              </div>
 
-          <div>
-            <label className={labelClassName}>Applies to Fee Type</label>
-            <select name="applyTo" className={inputClassName} defaultValue={defaultApplyTo}>
-              <option value="BOTH">Both Enrollment & Course Fees</option>
-              <option value="ENROLLMENT">Enrollment Fee Only</option>
-              <option value="COURSE">Course Fee Only</option>
-            </select>
-          </div>
+              <div>
+                <label className={labelClassName}>Applies to Fee Type</label>
+                <select name="applyTo" className={inputClassName} defaultValue={defaultApplyTo}>
+                  <option value="BOTH">Both Enrollment & Course Fees</option>
+                  <option value="ENROLLMENT">Enrollment Fee Only</option>
+                  <option value="COURSE">Course Fee Only</option>
+                </select>
+              </div>
+            </>
+          )}
+
+          <label className="flex items-center gap-2 text-sm text-foreground">
+            <input type="checkbox" name="isActive" value="true" defaultChecked={coupon.isActive} />
+            Coupon is active
+          </label>
 
           <div className="mt-6 flex justify-end gap-3 border-t border-border pt-4">
             <button

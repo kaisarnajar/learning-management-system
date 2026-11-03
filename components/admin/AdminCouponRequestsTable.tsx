@@ -180,6 +180,7 @@ export function AdminCouponRequestsTable({ requests }: { requests: CouponRequest
               type="number"
               min="1"
               max="100"
+              step="1"
               defaultValue="100"
               name="percentage"
               className={inputClassName}
@@ -193,6 +194,7 @@ export function AdminCouponRequestsTable({ requests }: { requests: CouponRequest
               required
               type="date"
               name="validUntil"
+              min={format(new Date(), "yyyy-MM-dd")}
               defaultValue={format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd")}
               className={inputClassName}
             />

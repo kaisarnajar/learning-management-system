@@ -3,7 +3,7 @@
 import { format } from "date-fns";
 import { deleteCoupon } from "@/app/admin/coupons/actions";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { EditCouponDialog } from "@/components/admin/EditCouponDialog";
+import { EditCouponDialog, type EditableCoupon } from "@/components/admin/EditCouponDialog";
 import { adminDestructiveButtonClassName } from "@/utils/form";
 
 type CourseOption = {
@@ -11,16 +11,8 @@ type CourseOption = {
   title: string;
 };
 
-export type AdminCouponItem = {
-  id: string;
-  code: string;
-  type: "DEFAULT" | "SPECIAL";
-  percentage: number;
+export type AdminCouponItem = EditableCoupon & {
   createdAt?: Date | string | null;
-  validUntil: Date | string;
-  gender?: string | null;
-  applyToEnrollment: boolean;
-  applyToCourse: boolean;
   course?: { title: string } | null;
   user?: { name: string | null; email: string } | null;
 };

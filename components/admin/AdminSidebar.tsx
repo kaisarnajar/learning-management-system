@@ -11,7 +11,14 @@ const allLinks = [
   ...ADMIN_NAV_LINKS.map((link) => ({ ...link, exact: false })),
 ];
 
-export function AdminSidebar() {
+type AdminSidebarProps = {
+  /** Heading shown at the top of the sidebar. */
+  title?: string;
+  /** Developer panel mode: the group holding the current section starts expanded on nested pages too. */
+  showDeveloperItems?: boolean;
+};
+
+export function AdminSidebar({ title = "Admin Panel", showDeveloperItems = false }: AdminSidebarProps) {
   const pathname = usePathname();
 
   const activePath = allLinks
@@ -21,7 +28,7 @@ export function AdminSidebar() {
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
     const initialExpanded: Record<string, boolean> = {};
     for (const group of ADMIN_NAV_GROUPS) {
-      if (group.links.some((link) => link.href === pathname)) {
+      if (group.links.some((link) => link.href === (showDeveloperItems ? activePath : pathname))) {
         initialExpanded[group.title] = true;
       } else {
         initialExpanded[group.title] = false;
@@ -40,10 +47,10 @@ export function AdminSidebar() {
   return (
     <aside className="border-b border-border bg-surface md:w-56 md:shrink-0 md:border-b-0 md:border-r overflow-y-auto">
       <div className="p-4">
-        <p className="font-serif text-lg font-bold text-primary">Admin Panel</p>
+        <p className="font-serif text-lg font-bold text-primary">{title}</p>
         <p className="text-xs text-muted">{BRAND_CONFIG.name}</p>
       </div>
-      <nav className="flex flex-col gap-1 px-2 pb-6 md:px-3" aria-label="Admin navigation">
+      <nav className="flex flex-col gap-1 px-2 pb-6 md:px-3" aria-label={showDeveloperItems ? "Developer navigation" : "Admin navigation"}>
         <Link
           href="/admin"
           className={`rounded-lg px-3 py-2 text-sm font-medium mb-1 ${

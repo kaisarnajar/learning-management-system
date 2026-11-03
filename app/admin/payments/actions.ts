@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { adminReturnUrl, revalidateAdminPaths } from "@/utils/admin-redirects";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { requireAdmin } from "@/services/auth-actions";
@@ -37,21 +37,7 @@ function revalidatePaymentPaths(userId: string, courseId?: string | null) {
   if (courseId) {
     paths.push(`/admin/courses/${courseId}/students`);
   }
-  for (const path of paths) {
-    revalidatePath(path, "layout");
-    revalidatePath(path, "page");
-  }
-}
-
-function paymentReturnUrl(returnTo: string | undefined, event: "confirmed" | "declined" | "deleted"): string {
-  const param = event === "confirmed" ? "confirmed" : event === "declined" ? "declined" : "deleted";
-  const fallback = `/admin/payments?${param}=1`;
-  if (!returnTo?.startsWith("/admin")) return fallback;
-  const [pathname, query = ""] = returnTo.split("?");
-  const params = new URLSearchParams(query);
-  params.set(param, "1");
-  const qs = params.toString();
-  return qs ? `${pathname}?${qs}` : `${pathname}?${param}=1`;
+  revalidateAdminPaths(paths);
 }
 
 export async function confirmMonthlyPayment(
@@ -73,7 +59,7 @@ export async function confirmMonthlyPayment(
   const isEnrollmentFee = paymentTypeOf(submission) === "ENROLLMENT";
 
   if (submissionStatus === "APPROVED") {
-    redirect(paymentReturnUrl(returnTo, "confirmed"));
+    redirect(adminReturnUrl(returnTo, "/admin/payments", "confirmed"));
   }
 
   if (submissionStatus !== "PENDING_VERIFICATION") {
@@ -152,7 +138,7 @@ export async function confirmMonthlyPayment(
   }
 
   revalidatePaymentPaths(submission.userId, submission.courseId);
-  redirect(paymentReturnUrl(returnTo, "confirmed"));
+  redirect(adminReturnUrl(returnTo, "/admin/payments", "confirmed"));
 }
 
 export async function declineMonthlyPayment(
@@ -205,7 +191,7 @@ export async function declineMonthlyPayment(
   }));
 
   revalidatePaymentPaths(submission.userId, submission.courseId);
-  redirect(paymentReturnUrl(returnTo, "declined"));
+  redirect(adminReturnUrl(returnTo, "/admin/payments", "declined"));
 }
 
 /**
@@ -249,7 +235,7 @@ export async function voidApprovedPayment(
   }
 
   revalidatePaymentPaths(submission.userId, submission.courseId);
-  redirect(paymentReturnUrl(returnTo, "deleted"));
+  redirect(adminReturnUrl(returnTo, "/admin/payments", "deleted"));
 }
 
 /** Voids a manually recorded payment (kept for audit; excluded from finance). */
@@ -282,6 +268,6 @@ export async function voidManualPaymentRecord(
 
   revalidatePaymentPaths(record.userId);
   const param = new URLSearchParams({ type: "manual_transactions", deleted: "1" });
-  redirect(returnTo?.startsWith("/admin") ? paymentReturnUrl(returnTo, "deleted") : `/admin/payments?${param.toString()}`);
+  redirect(returnTo?.startsWith("/admin") ? adminReturnUrl(returnTo, "/admin/payments", "deleted") : `/admin/payments?${param.toString()}`);
 }
 

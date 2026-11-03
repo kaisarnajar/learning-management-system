@@ -4,15 +4,14 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import { getPaymentYearOptions } from "@/services/monthly-payments";
 import { getFeeFrequencyOption, isOneTimeFee, getFeeFrequencyLabel } from "@/services/fee-frequency";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { submitMonthlyPayment } from "@/app/actions/payments";
 import { CouponSelector } from "@/components/payment/CouponSelector";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
+import { PaymentProofFields, type PaymentMethod } from "@/components/payment/PaymentProofFields";
 import { calculateDiscountedAmount, type ApplicableCoupon } from "@/services/coupons";
-import { formatPrice } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import type { PaymentSettingsData } from "@/services/payment-settings";
-
-type PaymentMethod = "upi" | "bank";
 
 const MONTHS = [
   { value: "01", label: "January" },
@@ -70,7 +69,6 @@ export function MonthlyPaymentForm({
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
 
   const selectedCoupon = availableCoupons.find((c) => c.id === selectedCouponId && !c.isUsed);
   const currentPercentage = selectedCoupon ? selectedCoupon.percentage : 0;
@@ -79,13 +77,6 @@ export function MonthlyPaymentForm({
     : baseFeePaise;
 
   const isFree = totalAmountPaise === 0;
-
-  function handleClearScreenshot() {
-    setScreenshot(null);
-    if (fileRef.current) {
-      fileRef.current.value = "";
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -213,73 +204,14 @@ export function MonthlyPaymentForm({
 
       {!isFree && (
         <>
-          <fieldset>
-            <legend className="text-sm font-medium text-foreground">How did you pay?</legend>
-            <div className="mt-3 flex flex-wrap gap-4">
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="upi"
-                  checked={paymentMethod === "upi"}
-                  onChange={() => setPaymentMethod("upi")}
-                  className="text-primary"
-                />
-                UPI
-              </label>
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="bank"
-                  checked={paymentMethod === "bank"}
-                  onChange={() => setPaymentMethod("bank")}
-                  className="text-primary"
-                />
-                Bank transfer
-              </label>
-            </div>
-          </fieldset>
-
-          <div>
-            <label htmlFor="utr" className="block text-sm font-medium text-foreground">
-              Transaction / UTR reference
-            </label>
-            <input
-              id="utr"
-              type="text"
-              required
-              autoComplete="off"
-              value={transactionId}
-              onChange={(e) => setTransactionId(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <div className="flex items-center justify-between">
-              <label htmlFor="screenshot" className="block text-sm font-medium text-foreground">
-                Payment screenshot <span className="font-normal text-muted">(optional)</span>
-              </label>
-              {screenshot && (
-                <button
-                  type="button"
-                  onClick={handleClearScreenshot}
-                  className="text-xs font-medium text-destructive-text hover:underline"
-                >
-                  Clear selection
-                </button>
-              )}
-            </div>
-            <input
-              ref={fileRef}
-              id="screenshot"
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              onChange={(e) => setScreenshot(e.target.files?.[0] ?? null)}
-              className="mt-2 w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white"
-            />
-          </div>
+          <PaymentProofFields
+            paymentMethod={paymentMethod}
+            onPaymentMethodChange={setPaymentMethod}
+            transactionId={transactionId}
+            onTransactionIdChange={setTransactionId}
+            screenshot={screenshot}
+            onScreenshotChange={setScreenshot}
+          />
         </>
       )}
 

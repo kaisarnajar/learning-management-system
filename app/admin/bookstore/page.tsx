@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { formatPrice } from "@/utils/money";
 import { BRAND_CONFIG } from "@/config/brand";
 import Link from "next/link";
 import Image from "next/image";
@@ -18,10 +19,6 @@ export const metadata: Metadata = {
   title: "Bookstore — Admin",
   description: `Manage the physical book catalog for the ${BRAND_CONFIG.name} bookstore.`,
 };
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
 
 import { Suspense } from "react";
 
@@ -99,7 +96,7 @@ async function AdminBookstoreList({ params, q }: { params: PageParams; q?: strin
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 font-medium text-foreground">{formatPrice(book.priceInrPaise)}</td>
+                  <td className="px-4 py-3 font-medium text-foreground">{formatPrice(book.priceInrPaise, { exact: true })}</td>
                   <td className="px-4 py-3">
                     <BookStatusBadge status={book.status} />
                   </td>

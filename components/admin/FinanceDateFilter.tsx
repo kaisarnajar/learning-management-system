@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { TabPills } from "@/components/shared/TabPills";
 import {
   buildFinanceQueryString,
   FINANCE_DATE_PRESETS,
@@ -41,10 +41,13 @@ export function FinanceDateFilter({ filters, basePath = "/admin/finance" }: Fina
 
   return (
     <div className="space-y-4">
-      <nav className="flex flex-wrap gap-2" aria-label="Date range">
-        {FINANCE_DATE_PRESETS.map((item) => {
-          const active = filters.preset === item.preset;
-          const href = `${basePath}${buildFinanceQueryString({
+      <TabPills
+        ariaLabel="Date range"
+        items={FINANCE_DATE_PRESETS.map((item) => ({
+          key: item.preset,
+          label: item.label,
+          active: filters.preset === item.preset,
+          href: `${basePath}${buildFinanceQueryString({
             courseId: filters.courseId,
             studentId: filters.studentId,
             paymentType: filters.paymentType,
@@ -53,23 +56,9 @@ export function FinanceDateFilter({ filters, basePath = "/admin/finance" }: Fina
             tab: filters.tab,
             q: filters.q,
             preset: item.preset,
-          })}`;
-
-          return (
-            <Link
-              key={item.preset}
-              href={href}
-              className={`rounded-full px-4 py-2 text-sm font-medium ${
-                active
-                  ? "bg-primary text-white"
-                  : "border border-border text-foreground hover:bg-accent-muted/50"
-              }`}
-            >
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+          })}`,
+        }))}
+      />
 
       <form
         method="get"

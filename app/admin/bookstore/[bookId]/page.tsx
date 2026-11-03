@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { formatPrice } from "@/utils/money";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
@@ -7,10 +8,6 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { getBookById } from "@/services/bookstore";
 import { deleteBookFromProfile } from "@/app/admin/bookstore/actions";
 import { requireAdmin } from "@/services/auth-actions";
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
 
 export default async function AdminBookDetailPage({
   params,
@@ -80,7 +77,7 @@ export default async function AdminBookDetailPage({
           </div>
           <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
             <dt className="shrink-0 font-medium text-foreground sm:w-28">Price</dt>
-            <dd className="text-muted">{formatPrice(book.priceInrPaise)}</dd>
+            <dd className="text-muted">{formatPrice(book.priceInrPaise, { exact: true })}</dd>
           </div>
           <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
             <dt className="shrink-0 font-medium text-foreground sm:w-28">Availability</dt>

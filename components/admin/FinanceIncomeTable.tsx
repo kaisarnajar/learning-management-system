@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { formatPrice } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import { incomePaymentTypeLabel } from "@/services/monthly-payment-status";
 
 type IncomeRecord = {

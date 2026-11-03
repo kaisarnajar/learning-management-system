@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { format } from "date-fns";
 import { createDefaultCoupon } from "@/app/admin/coupons/actions";
 import { SubmitButton } from "@/components/shared/SubmitButton";
+import { useDialog } from "@/components/shared/useDialog";
 import { inputClassName, labelClassName } from "@/utils/form";
 
 type CourseOption = {
@@ -12,31 +13,8 @@ type CourseOption = {
 };
 
 export function CreateCouponDialog({ courses }: { courses: CourseOption[] }) {
-  const [isOpen, setIsOpen] = useState(false);
+  const { dialogRef, open, close } = useDialog();
   const [error, setError] = useState("");
-  const dialogRef = useRef<HTMLDialogElement>(null);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (isOpen && dialog && !dialog.open) {
-      dialog.showModal();
-    } else if (!isOpen && dialog && dialog.open) {
-      dialog.close();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-    
-    const handleCancel = (e: Event) => {
-      e.preventDefault();
-      setIsOpen(false);
-    };
-    
-    dialog.addEventListener("cancel", handleCancel);
-    return () => dialog.removeEventListener("cancel", handleCancel);
-  }, []);
 
   async function action(formData: FormData) {
     setError("");
@@ -44,14 +22,14 @@ export function CreateCouponDialog({ courses }: { courses: CourseOption[] }) {
     if (result.error) {
       setError(result.error);
     } else {
-      setIsOpen(false);
+      close();
     }
   }
 
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => open()}
         className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-primary-light transition-colors"
       >
         + Create Default Coupon
@@ -155,7 +133,7 @@ export function CreateCouponDialog({ courses }: { courses: CourseOption[] }) {
           <div className="mt-6 flex justify-end gap-3 border-t border-border pt-4">
             <button
               type="button"
-              onClick={() => setIsOpen(false)}
+              onClick={() => close()}
               className="min-h-10 rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent-muted/50 transition-colors"
             >
               Cancel

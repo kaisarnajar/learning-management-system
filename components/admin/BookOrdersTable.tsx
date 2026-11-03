@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { formatPrice } from "@/utils/money";
 import { useState } from "react";
 import type { BookOrderWithItems } from "@/services/bookstore";
 import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrderRefunded, voidBookOrder } from "@/app/admin/bookstore/orders/actions";
@@ -11,10 +12,6 @@ import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons"
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 
 import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/utils/form";
-
-export function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
 
 export function ScreenshotPreview({ path }: { path: string }) {
   const [open, setOpen] = useState(false);
@@ -329,14 +326,14 @@ export function BaseOrderRow({
             <li key={item.id} className="text-sm text-foreground">
               {item.book.title}{" "}
               <span className="text-muted">
-                × {item.quantity} — {formatPrice(item.priceAtPurchaseInrPaise * item.quantity)}
+                × {item.quantity} — {formatPrice(item.priceAtPurchaseInrPaise * item.quantity, { exact: true })}
               </span>
             </li>
           ))}
         </ul>
       </td>
       <td className="px-4 py-4 align-top">
-        <p className="font-semibold text-foreground">{formatPrice(order.totalAmountInrPaise)}</p>
+        <p className="font-semibold text-foreground">{formatPrice(order.totalAmountInrPaise, { exact: true })}</p>
       </td>
       <td className="px-4 py-4 align-top text-sm">
         <p className="text-muted capitalize">{order.paymentMethod ?? "—"}</p>

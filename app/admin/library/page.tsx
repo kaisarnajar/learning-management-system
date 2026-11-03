@@ -1,18 +1,15 @@
 import Link from "next/link";
+import { AdminListPage } from "@/components/shared/AdminListPage";
 import Image from "next/image";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteLibraryItemAction } from "@/app/admin/library/actions";
 import { adminActionButtonClassName } from "@/utils/form";
 import { StatusBadge } from "@/components/admin/StatusBadge";
-import { ListSearchForm } from "@/components/shared/ListSearchForm";
-import { Pagination } from "@/components/shared/Pagination";
 import { getAllLibraryItemsPaginated } from "@/services/library";
-import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
-import { Suspense } from "react";
 import { requireAdmin } from "@/services/auth-actions";
 
 type PageParams = {
@@ -25,28 +22,43 @@ type PageParams = {
   [key: string]: string | undefined;
 };
 
-async function AdminLibraryList({ params, q }: { params: PageParams; q?: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
-  const { items, totalCount } = await getAllLibraryItemsPaginated(requestedPage, pageSize, q);
-  const page = clampPage(requestedPage, totalCount, pageSize);
+export default async function AdminLibraryPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  await requireAdmin();
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
 
   return (
-    <>
-      <div className="mt-6">
-        <ListSearchForm
-          action="/admin/library"
-          query={q}
-          placeholder="Search by title, author, or topic"
-          totalCount={q ? totalCount : undefined}
-        />
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-primary">Library</h1>
+        </div>
+        <Link
+          href="/admin/library/new"
+          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
+        >
+          Add item
+        </Link>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-        {totalCount === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted">
-            {q ? "No library items match your search." : "No library items yet."}
-          </p>
-        ) : (
+      <ActionToast trigger={params.created === "1"} paramName="created" message="Item created." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Item deleted." variant="info" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
+
+      <AdminListPage
+        basePath="/admin/library"
+        params={params}
+        q={q}
+        searchPlaceholder="Search by title, author, or topic"
+        emptyText="No library items yet."
+        noMatchText="No library items match your search."
+        load={(page, pageSize) => getAllLibraryItemsPaginated(page, pageSize, q)}
+      >
+        {({ items }) => (
           <table className="w-full min-w-ui-720 text-left text-sm">
             <thead className="border-b border-border bg-background/50 text-muted">
               <tr>
@@ -112,58 +124,7 @@ async function AdminLibraryList({ params, q }: { params: PageParams; q?: string 
             </tbody>
           </table>
         )}
-      </div>
-
-      <Pagination
-        basePath="/admin/library"
-        params={params}
-        page={page}
-        totalCount={totalCount}
-        pageSize={pageSize}
-      />
-    </>
-  );
-}
-
-function TableSkeleton() {
-  return (
-    <>
-      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
-      <div className="mt-4 h-ui-400 w-full rounded-lg bg-border/40 animate-pulse" />
-    </>
-  );
-}
-
-export default async function AdminLibraryPage({
-  searchParams,
-}: {
-  searchParams: Promise<PageParams>;
-}) {
-  await requireAdmin();
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
-
-  return (
-    <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Library</h1>
-        </div>
-        <Link
-          href="/admin/library/new"
-          className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
-        >
-          Add item
-        </Link>
-      </div>
-
-      <ActionToast trigger={params.created === "1"} paramName="created" message="Item created." variant="info" />
-      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Item deleted." variant="info" />
-      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
-
-      <Suspense fallback={<TableSkeleton />}>
-        <AdminLibraryList params={params} q={q} />
-      </Suspense>
+      </AdminListPage>
     </div>
   );
 }

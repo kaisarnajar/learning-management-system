@@ -5,7 +5,7 @@ import { ScreenshotPreview } from "@/components/admin/BookOrdersTable";
 import { requireAdmin } from "@/services/auth-actions";
 import { getBookOrderDetail } from "@/services/book-order-detail";
 import { bookOrderStatusClass, bookOrderStatusLabel } from "@/services/bookstore";
-import { formatPrice } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 
 export const metadata: Metadata = { title: "Book order — Admin" };
 

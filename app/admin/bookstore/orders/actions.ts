@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { adminReturnUrl, revalidateAdminPaths } from "@/utils/admin-redirects";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import {
@@ -29,10 +30,7 @@ function revalidateOrderPaths(userId: string) {
     "/profile/notifications",
     "/profile",
   ];
-  for (const p of paths) {
-    revalidatePath(p, "page");
-    revalidatePath(p, "layout");
-  }
+  revalidateAdminPaths(paths);
   revalidatePath(`/admin/students/${userId}`, "page");
   revalidatePath(`/admin/students/${userId}`, "page");
 }
@@ -61,16 +59,6 @@ async function transitionOrder(
   }
 }
 
-function orderReturnUrl(returnTo: string | undefined, event: string): string {
-  const fallback = `/admin/bookstore/orders?${event}=1`;
-  if (!returnTo?.startsWith("/admin")) return fallback;
-  const [pathname, query = ""] = returnTo.split("?");
-  const params = new URLSearchParams(query);
-  params.set(event, "1");
-  const qs = params.toString();
-  return qs ? `${pathname}?${qs}` : fallback;
-}
-
 export async function approveBookOrder(
   orderId: string,
   returnTo?: string,
@@ -85,7 +73,7 @@ export async function approveBookOrder(
   if (!order) return { error: "Order not found." };
 
   if (order.status === "APPROVED") {
-    redirect(orderReturnUrl(returnTo, "confirmed"));
+    redirect(adminReturnUrl(returnTo, "/admin/bookstore/orders", "confirmed"));
   }
 
   if (order.status !== "PENDING_VERIFICATION") {
@@ -127,7 +115,7 @@ export async function approveBookOrder(
   });
 
   revalidateOrderPaths(order.userId);
-  redirect(orderReturnUrl(returnTo, "confirmed"));
+  redirect(adminReturnUrl(returnTo, "/admin/bookstore/orders", "confirmed"));
 }
 
 export async function declineBookOrder(
@@ -160,7 +148,7 @@ export async function declineBookOrder(
   });
 
   revalidateOrderPaths(order.userId);
-  redirect(orderReturnUrl(returnTo, "declined"));
+  redirect(adminReturnUrl(returnTo, "/admin/bookstore/orders", "declined"));
 }
 
 export async function markBookOrderShipped(
@@ -213,7 +201,7 @@ export async function markBookOrderShipped(
   });
 
   revalidateOrderPaths(order.userId);
-  redirect(orderReturnUrl(returnTo, "shipped"));
+  redirect(adminReturnUrl(returnTo, "/admin/bookstore/orders", "shipped"));
 }
 
 /**
@@ -271,7 +259,7 @@ export async function markBookOrderRefunded(
   });
 
   revalidateOrderPaths(order.userId);
-  redirect(orderReturnUrl(returnTo, "refunded"));
+  redirect(adminReturnUrl(returnTo, "/admin/bookstore/orders", "refunded"));
 }
 
 /**

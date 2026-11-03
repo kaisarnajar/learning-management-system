@@ -1,14 +1,11 @@
 "use client";
 
 import Image from "next/image";
+import { formatPrice } from "@/utils/money";
 import Link from "next/link";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
 import { AddToCartButton } from "@/components/bookstore/AddToCartButton";
 import type { BookWithDetails } from "@/services/bookstore";
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
 
 export function BookCard({ book }: { book: BookWithDetails }) {
   return (
@@ -62,9 +59,9 @@ export function BookCard({ book }: { book: BookWithDetails }) {
         </div>
 
         <div className="flex items-baseline gap-2">
-          <span className="text-base font-bold text-primary">{formatPrice(book.priceInrPaise)}</span>
+          <span className="text-base font-bold text-primary">{formatPrice(book.priceInrPaise, { exact: true })}</span>
           {book.mrpInrPaise > book.priceInrPaise && (
-            <span className="text-sm text-muted line-through">{formatPrice(book.mrpInrPaise)}</span>
+            <span className="text-sm text-muted line-through">{formatPrice(book.mrpInrPaise, { exact: true })}</span>
           )}
         </div>
 

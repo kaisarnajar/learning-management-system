@@ -1,4 +1,4 @@
-import { formatPrice } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import type { BookstoreFinanceSummary } from "@/services/finance-bookstore";
 
 export function BookstoreFinanceSummaryCards({ summary }: { summary: BookstoreFinanceSummary }) {

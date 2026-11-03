@@ -8,7 +8,8 @@ import { RemoveStudentEnrollmentAction } from "@/components/admin/RemoveStudentE
 
 import { Pagination } from "@/components/shared/Pagination";
 import { deleteStudentUserForm } from "@/app/admin/students/actions";
-import { formatPrice, getAllCourses } from "@/services/courses";
+import { getAllCourses } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import { enrollmentStatusClass, enrollmentStatusLabel } from "@/services/enrollments";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { getPaymentRecordsForUserPaginated } from "@/services/payments";

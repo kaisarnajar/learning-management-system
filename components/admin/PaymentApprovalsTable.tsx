@@ -7,7 +7,7 @@ import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { confirmMonthlyPayment, declineMonthlyPayment, voidApprovedPayment } from "@/app/admin/payments/actions";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
-import { formatPrice } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import type { CoursePaymentSubmissionWithUser } from "@/services/monthly-payments";
 import { MONTHLY_PAYMENT_APPROVED } from "@/services/monthly-payment-status";
 import { useToast } from "@/components/shared/ToastProvider";

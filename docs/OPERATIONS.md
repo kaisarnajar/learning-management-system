@@ -28,6 +28,10 @@ deploy:
 7. **Never run against production:** `prisma db push`, `prisma migrate reset`,
    `prisma migrate dev`, `npm run db:seed:demo`, any script without a prior
    dry run.
+8. **Connection settings live on the URL.** `DATABASE_URL` is the Neon pooler
+   URL with `connection_limit=1&pool_timeout=10` (one connection per function
+   instance); `DIRECT_URL` is the direct URL used only by `prisma migrate`.
+   The Prisma client itself has no pool configuration.
 
 ## 2. Migration history and the baseline
 

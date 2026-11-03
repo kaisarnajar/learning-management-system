@@ -22,7 +22,13 @@ export const authConfig = {
         ]
       : []),
   ],
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    // A session lives a week; the token (and with it role/verification state)
+    // is re-issued at most hourly while it is in use.
+    maxAge: 7 * 24 * 60 * 60,
+    updateAge: 60 * 60,
+  },
   pages: {
     signIn: "/login",
   },

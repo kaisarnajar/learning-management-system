@@ -3,6 +3,7 @@ import { prisma } from "@/utils/prisma";
 import Link from "next/link";
 import { confirmEmailVerification } from "@/app/verify-email/actions";
 import { findVerificationToken } from "@/services/tokens";
+import { SessionRefresh } from "@/components/auth/SessionRefresh";
 
 type PageProps = {
   searchParams: Promise<{ token?: string; verified?: string; error?: string }>;
@@ -18,7 +19,13 @@ export default async function VerifyEmailPage({ searchParams }: PageProps) {
   const { token, verified, error } = await searchParams;
 
   if (verified === "1") {
-    return <VerificationResult success={true} message="Your email has been verified successfully." />;
+    return (
+      <>
+        {/* Refresh the signed-in session so the verification banner clears without a new login. */}
+        <SessionRefresh />
+        <VerificationResult success={true} message="Your email has been verified successfully." />
+      </>
+    );
   }
 
   if (error) {

@@ -17,5 +17,7 @@ declare module "next-auth/jwt" {
     role?: "USER" | "ADMIN" | "TEACHER" | "DEVELOPER";
     teacherId?: string;
     emailVerified?: string | null;
+    /** Epoch ms of the last role/verification refresh from the database. */
+    refreshedAt?: number;
   }
 }

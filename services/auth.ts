@@ -9,6 +9,9 @@ import { withDbErrorHandling } from "@/utils/db-error";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { getClientIp, rateLimit, RATE_LIMITS } from "@/services/rate-limit";
 
+/** How long role, teacher link and verification state may be served from the token before being re-read. */
+const TOKEN_REFRESH_INTERVAL_MS = 60 * 1000;
+
 const prismaAdapter = PrismaAdapter(prisma);
 const originalCreateUser = prismaAdapter.createUser;
 if (originalCreateUser) {
@@ -65,7 +68,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       if (user?.id) {
         token.id = user.id;
 
@@ -88,14 +91,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         }
       }
 
-      // Fetch user role & profile details on initial sign-in or session update
-      if ((user || !token.role) && token.email) {
+      // Role, teacher link and verification state are re-read from the
+      // database on sign-in, on an explicit update() and at most once a
+      // minute otherwise, so removing an admin email or verifying an address
+      // takes effect on the next request instead of at the next sign-in.
+      const stale = !token.refreshedAt || Date.now() - token.refreshedAt > TOKEN_REFRESH_INTERVAL_MS;
+      if (token.email && (user || trigger === "update" || !token.role || stale)) {
         try {
           const dbUser = await prisma.user.findUnique({
-            select: { emailVerified: true, name: true, image: true },
+            select: { emailVerified: true, name: true, image: true, deletedAt: true },
             where: { email: token.email }
           });
-          token.emailVerified = dbUser?.emailVerified ? dbUser.emailVerified.toISOString() : null;
+          if (!dbUser || dbUser.deletedAt) {
+            // Account gone: hand back an empty token so the session ends.
+            return null;
+          }
+          token.emailVerified = dbUser.emailVerified ? dbUser.emailVerified.toISOString() : null;
+          token.refreshedAt = Date.now();
           if (dbUser?.name) token.name = dbUser.name;
           
           // Never store large base64 data URLs in JWT session cookie header to prevent Vercel 494 (REQUEST_HEADER_TOO_LARGE)

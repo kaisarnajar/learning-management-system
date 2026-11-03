@@ -15,6 +15,8 @@ const userSelect = {
   image: true,
   registrationNumber: true,
   emailVerified: true,
+  password: true,
+  deletedAt: true,
 } as const;
 
 /**
@@ -93,11 +95,18 @@ export async function POST(request: NextRequest) {
         },
         select: userSelect,
       });
+    } else if (user.deletedAt) {
+      return NextResponse.json(
+        { success: false, error: "This account is no longer available." },
+        { status: 403 }
+      );
     } else if (!user.emailVerified) {
-      // Google has verified ownership of this address.
+      // Google has verified ownership of this address. A password set on the
+      // unverified row (possibly by someone else) must not survive, same as
+      // the web sign-in flow.
       user = await prisma.user.update({
         where: { id: user.id },
-        data: { emailVerified: new Date() },
+        data: { emailVerified: new Date(), password: null },
         select: userSelect,
       });
     }

@@ -35,6 +35,7 @@ export const RATE_LIMITS = {
   FORGOT_PASSWORD_EMAIL: { name: "auth:forgot:email", limit: 3, windowSeconds: 15 * 60 },
   FORGOT_PASSWORD_IP: { name: "auth:forgot:ip", limit: 10, windowSeconds: 60 * 60 },
   RESEND_VERIFICATION: { name: "auth:resend", limit: 3, windowSeconds: 15 * 60 },
+  RESEND_VERIFICATION_IP: { name: "auth:resend:ip", limit: 10, windowSeconds: 60 * 60 },
   GOOGLE_IP: { name: "auth:google:ip", limit: 20, windowSeconds: 15 * 60 },
   CONTACT_IP: { name: "contact:ip", limit: 5, windowSeconds: 60 * 60 },
   FATWA_ASK_IP: { name: "fatwa:ask:ip", limit: 5, windowSeconds: 60 * 60 },

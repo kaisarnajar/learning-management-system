@@ -55,7 +55,17 @@ export default async function TeacherFatwaDetailPage({
       )}
 
       <div className="mt-8">
-        <AnswerTeacherFatwaForm question={question} action={answerAction} />
+        <AnswerTeacherFatwaForm
+          question={{
+            id: question.id,
+            title: question.title,
+            question: question.question,
+            category: question.category,
+            answer: question.answer,
+            approvalStatus: question.approvalStatus,
+          }}
+          action={answerAction}
+        />
       </div>
       
       {question.approvalStatus === "APPROVED" && Boolean(question.answer) && (

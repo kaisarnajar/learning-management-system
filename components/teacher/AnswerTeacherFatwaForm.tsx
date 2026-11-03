@@ -6,8 +6,14 @@ import type { FatwaQuestion } from "@prisma/client";
 import { labelClassName } from "@/utils/form";
 import { RichTextEditor } from "@/components/shared/RichTextEditor";
 
+/** Only the fields the form needs; asker contact details never reach the client. */
+export type TeacherFatwaFormQuestion = Pick<
+  FatwaQuestion,
+  "id" | "title" | "question" | "category" | "answer" | "approvalStatus"
+>;
+
 type AnswerTeacherFatwaFormProps = {
-  question: FatwaQuestion;
+  question: TeacherFatwaFormQuestion;
   action: (formData: FormData) => Promise<void>;
 };
 

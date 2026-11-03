@@ -63,9 +63,10 @@ export function EnrollmentPaymentForm({
     try {
       const formData = new FormData();
       formData.append("courseId", courseId);
-      if (selectedCouponId && selectedCouponId !== "none") {
-        formData.append("couponId", selectedCouponId);
-      }
+      // Always send the choice explicitly ("none" = pay the full fee) and the
+      // amount the student saw, so the server can refuse a mismatch.
+      formData.append("couponId", selectedCouponId && selectedCouponId !== "none" ? selectedCouponId : "none");
+      formData.append("expectedAmountPaise", String(currentAmountPaise));
       
       if (!isFree) {
         formData.append("paymentMethod", paymentMethod);

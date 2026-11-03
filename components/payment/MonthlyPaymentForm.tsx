@@ -99,9 +99,10 @@ export function MonthlyPaymentForm({
       formData.append("paymentMonth", isOneTime ? "01" : paymentMonth);
       formData.append("paymentYear", isOneTime ? String(now.getFullYear()) : paymentYear);
       formData.append("paymentType", freqOption.paymentType);
-      if (selectedCouponId && selectedCouponId !== "none") {
-        formData.append("couponId", selectedCouponId);
-      }
+      // Always send the choice explicitly ("none" = pay the full fee) and the
+      // amount the student saw, so the server can refuse a mismatch.
+      formData.append("couponId", selectedCouponId && selectedCouponId !== "none" ? selectedCouponId : "none");
+      formData.append("expectedAmountPaise", String(totalAmountPaise));
       
       if (!isFree) {
         formData.append("paymentMethod", paymentMethod);

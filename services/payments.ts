@@ -14,6 +14,9 @@ import {
 import { createCoursePaymentSubmission } from "@/services/payment-submission";
 import { AWAITING_ENROLLMENT_FEE } from "@/services/enrollment-status";
 
+const AMOUNT_MISMATCH_MESSAGE =
+  "The payable amount has changed (for example a coupon is no longer available). Please refresh the page and try again.";
+
 export async function getPaymentRecordById(id: string) {
   return withDbErrorHandling(() => prisma.paymentRecord.findUnique({
       where: { id },
@@ -59,7 +62,8 @@ export async function processMonthlyPayment(
   paymentMethod: string | null,
   upiTransactionId: string | null,
   screenshotFile: File | null,
-  couponId?: string | null
+  couponId?: string | null,
+  expectedAmountPaise?: number | null,
 ) {
   const course = await getCourseById(courseId);
   if (!course) return { error: "Course not found.", status: 404 };
@@ -99,6 +103,9 @@ export async function processMonthlyPayment(
   const { getSelectedCoupon, calculateDiscountedAmount, recordCouponUsage } = await import("@/services/coupons");
   const coupon = await getSelectedCoupon(userId, courseId, "course", couponId);
   const amountInrPaise = coupon ? calculateDiscountedAmount(baseAmountInrPaise, coupon.percentage) : baseAmountInrPaise;
+  if (expectedAmountPaise != null && expectedAmountPaise !== amountInrPaise) {
+    return { error: AMOUNT_MISMATCH_MESSAGE, status: 409 };
+  }
   const isFree = amountInrPaise === 0;
   const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
 
@@ -149,7 +156,8 @@ export async function processEnrollmentPayment(
   paymentMethod: string | null,
   upiTransactionId: string | null,
   screenshotFile: File | null,
-  couponId?: string | null
+  couponId?: string | null,
+  expectedAmountPaise?: number | null,
 ) {
   const course = await getCourseById(courseId);
   if (!course) return { error: "Course not found.", status: 404 };
@@ -188,6 +196,9 @@ export async function processEnrollmentPayment(
   const { getSelectedCoupon, calculateDiscountedAmount, recordCouponUsage } = await import("@/services/coupons");
   const coupon = await getSelectedCoupon(userId, courseId, "enrollment", couponId);
   const enrollmentFeePaise = coupon ? calculateDiscountedAmount(baseEnrollmentFeePaise, coupon.percentage) : baseEnrollmentFeePaise;
+  if (expectedAmountPaise != null && expectedAmountPaise !== enrollmentFeePaise) {
+    return { error: AMOUNT_MISMATCH_MESSAGE, status: 409 };
+  }
   const isFree = enrollmentFeePaise === 0;
   const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
 

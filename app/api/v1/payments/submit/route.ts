@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     let paymentMethod = "UPI";
     let upiTransactionId = "";
     let couponId: string | null = null;
+    let expectedAmountPaise: number | null = null;
     let screenshotFile: File | null = null;
 
     if (contentType.includes("multipart/form-data")) {
@@ -34,6 +35,8 @@ export async function POST(request: NextRequest) {
       paymentMethod = (formData.get("paymentMethod") as string) || "UPI";
       upiTransactionId = (formData.get("upiTransactionId") as string) || "";
       couponId = (formData.get("couponId") as string) || null;
+      const expectedRaw = formData.get("expectedAmountPaise");
+      expectedAmountPaise = typeof expectedRaw === "string" && /^\d+$/.test(expectedRaw) ? Number(expectedRaw) : null;
 
       const file = formData.get("screenshot");
       if (file instanceof File) {
@@ -48,6 +51,7 @@ export async function POST(request: NextRequest) {
       paymentMethod = body.paymentMethod || "UPI";
       upiTransactionId = body.upiTransactionId || "";
       couponId = body.couponId || null;
+      expectedAmountPaise = Number.isInteger(body.expectedAmountPaise) ? body.expectedAmountPaise : null;
     }
 
     if (!courseId) {
@@ -65,7 +69,8 @@ export async function POST(request: NextRequest) {
         paymentMethod,
         upiTransactionId,
         screenshotFile,
-        couponId
+        couponId,
+        expectedAmountPaise,
       );
     } else {
       result = await processMonthlyPayment(
@@ -76,7 +81,8 @@ export async function POST(request: NextRequest) {
         paymentMethod,
         upiTransactionId,
         screenshotFile,
-        couponId
+        couponId,
+        expectedAmountPaise,
       );
     }
 

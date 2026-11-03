@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { BlogPostCard } from "@/components/blog/BlogPostCard";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
-import { getFeaturedHomepageBlogPosts } from "@/services/blogs";
+import { getCachedFeaturedHomepageBlogPosts as getFeaturedHomepageBlogPosts } from "@/services/home-content";
 
 export async function FeaturedBlogs() {
   const posts = await getFeaturedHomepageBlogPosts();

@@ -7,7 +7,6 @@ import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { paginateQuery } from "@/utils/prisma-utils";
-import { cachedPublic } from "@/services/public-cache";
 import { cache } from "react";
 
 function adminBlogPostsWhere(searchQuery?: string) {
@@ -44,7 +43,7 @@ export function isBlogPubliclyVisible(post: Pick<BlogPost, "published" | "approv
   return post.published && post.approvalStatus === "APPROVED";
 }
 
-async function fetchGetFeaturedHomepageBlogPosts(): Promise<BlogPostWithImages[]> {
+export async function getFeaturedHomepageBlogPosts(): Promise<BlogPostWithImages[]> {
   const posts = await withDbErrorHandling(() => prisma.blogPost.findMany({
       where: { featuredOnHomepage: true },
       orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
@@ -57,9 +56,6 @@ async function fetchGetFeaturedHomepageBlogPosts(): Promise<BlogPostWithImages[]
 
   return posts.filter(isBlogPubliclyVisible);
 }
-
-/** Homepage section: cached across requests (services/public-cache.ts). */
-export const getFeaturedHomepageBlogPosts = cachedPublic("featured-blogs", fetchGetFeaturedHomepageBlogPosts);
 
 export async function getFeaturedHomepageBlogCount(): Promise<number> {
   const posts = await withDbErrorHandling(() => prisma.blogPost.findMany({

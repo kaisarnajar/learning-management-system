@@ -5,7 +5,6 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/paginat
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { cachedPublic } from "@/services/public-cache";
 
 function allCoursesWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -58,8 +57,7 @@ export async function getPublicCoursesPaginated(
   return { items, totalCount };
 }
 
-/** Homepage section: cached across requests (services/public-cache.ts) and memoised per request. */
-export const getFeaturedHomepageCourses = cache(cachedPublic("featured-courses", async (): Promise<CourseWithTeacher[]> => {
+export const getFeaturedHomepageCourses = cache(async (): Promise<CourseWithTeacher[]> => {
   const courses = await withDbErrorHandling(() => prisma.course.findMany({
       where: { featuredOnHomepage: true },
       include: courseWithTeacherInclude,
@@ -67,7 +65,7 @@ export const getFeaturedHomepageCourses = cache(cachedPublic("featured-courses",
       take: HOMEPAGE_FEATURED_COURSES_MAX,
     }), "Database operation failed");
   return courses.filter((c) => isCoursePubliclyVisible(c.status));
-}));
+});
 
 export async function getFeaturedHomepageCourseCount(): Promise<number> {
   const courses = await withDbErrorHandling(() => prisma.course.findMany({

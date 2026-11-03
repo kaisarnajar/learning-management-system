@@ -2,6 +2,7 @@
 
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { revalidatePath } from "next/cache";
+import { createAdminCrudActions } from "@/services/admin-crud";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { formatInputDateValue } from "@/utils/form-date";
@@ -63,125 +64,104 @@ function parseSiteAnnouncementForm(formData: FormData) {
   return { ok: true as const, data: parsed.data };
 }
 
-export async function createSiteAnnouncement(formData: FormData) {
-  const session = await requireAdmin();
-  const parsed = parseSiteAnnouncementForm(formData);
+type SiteAnnouncementColumns = Parameters<typeof updateSiteAnnouncementRecord>[1];
 
-  if (!parsed.ok) {
-    redirect(`${adminListPath("/new")}?error=${encodeURIComponent(parsed.message)}`);
-  }
+const crud = createAdminCrudActions({
+  label: "site announcement",
+  unexpectedErrorMessage: "An unexpected database error occurred.",
+  // Admins edit drafts too; the public getter only returns published rows.
+  model: {
+    find: getSiteAnnouncementForAdmin,
+    remove: deleteSiteAnnouncementRecord,
+  },
+  parse: (formData) => {
+    const parsed = parseSiteAnnouncementForm(formData);
+    return parsed.ok ? { ok: true, data: parsed.data } : { ok: false, message: parsed.message };
+  },
+  paths: { list: adminListPath(), revalidate: revalidateSiteAnnouncementPaths },
+  hooks: {
+    toColumns: (data) => ({
+      title: data.title,
+      body: data.body,
+      eventDate: data.eventDate || null,
+      location: data.location || null,
+      published: data.published,
+    }),
 
-  const featured = await resolveAnnouncementFeaturedUpdate({
-    published: parsed.data.published,
-    requestFeatured: parsed.data.showOnHomepage,
-    currentlyFeatured: false,
-  });
-
-  if ("error" in featured) {
-    redirect(`${adminListPath("/new")}?error=${encodeURIComponent(featured.error)}`);
-  }
-
-  try {
-    const announcement = await createSiteAnnouncementRecord({
-      title: parsed.data.title,
-      body: parsed.data.body,
-      eventDate: parsed.data.eventDate || null,
-      location: parsed.data.location || null,
-      showOnHomepage: featured.showOnHomepage,
-      published: parsed.data.published,
-      createdById: session.user.id,
-    });
-
-    const imageResult = await addImagesToAnnouncement(announcement.id, formData, 0);
-    if (imageResult.error) {
-      await deleteSiteAnnouncementRecord(announcement.id);
-      redirect(`${adminListPath("/new")}?error=${encodeURIComponent(imageResult.error)}`);
-    }
-
-    if (parsed.data.published) {
-      await notifyAllStudentsOfSiteAnnouncement({
-        announcementId: announcement.id,
-        title: announcement.title,
-        body: announcement.body,
+    prepareCreate: async ({ session, data }) => {
+      const featured = await resolveAnnouncementFeaturedUpdate({
+        published: data.published,
+        requestFeatured: data.showOnHomepage,
+        currentlyFeatured: false,
       });
-    }
-  } catch (error) {
-    if (isRedirectError(error)) { throw error; }
-    console.error("Database error creating site announcement:", error);
-    redirect(`${adminListPath("/new")}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
-  }
+      if ("error" in featured) return { error: featured.error };
+      return { columns: { showOnHomepage: featured.showOnHomepage, createdById: session.user.id } };
+    },
 
-  revalidateSiteAnnouncementPaths();
-  redirect(`${adminListPath()}?posted=1`);
+    writeCreate: (_ctx, columns) =>
+      createSiteAnnouncementRecord(columns as Parameters<typeof createSiteAnnouncementRecord>[0]),
+
+    afterCreate: async ({ formData, data }, announcement) => {
+      const imageResult = await addImagesToAnnouncement(announcement.id, formData, 0);
+      if (imageResult.error) {
+        await deleteSiteAnnouncementRecord(announcement.id);
+        return { error: imageResult.error };
+      }
+
+      if (data.published) {
+        await notifyAllStudentsOfSiteAnnouncement({
+          announcementId: announcement.id,
+          title: data.title,
+          body: data.body,
+        });
+      }
+    },
+
+    prepareUpdate: async ({ id, existing, formData, data }) => {
+      const removeIds = getRemoveAnnouncementImageIds(formData);
+      await removeAnnouncementImages(removeIds, id);
+
+      const remainingCount =
+        existing.images.length - existing.images.filter((img) => removeIds.includes(img.id)).length;
+
+      const imageResult = await addImagesToAnnouncement(id, formData, remainingCount);
+      if (imageResult.error) return { error: imageResult.error };
+
+      const featured = await resolveAnnouncementFeaturedUpdate({
+        published: data.published,
+        requestFeatured: data.showOnHomepage,
+        currentlyFeatured: existing.showOnHomepage,
+      });
+      if ("error" in featured) return { error: featured.error };
+      return { columns: { showOnHomepage: featured.showOnHomepage } };
+    },
+
+    writeUpdate: ({ id }, columns) => updateSiteAnnouncementRecord(id, columns as SiteAnnouncementColumns),
+
+    afterUpdate: async ({ id, existing, data }) => {
+      if (data.published && !existing.published) {
+        await notifyAllStudentsOfSiteAnnouncement({
+          announcementId: id,
+          title: data.title,
+          body: data.body,
+        });
+      }
+    },
+
+    beforeDelete: async (existing) => {
+      for (const img of existing.images) {
+        await deleteAnnouncementImageFile(img.imagePath);
+      }
+    },
+  },
+});
+
+export async function createSiteAnnouncement(formData: FormData) {
+  return crud.create(formData);
 }
 
 export async function updateSiteAnnouncement(id: string, formData: FormData) {
-  await requireAdmin();
-  const parsed = parseSiteAnnouncementForm(formData);
-
-  if (!parsed.ok) {
-    redirect(`${adminListPath(`/${id}/edit`)}?error=${encodeURIComponent(parsed.message)}`);
-  }
-
-  let existing;
-  try {
-    // Admins edit drafts too; the public getter only returns published rows.
-    existing = await getSiteAnnouncementForAdmin(id);
-  } catch (error) {
-    if (isRedirectError(error)) { throw error; }
-    console.error("Database error fetching site announcement:", error);
-    redirect(`${adminListPath(`/${id}/edit`)}?error=${encodeURIComponent("Database error.")}`);
-  }
-  if (!existing) {
-    redirect(`${adminListPath()}?error=notfound`);
-  }
-
-  const removeIds = getRemoveAnnouncementImageIds(formData);
-  await removeAnnouncementImages(removeIds, id);
-
-  const remainingCount =
-    existing.images.length - existing.images.filter((img) => removeIds.includes(img.id)).length;
-
-  const imageResult = await addImagesToAnnouncement(id, formData, remainingCount);
-  if (imageResult.error) {
-    redirect(`${adminListPath(`/${id}/edit`)}?error=${encodeURIComponent(imageResult.error)}`);
-  }
-
-  const featured = await resolveAnnouncementFeaturedUpdate({
-    published: parsed.data.published,
-    requestFeatured: parsed.data.showOnHomepage,
-    currentlyFeatured: existing.showOnHomepage,
-  });
-
-  if ("error" in featured) {
-    redirect(`${adminListPath(`/${id}/edit`)}?error=${encodeURIComponent(featured.error)}`);
-  }
-
-  try {
-    await updateSiteAnnouncementRecord(id, {
-      title: parsed.data.title,
-      body: parsed.data.body,
-      eventDate: parsed.data.eventDate || null,
-      location: parsed.data.location || null,
-      showOnHomepage: featured.showOnHomepage,
-      published: parsed.data.published,
-    });
-
-    if (parsed.data.published && !existing.published) {
-      await notifyAllStudentsOfSiteAnnouncement({
-        announcementId: id,
-        title: parsed.data.title,
-        body: parsed.data.body,
-      });
-    }
-  } catch (error) {
-    if (isRedirectError(error)) { throw error; }
-    console.error("Database error updating site announcement:", error);
-    redirect(`${adminListPath(`/${id}/edit`)}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
-  }
-
-  revalidateSiteAnnouncementPaths();
-  redirect(`${adminListPath()}?saved=1`);
+  return crud.update(id, formData);
 }
 
 export async function toggleSiteAnnouncementHomepage(id: string) {
@@ -217,34 +197,7 @@ export async function toggleSiteAnnouncementHomepage(id: string) {
 }
 
 export async function deleteSiteAnnouncement(id: string) {
-  await requireAdmin();
-
-  let existing;
-  try {
-    existing = await getSiteAnnouncementForAdmin(id);
-  } catch (error) {
-    if (isRedirectError(error)) { throw error; }
-    console.error("Database error fetching site announcement:", error);
-    redirect(`${adminListPath()}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
-  }
-  
-  if (!existing) {
-    redirect(`${adminListPath()}?error=notfound`);
-  }
-
-  try {
-    for (const img of existing.images) {
-      await deleteAnnouncementImageFile(img.imagePath);
-    }
-    await deleteSiteAnnouncementRecord(id);
-  } catch (error) {
-    if (isRedirectError(error)) { throw error; }
-    console.error("Database error deleting site announcement:", error);
-    redirect(`${adminListPath()}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
-  }
-
-  revalidateSiteAnnouncementPaths();
-  redirect(`${adminListPath()}?deleted=1`);
+  return crud.remove(id);
 }
 
 function revalidateSiteAnnouncementPaths() {

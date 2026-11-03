@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Prisma } from "@prisma/client";
+import { createAdminCrudActions, parseFormWith } from "@/services/admin-crud";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { requireAdmin } from "@/services/auth-actions";
@@ -12,6 +14,66 @@ import { sanitizeRichText } from "@/services/rich-text";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { BRAND_CONFIG } from "@/config/brand";
 import { revalidatePublicContent } from "@/services/public-cache";
+
+const parseFatwaAnswerForm = parseFormWith(
+  fatwaAnswerSchema,
+  (formData: FormData) => ({ answer: sanitizeRichText(String(formData.get("answer") ?? "")) }),
+  "Invalid answer",
+);
+
+function revalidateFatwaPaths(id: string) {
+  revalidatePath("/");
+
+  revalidatePublicContent();
+  revalidatePath("/fatwa");
+  revalidatePath(`/fatwa/${id}`);
+  revalidatePath("/admin/fatwa");
+  revalidatePath(`/admin/fatwa/${id}`);
+}
+
+// Rejecting a question is the module's "update"; deleting it is its "remove".
+const crud = createAdminCrudActions({
+  label: "fatwa question",
+  notFoundMessage: "Question not found.",
+  model: {
+    find: (id) => prisma.fatwaQuestion.findUnique({ where: { id } }),
+    update: (id, data) => prisma.fatwaQuestion.update({ where: { id }, data: data as Prisma.FatwaQuestionUncheckedUpdateInput }),
+    remove: (id) => prisma.fatwaQuestion.delete({ where: { id } }),
+  },
+  parse: parseFatwaAnswerForm,
+  paths: {
+    list: "/admin/fatwa",
+    editForm: (id) => `/admin/fatwa/${id}`,
+    afterUpdate: (id) => `/admin/fatwa/${id}?rejected=1`,
+    revalidate: (id) => revalidateFatwaPaths(id as string),
+  },
+  hooks: {
+    toColumns: (data) => ({
+      answer: data.answer,
+      approvalStatus: "REJECTED",
+      featuredOnHomepage: false,
+      featuredAt: null,
+    }),
+
+    afterUpdate: async ({ id, existing }) => {
+      if (existing.answeredById) {
+        const teacherId = existing.answeredById;
+        after(async () => {
+          const teacherUser = await prisma.user.findUnique({ where: { id: teacherId } }).catch(() => null);
+          if (teacherUser?.email) {
+            await sendFatwaStatusTeacherEmail({
+              to: teacherUser.email,
+              teacherName: teacherUser.name || "Teacher",
+              questionTitle: existing.title,
+              status: "rejected",
+              fatwaUrl: getFatwaPublicUrl(id),
+            });
+          }
+        });
+      }
+    },
+  },
+});
 
 export async function answerFatwaQuestion(id: string, formData: FormData) {
   const session = await requireAdmin();
@@ -63,14 +125,7 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
       },
     }), "Database operation failed");
 
-  revalidatePath("/");
-
-
-  revalidatePublicContent();
-  revalidatePath("/fatwa");
-  revalidatePath(`/fatwa/${id}`);
-  revalidatePath("/admin/fatwa");
-  revalidatePath(`/admin/fatwa/${id}`);
+  revalidateFatwaPaths(id);
 
   const fatwaUrl = getFatwaPublicUrl(id);
   const isAnonymous = existing.askerEmail === `anonymous@${new URL(BRAND_CONFIG.websiteUrl).hostname}` || existing.askerName === "Anonymous";
@@ -113,25 +168,8 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
 }
 
 export async function deleteFatwaQuestion(id: string): Promise<{ error?: string; success?: string }> {
-  await requireAdmin();
-
-  const existing = await withDbErrorHandling(() => prisma.fatwaQuestion.findUnique({ where: { id } }), "Database operation failed");
-  if (!existing) {
-    return { error: "Question not found." };
-  }
-
-  await withDbErrorHandling(() => prisma.fatwaQuestion.delete({ where: { id } }), "Database operation failed");
-
-  revalidatePath("/");
-
-
-  revalidatePublicContent();
-  revalidatePath("/fatwa");
-  revalidatePath(`/fatwa/${id}`);
-  revalidatePath("/admin/fatwa");
-  revalidatePath(`/admin/fatwa/${id}`);
-
-  return { success: "Fatwa successfully deleted." };
+  const result = await crud.removeById(id);
+  return result.error ? result : { success: "Fatwa successfully deleted." };
 }
 
 export async function deleteFatwaQuestionForm(id: string) {
@@ -143,55 +181,5 @@ export async function deleteFatwaQuestionForm(id: string) {
 }
 
 export async function rejectFatwaQuestion(id: string, formData: FormData) {
-  await requireAdmin();
-
-  const parsed = fatwaAnswerSchema.safeParse({
-    answer: sanitizeRichText(String(formData.get("answer") ?? "")),
-  });
-
-  if (!parsed.success) {
-    redirect(`/admin/fatwa/${id}?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid answer")}`);
-  }
-
-  const existing = await withDbErrorHandling(() => prisma.fatwaQuestion.findUnique({ where: { id } }), "Database operation failed");
-  if (!existing) {
-    redirect("/admin/fatwa?error=notfound");
-  }
-
-  await withDbErrorHandling(() => prisma.fatwaQuestion.update({
-      where: { id },
-      data: {
-        answer: parsed.data.answer,
-        approvalStatus: "REJECTED",
-        featuredOnHomepage: false,
-        featuredAt: null,
-      },
-    }), "Database operation failed");
-
-  revalidatePath("/");
-
-
-  revalidatePublicContent();
-  revalidatePath("/fatwa");
-  revalidatePath(`/fatwa/${id}`);
-  revalidatePath("/admin/fatwa");
-  revalidatePath(`/admin/fatwa/${id}`);
-
-  if (existing.answeredById) {
-    const teacherId = existing.answeredById;
-    after(async () => {
-      const teacherUser = await prisma.user.findUnique({ where: { id: teacherId } }).catch(() => null);
-      if (teacherUser?.email) {
-        await sendFatwaStatusTeacherEmail({
-          to: teacherUser.email,
-          teacherName: teacherUser.name || "Teacher",
-          questionTitle: existing.title,
-          status: "rejected",
-          fatwaUrl: getFatwaPublicUrl(id),
-        });
-      }
-    });
-  }
-
-  redirect(`/admin/fatwa/${id}?rejected=1`);
+  return crud.update(id, formData);
 }

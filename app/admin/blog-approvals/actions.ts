@@ -1,26 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { adminReturnUrl } from "@/utils/admin-redirects";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { revalidatePublicContent } from "@/services/public-cache";
-
-function revalidateBlogPaths(postId?: string) {
-  revalidatePath("/");
-
-  revalidatePublicContent();
-  revalidatePath("/blog");
-  revalidatePath("/admin");
-  revalidatePath("/admin/blogs");
-  revalidatePath("/admin/blog-approvals");
-  if (postId) {
-    revalidatePath(`/admin/blog-approvals/${postId}`);
-  }
-  revalidatePath("/teacher/blogs");
-}
+import { revalidateBlogPaths } from "@/services/blog-mutations";
 
 export async function approveBlogPost(
   postId: string,
@@ -40,7 +25,6 @@ export async function approveBlogPost(
     }), "Database operation failed");
 
   revalidateBlogPaths(postId);
-  revalidatePath(`/blog/${postId}`);
   redirect(adminReturnUrl(returnTo, "/admin/blog-approvals", "approved"));
 }
 

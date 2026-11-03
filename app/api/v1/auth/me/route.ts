@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
+import { apiProfileUpdateSchema } from "@/utils/validations";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -55,9 +56,17 @@ export async function PUT(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { name, fatherName, dateOfBirth, occupation, address, whatsapp, gender, image } = body;
+    const parsed = apiProfileUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { success: false, error: parsed.error.issues[0]?.message ?? "Invalid profile data." },
+        { status: 400 }
+      );
+    }
 
-    let finalImageUrl: string | undefined = image;
+    const { name, fatherName, dateOfBirth, occupation, address, whatsapp, gender, image } = parsed.data;
+
+    let finalImageUrl: string | null | undefined = image;
     if (gender === "FEMALE") {
       finalImageUrl = "/assets/female_icon.png";
     }
@@ -67,7 +76,7 @@ export async function PUT(request: NextRequest) {
       data: {
         ...(name !== undefined && { name }),
         ...(fatherName !== undefined && { fatherName }),
-        ...(dateOfBirth !== undefined && { dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null }),
+        ...(dateOfBirth !== undefined && { dateOfBirth: new Date(dateOfBirth) }),
         ...(occupation !== undefined && { occupation }),
         ...(address !== undefined && { address }),
         ...(whatsapp !== undefined && { whatsapp }),

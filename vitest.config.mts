@@ -15,6 +15,8 @@ const dbProject = (name: string, include: string[]) => ({
     setupFiles: [path.join(root, "tests/helpers/db-setup.ts")],
     globalSetup: [path.join(root, "tests/helpers/global-setup.ts")],
     fileParallelism: false,
+    // next-auth imports "next/server" without an extension, which Node ESM cannot resolve.
+    server: { deps: { inline: ["next-auth"] } },
     testTimeout: 30_000,
     hookTimeout: 60_000,
   },
@@ -33,6 +35,7 @@ export default defineConfig({
         },
       },
       dbProject("integration", ["tests/integration/**/*.test.ts"]),
+      dbProject("api", ["tests/api/**/*.test.ts"]),
     ],
   },
 });

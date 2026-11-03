@@ -4,6 +4,7 @@
 |---|---|---|
 | `npm test` | every Vitest project (unit + the DB-backed ones that are enabled) | nothing; DB suites skip themselves |
 | `npm run test:unit` | pure unit tests in `tests/unit` | nothing |
+| `npm run test:api` | every `/api/v1` route handler called directly, plus the API middleware (CORS, cross-site guard) | `DATABASE_URL_TEST` (the middleware tests run without) |
 | `npm run test:integration` | `tests/integration`: payments, enrollments, roll numbers, book orders, notifications, delete guards, audit and voiding | `DATABASE_URL_TEST` |
 
 ## Database-backed suites

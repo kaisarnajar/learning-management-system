@@ -9,6 +9,7 @@ import { hasPendingEnrollmentFeeSubmission } from "@/services/monthly-payments";
 import { prisma } from "@/utils/prisma";
 import { isUpiConfigured } from "@/services/upi";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { canReapplyForEnrollment } from "@/services/enrollment-status";
 import { getApplicableCoupons, calculateDiscountedAmount } from "@/services/coupons";
 import { getPaymentSettings } from "@/services/payment-settings";
 
@@ -37,6 +38,11 @@ export default async function PayEnrollmentFeePage({
   // Block access if already fully enrolled or completed.
   if (enrollment?.status === "active" || enrollment?.status === "completed") {
     redirect("/profile/courses");
+  }
+
+  // A rejected request must be re-applied from the course page first.
+  if (enrollment && canReapplyForEnrollment(enrollment.status)) {
+    redirect(`/courses/${courseId}`);
   }
 
   if (await hasPendingEnrollmentFeeSubmission(session.user.id, courseId)) {

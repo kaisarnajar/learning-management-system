@@ -4,7 +4,8 @@ import { prisma } from "@/utils/prisma";
 import { getCourseById } from "@/services/courses";
 import { isCourseEnrollmentOpen } from "@/services/course-status";
 import { getRegistrationFeePaise } from "@/services/course-pricing";
-import { AWAITING_ENROLLMENT_FEE, PENDING_ENROLLMENT_APPROVAL } from "@/services/enrollment-status";
+import { AWAITING_ENROLLMENT_FEE, canReapplyForEnrollment, PENDING_ENROLLMENT_APPROVAL } from "@/services/enrollment-status";
+import { startEnrollment } from "@/services/enrollments";
 import { isUserProfileComplete } from "@/services/profile";
 import { isUpiConfigured } from "@/services/upi";
 
@@ -66,7 +67,7 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (existing) {
+    if (existing && !canReapplyForEnrollment(existing.status)) {
       return NextResponse.json({
         success: true,
         alreadyEnrolled: true,
@@ -99,13 +100,8 @@ export async function POST(request: NextRequest) {
 
     const newStatus = requiresEnrollmentFee ? AWAITING_ENROLLMENT_FEE : PENDING_ENROLLMENT_APPROVAL;
 
-    const enrollment = await prisma.enrollment.create({
-      data: {
-        userId: user.id,
-        courseId: course.id,
-        status: newStatus,
-      },
-    });
+    // Reuses a previously rejected row instead of violating (userId, courseId).
+    const enrollment = await startEnrollment(user.id, course.id, newStatus);
 
     return NextResponse.json({
       success: true,

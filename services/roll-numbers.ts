@@ -1,12 +1,20 @@
-import type { Prisma } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
 
 type Tx = Prisma.TransactionClient;
 
+function isUniqueViolation(error: unknown): boolean {
+  return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
+}
+
 /**
  * Assigns the next sequential roll number for an enrollment inside an
  * existing transaction. No-op when the enrollment already has one.
- * (Row-level locking of the course is added in a later commit.)
+ *
+ * The course row is locked (SELECT ... FOR UPDATE) for the rest of the
+ * transaction, so two approvals for the same course are serialised and
+ * cannot both read the same MAX(rollNumber). The (courseId, rollNumber)
+ * unique index remains the backstop.
  */
 export async function assignRollNumberTx(tx: Tx, enrollmentId: string, courseId: string) {
   const existing = await tx.enrollment.findUnique({
@@ -17,6 +25,8 @@ export async function assignRollNumberTx(tx: Tx, enrollmentId: string, courseId:
   if (existing?.rollNumber != null) {
     return; // Already assigned
   }
+
+  await tx.$queryRaw`SELECT "id" FROM "Course" WHERE "id" = ${courseId} FOR UPDATE`;
 
   const maxRollResult = await tx.enrollment.aggregate({
     where: { courseId },
@@ -35,9 +45,15 @@ export async function assignRollNumberTx(tx: Tx, enrollmentId: string, courseId:
  * Assigns a unique, sequential roll number for a student in a specific course.
  * Roll numbers start at 1. If the enrollment already has a roll number, it does nothing.
  * This should be called immediately when an enrollment becomes active (approved).
+ * Retries once if a concurrent writer still won the unique index race.
  */
 export async function assignRollNumber(enrollmentId: string, courseId: string) {
-  await prisma.$transaction((tx) => assignRollNumberTx(tx, enrollmentId, courseId));
+  try {
+    await prisma.$transaction((tx) => assignRollNumberTx(tx, enrollmentId, courseId));
+  } catch (error) {
+    if (!isUniqueViolation(error)) throw error;
+    await prisma.$transaction((tx) => assignRollNumberTx(tx, enrollmentId, courseId));
+  }
 }
 
 /**

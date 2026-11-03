@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 
 import { getCourseById } from "@/services/courses";
-import { canApproveEnrollment, canRejectEnrollment } from "@/services/enrollment-status";
+import { canApproveEnrollment, canRejectEnrollment, REJECTED_ENROLLMENT } from "@/services/enrollment-status";
+import { assignRollNumberTx } from "@/services/roll-numbers";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
 import {
   notifyEnrollmentApproved,
@@ -81,21 +82,31 @@ export async function approveEnrollmentRequest(
     return { error: "Course not found." };
   }
 
-  await withDbErrorHandling(() => prisma.enrollment.update({
-      where: { id: enrollmentId },
-      data: { status: getRosterEnrollmentStatusForCourse(course.status) },
-    }), "Database operation failed");
+  const rosterStatus = getRosterEnrollmentStatusForCourse(course.status);
+
+  // Status change and roll number commit together; the status guard makes a
+  // second concurrent approval a no-op instead of a double update.
+  const approved = await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
+    const updated = await tx.enrollment.updateMany({
+      where: { id: enrollmentId, status: enrollment.status },
+      data: { status: rosterStatus, rejectedAt: null },
+    });
+    if (updated.count === 0) return false;
+    if (rosterStatus === "active") {
+      await assignRollNumberTx(tx, enrollmentId, courseId);
+    }
+    return true;
+  }), "Database operation failed");
+
+  if (!approved) {
+    return { error: "This enrollment was already processed by someone else. Refresh the page." };
+  }
 
   await notifyEnrollmentApproved({
     userId: enrollment.userId,
     courseTitle: course.title,
     enrollmentId,
   });
-
-  if (getRosterEnrollmentStatusForCourse(course.status) === "active") {
-    const { assignRollNumber } = await import("@/services/roll-numbers");
-    await assignRollNumber(enrollmentId, courseId);
-  }
 
   revalidateEnrollmentPaths(courseId);
   revalidatePath(`/admin/students/${enrollment.userId}`, "page");
@@ -126,13 +137,23 @@ export async function rejectEnrollmentRequest(
   const course = await getCourseById(courseId);
   const courseTitle = course?.title ?? "the course";
 
+  // Rejection is a status, not a deletion: the request stays visible in the
+  // student's history and the student can apply again later.
+  const rejected = await withDbErrorHandling(() => prisma.enrollment.updateMany({
+      where: { id: enrollmentId, status: enrollment.status },
+      data: { status: REJECTED_ENROLLMENT, rejectedAt: new Date() },
+    }), "Database operation failed");
+
+  if (rejected.count === 0) {
+    return { error: "This enrollment was already processed by someone else. Refresh the page." };
+  }
+
+  // Notify only once the rejection is committed.
   await notifyEnrollmentRejected({
     userId: enrollment.userId,
     courseTitle,
     enrollmentId,
   });
-
-  await withDbErrorHandling(() => prisma.enrollment.delete({ where: { id: enrollmentId } }), "Database operation failed");
 
   revalidateEnrollmentPaths(courseId);
   revalidatePath(`/admin/students/${enrollment.userId}`, "page");
@@ -181,7 +202,7 @@ export async function adminEnrollUser(
         courseId: course.id,
         status,
       },
-      update: { status },
+      update: { status, rejectedAt: null },
     }), "Database operation failed");
 
   if (status === "active") {

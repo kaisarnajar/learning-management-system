@@ -46,12 +46,20 @@ export type BrandDocumentNumbering = {
   certificatePrefix: string;
 };
 
+/** Colours used outside the stylesheet (web app manifest, browser chrome). */
+export type BrandColors = {
+  /** Matches `--color-brand-primary` in app/globals.css. */
+  theme: string;
+  background: string;
+};
+
 export type BrandConfig = {
   name: string;
   arabicName?: string;
   shortName: string;
   websiteUrl: string;
   assets: BrandAssets;
+  colors: BrandColors;
   contact: BrandContact;
   social: BrandSocial;
   seo: BrandSEO;
@@ -72,6 +80,11 @@ export const BRAND_CONFIG: BrandConfig = {
     defaultImage: ASSET_URLS.logo,
   },
   
+  colors: {
+    theme: "#0f3d2e",
+    background: "#ffffff",
+  },
+
   contact: {
     email: "darsequraann@gmail.com",
     phone: "+919622966911", // General phone, fallback to whatsapp

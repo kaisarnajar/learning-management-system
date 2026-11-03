@@ -106,7 +106,7 @@ export function renderCertificateToHtml(data: {
 
     <p class="text-pdf-22 text-gray-700 leading-snug max-w-[950px] mx-auto mt-3">
       The student has demonstrated admirable effort, discipline,
-      and enthusiasm throughout the successful completion of the
+      and enthusiasm throughout ${isCompletion ? "the successful completion of the" : "the"}
       <strong>${e(data.courseName)}</strong> course${gradeText},
       reflecting excellent character, academic achievement, and devotion
       to Islamic learning.

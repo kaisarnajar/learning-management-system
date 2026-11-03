@@ -25,6 +25,7 @@ function relatedPageLabel(href: string): string | null {
   if (path.includes("/announcements")) return "View announcement";
   if (path.startsWith("/profile/courses")) return "View in My Courses";
   if (path.startsWith("/profile/cart") || path.startsWith("/bookstore")) return "View order";
+  if (path.startsWith("/blog/")) return "View blog post";
   return "View related page";
 }
 

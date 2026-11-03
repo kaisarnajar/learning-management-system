@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Share2, Link as LinkIcon, QrCode, Download, X } from "lucide-react";
 import QRCode from "qrcode";
+import { useToast } from "@/components/shared/ToastProvider";
 
 interface CourseShareButtonProps {
   courseTitle: string;
 }
 
 export function CourseShareButton({ courseTitle }: CourseShareButtonProps) {
+  const { addToast } = useToast();
   const [isOpen, setIsOpen] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -65,9 +67,13 @@ export function CourseShareButton({ courseTitle }: CourseShareButtonProps) {
     }
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(url);
-    alert("Link copied to clipboard!");
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      addToast("Link copied to clipboard.", "success");
+    } catch {
+      addToast("Could not copy the link.", "error");
+    }
   };
 
   const handleDownloadQr = () => {

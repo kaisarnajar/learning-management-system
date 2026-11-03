@@ -3,9 +3,20 @@ import Link from "next/link";
 import { sourceSerif } from "@/utils/fonts/source-serif-4";
 import { BRAND_CONFIG } from "@/config/brand";
 
+const pageUrl = `${BRAND_CONFIG.websiteUrl.replace(/\/$/, "")}/privacy-policy`;
+
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description: "Learn how Darse Quran Academy collects, uses, and protects your personal information and privacy.",
+  alternates: { canonical: pageUrl },
+  openGraph: {
+    title: `Privacy Policy | ${BRAND_CONFIG.name}`,
+    description: "Learn how Darse Quran Academy collects, uses, and protects your personal information and privacy.",
+    url: pageUrl,
+    siteName: BRAND_CONFIG.name,
+    type: "website",
+    images: [{ url: BRAND_CONFIG.seo.openGraphImage, alt: BRAND_CONFIG.name }],
+  },
 };
 
 const privacySections = [

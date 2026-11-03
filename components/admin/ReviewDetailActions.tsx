@@ -25,7 +25,7 @@ export function ReviewDetailActions({
         <>
           <ConfirmationModal
             title="Approve Review"
-            description="Approve this review and display it on the public course page?"
+            description="Approve this review and display it on the homepage?"
             actionLabel="Approve"
             variant="primary"
             onConfirm={async () => {

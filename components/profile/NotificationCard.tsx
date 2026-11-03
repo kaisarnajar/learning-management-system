@@ -38,12 +38,18 @@ function notificationIconClass(type: StudentNotificationType): string {
   switch (type) {
     case "PAYMENT_APPROVED":
     case "ENROLLMENT_APPROVED":
+    case "BOOK_ORDER_APPROVED":
       return "bg-success-bg text-success-text ring-success-text/30";
     case "ENROLLMENT_REJECTED":
+    case "BOOK_ORDER_DECLINED":
       return "bg-destructive-bg text-destructive-text ring-destructive-text/30";
     case "PERSONAL_MESSAGE":
+    case "BOOK_ORDER_SHIPPED":
       return "bg-info-bg text-violet-700 dark:text-violet-300 ring-violet-200/80 dark:ring-violet-800/30";
+    case "BOOK_ORDER_REFUNDED":
+      return "bg-warning-bg text-warning-text ring-amber-200/80 dark:ring-amber-800/30";
     case "COURSE_ANNOUNCEMENT":
+    case "BLOG_COMMENT_ADDED":
       return "bg-sky-100 dark:bg-sky-950/30 text-sky-700 dark:text-sky-300 ring-sky-200/80 dark:ring-sky-800/30";
     case "SITE_ANNOUNCEMENT":
       return "bg-warning-bg text-warning-text ring-amber-200/80 dark:ring-amber-800/30";
@@ -81,7 +87,17 @@ function NotificationIcon({ type }: { type: StudentNotificationType }) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M6 8.25v8.25A2.25 2.25 0 0 0 8.25 18.75h7.5A2.25 2.25 0 0 0 18 16.5V8.25" />
         </svg>
       );
+    case "BOOK_ORDER_APPROVED":
+    case "BOOK_ORDER_DECLINED":
+    case "BOOK_ORDER_SHIPPED":
+    case "BOOK_ORDER_REFUNDED":
+      return (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
+        </svg>
+      );
     case "PERSONAL_MESSAGE":
+    case "BLOG_COMMENT_ADDED":
       return (
         <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" aria-hidden>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 9.75a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375m-13.5 3.75c0 2.278 4.365 4.125 9.75 4.125s9.75-1.847 9.75-4.125V6.375c0-2.278-4.365-4.125-9.75-4.125S2.25 4.097 2.25 6.375v6.75Z" />

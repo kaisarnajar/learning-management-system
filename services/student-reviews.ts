@@ -1,5 +1,6 @@
 import type { StudentReview, StudentReviewStatus, User } from "@prisma/client";
 import { BRAND_CONFIG } from "@/config/brand";
+import { HOMEPAGE_FEATURED_REVIEWS_MAX } from "@/config/constants/business";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/pagination";
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
@@ -14,7 +15,7 @@ function studentReviewSearchWhere(searchQuery?: string) {
   );
 }
 
-export const HOMEPAGE_FEATURED_REVIEWS_MAX = 4;
+export { HOMEPAGE_FEATURED_REVIEWS_MAX };
 
 export type StudentReviewWithUser = StudentReview & {
   user: Pick<User, "id" | "name" | "email">;

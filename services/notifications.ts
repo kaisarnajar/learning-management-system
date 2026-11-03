@@ -126,6 +126,12 @@ export function notificationTypeLabel(type: StudentNotificationType): string {
       return "Book order approved";
     case "BOOK_ORDER_DECLINED":
       return "Book order declined";
+    case "BOOK_ORDER_SHIPPED":
+      return "Book order shipped";
+    case "BOOK_ORDER_REFUNDED":
+      return "Book order refunded";
+    case "BLOG_COMMENT_ADDED":
+      return "New blog comment";
     default:
       return "Notification";
   }
@@ -141,7 +147,12 @@ export function notificationTypeClass(type: StudentNotificationType): string {
     case "BOOK_ORDER_DECLINED":
       return "bg-destructive-bg text-destructive-text";
     case "PERSONAL_MESSAGE":
+    case "BOOK_ORDER_SHIPPED":
       return "bg-info-bg text-info-text";
+    case "BOOK_ORDER_REFUNDED":
+      return "bg-warning-bg text-warning-text";
+    case "BLOG_COMMENT_ADDED":
+      return "bg-sky-100 dark:bg-sky-950/30 text-sky-800 dark:text-sky-300";
     case "COURSE_ANNOUNCEMENT":
       return "bg-sky-100 dark:bg-sky-950/30 text-sky-800 dark:text-sky-300";
     case "SITE_ANNOUNCEMENT":

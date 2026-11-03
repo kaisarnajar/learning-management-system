@@ -92,6 +92,11 @@ export const PAGINATION = {
   MAX_PAGE_SIZE: 50,
 } as const;
 
+/**
+ * Maximum quantity of a single book in one order or cart line.
+ */
+export const MAX_ORDER_QTY = 20;
+
 export const DOCUMENT_TYPES = {
   CERTIFICATE: "certificate",
   PAYMENT_RECEIPT: "payment_receipt",

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { MAX_ORDER_QTY } from "@/config/constants/business";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
 
@@ -66,7 +67,12 @@ export async function POST(request: NextRequest) {
       });
 
       for (const item of inputItems) {
-        if (item.bookId && item.quantity > 0) {
+        if (
+          typeof item.bookId === "string" &&
+          item.bookId &&
+          Number.isInteger(item.quantity) &&
+          item.quantity > 0
+        ) {
           const bookExists = await tx.book.findUnique({
             where: { id: item.bookId },
           });
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest) {
               data: {
                 userId: user.id,
                 bookId: item.bookId,
-                quantity: item.quantity,
+                quantity: Math.min(item.quantity, MAX_ORDER_QTY),
               },
             });
           }

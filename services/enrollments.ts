@@ -1,5 +1,5 @@
 import { unstable_noStore as noStore } from "next/cache";
-import type { CourseStatus, EnrollmentStatus, Prisma } from "@prisma/client";
+import type { CourseStatus, Enrollment, EnrollmentStatus, Prisma } from "@prisma/client";
 import { ENROLLMENT_STATUS } from "@/config/constants/business";
 import { ENROLLMENT_STATUS_TEXT, enrollmentStatusData, enrollmentStatusOf } from "@/services/status-compat";
 import {
@@ -97,7 +97,7 @@ export async function getUserEnrollmentsPaginated(
   pageSize: number,
 ): Promise<PaginatedResult<UserEnrollmentWithCourse>> {
   const where = { userId };
-  return paginateQuery(prisma.enrollment, {
+  return paginateQuery<Enrollment>(prisma.enrollment, {
     where,
     orderBy: { createdAt: "desc" },
     include: { course: { include: { teacher: true } } },
@@ -129,7 +129,7 @@ export async function getEnrollmentsForCoursePaginated(
 ): Promise<PaginatedResult<CourseEnrollmentWithUser>> {
   noStore();
   const where = { courseId };
-  return paginateQuery(prisma.enrollment, {
+  return paginateQuery<CourseEnrollmentWithUser>(prisma.enrollment, {
     where,
     orderBy: { rollNumber: { sort: "asc", nulls: "last" } },
     include: {
@@ -137,7 +137,7 @@ export async function getEnrollmentsForCoursePaginated(
         select: { id: true, name: true, email: true },
       },
     },
-  }, page, pageSize) as unknown as Promise<PaginatedResult<CourseEnrollmentWithUser>>;
+  }, page, pageSize);
 }
 
 /** Legacy text values of the statuses that grant access to course content and appear on teacher rosters (for where-clauses). */
@@ -154,7 +154,7 @@ export async function getApprovedEnrollmentsForCoursePaginated(
 ): Promise<PaginatedResult<CourseEnrollmentWithUser>> {
   noStore();
   const where = { courseId, status: { in: [...APPROVED_ENROLLMENT_STATUSES] } };
-  return paginateQuery(prisma.enrollment, {
+  return paginateQuery<CourseEnrollmentWithUser>(prisma.enrollment, {
     where,
     orderBy: { rollNumber: { sort: "asc", nulls: "last" } },
     include: {
@@ -162,7 +162,7 @@ export async function getApprovedEnrollmentsForCoursePaginated(
         select: { id: true, name: true, email: true },
       },
     },
-  }, page, pageSize) as unknown as Promise<PaginatedResult<CourseEnrollmentWithUser>>;
+  }, page, pageSize);
 }
 
 /** Active roster for in-progress courses; completed roster when the course is completed. */
@@ -186,7 +186,7 @@ export async function getCourseRosterEnrollmentsPaginated(
     ? buildSearchOr([], [{ relation: "user", fields: ["name", "email"] }], searchQuery)
     : undefined;
   const where = andWhere(base, searchWhere);
-  return paginateQuery(prisma.enrollment, {
+  return paginateQuery<CourseEnrollmentWithUser>(prisma.enrollment, {
     where,
     orderBy: { rollNumber: { sort: "asc", nulls: "last" } },
     include: {
@@ -194,7 +194,7 @@ export async function getCourseRosterEnrollmentsPaginated(
         select: { id: true, name: true, email: true },
       },
     },
-  }, page, pageSize) as unknown as Promise<PaginatedResult<CourseEnrollmentWithUser>>;
+  }, page, pageSize);
 }
 
 export async function getEnrollmentCountsByCourse(): Promise<Map<string, number>> {
@@ -241,7 +241,7 @@ export async function getPendingFreeEnrollmentApprovalsPaginated(
   noStore();
   const base = { status: PENDING_ENROLLMENT_APPROVAL };
   const where = andWhere(base, await enrollmentSearchWhere(searchQuery));
-  return paginateQuery(prisma.enrollment, {
+  return paginateQuery<PendingEnrollmentWithUser>(prisma.enrollment, {
     where,
     orderBy: { createdAt: "desc" },
     include: {
@@ -249,7 +249,7 @@ export async function getPendingFreeEnrollmentApprovalsPaginated(
         select: { id: true, name: true, email: true },
       },
     },
-  }, page, pageSize) as unknown as Promise<PaginatedResult<PendingEnrollmentWithUser>>;
+  }, page, pageSize);
 }
 
 export async function getAwaitingEnrollmentFeeEnrollmentsPaginated(
@@ -260,7 +260,7 @@ export async function getAwaitingEnrollmentFeeEnrollmentsPaginated(
   noStore();
   const base = { status: AWAITING_ENROLLMENT_FEE };
   const where = andWhere(base, await enrollmentSearchWhere(searchQuery));
-  return paginateQuery(prisma.enrollment, {
+  return paginateQuery<PendingEnrollmentWithUser>(prisma.enrollment, {
     where,
     orderBy: { createdAt: "desc" },
     include: {
@@ -268,7 +268,7 @@ export async function getAwaitingEnrollmentFeeEnrollmentsPaginated(
         select: { id: true, name: true, email: true },
       },
     },
-  }, page, pageSize) as unknown as Promise<PaginatedResult<PendingEnrollmentWithUser>>;
+  }, page, pageSize);
 }
 
 export async function getPendingEnrollmentApprovalCount(): Promise<number> {

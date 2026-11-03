@@ -60,18 +60,18 @@ export async function seedDemoBlogImages(prisma: PrismaClient) {
 /** Teacher salaries (6 months × all teachers) plus recurring misc expenses. */
 export async function seedDemoBulkExpenses(prisma: PrismaClient) {
   const salaryBaseByTeacher: Record<string, number> = {
-    "1": 25_000_00,
-    "2": 22_000_00,
-    "3": 20_000_00,
-    "4": 21_000_00,
-    "5": 19_000_00,
-    "6": 18_000_00,
-    "7": 23_000_00,
-    "8": 18_500_00,
-    "9": 26_000_00,
-    "10": 19_500_00,
-    "11": 17_500_00,
-    "12": 20_500_00,
+    "moulana-ibrahim-khan": 25_000_00,
+    "moulana-yusuf-ahmed": 22_000_00,
+    "moulana-farid-hassan": 20_000_00,
+    "moulana-abdul-rahman": 21_000_00,
+    "ustadha-fatima-siddiqui": 19_000_00,
+    "moulana-hamza-malik": 18_000_00,
+    "moulana-saeedullah-mir": 23_000_00,
+    "ustadha-khadija-rahman": 18_500_00,
+    "qari-tariq-ansari": 26_000_00,
+    "ustadha-amna-qureshi": 19_500_00,
+    "moulana-zain-ul-abideen": 17_500_00,
+    "hafiz-bilal-wani": 20_500_00,
   };
 
   for (const teacher of teachers) {
@@ -628,7 +628,7 @@ export async function seedDemoBulkStudentReviews(prisma: PrismaClient) {
 export async function seedDemoBulkBlogPosts(prisma: PrismaClient) {
   for (let index = 1; index <= 30; index += 1) {
     const id = `seed-demo-blog-bulk-${String(index).padStart(2, "0")}`;
-    const teacherId = demoTeacherUserId(String((index % 12) + 1));
+    const teacherId = demoTeacherUserId(teachers[index % teachers.length].id);
     const published = index % 5 !== 0;
     const approvalStatus = published ? "APPROVED" : (index % 2 === 0 ? "PENDING" : "DRAFT");
     const featuredOnHomepage = approvalStatus === "APPROVED" && index <= 6;

@@ -92,11 +92,11 @@ export async function getPublishedBlogPostsPaginated(
 ): Promise<PaginatedResult<BlogPostWithImages>> {
   const searchWhere = searchQuery ? buildSearchOr(["title", "excerpt", "body"], [{ relation: "createdBy", fields: ["name"] }], searchQuery) : undefined;
   const where = andWhere(BLOG_PUBLIC_WHERE, searchWhere) || BLOG_PUBLIC_WHERE;
-  return paginateQuery(prisma.blogPost, {
+  return paginateQuery<BlogPostWithImages>(prisma.blogPost, {
     where,
     orderBy: { createdAt: "desc" },
     include: blogPostPublicInclude,
-  }, page, pageSize) as unknown as Promise<PaginatedResult<BlogPostWithImages>>;
+  }, page, pageSize);
 }
 
 export async function getPublishedBlogPostById(id: string) {
@@ -129,11 +129,11 @@ export async function getAllBlogPostsForAdminPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<BlogPostWithImages>> {
   const where = adminBlogPostsWhere(searchQuery);
-  return paginateQuery(prisma.blogPost, {
+  return paginateQuery<BlogPostWithImages>(prisma.blogPost, {
     where,
     orderBy: { createdAt: "desc" },
     include: blogPostAdminInclude,
-  }, page, pageSize) as unknown as Promise<PaginatedResult<BlogPostWithImages>>;
+  }, page, pageSize);
 }
 
 export async function getBlogPostForAdmin(id: string) {
@@ -152,14 +152,14 @@ export async function getTeacherBlogPostsPaginated(
   pageSize: number,
 ): Promise<PaginatedResult<BlogPostWithImages>> {
   const where = { createdById: userId };
-  return paginateQuery(prisma.blogPost, {
+  return paginateQuery<BlogPostWithImages>(prisma.blogPost, {
     where,
     orderBy: { createdAt: "desc" },
     include: {
       images: { orderBy: { sortOrder: "asc" } },
       createdBy: { select: { name: true, email: true } },
     },
-  }, page, pageSize) as unknown as Promise<PaginatedResult<BlogPostWithImages>>;
+  }, page, pageSize);
 }
 
 export async function getBlogPostForTeacher(id: string, userId: string) {

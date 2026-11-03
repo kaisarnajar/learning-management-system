@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
+import { CartStaleNotice } from "@/components/bookstore/CartStaleNotice";
 
 import { bookOrderStatusLabel, bookOrderStatusClass } from "@/services/bookstore";
 import { ActionToast } from "@/components/shared/ToastProvider";
@@ -142,6 +143,7 @@ export function CartPageClient({
   return (
     <div className="space-y-8">
       <ActionToast trigger={submitted} paramName="submitted" message="Order submitted successfully." variant="success" />
+      <CartStaleNotice />
 
       <div>
         <h2 className="font-serif text-lg font-semibold text-foreground">My Cart</h2>

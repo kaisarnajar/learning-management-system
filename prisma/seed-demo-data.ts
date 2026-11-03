@@ -443,7 +443,7 @@ const demoExpenses = [
   {
     id: "seed-demo-expense-salary-teacher-1-feb",
     category: EXPENSE_CATEGORY_TEACHER_SALARY,
-    teacherId: "1",
+    teacherId: "moulana-ibrahim-khan",
     amountInrPaise: 25_000_00,
     paidAt: new Date("2026-02-01T12:00:00.000Z"),
     description: "February salary — Moulana Ibrahim Khan",
@@ -451,7 +451,7 @@ const demoExpenses = [
   {
     id: "seed-demo-expense-salary-teacher-2-feb",
     category: EXPENSE_CATEGORY_TEACHER_SALARY,
-    teacherId: "2",
+    teacherId: "moulana-yusuf-ahmed",
     amountInrPaise: 22_000_00,
     paidAt: new Date("2026-02-01T12:00:00.000Z"),
     description: "February salary — Moulana Yusuf Ahmed",
@@ -459,7 +459,7 @@ const demoExpenses = [
   {
     id: "seed-demo-expense-salary-teacher-1-mar",
     category: EXPENSE_CATEGORY_TEACHER_SALARY,
-    teacherId: "1",
+    teacherId: "moulana-ibrahim-khan",
     amountInrPaise: 25_000_00,
     paidAt: new Date("2026-03-01T12:00:00.000Z"),
     description: "March salary — Moulana Ibrahim Khan",

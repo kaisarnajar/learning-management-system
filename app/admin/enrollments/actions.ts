@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 
 import { getCourseById } from "@/services/courses";
-import { canApproveEnrollment, canRejectEnrollment, REJECTED_ENROLLMENT } from "@/services/enrollment-status";
+import { canApproveEnrollment, canRejectEnrollment } from "@/services/enrollment-status";
 import { assignRollNumberTx } from "@/services/roll-numbers";
+import { enrollmentStatusData, enrollmentStatusOf } from "@/services/status-compat";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
 import {
   notifyEnrollmentApproved,
@@ -65,11 +66,13 @@ export async function approveEnrollmentRequest(
     return { error: "Enrollment not found." };
   }
 
-  if (enrollment.status === "active") {
+  const currentStatus = enrollmentStatusOf(enrollment);
+
+  if (currentStatus === "ACTIVE") {
     redirect(enrollmentReturnUrl(returnTo));
   }
 
-  if (enrollment.status === "completed") {
+  if (currentStatus === "COMPLETED") {
     return { error: "This enrollment is already completed." };
   }
 
@@ -89,10 +92,10 @@ export async function approveEnrollmentRequest(
   const approved = await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
     const updated = await tx.enrollment.updateMany({
       where: { id: enrollmentId, status: enrollment.status },
-      data: { status: rosterStatus, rejectedAt: null },
+      data: { ...enrollmentStatusData(rosterStatus), rejectedAt: null },
     });
     if (updated.count === 0) return false;
-    if (rosterStatus === "active") {
+    if (rosterStatus === "ACTIVE") {
       await assignRollNumberTx(tx, enrollmentId, courseId);
     }
     return true;
@@ -141,7 +144,7 @@ export async function rejectEnrollmentRequest(
   // student's history and the student can apply again later.
   const rejected = await withDbErrorHandling(() => prisma.enrollment.updateMany({
       where: { id: enrollmentId, status: enrollment.status },
-      data: { status: REJECTED_ENROLLMENT, rejectedAt: new Date() },
+      data: { ...enrollmentStatusData("REJECTED"), rejectedAt: new Date() },
     }), "Database operation failed");
 
   if (rejected.count === 0) {
@@ -200,12 +203,12 @@ export async function adminEnrollUser(
       create: {
         userId: account.userId,
         courseId: course.id,
-        status,
+        ...enrollmentStatusData(status),
       },
-      update: { status, rejectedAt: null },
+      update: { ...enrollmentStatusData(status), rejectedAt: null },
     }), "Database operation failed");
 
-  if (status === "active") {
+  if (status === "ACTIVE") {
     const { assignRollNumber } = await import("@/services/roll-numbers");
     await assignRollNumber(upserted.id, course.id);
   }

@@ -4,12 +4,9 @@ import { ensureAuth } from "@/utils/auth-utils";
 import { isCourseEnrollmentOpen } from "@/services/course-status";
 import { getRegistrationFeePaise } from "@/services/course-pricing";
 import { getCourseById } from "@/services/courses";
-import {
-  AWAITING_ENROLLMENT_FEE,
-  canReapplyForEnrollment,
-  PENDING_ENROLLMENT_APPROVAL,
-} from "@/services/enrollment-status";
+import { canReapplyForEnrollment } from "@/services/enrollment-status";
 import { startEnrollment } from "@/services/enrollments";
+import { enrollmentStatusOf, isApprovedEnrollment } from "@/services/status-compat";
 import { isUserProfileComplete, PROFILE_COMPLETE_REDIRECT } from "@/services/profile";
 import { prisma } from "@/utils/prisma";
 import { isUpiConfigured } from "@/services/upi";
@@ -51,7 +48,9 @@ export async function submitCheckout(courseId: string) {
       },
     });
 
-    if (existing?.status === "active" || existing?.status === "completed") {
+    const existingStatus = existing ? enrollmentStatusOf(existing) : null;
+
+    if (existing && isApprovedEnrollment(existing)) {
       return {
         error: "You are already enrolled in this course.",
         alreadyEnrolled: true,
@@ -59,14 +58,14 @@ export async function submitCheckout(courseId: string) {
       };
     }
 
-    if (existing?.status === PENDING_ENROLLMENT_APPROVAL) {
+    if (existingStatus === "PENDING_APPROVAL") {
       return {
         redirectUrl: "/profile/courses",
         alreadyEnrolled: true,
       };
     }
 
-    if (existing?.status === AWAITING_ENROLLMENT_FEE) {
+    if (existingStatus === "AWAITING_ENROLLMENT_FEE") {
       return {
         redirectUrl: `/profile/courses/${courseId}/enrollment-pay`,
         alreadyEnrolled: true,
@@ -95,7 +94,7 @@ export async function submitCheckout(courseId: string) {
     await startEnrollment(
       session.user.id,
       course.id,
-      requiresEnrollmentFee ? AWAITING_ENROLLMENT_FEE : PENDING_ENROLLMENT_APPROVAL,
+      requiresEnrollmentFee ? "AWAITING_ENROLLMENT_FEE" : "PENDING_APPROVAL",
     );
 
     if (requiresEnrollmentFee) {

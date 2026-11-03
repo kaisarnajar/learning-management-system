@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
+import { PAYMENTS } from "@/config/constants/payments";
 
 export type ApplicableCoupon = {
   id: string;
@@ -40,7 +41,7 @@ export async function getApplicableCoupons(
         userId,
         couponId: { not: null },
         deletedAt: null,
-        status: { in: ["pending_verification", "approved"] },
+        status: { in: [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED] },
       },
       select: { couponId: true },
     }),

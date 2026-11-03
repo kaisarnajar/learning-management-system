@@ -1,5 +1,6 @@
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { ENROLLMENT_STATUS } from "@/config/constants/business";
 
 export type GradeRecordInput = {
   enrollmentId: string;
@@ -31,7 +32,7 @@ export async function getEnrolledStudentsForGradesFromDb(courseId: string) {
     return prisma.enrollment.findMany({
       where: {
         courseId,
-        status: "active", // Only active students
+        status: ENROLLMENT_STATUS.ACTIVE, // Only active students
       },
       select: {
         id: true,

@@ -6,6 +6,7 @@ import { getCourseById } from "@/services/courses";
 import { getCertificateFilename, generateCertificatePdf } from "@/services/certificate";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { certificateTypeOf } from "@/services/status-compat";
 
 export async function GET(
   request: Request,
@@ -64,7 +65,7 @@ export async function GET(
       courseTitle: course.title,
       issueDate,
       certificateNumber: enrollment.certificateNumber,
-      certificateType: (enrollment.certificateType as "APPRECIATION" | "COMPLETION" | null) || "COMPLETION",
+      certificateType: certificateTypeOf(enrollment) ?? "COMPLETION",
       certificateGrade: enrollment.certificateGrade,
     });
 

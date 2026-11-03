@@ -6,6 +6,7 @@ import { getMonthlyFeePaise, getRegistrationFeePaise } from "@/services/course-p
 import { clampPage, type PaginatedResult } from "@/utils/pagination";
 import { buildSearchOr } from "@/utils/text-search";
 import type { FinanceFilters } from "@/services/finance-filters";
+import { paymentMethodFromText } from "@/services/status-compat";
 
 export type FeeWaiverFinanceStats = {
   totalWaiverCount: number;
@@ -126,7 +127,7 @@ export async function getFeeWaiverFinanceData(
       : 0;
 
     const hasCoupon = Boolean(s.couponId);
-    const hasWaiverKeyword = s.label.toLowerCase().includes("waiver") || s.paymentMethod === "waiver";
+    const hasWaiverKeyword = s.label.toLowerCase().includes("waiver") || paymentMethodFromText(s.paymentMethod) === "WAIVER";
     const isWaiverClaimed = hasCoupon || hasWaiverKeyword;
 
     if (isWaiverClaimed) {

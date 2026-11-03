@@ -4,12 +4,8 @@ import { Pagination } from "@/components/shared/Pagination";
 import { requireUser } from "@/services/auth-actions";
 import { Suspense } from "react";
 
-import {
-  AWAITING_ENROLLMENT_FEE,
-  PENDING_ENROLLMENT_APPROVAL,
-  REJECTED_ENROLLMENT,
-} from "@/services/enrollment-status";
 import { enrollmentStatusLabel, getUserEnrollmentsPaginated } from "@/services/enrollments";
+import { enrollmentStatusOf, isApprovedEnrollment } from "@/services/status-compat";
 import { getPendingEnrollmentFeeSubmissionMap } from "@/services/monthly-payments";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
 import { formatRollNumber } from "@/services/roll-numbers";
@@ -69,8 +65,9 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
         <ul className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
           {enrollmentRows.map(({ enrollment, course }) => {
             if (!course) return null;
-            const isActive = enrollment.status === "active" || enrollment.status === "completed";
-            const awaitingEnrollmentFee = enrollment.status === AWAITING_ENROLLMENT_FEE;
+            const status = enrollmentStatusOf(enrollment);
+            const isActive = isApprovedEnrollment(enrollment);
+            const awaitingEnrollmentFee = status === "AWAITING_ENROLLMENT_FEE";
             const hasPendingEnrollmentPayment = pendingEnrollmentPayments.has(course.id);
 
             return (
@@ -103,11 +100,11 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
                   </Link>
                 )}
 
-                {enrollment.status === PENDING_ENROLLMENT_APPROVAL && (
+                {status === "PENDING_APPROVAL" && (
                   <p className="mt-4 text-sm text-warning-text">Awaiting enrollment approval by the academy.</p>
                 )}
 
-                {enrollment.status === REJECTED_ENROLLMENT && (
+                {status === "REJECTED" && (
                   <>
                     <p className="mt-4 text-sm text-destructive-text">
                       This request was not approved
@@ -122,7 +119,7 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
                   </>
                 )}
 
-                {isActive && enrollment.status === "active" && (
+                {status === "ACTIVE" && (
                   course.monthlyFeeInrPaise > 0 ? (
                     <Link
                       href={`/profile/courses/${course.id}/pay`}
@@ -168,7 +165,7 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
                   </p>
                 )}
 
-                {!isActive && !awaitingEnrollmentFee && enrollment.status !== PENDING_ENROLLMENT_APPROVAL && (
+                {!isActive && !awaitingEnrollmentFee && status !== "PENDING_APPROVAL" && (
                   <p className="mt-4 text-xs text-muted">
                     Requested {enrollment.createdAt.toLocaleDateString("en-IN")}
                   </p>

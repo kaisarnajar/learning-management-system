@@ -9,6 +9,7 @@ import { sendFeeWaiverApprovedEmail, sendFeeWaiverRejectedEmail } from "@/servic
 import { createStudentNotification } from "@/services/notifications";
 import { recordAudit } from "@/services/audit";
 import { resolveWaiverFeeType } from "@/services/waiver-requests";
+import { genderWrite } from "@/services/status-compat";
 
 const createCouponSchema = z.object({
   code: z.string().trim().min(3).toUpperCase(),
@@ -60,7 +61,7 @@ export async function createDefaultCoupon(formData: FormData) {
         validFrom: fromDate,
         validUntil: untilDate,
         courseId: courseId || null,
-        gender: gender || null,
+        ...genderWrite(gender || null),
         isActive,
         applyToEnrollment: applyTo === "BOTH" || applyTo === "ENROLLMENT",
         applyToCourse: applyTo === "BOTH" || applyTo === "COURSE",
@@ -114,7 +115,7 @@ export async function updateCoupon(couponId: string, formData: FormData) {
         validFrom: fromDate,
         validUntil: untilDate,
         courseId: courseId || null,
-        gender: gender || null,
+        ...genderWrite(gender || null),
         applyToEnrollment: applyTo === "BOTH" || applyTo === "ENROLLMENT",
         applyToCourse: applyTo === "BOTH" || applyTo === "COURSE",
       },

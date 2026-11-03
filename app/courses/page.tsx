@@ -6,6 +6,7 @@ import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { auth } from "@/services/auth";
 import { getPublicCoursesPaginated } from "@/services/courses";
 import { getUserCourseEnrollmentMap } from "@/services/enrollments";
+import { isApprovedEnrollment } from "@/services/status-compat";
 import { getPendingEnrollmentFeeSubmissionMap } from "@/services/monthly-payments";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
@@ -89,7 +90,7 @@ async function PublicCoursesList({ params, q, userId }: { params: PageParams; q?
             >
               <CourseCard
                 course={course}
-                isEnrolled={enrollment?.status === "active" || enrollment?.status === "completed"}
+                isEnrolled={enrollment ? isApprovedEnrollment(enrollment) : false}
                 enrollmentStatus={enrollment?.status ?? null}
                 enrollmentId={enrollment?.id ?? null}
                 profileComplete={profileComplete}

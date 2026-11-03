@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
+import { devicePlatformData, devicePlatformFromText } from "@/services/status-compat";
 
 export async function POST(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -9,11 +10,19 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const token = typeof body.token === "string" ? body.token.trim() : "";
-    const platform = typeof body.platform === "string" ? body.platform.trim() : "android";
+    const rawPlatform = typeof body.platform === "string" && body.platform.trim() ? body.platform : "android";
+    const platform = devicePlatformFromText(rawPlatform);
 
     if (!token) {
       return NextResponse.json(
         { success: false, error: "Device FCM token is required." },
+        { status: 400 }
+      );
+    }
+
+    if (!platform) {
+      return NextResponse.json(
+        { success: false, error: "platform must be one of android, ios or web." },
         { status: 400 }
       );
     }
@@ -23,11 +32,11 @@ export async function POST(request: NextRequest) {
       create: {
         userId: user.id,
         token,
-        platform,
+        ...devicePlatformData(platform),
       },
       update: {
         userId: user.id,
-        platform,
+        ...devicePlatformData(platform),
       },
     });
 

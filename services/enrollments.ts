@@ -1,5 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
-import type { CourseStatus, Prisma } from "@prisma/client";
+import type { CourseStatus, EnrollmentStatus, Prisma } from "@prisma/client";
+import { ENROLLMENT_STATUS } from "@/config/constants/business";
+import { ENROLLMENT_STATUS_TEXT, enrollmentStatusData, enrollmentStatusOf } from "@/services/status-compat";
 import {
   AWAITING_ENROLLMENT_FEE,
   PENDING_ENROLLMENT_APPROVAL,
@@ -51,23 +53,23 @@ export type CourseEnrollmentWithUser = {
 export async function startEnrollment(
   userId: string,
   courseId: string,
-  status: typeof AWAITING_ENROLLMENT_FEE | typeof PENDING_ENROLLMENT_APPROVAL,
+  status: Extract<EnrollmentStatus, "AWAITING_ENROLLMENT_FEE" | "PENDING_APPROVAL">,
 ) {
   return withDbErrorHandling(() => prisma.$transaction(async (tx) => {
     const existing = await tx.enrollment.findUnique({
       where: { userId_courseId: { userId, courseId } },
-      select: { id: true, status: true },
+      select: { id: true, status: true, statusEnum: true },
     });
     if (!existing) {
-      return tx.enrollment.create({ data: { userId, courseId, status } });
+      return tx.enrollment.create({ data: { userId, courseId, ...enrollmentStatusData(status) } });
     }
-    if (existing.status !== REJECTED_ENROLLMENT) {
+    if (enrollmentStatusOf(existing) !== "REJECTED") {
       // Someone else (or a double click) already created it; leave it as is.
       return tx.enrollment.findUniqueOrThrow({ where: { id: existing.id } });
     }
     return tx.enrollment.update({
       where: { id: existing.id },
-      data: { status, rejectedAt: null, rollNumber: null },
+      data: { ...enrollmentStatusData(status), rejectedAt: null, rollNumber: null },
     });
   }), "Database operation failed");
 }
@@ -105,15 +107,15 @@ export async function getUserEnrollmentsPaginated(
 export function enrollmentStatusLabel(status: string) {
   if (status === PENDING_ENROLLMENT_APPROVAL) return "Awaiting approval";
   if (status === AWAITING_ENROLLMENT_FEE) return "Awaiting enrollment fee";
-  if (status === "completed") return "Completed";
-  if (status === "active") return "Active";
+  if (status === ENROLLMENT_STATUS.COMPLETED) return "Completed";
+  if (status === ENROLLMENT_STATUS.ACTIVE) return "Active";
   if (status === REJECTED_ENROLLMENT) return "Rejected";
   return status.replace(/_/g, " ");
 }
 
 export function enrollmentStatusClass(status: string) {
-  if (status === "completed") return "bg-success-bg text-success-text";
-  if (status === "active") return "bg-info-bg text-info-text";
+  if (status === ENROLLMENT_STATUS.COMPLETED) return "bg-success-bg text-success-text";
+  if (status === ENROLLMENT_STATUS.ACTIVE) return "bg-info-bg text-info-text";
   if (status === PENDING_ENROLLMENT_APPROVAL) return "bg-warning-bg text-warning-text";
   if (status === AWAITING_ENROLLMENT_FEE) return "bg-warning-bg text-warning-text";
   if (status === REJECTED_ENROLLMENT) return "bg-destructive-bg text-destructive-text";
@@ -138,8 +140,8 @@ export async function getEnrollmentsForCoursePaginated(
   }, page, pageSize) as unknown as Promise<PaginatedResult<CourseEnrollmentWithUser>>;
 }
 
-/** Enrollment statuses that grant access to course content and appear on teacher rosters. */
-export const APPROVED_ENROLLMENT_STATUSES = ["active", "completed"] as const;
+/** Legacy text values of the statuses that grant access to course content and appear on teacher rosters (for where-clauses). */
+export const APPROVED_ENROLLMENT_STATUSES = [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.COMPLETED] as const;
 
 /**
  * Approved (active or completed) enrollments for a course. Pending applicants
@@ -164,8 +166,8 @@ export async function getApprovedEnrollmentsForCoursePaginated(
 }
 
 /** Active roster for in-progress courses; completed roster when the course is completed. */
-export function getRosterEnrollmentStatusForCourse(courseStatus: CourseStatus): "active" | "completed" {
-  return courseStatus === "COMPLETED" ? "completed" : "active";
+export function getRosterEnrollmentStatusForCourse(courseStatus: CourseStatus): Extract<EnrollmentStatus, "ACTIVE" | "COMPLETED"> {
+  return courseStatus === "COMPLETED" ? "COMPLETED" : "ACTIVE";
 }
 
 export async function getCourseRosterEnrollmentsPaginated(
@@ -178,7 +180,7 @@ export async function getCourseRosterEnrollmentsPaginated(
   noStore();
   const base = {
     courseId,
-    status: getRosterEnrollmentStatusForCourse(courseStatus),
+    status: ENROLLMENT_STATUS_TEXT[getRosterEnrollmentStatusForCourse(courseStatus)],
   };
   const searchWhere = searchQuery
     ? buildSearchOr([], [{ relation: "user", fields: ["name", "email"] }], searchQuery)
@@ -204,12 +206,12 @@ export async function getEnrollmentCountsByCourse(): Promise<Map<string, number>
   const [activeCounts, completedCounts] = await Promise.all([
     withDbErrorHandling(() => prisma.enrollment.groupBy({
             by: ["courseId"],
-            where: { status: "active" },
+            where: { status: ENROLLMENT_STATUS.ACTIVE },
             _count: { _all: true },
           }), "Database operation failed"),
     withDbErrorHandling(() => prisma.enrollment.groupBy({
             by: ["courseId"],
-            where: { status: "completed" },
+            where: { status: ENROLLMENT_STATUS.COMPLETED },
             _count: { _all: true },
           }), "Database operation failed"),
   ]);
@@ -220,7 +222,7 @@ export async function getEnrollmentCountsByCourse(): Promise<Map<string, number>
   return new Map(
     courses.map((course) => [
       course.id,
-      getRosterEnrollmentStatusForCourse(course.status) === "completed"
+      getRosterEnrollmentStatusForCourse(course.status) === "COMPLETED"
         ? (completedByCourse.get(course.id) ?? 0)
         : (activeByCourse.get(course.id) ?? 0),
     ]),

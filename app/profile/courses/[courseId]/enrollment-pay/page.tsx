@@ -10,6 +10,7 @@ import { prisma } from "@/utils/prisma";
 import { isUpiConfigured } from "@/services/upi";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { canReapplyForEnrollment } from "@/services/enrollment-status";
+import { isApprovedEnrollment } from "@/services/status-compat";
 import { getApplicableCoupons, calculateDiscountedAmount } from "@/services/coupons";
 import { getPaymentSettings } from "@/services/payment-settings";
 
@@ -36,7 +37,7 @@ export default async function PayEnrollmentFeePage({
     }), "Database operation failed");
 
   // Block access if already fully enrolled or completed.
-  if (enrollment?.status === "active" || enrollment?.status === "completed") {
+  if (enrollment && isApprovedEnrollment(enrollment)) {
     redirect("/profile/courses");
   }
 

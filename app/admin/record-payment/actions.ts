@@ -9,6 +9,7 @@ import { prisma } from "@/utils/prisma";
 import { paymentRecordSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { businessDayStart } from "@/services/business-time";
+import { paymentTypeWrite } from "@/services/status-compat";
 import { redirect } from "next/navigation";
 import { previewStudentAccountForEnrollment } from "@/app/admin/enrollments/actions";
 
@@ -69,7 +70,7 @@ export async function recordStudentPayment(
         courseId,
         amountInrPaise: rupeesToPaise(parsed.data.amountInr),
         paidAt,
-        paymentType: parsed.data.paymentType,
+        ...paymentTypeWrite(parsed.data.paymentType),
         description: null, // Description field was removed
       },
     }), "Database operation failed");

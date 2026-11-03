@@ -4,7 +4,8 @@ import { ENROLLMENT_STATUS } from "@/config/constants/business";
 
 export type GradeRecordInput = {
   enrollmentId: string;
-  marksObtained: number;
+  /** `null` = not graded: the student's row is removed instead of stored as 0. */
+  marksObtained: number | null;
 };
 
 export async function getCourseGradeCardsFromDb(courseId: string) {
@@ -127,8 +128,16 @@ export async function saveCourseGradeToDb(
         });
       }
 
+      const ungraded = records.filter((r) => r.marksObtained === null).map((r) => r.enrollmentId);
+      if (ungraded.length > 0) {
+        await tx.courseGradeRecord.deleteMany({
+          where: { gradeId: grade.id, enrollmentId: { in: ungraded } },
+        });
+      }
+
       // Upsert individual records
       for (const record of records) {
+        if (record.marksObtained === null) continue;
         await tx.courseGradeRecord.upsert({
           where: {
             gradeId_enrollmentId: {

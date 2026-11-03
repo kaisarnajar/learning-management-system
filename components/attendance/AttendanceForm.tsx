@@ -6,6 +6,7 @@ import Link from "next/link";
 import { saveCourseAttendance } from "@/app/actions/attendance";
 import type { AttendanceRecordInput } from "@/services/attendance";
 import { inputClassName, labelClassName } from "@/utils/form";
+import { toDateInputValue, todayDateInputValue } from "@/utils/calendar-date";
 
 export type StudentForAttendance = {
   id: string;
@@ -32,9 +33,7 @@ export function AttendanceForm({ courseId, baseUrl, students, initialDate, initi
   // Use local state for the date so we can edit it if it's new
   // Format for input type="date" is YYYY-MM-DD
   const [dateStr, setDateStr] = useState(
-    initialDate 
-      ? initialDate.toISOString().split('T')[0]
-      : new Date().toISOString().split('T')[0]
+    initialDate ? toDateInputValue(initialDate) : todayDateInputValue()
   );
 
   // Maintain attendance state

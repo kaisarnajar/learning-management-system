@@ -252,7 +252,8 @@ export async function generateGradeCardPdf(enrollmentId: string): Promise<Buffer
     date: r.grade.date.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
-      year: "numeric"
+      year: "numeric",
+      timeZone: "UTC",
     }),
     marksObtained: r.marksObtained,
     maxMarks: r.grade.maxMarks

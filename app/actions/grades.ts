@@ -5,6 +5,7 @@ import { auth } from "@/services/auth";
 import { isAdminSession } from "@/services/admin";
 import { getTeacherForSession } from "@/services/teacher-auth";
 import { revalidatePath } from "next/cache";
+import { courseGradeInputSchema } from "@/utils/validations";
 import { generateGradeCardPdf } from "@/utils/grade-card-html";
 import { sendGradeCardEmail } from "@/services/email";
 import {
@@ -61,15 +62,40 @@ export async function saveCourseGrade(
   date: Date,
   maxMarks: number,
   records: GradeRecordInput[]
-) {
+): Promise<{ error?: string }> {
   await authorizeCourseGradeManagement(courseId);
+
+  const parsed = courseGradeInputSchema.safeParse({ title, maxMarks, records });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid grade details." };
+  }
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return { error: "Please select a valid date." };
+  }
+
   const targetDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  
-  await saveCourseGradeToDb(gradeId, courseId, title, targetDate, maxMarks, records);
+
+  try {
+    await saveCourseGradeToDb(
+      gradeId,
+      courseId,
+      parsed.data.title,
+      targetDate,
+      parsed.data.maxMarks,
+      parsed.data.records.map((r) => ({
+        enrollmentId: r.enrollmentId,
+        marksObtained: r.marksObtained === null ? null : Math.round(r.marksObtained * 100) / 100,
+      })),
+    );
+  } catch (error) {
+    console.error("saveCourseGrade error:", error);
+    return { error: error instanceof Error ? error.message : "Failed to save grades." };
+  }
 
   revalidatePath(`/admin/courses/${courseId}/grades`);
   revalidatePath(`/teacher/courses/${courseId}/grades`);
   revalidatePath(`/profile/courses/${courseId}`);
+  return {};
 }
 
 export async function getStudentGradeRecords(courseId: string) {

@@ -7,13 +7,14 @@ import { StudentGradeReport } from "@/components/grades/StudentGradeReport";
 export default async function TeacherStudentGradeReportPage({
   params,
 }: {
-  params: Promise<{ id: string; studentId: string }>;
+  params: Promise<{ id: string; enrollmentId: string }>;
 }) {
   const { teacher } = await requireTeacher();
-  const { id, studentId } = await params;
+  const { id, enrollmentId } = await params;
   if (!(await getTeacherCourseForPortal(teacher.id, id))) notFound();
   
-  const report = await getStudentGradeReport(studentId);
+  const report = await getStudentGradeReport(enrollmentId);
+  if (report.course.id !== id) notFound();
 
   return (
     <div className="py-6">

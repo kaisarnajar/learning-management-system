@@ -4,6 +4,7 @@ import { AttendanceForm } from "@/components/attendance/AttendanceForm";
 import Link from "next/link";
 import { ArrowLeftIcon } from "lucide-react";
 import { notFound } from "next/navigation";
+import { formatCalendarDate } from "@/utils/calendar-date";
 
 export default async function AdminEditAttendancePage({
   params,
@@ -42,7 +43,7 @@ export default async function AdminEditAttendancePage({
           <ArrowLeftIcon className="w-5 h-5" />
         </Link>
         <h1 className="text-2xl font-bold text-foreground">
-          Edit Attendance - {new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(dateObj)}
+          Edit Attendance - {formatCalendarDate(dateObj)}
         </h1>
       </div>
 

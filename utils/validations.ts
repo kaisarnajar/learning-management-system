@@ -561,6 +561,50 @@ export const couponRequestApprovalSchema = z.object({
   ),
 });
 
+/**
+ * A grade card save. `marksObtained: null` means "not graded": the student's
+ * row is removed (or never created) instead of being stored as 0.
+ */
+export const courseGradeInputSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1, "Exam title is required.")
+      .max(200, "Exam title must be at most 200 characters."),
+    maxMarks: z
+      .number("Maximum marks must be a number.")
+      .int("Maximum marks must be a whole number.")
+      .min(1, "Maximum marks must be at least 1."),
+    records: z.array(
+      z.object({
+        enrollmentId: z.string().min(1),
+        marksObtained: z
+          .number("Marks must be a number.")
+          .finite("Marks must be a number.")
+          .min(0, "Marks cannot be negative.")
+          .nullable(),
+      }),
+    ),
+  })
+  .superRefine((value, ctx) => {
+    const seen = new Set<string>();
+    for (const record of value.records) {
+      if (seen.has(record.enrollmentId)) {
+        ctx.addIssue({ code: "custom", message: "A student appears more than once." });
+        return;
+      }
+      seen.add(record.enrollmentId);
+      if (record.marksObtained !== null && record.marksObtained > value.maxMarks) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Marks cannot exceed the maximum of ${value.maxMarks}.`,
+        });
+        return;
+      }
+    }
+  });
+
 export const slabSchema = z.object({
   minWeightGrams: z.coerce.number().int().min(0, "Minimum weight must be 0 or more."),
   maxWeightGrams: z.coerce.number().int().min(1, "Maximum weight must be at least 1."),

@@ -292,7 +292,8 @@ export async function generateAttendanceCardPdf(enrollmentId: string): Promise<B
     date: r.attendance.date.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
-      year: "numeric"
+      year: "numeric",
+      timeZone: "UTC",
     }),
     status: r.isPresent ? "Present" : "Absent"
   }));

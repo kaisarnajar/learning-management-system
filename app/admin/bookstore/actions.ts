@@ -141,8 +141,14 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
 
     if (imageFile && imageFile.size > 0) {
       imagePath = await saveBookImage(bookId, imageFile);
+      // Remove the previous object only after the new upload succeeded.
+      if (existing.imagePath && existing.imagePath !== imagePath) {
+        await deleteBookImage(existing.imagePath);
+      }
     } else if (removeImage) {
-      await deleteBookImage(bookId);
+      if (existing.imagePath) {
+        await deleteBookImage(existing.imagePath);
+      }
       imagePath = null;
     }
 
@@ -180,18 +186,15 @@ export async function deleteBook(bookId: string): Promise<{ error?: string }> {
     const book = await prisma.book.findUnique({ where: { id: bookId } });
     if (!book) return { error: "Book not found." };
 
-    // Check for any non-declined orders containing this book
-    const activeOrderItem = await prisma.bookOrderItem.findFirst({
-      where: {
-        bookId,
-        order: { status: { in: ["PENDING_VERIFICATION", "APPROVED"] } },
-      },
-    });
+    // Any order line (including shipped/refunded/declined history) references
+    // this book; deleting would cascade those lines away and corrupt sales
+    // history. Unpublish instead.
+    const orderItemCount = await prisma.bookOrderItem.count({ where: { bookId } });
 
-    if (activeOrderItem) {
+    if (orderItemCount > 0) {
       return {
         error:
-          "Cannot delete a book with existing active or pending orders. Set it to Out of Stock instead.",
+          "This book appears in past or active orders and cannot be deleted. Unpublish it or set it to Out of Stock instead.",
       };
     }
 

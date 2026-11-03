@@ -1,3 +1,4 @@
+import { escapeHtml } from "../layout";
 import { deliverMail, EmailSendResult } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailInfoCard } from "../components";
@@ -43,8 +44,8 @@ export async function sendCertificateEmail(params: CertificateEmailParams): Prom
     ${EmailGreeting({ name: displayName })}
     ${
       isCompletion
-        ? `<p>Congratulations on successfully completing <strong>${courseTitle}</strong> at ${BRAND_CONFIG.name}! May Allah bless your efforts and make this knowledge a source of benefit for you and others.</p>`
-        : `<p>Thank you for your dedication and effort in <strong>${courseTitle}</strong> at ${BRAND_CONFIG.name}. Your commitment to Islamic education is truly appreciated.</p>`
+        ? `<p>Congratulations on successfully completing <strong>${escapeHtml(courseTitle)}</strong> at ${BRAND_CONFIG.name}! May Allah bless your efforts and make this knowledge a source of benefit for you and others.</p>`
+        : `<p>Thank you for your dedication and effort in <strong>${escapeHtml(courseTitle)}</strong> at ${BRAND_CONFIG.name}. Your commitment to Islamic education is truly appreciated.</p>`
     }
     ${EmailInfoCard({
       title: certLabel,
@@ -56,7 +57,7 @@ export async function sendCertificateEmail(params: CertificateEmailParams): Prom
       bgColor: "#fef9e7",
       titleColor: "#92400e",
     })}
-    <p>Your <strong>${certLabel}</strong> is <strong>attached to this email</strong> as a PDF. Please download and keep it for your records.</p>
+    <p>Your <strong>${escapeHtml(certLabel)}</strong> is <strong>attached to this email</strong> as a PDF. Please download and keep it for your records.</p>
     <p style="font-size:13px;color:#6b7280;">We pray this is a source of barakah and motivation to continue on the path of knowledge. Jazakallah Khair!</p>
   `;
 
@@ -169,7 +170,7 @@ export async function sendGradeCardEmail(params: GradeCardEmailParams): Promise<
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>Your academic test report (Grade Card) for the course <strong>${courseTitle}</strong> has been generated.</p>
+    <p>Your academic test report (Grade Card) for the course <strong>${escapeHtml(courseTitle)}</strong> has been generated.</p>
     ${EmailInfoCard({
       title: "Grade Card Issued",
       items: [{ label: "Status", value: "Generated successfully" }],
@@ -230,7 +231,7 @@ export async function sendAttendanceCardEmail(params: AttendanceCardEmailParams)
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>Your academic attendance report (Attendance Card) for the course <strong>${courseTitle}</strong> has been generated.</p>
+    <p>Your academic attendance report (Attendance Card) for the course <strong>${escapeHtml(courseTitle)}</strong> has been generated.</p>
     ${EmailInfoCard({
       title: "Attendance Card Issued",
       items: [{ label: "Status", value: "Generated successfully" }],

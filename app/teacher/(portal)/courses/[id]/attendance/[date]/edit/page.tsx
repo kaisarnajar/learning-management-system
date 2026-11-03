@@ -1,4 +1,5 @@
 import { requireTeacher } from "@/services/auth-actions";
+import { getTeacherCourseForPortal } from "@/services/teacher-portal";
 import { getEnrolledStudentsForAttendance, getAttendanceRecordsForDate } from "@/app/actions/attendance";
 import { AttendanceForm } from "@/components/attendance/AttendanceForm";
 import Link from "next/link";
@@ -10,8 +11,9 @@ export default async function TeacherEditAttendancePage({
 }: {
   params: Promise<{ id: string; date: string }>;
 }) {
-  await requireTeacher();
+  const { teacher } = await requireTeacher();
   const { id, date } = await params;
+  if (!(await getTeacherCourseForPortal(teacher.id, id))) notFound();
   const dateObj = new Date(date);
   
   if (isNaN(dateObj.getTime())) {

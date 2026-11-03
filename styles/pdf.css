@@ -1,0 +1,4 @@
+/* Source stylesheet for the PDF templates; compiled by `npm run build:pdf-css`. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

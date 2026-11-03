@@ -288,7 +288,7 @@ export async function generateGradeCardPdf(enrollmentId: string): Promise<Buffer
     authorityDesignation: AUTHORITY_SIGNATURE.designation
   };
 
-  const html = wrapHtmlForPdf(renderGradeCardToHtml(data), { base64Font });
+  const html = await wrapHtmlForPdf(renderGradeCardToHtml(data), { base64Font });
   const pdfBuffer = await generatePdfFromHtml(html, {
     format: "A4",
     landscape: false

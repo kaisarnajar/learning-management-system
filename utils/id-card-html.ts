@@ -232,7 +232,7 @@ export async function generateIdCardPdf(user: {
     role: targetRole,
   };
 
-  const htmlString = wrapHtmlForPdf(renderIdCardToHtml(data), { base64Font });
+  const htmlString = await wrapHtmlForPdf(renderIdCardToHtml(data), { base64Font });
   const pdfBuffer = await generatePdfFromHtml(htmlString, { 
     width: "1011px", 
     height: "638px" 

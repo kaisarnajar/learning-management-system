@@ -7,6 +7,7 @@ import { z } from "zod";
 import { BRAND_CONFIG } from "@/config/brand";
 import { sendFeeWaiverApprovedEmail, sendFeeWaiverRejectedEmail } from "@/services/email";
 import { createStudentNotification } from "@/services/notifications";
+import { recordAudit } from "@/services/audit";
 
 const createCouponSchema = z.object({
   code: z.string().trim().min(3).toUpperCase(),
@@ -128,15 +129,51 @@ export async function updateCoupon(couponId: string, formData: FormData) {
   }
 }
 
+/**
+ * A coupon that has ever been applied is part of the financial history: it is
+ * deactivated (and audited) instead of deleted. Unused coupons may be deleted.
+ */
 export async function deleteCoupon(couponId: string) {
-  await requireAdmin();
+  const session = await requireAdmin();
   try {
-    await prisma.coupon.delete({
+    const coupon = await prisma.coupon.findUnique({
       where: { id: couponId },
+      include: { _count: { select: { usages: true, submissions: true, requests: true } } },
     });
+    if (!coupon) return { error: "Coupon not found." };
+
+    const hasHistory = coupon._count.usages > 0 || coupon._count.submissions > 0;
+
+    await prisma.$transaction(async (tx) => {
+      if (hasHistory) {
+        await tx.coupon.update({ where: { id: couponId }, data: { isActive: false } });
+        await recordAudit(tx, session, {
+          action: "update",
+          entity: "Coupon",
+          entityId: couponId,
+          reason: "Deactivated instead of deleted: coupon has been used",
+          before: { code: coupon.code, isActive: coupon.isActive },
+          after: { isActive: false },
+        });
+      } else {
+        await tx.coupon.delete({ where: { id: couponId } });
+        await recordAudit(tx, session, {
+          action: "delete",
+          entity: "Coupon",
+          entityId: couponId,
+          before: { code: coupon.code, percentage: coupon.percentage, type: coupon.type },
+        });
+      }
+    });
+
     revalidatePath("/admin/coupons");
-    return { success: "Coupon deleted successfully." };
+    return {
+      success: hasHistory
+        ? "This coupon has been used, so it was deactivated instead of deleted."
+        : "Coupon deleted successfully.",
+    };
   } catch (error) {
+    console.error("Failed to delete coupon:", error);
     return { error: "Failed to delete coupon." };
   }
 }
@@ -279,55 +316,47 @@ export async function rejectCouponRequest(requestId: string) {
   }
 }
 
+/**
+ * Deletes a waiver request. If its coupon has been used (usages or fee
+ * submissions exist) the request is kept: payment records and submissions are
+ * financial history and are never deleted from here.
+ */
 export async function deleteCouponRequest(requestId: string) {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const request = await prisma.couponRequest.findUnique({
     where: { id: requestId },
-    select: { id: true, couponId: true, userId: true, courseId: true },
+    select: { id: true, couponId: true, userId: true, courseId: true, status: true, reason: true },
   });
 
   if (!request) return { error: "Request not found." };
 
+  if (request.couponId) {
+    const [usages, submissions] = await Promise.all([
+      prisma.couponUsage.count({ where: { couponId: request.couponId } }),
+      prisma.coursePaymentSubmission.count({ where: { couponId: request.couponId } }),
+    ]);
+    if (usages > 0 || submissions > 0) {
+      return {
+        error:
+          "This request's coupon has already been used for a payment, so it cannot be deleted. Deactivate the coupon from the Coupons tab instead.",
+      };
+    }
+  }
+
   try {
     await prisma.$transaction(async (tx) => {
-      // If there's a coupon associated with this request
       if (request.couponId) {
-        // Find payment submissions linked to this couponId
-        const submissions = await tx.coursePaymentSubmission.findMany({
-          where: { couponId: request.couponId },
-          select: { id: true, paymentRecordId: true },
-        });
-
-        const submissionIds = submissions.map((s) => s.id);
-        const paymentRecordIds = submissions
-          .map((s) => s.paymentRecordId)
-          .filter((id): id is string => Boolean(id));
-
-        // Delete PaymentRecords linked to these submissions (removes from Finance & Fee Waiver Finance)
-        if (paymentRecordIds.length > 0) {
-          await tx.paymentRecord.deleteMany({
-            where: { id: { in: paymentRecordIds } },
-          });
-        }
-
-        // Delete CoursePaymentSubmissions linked to this coupon
-        if (submissionIds.length > 0) {
-          await tx.coursePaymentSubmission.deleteMany({
-            where: { id: { in: submissionIds } },
-          });
-        }
-
-        // Delete CouponUsage entries linked to this coupon
-        await tx.couponUsage.deleteMany({
-          where: { couponId: request.couponId },
-        });
-
-        // Delete the Coupon itself
-        await tx.coupon.delete({
-          where: { id: request.couponId },
-        });
+        // Unused coupon: safe to remove together with the request.
+        await tx.coupon.delete({ where: { id: request.couponId } });
       }
+
+      await recordAudit(tx, session, {
+        action: "delete",
+        entity: "CouponRequest",
+        entityId: requestId,
+        before: { status: request.status, couponId: request.couponId, userId: request.userId, courseId: request.courseId },
+      });
 
       // Delete student notifications associated with this request
       await tx.studentNotification.deleteMany({
@@ -345,7 +374,7 @@ export async function deleteCouponRequest(requestId: string) {
     revalidatePath("/admin/finance");
     revalidatePath("/profile/waiver-requests");
 
-    return { success: "Waiver request and associated finance records deleted successfully." };
+    return { success: "Waiver request deleted." };
   } catch (error) {
     console.error("Failed to delete coupon request:", error);
     return { error: "Failed to delete waiver request." };

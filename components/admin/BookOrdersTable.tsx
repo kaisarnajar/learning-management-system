@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import type { BookOrderWithItems } from "@/services/bookstore";
-import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrderRefunded, deleteBookOrder } from "@/app/admin/bookstore/orders/actions";
+import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrderRefunded, voidBookOrder } from "@/app/admin/bookstore/orders/actions";
 import { bookOrderStatusLabel, bookOrderStatusClass } from "@/services/bookstore";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { useToast } from "@/components/shared/ToastProvider";
@@ -204,13 +204,17 @@ function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "defau
           ) : (
              <span className="text-xs italic text-muted">No Payment Record</span>
           )}
-          <DeleteActionButton
-            action={async () => {
-              const result = await deleteBookOrder(order.id);
-              if (result?.error) addToast(result.error, "error");
-            }}
-            itemName="payment"
-          />
+          {(order.status === "DECLINED" || order.status === "REFUNDED") && (
+            <DeleteActionButton
+              verb="Void"
+              reasonLabel="Reason for voiding"
+              action={async (reason) => {
+                const result = await voidBookOrder(order.id, reason);
+                if (result?.error) addToast(result.error, "error");
+              }}
+              itemName="order"
+            />
+          )}
         </div>
       </td>
     );
@@ -244,21 +248,24 @@ function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "defau
         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${bookOrderStatusClass(order.status)}`}>
           {bookOrderStatusLabel(order.status)}
         </span>
-        <ConfirmationModal
-           title="Delete Order"
-           description="Are you sure you want to permanently delete this transaction? This action cannot be undone."
-           actionLabel="Delete"
-           variant="destructive"
-           onConfirm={async () => {
-             const result = await deleteBookOrder(order.id);
-             if (result?.error) addToast(result.error, "error");
-           }}
-           trigger={
-              <button type="button" className={adminDestructiveButtonClassName}>
-                 Delete
-              </button>
-           }
-        />
+        {(order.status === "DECLINED" || order.status === "REFUNDED") && (
+          <ConfirmationModal
+             title="Void Order"
+             description="Void this order? It stays on record for auditing but disappears from order lists and finance."
+             actionLabel="Void"
+             variant="destructive"
+             reasonLabel="Reason for voiding"
+             onConfirm={async (reason) => {
+               const result = await voidBookOrder(order.id, reason);
+               if (result?.error) addToast(result.error, "error");
+             }}
+             trigger={
+                <button type="button" className={adminDestructiveButtonClassName}>
+                   Void
+                </button>
+             }
+          />
+        )}
       </div>
     </td>
   );

@@ -21,6 +21,7 @@ export function ActionButton({
   variant = "primary",
   hideOnSuccess = true,
   className = "",
+  disabled = false,
 }: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   action: (returnTo: string) => Promise<{ error?: string } | void | any>;
@@ -29,6 +30,7 @@ export function ActionButton({
   variant?: ActionButtonVariant;
   hideOnSuccess?: boolean;
   className?: string;
+  disabled?: boolean;
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -69,7 +71,7 @@ export function ActionButton({
     <Button
       type="button"
       onClick={handleAction}
-      disabled={pending}
+      disabled={pending || disabled}
       variant={variant}
       size="sm"
       className={className}

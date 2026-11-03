@@ -5,7 +5,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { getReturnToUrl } from "@/components/shared/ActionButton";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { confirmMonthlyPayment, declineMonthlyPayment, deleteApprovedPayment } from "@/app/admin/payments/actions";
+import { confirmMonthlyPayment, declineMonthlyPayment, voidApprovedPayment } from "@/app/admin/payments/actions";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
 import { formatPrice } from "@/services/courses";
 import type { CoursePaymentSubmissionWithUser } from "@/services/monthly-payments";
@@ -149,13 +149,17 @@ export function PaymentApprovalsTable({
                     />
                   </>
                 )}
-                <DeleteActionButton
-                  action={async () => {
-                     const result = await deleteApprovedPayment(submission.id, returnTo);
-                     if (result?.error) addToast(result.error, "error");
-                  }}
-                  itemName="payment"
-                />
+                {submission.status === MONTHLY_PAYMENT_APPROVED && (
+                  <DeleteActionButton
+                    verb="Void"
+                    reasonLabel="Reason for voiding"
+                    action={async (reason) => {
+                       const result = await voidApprovedPayment(submission.id, reason, returnTo);
+                       if (result?.error) addToast(result.error, "error");
+                    }}
+                    itemName="payment"
+                  />
+                )}
               </div>
             </td>
           </tr>

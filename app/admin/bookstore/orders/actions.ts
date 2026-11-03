@@ -11,6 +11,8 @@ import {
 } from "@/services/notifications";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { recordAudit } from "@/services/audit";
+import { normalizeReason } from "@/services/payment-voiding";
 
 function revalidateOrderPaths(userId: string) {
   const paths = [
@@ -191,35 +193,55 @@ export async function markBookOrderRefunded(
   redirect(orderReturnUrl(returnTo, "refunded"));
 }
 
-export async function deleteBookOrder(
+/**
+ * Voids a declined or refunded order: the order is soft-deleted (kept for
+ * audit) and any linked payment record is voided. Approved and shipped
+ * orders are fulfilment history and cannot be voided here.
+ */
+export async function voidBookOrder(
   orderId: string,
+  reason?: string,
 ): Promise<{ error?: string } | void> {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const normalizedReason = normalizeReason(reason);
+  if (!normalizedReason) {
+    return { error: "Please give a reason (at least 3 characters); it is recorded in the audit log." };
+  }
 
   const order = await withDbErrorHandling(() => prisma.bookOrder.findUnique({
       where: { id: orderId },
     }), "Database operation failed");
 
-  if (!order) return { error: "Order not found." };
+  if (!order || order.deletedAt) return { error: "Order not found." };
 
-  if (order.status === "PENDING_VERIFICATION") {
-    return { error: "Pending orders cannot be deleted directly. Decline them first." };
+  if (order.status !== "DECLINED" && order.status !== "REFUNDED") {
+    return { error: "Only declined or refunded orders can be voided. Decline or refund the order first." };
   }
 
   await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
-    // If order has a payment record, we should delete it too
-    // We find it by matching description since there's no strict foreign key
+    // Linked payment record (matched by description until the FK lands): void, never delete.
     const shortId = orderId.slice(-6).toUpperCase();
-    await tx.paymentRecord.deleteMany({
+    await tx.paymentRecord.updateMany({
       where: {
         paymentType: "book_purchase",
         userId: order.userId,
         description: `Book order #${shortId}`,
-      }
+        voidedAt: null,
+      },
+      data: { voidedAt: new Date(), voidReason: normalizedReason, voidedById: session.user.id },
     });
 
-    await tx.bookOrder.delete({
+    await tx.bookOrder.update({
       where: { id: orderId },
+      data: { deletedAt: new Date() },
+    });
+
+    await recordAudit(tx, session, {
+      action: "soft_delete",
+      entity: "BookOrder",
+      entityId: orderId,
+      reason: normalizedReason,
+      before: { status: order.status, totalAmountInrPaise: order.totalAmountInrPaise, userId: order.userId },
     });
   }), "Database operation failed");
 

@@ -7,13 +7,20 @@ import {
 } from "@/services/blog-upload";
 import { prisma } from "@/utils/prisma";
 import { blogPostSchema, teacherBlogPostSchema } from "@/utils/validations";
+import { sanitizeRichText } from "@/services/rich-text";
 import { withDbErrorHandling } from "@/utils/db-error";
+
+/** Rich-text bodies arrive as raw editor HTML; sanitise before validation and storage. */
+function sanitizedBody(formData: FormData): string {
+  const raw = formData.get("body");
+  return sanitizeRichText(typeof raw === "string" ? raw : "");
+}
 
 export function parseBlogForm(formData: FormData) {
   return blogPostSchema.safeParse({
     title: formData.get("title"),
     excerpt: formData.get("excerpt"),
-    body: formData.get("body"),
+    body: sanitizedBody(formData),
     published: formData.get("published") === "on",
   });
 }
@@ -22,7 +29,7 @@ export function parseTeacherBlogForm(formData: FormData) {
   return teacherBlogPostSchema.safeParse({
     title: formData.get("title"),
     excerpt: formData.get("excerpt"),
-    body: formData.get("body"),
+    body: sanitizedBody(formData),
   });
 }
 

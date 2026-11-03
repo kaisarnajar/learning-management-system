@@ -63,6 +63,19 @@ async function studentUsersWhere(searchQuery?: string) {
   return andWhere(base, buildSearchOr(["name", "email", "registrationNumber"], [], searchQuery));
 }
 
+/**
+ * Students who have at least one payment record: the bounded list the finance
+ * filters need, instead of every registered user.
+ */
+export async function getStudentsWithPayments() {
+  const where = await studentUsersWhere();
+  return withDbErrorHandling(() => prisma.user.findMany({
+      where: { ...where, paymentRecords: { some: {} } },
+      select: { id: true, name: true, email: true },
+      orderBy: getStudentOrderBy(),
+    }), "Database operation failed");
+}
+
 export async function getStudentUsers() {
   const where = await studentUsersWhere();
   return withDbErrorHandling(() => prisma.user.findMany({

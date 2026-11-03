@@ -19,7 +19,7 @@ import {
 } from "@/services/finance-filters";
 import { getIncomeRecordsPaginated, getIncomeTotal } from "@/services/finance-income";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
-import { getStudentUsers } from "@/services/students";
+import { getStudentsWithPayments } from "@/services/students";
 import { getAllTeachers } from "@/services/teachers";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { requireAdmin } from "@/services/auth-actions";
@@ -60,7 +60,7 @@ export default async function AdminFinancePage({
     getIncomeTotal(filters),
     getExpenseTotal(filters),
     getAllCourses(),
-    getStudentUsers(),
+    getStudentsWithPayments(),
     getAllTeachers(),
   ]);
 

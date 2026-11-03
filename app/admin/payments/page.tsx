@@ -93,8 +93,9 @@ export default async function AdminPaymentApprovalsPage({
     monthlyResult,
   ] = await Promise.all([
     getAllCourses(),
-    getPendingEnrollmentFeePaymentsPaginated(type === "enrollment_pending" ? requestedPage : 1, pageSize, q),
-    getPendingMonthlyPaymentsPaginated(type === "monthly_pending" ? requestedPage : 1, pageSize, q),
+    // The inactive tab only needs its count for the badge: ask for one row.
+    getPendingEnrollmentFeePaymentsPaginated(type === "enrollment_pending" ? requestedPage : 1, type === "enrollment_pending" ? pageSize : 1, q),
+    getPendingMonthlyPaymentsPaginated(type === "monthly_pending" ? requestedPage : 1, type === "monthly_pending" ? pageSize : 1, q),
   ]);
 
   const pendingEnrollmentCount = enrollmentResult.totalCount;

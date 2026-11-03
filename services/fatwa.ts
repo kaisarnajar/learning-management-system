@@ -6,6 +6,7 @@ import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getAppBaseUrl } from "@/services/password-reset";
 import { cachedPublic } from "@/services/public-cache";
+import { cache } from "react";
 
 /** Admin-only search: may match asker name and e-mail. */
 function fatwaAdminSearchWhere(searchQuery?: string) {
@@ -128,11 +129,12 @@ export async function getAnsweredFatwasPaginated(
   return { items, totalCount };
 }
 
-export async function getAnsweredFatwaById(id: string): Promise<FatwaQuestion | null> {
+/** Memoised per request: generateMetadata and the page share one query. */
+export const getAnsweredFatwaById = cache(async (id: string): Promise<FatwaQuestion | null> => {
   return withDbErrorHandling(() => prisma.fatwaQuestion.findFirst({
       where: { id, answer: { not: null }, approvalStatus: "APPROVED" },
     }), "Database operation failed");
-}
+});
 
 export type FatwaAdminFilter = "pending" | "answered" | "unanswered" | "rejected";
 

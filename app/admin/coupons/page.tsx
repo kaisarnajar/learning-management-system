@@ -5,6 +5,8 @@ import { AdminCouponsTable } from "@/components/admin/AdminCouponsTable";
 import { AdminCouponRequestsTable } from "@/components/admin/AdminCouponRequestsTable";
 import { CreateCouponDialog } from "@/components/admin/CreateCouponDialog";
 import Link from "next/link";
+import { Pagination } from "@/components/shared/Pagination";
+import { clampPage, paginationArgs, parsePaginationParams } from "@/utils/pagination";
 
 export const metadata = {
   title: "Fee Waivers & Coupons | Admin | Darse Quran Academy",
@@ -12,6 +14,7 @@ export const metadata = {
 
 type SearchParams = {
   tab?: string;
+  page?: string;
 };
 
 function TabLink({
@@ -47,15 +50,23 @@ export default async function AdminCouponsPage({
   const params = await searchParams;
   const activeTab = params.tab || "requests";
 
-  const coupons = await prisma.coupon.findMany({
+  // Coupons are paginated per tab (special / default) instead of loading every row.
+  const couponType = activeTab === "special" ? "SPECIAL" : "DEFAULT";
+  const { page: requestedPage, pageSize } = parsePaginationParams(params);
+  const couponWhere = { type: couponType as "SPECIAL" | "DEFAULT" };
+  const couponTotal = activeTab === "requests" ? 0 : await prisma.coupon.count({ where: couponWhere });
+  const couponPage = clampPage(requestedPage, couponTotal, pageSize);
+  const coupons = activeTab === "requests" ? [] : await prisma.coupon.findMany({
+    where: couponWhere,
     include: {
       course: { select: { title: true } },
       user: { select: { name: true, email: true } },
     },
     orderBy: { createdAt: "desc" },
+    ...paginationArgs(couponPage, pageSize),
   });
 
-  const requests = (await prisma.couponRequest.findMany({
+  const requests = activeTab !== "requests" ? [] : (await prisma.couponRequest.findMany({
     include: {
       user: { select: { name: true, email: true, whatsapp: true } },
       course: { select: { title: true } },
@@ -97,6 +108,7 @@ export default async function AdminCouponsPage({
           <section>
             <h2 className="font-serif text-lg font-semibold text-foreground mb-4">Special Coupons</h2>
             <AdminCouponsTable coupons={coupons} courses={courses} type="SPECIAL" />
+            <Pagination basePath="/admin/coupons" params={params} page={couponPage} totalCount={couponTotal} pageSize={pageSize} />
           </section>
         )}
         {(activeTab === "default" || activeTab === "coupons") && (
@@ -106,6 +118,7 @@ export default async function AdminCouponsPage({
               <CreateCouponDialog courses={courses} />
             </div>
             <AdminCouponsTable coupons={coupons} courses={courses} type="DEFAULT" />
+            <Pagination basePath="/admin/coupons" params={params} page={couponPage} totalCount={couponTotal} pageSize={pageSize} />
           </section>
         )}
       </div>

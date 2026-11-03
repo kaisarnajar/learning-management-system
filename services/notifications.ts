@@ -226,19 +226,25 @@ export async function createStudentNotificationsForUsers(
     return;
   }
 
-  await Promise.all(
-    uniqueUserIds.map((userId) =>
-      createStudentNotification({
-        userId,
-        type,
-        title,
-        body,
-        href,
-        sourceType,
-        sourceId,
-      }),
-    ),
-  );
+  // Two statements for any number of recipients: insert the rows that do not
+  // exist yet (the (userId, type, sourceId) unique index dedupes), then
+  // refresh text and mark unread for everyone, including the ones just added.
+  await withDbErrorHandling(() => prisma.studentNotification.createMany({
+        data: uniqueUserIds.map((userId) => ({
+          userId,
+          type,
+          title,
+          body: body ?? null,
+          href,
+          sourceType: sourceType ?? null,
+          sourceId,
+        })),
+        skipDuplicates: true,
+      }), "Database operation failed");
+  await withDbErrorHandling(() => prisma.studentNotification.updateMany({
+        where: { userId: { in: uniqueUserIds }, type, sourceId },
+        data: { title, body: body ?? null, href, sourceType: sourceType ?? null, readAt: null },
+      }), "Database operation failed");
 }
 
 async function getEnrolledStudentUserIdsForCourse(courseId: string): Promise<string[]> {
@@ -383,9 +389,10 @@ export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
     sourceId: params.announcementId,
   });
 
-  for (const userId of userIds) {
-    revalidateNotificationPaths(userId);
-  }
+  // One revalidation for the batch; the per-student admin pages are refreshed
+  // as a layout rather than one call per recipient.
+  revalidateNotificationPaths();
+  revalidatePath("/admin/students", "layout");
 
   runInBackground(async () => {
     const announcementUrl = toAbsoluteUrl(`/profile/courses/${params.courseId}/announcements`);

@@ -1,53 +1,74 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/utils/prisma";
 import Link from "next/link";
+import { confirmEmailVerification } from "@/app/verify-email/actions";
+import { findVerificationToken } from "@/services/tokens";
 
 type PageProps = {
-  searchParams: Promise<{ token?: string }>;
+  searchParams: Promise<{ token?: string; verified?: string; error?: string }>;
+};
+
+const ERROR_MESSAGES: Record<string, string> = {
+  invalid: "Invalid verification token.",
+  expired: "Verification token has expired.",
+  notfound: "Account not found.",
 };
 
 export default async function VerifyEmailPage({ searchParams }: PageProps) {
-  const { token } = await searchParams;
+  const { token, verified, error } = await searchParams;
+
+  if (verified === "1") {
+    return <VerificationResult success={true} message="Your email has been verified successfully." />;
+  }
+
+  if (error) {
+    return <VerificationResult success={false} message={ERROR_MESSAGES[error] ?? ERROR_MESSAGES.invalid} />;
+  }
 
   if (!token) {
     redirect("/login");
   }
 
-  const existingToken = await prisma.verificationToken.findUnique({
-    where: { token },
-  });
+  // Read-only: opening the link (or a mail scanner prefetching it) must not
+  // verify the address; the button below posts to a server action instead.
+  const existingToken = await findVerificationToken(token);
 
   if (!existingToken) {
-    return <VerificationResult success={false} message="Invalid verification token." />;
+    return <VerificationResult success={false} message={ERROR_MESSAGES.invalid} />;
   }
 
   if (new Date() > existingToken.expires) {
-    return <VerificationResult success={false} message="Verification token has expired." />;
+    return <VerificationResult success={false} message={ERROR_MESSAGES.expired} />;
   }
 
   const existingUser = await prisma.user.findUnique({
     where: { email: existingToken.identifier },
+    select: { email: true },
   });
 
   if (!existingUser) {
-    return <VerificationResult success={false} message="Account not found." />;
+    return <VerificationResult success={false} message={ERROR_MESSAGES.notfound} />;
   }
 
-  await prisma.user.update({
-    where: { id: existingUser.id },
-    data: { emailVerified: new Date() },
-  });
-
-  await prisma.verificationToken.delete({
-    where: {
-      identifier_token: {
-        identifier: existingToken.identifier,
-        token: existingToken.token,
-      },
-    },
-  });
-
-  return <VerificationResult success={true} message="Your email has been verified successfully." />;
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background px-4">
+      <div className="w-full max-w-md rounded-2xl bg-surface p-8 text-center shadow-sm">
+        <h1 className="text-2xl font-bold text-foreground">Confirm your email</h1>
+        <p className="mt-2 text-muted">
+          Confirm that <span className="font-medium text-foreground">{existingUser.email}</span> is your email address.
+        </p>
+        <form action={confirmEmailVerification} className="mt-6">
+          <input type="hidden" name="token" value={token} />
+          <button
+            type="submit"
+            className="inline-block rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-light"
+          >
+            Confirm email
+          </button>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 function VerificationResult({ success, message }: { success: boolean; message: string }) {

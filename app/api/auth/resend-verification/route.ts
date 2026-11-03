@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
-import { generateVerificationToken } from "@/services/tokens";
+import { buildVerificationUrl, generateVerificationToken } from "@/services/tokens";
 import { sendVerificationEmail } from "@/services/email";
 import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 
-export async function POST(request: Request) {
+export async function POST() {
   try {
     const session = await auth();
 
@@ -29,9 +29,10 @@ export async function POST(request: Request) {
     }
 
     const verificationToken = await generateVerificationToken(session.user.email);
-    const origin = new URL(request.url).origin;
-    const verificationUrl = `${origin}/verify-email?token=${verificationToken.token}`;
-    await sendVerificationEmail({ to: session.user.email, verificationUrl });
+    await sendVerificationEmail({
+      to: session.user.email,
+      verificationUrl: buildVerificationUrl(verificationToken.token),
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

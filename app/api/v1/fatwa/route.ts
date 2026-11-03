@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAnsweredFatwasPaginated } from "@/services/fatwa";
 import { prisma } from "@/utils/prisma";
+import { fatwaQuestionSchema } from "@/utils/validations";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
+import { parseApiPagination } from "@/utils/api-pagination";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = request.nextUrl;
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const pageSize = parseInt(searchParams.get("pageSize") || "20", 10);
+    const { page, pageSize } = parseApiPagination(searchParams);
     const category = searchParams.get("category") || undefined;
     const search = searchParams.get("search") || undefined;
 
@@ -38,22 +39,24 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { title, question, category, askerName, askerEmail } = body;
+    const parsed = fatwaQuestionSchema.safeParse({
+      title: body?.title,
+      question: body?.question,
+      category: body?.category || "General",
+      askerName: body?.askerName,
+      askerEmail: body?.askerEmail,
+    });
 
-    if (!title || !question || !askerName || !askerEmail) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "Title, question, asker name, and email are required." },
+        { success: false, error: parsed.error.issues[0]?.message ?? "Invalid fatwa question." },
         { status: 400 }
       );
     }
 
     const newFatwa = await prisma.fatwaQuestion.create({
       data: {
-        title,
-        question,
-        category: category || "General",
-        askerName,
-        askerEmail,
+        ...parsed.data,
         approvalStatus: "PENDING",
       },
     });

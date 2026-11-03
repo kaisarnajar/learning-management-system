@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
+import { studentReviewSchema } from "@/utils/validations";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -31,11 +32,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { rating, quote, course, location } = body;
+    const parsed = studentReviewSchema.safeParse({
+      quote: body?.quote,
+      course: body?.course ?? "",
+      location: body?.location ?? "",
+      rating: body?.rating,
+    });
 
-    if (!rating || !quote) {
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "Rating and review text are required." },
+        { success: false, error: parsed.error.issues[0]?.message ?? "Invalid review." },
         { status: 400 }
       );
     }
@@ -43,10 +49,10 @@ export async function POST(request: NextRequest) {
     const review = await prisma.studentReview.create({
       data: {
         userId: user.id,
-        rating: Number(rating),
-        quote: String(quote).trim(),
-        course: course ? String(course).trim() : null,
-        location: location ? String(location).trim() : null,
+        rating: parsed.data.rating,
+        quote: parsed.data.quote,
+        course: parsed.data.course || null,
+        location: parsed.data.location || null,
         status: "PENDING",
       },
     });

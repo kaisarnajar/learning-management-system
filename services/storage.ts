@@ -1,6 +1,6 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { r2Client, R2_BUCKET_NAME, R2_PRIVATE_BUCKET_NAME, R2_PUBLIC_URL } from "@/utils/s3";
+import { getR2Client, R2_BUCKET_NAME, R2_PRIVATE_BUCKET_NAME, R2_PUBLIC_URL } from "@/utils/s3";
 
 /**
  * The one place that talks to R2 for uploads.
@@ -127,7 +127,7 @@ async function readVerified(file: File, rules: UploadRules): Promise<{ buffer: B
 export async function uploadToR2(prefix: StoragePrefix, idPrefix: string, file: File, rules: UploadRules): Promise<string> {
   const { buffer, mime } = await readVerified(file, rules);
   const key = `uploads/${prefix}/${idPrefix}-${randomSuffix()}.${EXT_BY_MIME[mime]}`;
-  await r2Client.send(
+  await getR2Client().send(
     new PutObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key, Body: buffer, ContentType: mime }),
   );
   return `${R2_PUBLIC_URL}/${key}`;
@@ -160,7 +160,7 @@ export function privateKeyFromPath(path: string | null | undefined): string | nu
 export async function uploadPrivateToR2(prefix: StoragePrefix, idPrefix: string, file: File, rules: UploadRules): Promise<string> {
   const { buffer, mime } = await readVerified(file, rules);
   const key = `private/${prefix}/${idPrefix}-${randomSuffix()}.${EXT_BY_MIME[mime]}`;
-  await r2Client.send(
+  await getR2Client().send(
     new PutObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key, Body: buffer, ContentType: mime }),
   );
   return `${PRIVATE_FILE_ROUTE}${key}`;
@@ -168,13 +168,13 @@ export async function uploadPrivateToR2(prefix: StoragePrefix, idPrefix: string,
 
 /** Stores a server-generated file (a rendered PDF) privately under an explicit key. */
 export async function putPrivateObject(key: string, body: Buffer, contentType: string): Promise<void> {
-  await r2Client.send(new PutObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key, Body: body, ContentType: contentType }));
+  await getR2Client().send(new PutObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key, Body: body, ContentType: contentType }));
 }
 
 /** Reads a private object into memory; null when it does not exist (or cannot be read). */
 export async function getPrivateObject(key: string): Promise<Buffer | null> {
   try {
-    const result = await r2Client.send(new GetObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key }));
+    const result = await getR2Client().send(new GetObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key }));
     if (!result.Body) return null;
     return Buffer.from(await result.Body.transformToByteArray());
   } catch (error) {
@@ -190,7 +190,7 @@ export async function getPrivateObject(key: string): Promise<Buffer | null> {
 export async function deletePrivateObject(key: string | null | undefined): Promise<void> {
   if (!key) return;
   try {
-    await r2Client.send(new DeleteObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key }));
+    await getR2Client().send(new DeleteObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key }));
   } catch (error) {
     console.error(`[storage] Failed to delete ${key} from R2:`, error);
   }
@@ -200,7 +200,7 @@ export async function deletePrivateObject(key: string | null | undefined): Promi
 export function presignPrivateObject(key: string, downloadName?: string): Promise<string> {
   const safeName = downloadName?.replace(/["\\\r\n]/g, "_");
   return getSignedUrl(
-    r2Client,
+    getR2Client(),
     new GetObjectCommand({
       Bucket: R2_PRIVATE_BUCKET_NAME,
       Key: key,
@@ -228,7 +228,7 @@ export async function deleteFromR2(prefix: StoragePrefix, urlOrPath: string | nu
   const target = r2KeyFromUrl(prefix, urlOrPath);
   if (!target) return;
   try {
-    await r2Client.send(new DeleteObjectCommand({ Bucket: target.bucket, Key: target.key }));
+    await getR2Client().send(new DeleteObjectCommand({ Bucket: target.bucket, Key: target.key }));
   } catch (error) {
     console.error(`[storage] Failed to delete ${target.key} from R2:`, error);
   }

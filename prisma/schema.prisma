@@ -544,6 +544,8 @@ model PaymentSettings {
   bankBranch          String   @default("")
   includeGstByDefault Boolean  @default(false)
   feeWaiverEnabled    Boolean  @default(false)
+  /// When false (default) a 100% fee waiver still needs admin confirmation like any other payment.
+  autoApproveFullWaivers Boolean @default(false)
   updatedAt           DateTime @updatedAt
 }
 

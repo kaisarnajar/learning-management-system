@@ -12,6 +12,8 @@
     "knip": "knip --include files,dependencies",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev --skip-seed",
+    "db:drift": "bash scripts/check-migration-drift.sh",
+    "db:safety": "bash scripts/check-migration-safety.sh",
     "db:push": "prisma db push",
     "db:seed:demo": "tsx prisma/seed-demo.ts"
   },

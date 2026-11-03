@@ -36,6 +36,7 @@ export default defineConfig({
       },
       dbProject("integration", ["tests/integration/**/*.test.ts"]),
       dbProject("api", ["tests/api/**/*.test.ts"]),
+      dbProject("security", ["tests/security/**/*.test.ts"]),
     ],
   },
 });

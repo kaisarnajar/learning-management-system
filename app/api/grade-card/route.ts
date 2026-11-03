@@ -5,6 +5,7 @@ import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { generateGradeCardPdf } from "@/utils/grade-card-html";
 import { isAdminSession } from "@/services/admin";
+import { contentDisposition } from "@/utils/filename";
 
 export const dynamic = "force-dynamic";
 
@@ -41,13 +42,13 @@ export async function GET(request: Request) {
 
   try {
     const pdfBuffer = await generateGradeCardPdf(enrollmentId);
-    const filename = `Grade_Card_${enrollment.user.name?.replace(/\s+/g, '_') || "Student"}.pdf`;
+    const displayName = `Grade Card ${enrollment.user.name || "Student"}`;
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
       headers: {
         "Content-Type": "application/pdf",
-        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}"`,
+        "Content-Disposition": contentDisposition(inline ? "inline" : "attachment", displayName, "pdf"),
         "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
       },
     });

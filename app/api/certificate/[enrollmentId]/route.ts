@@ -80,7 +80,7 @@ export async function GET(
     const err = error as Error;
     console.error("PDF Generation Error:", err.stack || err);
     return NextResponse.json(
-      { error: "Failed to generate PDF", details: err.message || String(error) },
+      { error: "Failed to generate PDF" },
       { status: 500 },
     );
   }

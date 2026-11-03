@@ -15,20 +15,22 @@ export async function GET(
 ) {
   const { paymentRecordId } = await params;
 
-  const record = await getPaymentRecordById(paymentRecordId);
-
-  if (!record) {
-    return NextResponse.json({ error: "Receipt not found." }, { status: 404 });
-  }
-
+  // Authenticate before touching the database so unauthenticated callers
+  // cannot probe which record ids exist or burn Chromium time.
   const session = await auth();
-  const limited = await enforceRateLimit(RATE_LIMITS.DOCUMENT_USER, session?.user?.id ?? "anonymous");
+  if (!session?.user?.id) {
+    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  }
+  const limited = await enforceRateLimit(RATE_LIMITS.DOCUMENT_USER, session.user.id);
   if (limited) return limited;
-  const isOwner = session?.user?.id === record.userId;
+
+  const record = await getPaymentRecordById(paymentRecordId);
+  const isOwner = record !== null && session.user.id === record.userId;
   const isAdmin = isAdminSession(session);
 
-  if (!isOwner && !isAdmin) {
-    return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+  // Same response for "missing" and "not yours": no existence oracle.
+  if (!record || (!isOwner && !isAdmin)) {
+    return NextResponse.json({ error: "Receipt not found." }, { status: 404 });
   }
 
   if (!record.receiptGeneratedAt || !record.invoiceNumber) {
@@ -60,9 +62,6 @@ export async function GET(
   } catch (error) {
     const err = error as Error;
     console.error("PDF Generation Error:", err.stack || err);
-    return NextResponse.json(
-      { error: "Failed to generate PDF", details: err.message || String(error) },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Failed to generate PDF" }, { status: 500 });
   }
 }

@@ -40,6 +40,12 @@ export type BrandFooter = {
   description: string;
 };
 
+/** Prefixes for sequential document numbers: <prefix>/<financial year>/<00001>. */
+export type BrandDocumentNumbering = {
+  invoicePrefix: string;
+  certificatePrefix: string;
+};
+
 export type BrandConfig = {
   name: string;
   arabicName?: string;
@@ -51,6 +57,7 @@ export type BrandConfig = {
   seo: BrandSEO;
   content: BrandContent;
   footer: BrandFooter;
+  documentNumbering: BrandDocumentNumbering;
 };
 
 export const BRAND_CONFIG: BrandConfig = {
@@ -95,5 +102,10 @@ export const BRAND_CONFIG: BrandConfig = {
     text: "Serving students worldwide",
     copyrightText: `© ${new Date().getFullYear()} Darse Quran Academy. All rights reserved.`,
     description: "Dedicated to authentic Islamic education—Quran, Arabic, and Islamic studies for all ages, taught online by qualified scholars.",
-  }
+  },
+
+  documentNumbering: {
+    invoicePrefix: "DQA-INV",
+    certificatePrefix: "DQA-CERT",
+  },
 };

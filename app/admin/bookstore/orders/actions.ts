@@ -31,6 +31,30 @@ function revalidateOrderPaths(userId: string) {
   revalidatePath(`/admin/students/${userId}`, "page");
 }
 
+/** Thrown inside a transaction when the order is no longer in the expected status. */
+class OrderStateChanged extends Error {}
+
+/**
+ * Moves an order from `from` to `to` atomically. Two admins (or a double
+ * click) racing on the same order: only the first update matches, the second
+ * sees count === 0 and aborts before any side effect.
+ */
+async function transitionOrder(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  orderId: string,
+  from: "PENDING_VERIFICATION" | "APPROVED" | "SHIPPED",
+  to: "APPROVED" | "DECLINED" | "SHIPPED" | "REFUNDED",
+  extra: Record<string, unknown> = {},
+) {
+  const updated = await tx.bookOrder.updateMany({
+    where: { id: orderId, status: from, deletedAt: null },
+    data: { status: to, ...extra },
+  });
+  if (updated.count === 0) {
+    throw new OrderStateChanged("This order was already processed by someone else. Refresh the page.");
+  }
+}
+
 function orderReturnUrl(returnTo: string | undefined, event: string): string {
   const fallback = `/admin/bookstore/orders?${event}=1`;
   if (!returnTo?.startsWith("/admin")) return fallback;
@@ -62,11 +86,9 @@ export async function approveBookOrder(
     return { error: "Only pending orders can be approved." };
   }
 
-  await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
-    await tx.bookOrder.update({
-      where: { id: orderId },
-      data: { status: "APPROVED" },
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+    await transitionOrder(tx, orderId, "PENDING_VERIFICATION", "APPROVED");
 
     // Create a payment record for finance tracking
     await tx.paymentRecord.create({
@@ -78,7 +100,11 @@ export async function approveBookOrder(
         description: `Book order #${orderId.slice(-6).toUpperCase()}`,
       },
     });
-  }), "Database operation failed");
+    });
+  } catch (error) {
+    if (error instanceof OrderStateChanged) return { error: error.message };
+    throw error;
+  }
 
   await notifyBookOrderApproved({
     userId: order.userId,
@@ -107,10 +133,12 @@ export async function declineBookOrder(
     return { error: "Only pending orders can be declined." };
   }
 
-  await withDbErrorHandling(() => prisma.bookOrder.update({
-      where: { id: orderId },
-      data: { status: "DECLINED" },
-    }), "Database operation failed");
+  try {
+    await prisma.$transaction((tx) => transitionOrder(tx, orderId, "PENDING_VERIFICATION", "DECLINED"));
+  } catch (error) {
+    if (error instanceof OrderStateChanged) return { error: error.message };
+    throw error;
+  }
 
   await notifyBookOrderDeclined({
     userId: order.userId,
@@ -143,14 +171,17 @@ export async function markBookOrderShipped(
     return { error: "Only approved orders can be marked as shipped." };
   }
 
-  await withDbErrorHandling(() => prisma.bookOrder.update({
-      where: { id: orderId },
-      data: { 
-        status: "SHIPPED",
+  try {
+    await prisma.$transaction((tx) =>
+      transitionOrder(tx, orderId, "APPROVED", "SHIPPED", {
         courierServiceName: courierServiceName.trim(),
-        trackingId: trackingId.trim()
-      },
-    }), "Database operation failed");
+        trackingId: trackingId.trim(),
+      }),
+    );
+  } catch (error) {
+    if (error instanceof OrderStateChanged) return { error: error.message };
+    throw error;
+  }
 
   await notifyBookOrderShipped({
     userId: order.userId,
@@ -179,10 +210,12 @@ export async function markBookOrderRefunded(
     return { error: "Only approved orders can be refunded." };
   }
 
-  await withDbErrorHandling(() => prisma.bookOrder.update({
-      where: { id: orderId },
-      data: { status: "REFUNDED" },
-    }), "Database operation failed");
+  try {
+    await prisma.$transaction((tx) => transitionOrder(tx, orderId, "APPROVED", "REFUNDED"));
+  } catch (error) {
+    if (error instanceof OrderStateChanged) return { error: error.message };
+    throw error;
+  }
 
   await notifyBookOrderRefunded({
     userId: order.userId,

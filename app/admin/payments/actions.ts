@@ -254,6 +254,6 @@ export async function deleteManualPaymentRecord(
 
   revalidatePaymentPaths(record.userId);
   const param = new URLSearchParams({ type: "manual_transactions", deleted: "1" });
-  redirect(returnTo ?? `/admin/payments?${param.toString()}`);
+  redirect(returnTo?.startsWith("/admin") ? paymentReturnUrl(returnTo, "deleted") : `/admin/payments?${param.toString()}`);
 }
 

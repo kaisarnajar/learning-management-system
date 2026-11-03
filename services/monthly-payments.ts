@@ -205,36 +205,6 @@ export async function getPendingEnrollmentFeeSubmissionMap(userId: string) {
   return new Set(rows.map((row) => row.courseId));
 }
 
-async function ensurePaymentRecordsForItems(items: CoursePaymentSubmissionWithUser[]) {
-  return Promise.all(
-    items.map(async (item) => {
-      if (item.paymentRecordId) return item;
-
-      const record = await prisma.paymentRecord.create({
-        data: {
-          userId: item.userId,
-          courseId: item.courseId,
-          amountInrPaise: item.amountInrPaise,
-          paidAt: item.updatedAt || new Date(),
-          paymentType: item.paymentType,
-          description: item.amountInrPaise === 0 ? `${item.label} (100% Fee Waiver)` : item.label,
-        },
-      });
-
-      await prisma.coursePaymentSubmission.update({
-        where: { id: item.id },
-        data: { paymentRecordId: record.id },
-      });
-
-      return {
-        ...item,
-        paymentRecordId: record.id,
-        paymentRecord: { receiptGeneratedAt: null },
-      };
-    })
-  );
-}
-
 export async function getApprovedMonthlyPaymentsPaginated(
   page: number,
   pageSize: number = APPROVAL_PAGE_SIZE,
@@ -264,8 +234,9 @@ export async function getApprovedMonthlyPaymentsPaginated(
       },
       ...paginationArgs(safePage, pageSize),
     }), "Database operation failed");
-  const itemsWithRecords = await ensurePaymentRecordsForItems(items);
-  return { items: itemsWithRecords, totalCount };
+  // Read-only: submissions without a PaymentRecord are shown as such; the
+  // one-off scripts/backfill-payment-records.ts creates missing records.
+  return { items, totalCount };
 }
 
 export async function getApprovedEnrollmentFeePaymentsPaginated(
@@ -294,6 +265,5 @@ export async function getApprovedEnrollmentFeePaymentsPaginated(
       },
       ...paginationArgs(safePage, pageSize),
     }), "Database operation failed");
-  const itemsWithRecords = await ensurePaymentRecordsForItems(items);
-  return { items: itemsWithRecords, totalCount };
+  return { items, totalCount };
 }

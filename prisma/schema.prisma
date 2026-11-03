@@ -201,6 +201,7 @@ model User {
   couponUsages             CouponUsage[]
   deviceTokens             DeviceToken[]
   teacherProfile           Teacher?
+  apiRefreshTokens         ApiRefreshToken[]
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
 
@@ -929,6 +930,25 @@ model CouponUsage {
   @@unique([couponId, userId])
   @@index([userId])
   @@index([couponId])
+}
+
+/**
+ * A mobile API session. The refresh token is stored as a SHA-256 hash and
+ * rotated on every use; the access token carries this row's id and is
+ * refused once the row is revoked or expired. See services/api-auth.ts.
+ */
+model ApiRefreshToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
 }
 
 model DeviceToken {

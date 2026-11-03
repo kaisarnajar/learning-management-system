@@ -1,3 +1,5 @@
+import type { CourseCategory } from "../services/course-categories";
+
 export type Course = {
   id: string;
   title: string;
@@ -5,7 +7,7 @@ export type Course = {
   startDate: string;
   duration: string;
   level: "Beginner" | "Intermediate" | "Advanced";
-  category: string;
+  category: CourseCategory;
   /** One-time enrollment fee in paise; 0 = free enrollment (admin approval only). */
   priceInrPaise: number;
   teacherId: string;
@@ -22,7 +24,7 @@ export const courses: Course[] = [
     level: "Beginner",
     category: "Quran",
     priceInrPaise: 9900,
-    teacherId: "1",
+    teacherId: "moulana-ibrahim-khan",
   },
   {
     id: "hifz-foundation",
@@ -34,7 +36,7 @@ export const courses: Course[] = [
     level: "Intermediate",
     category: "Hifz",
     priceInrPaise: 19900,
-    teacherId: "2",
+    teacherId: "moulana-yusuf-ahmed",
   },
   {
     id: "tajweed-intensive",
@@ -46,7 +48,7 @@ export const courses: Course[] = [
     level: "Advanced",
     category: "Tajweed",
     priceInrPaise: 19900,
-    teacherId: "1",
+    teacherId: "moulana-ibrahim-khan",
   },
   {
     id: "arabic-grammar",
@@ -58,7 +60,7 @@ export const courses: Course[] = [
     level: "Intermediate",
     category: "Arabic",
     priceInrPaise: 19900,
-    teacherId: "3",
+    teacherId: "moulana-farid-hassan",
   },
   {
     id: "fiqh-basics",
@@ -70,7 +72,7 @@ export const courses: Course[] = [
     level: "Beginner",
     category: "Islamic Studies",
     priceInrPaise: 9900,
-    teacherId: "4",
+    teacherId: "moulana-abdul-rahman",
   },
   {
     id: "seerah-youth",
@@ -82,7 +84,7 @@ export const courses: Course[] = [
     level: "Beginner",
     category: "Seerah",
     priceInrPaise: 0,
-    teacherId: "6",
+    teacherId: "moulana-hamza-malik",
   },
   {
     id: "tafsir-juz-amma",
@@ -94,7 +96,7 @@ export const courses: Course[] = [
     level: "Intermediate",
     category: "Tafsir",
     priceInrPaise: 19900,
-    teacherId: "7",
+    teacherId: "moulana-saeedullah-mir",
   },
   {
     id: "quran-nazira-women",
@@ -106,7 +108,7 @@ export const courses: Course[] = [
     level: "Beginner",
     category: "Quran",
     priceInrPaise: 9900,
-    teacherId: "5",
+    teacherId: "ustadha-fatima-siddiqui",
   },
   {
     id: "children-nazira",
@@ -118,7 +120,7 @@ export const courses: Course[] = [
     level: "Beginner",
     category: "Quran",
     priceInrPaise: 9900,
-    teacherId: "8",
+    teacherId: "ustadha-khadija-rahman",
   },
   {
     id: "qiraat-advanced",
@@ -128,9 +130,9 @@ export const courses: Course[] = [
     startDate: "2026-09-01",
     duration: "5 months",
     level: "Advanced",
-    category: "Qiraat",
+    category: "Quran",
     priceInrPaise: 24900,
-    teacherId: "9",
+    teacherId: "qari-tariq-ansari",
   },
   {
     id: "islamic-history",
@@ -142,7 +144,7 @@ export const courses: Course[] = [
     level: "Intermediate",
     category: "Islamic Studies",
     priceInrPaise: 14900,
-    teacherId: "11",
+    teacherId: "moulana-zain-ul-abideen",
   },
   {
     id: "maktab-foundation",
@@ -154,7 +156,7 @@ export const courses: Course[] = [
     level: "Beginner",
     category: "Islamic Studies",
     priceInrPaise: 0,
-    teacherId: "12",
+    teacherId: "hafiz-bilal-wani",
   },
   {
     id: "dua-daily-adab",
@@ -166,7 +168,7 @@ export const courses: Course[] = [
     level: "Beginner",
     category: "Islamic Studies",
     priceInrPaise: 0,
-    teacherId: "4",
+    teacherId: "moulana-abdul-rahman",
   },
   {
     id: "sisters-tajweed",
@@ -178,6 +180,6 @@ export const courses: Course[] = [
     level: "Intermediate",
     category: "Tajweed",
     priceInrPaise: 14900,
-    teacherId: "10",
+    teacherId: "ustadha-amna-qureshi",
   },
 ];

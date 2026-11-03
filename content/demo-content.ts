@@ -139,7 +139,7 @@ export const demoBlogPosts: DemoBlogPost[] = [
     body: "Bring a mushaf, a notebook, and headphones if joining online. We will cover makharij al-huruf in the first two sessions.",
     published: false,
     approvalStatus: "DRAFT",
-    teacherId: "1",
+    teacherId: "moulana-ibrahim-khan",
   },
   {
     id: "seed-demo-blog-4",
@@ -148,7 +148,7 @@ export const demoBlogPosts: DemoBlogPost[] = [
     body: "Morning revision anchors what you memorized the night before. Even ten minutes after Fajr makes a measurable difference over a term.",
     published: false,
     approvalStatus: "PENDING",
-    teacherId: "2",
+    teacherId: "moulana-yusuf-ahmed",
   },
   {
     id: "seed-demo-blog-5",
@@ -157,7 +157,7 @@ export const demoBlogPosts: DemoBlogPost[] = [
     body: "Madd is not only a theoretical rule — listen to qualified reciters and mimic their lengthening until your ear recognizes natural durations.",
     published: true,
     approvalStatus: "APPROVED",
-    teacherId: "3",
+    teacherId: "moulana-farid-hassan",
   },
   {
     id: "seed-demo-blog-6",
@@ -166,7 +166,7 @@ export const demoBlogPosts: DemoBlogPost[] = [
     body: "Admins rejected this sample so you can verify the teacher portal shows the rejected status and allows resubmission.",
     published: false,
     approvalStatus: "REJECTED",
-    teacherId: "4",
+    teacherId: "moulana-abdul-rahman",
   },
   {
     id: "seed-demo-blog-7",
@@ -175,7 +175,7 @@ export const demoBlogPosts: DemoBlogPost[] = [
     body: "Studying the Seerah helps students see prophetic patience in adversity. Our youth circle uses one incident per week for discussion and journaling.",
     published: true,
     approvalStatus: "APPROVED",
-    teacherId: "6",
+    teacherId: "moulana-hamza-malik",
   },
 ];
 
@@ -348,7 +348,7 @@ export const demoCourseAnnouncements: DemoCourseAnnouncement[] = [
   {
     id: "seed-demo-course-announcement-2",
     courseId: "quran-nazira",
-    teacherId: "1",
+    teacherId: "moulana-ibrahim-khan",
     authorName: "Moulana Ibrahim Khan",
     category: "CLASS_SCHEDULE",
     title: "Thursday session moved to 7 PM",
@@ -357,7 +357,7 @@ export const demoCourseAnnouncements: DemoCourseAnnouncement[] = [
   {
     id: "seed-demo-course-announcement-3",
     courseId: "hifz-foundation",
-    teacherId: "2",
+    teacherId: "moulana-yusuf-ahmed",
     authorName: "Moulana Yusuf Ahmed",
     category: "ASSIGNMENTS_HOMEWORK",
     title: "Memorize Surah al-Mulk ayat 1–5",
@@ -366,7 +366,7 @@ export const demoCourseAnnouncements: DemoCourseAnnouncement[] = [
   {
     id: "seed-demo-course-announcement-4",
     courseId: "quran-nazira",
-    teacherId: "1",
+    teacherId: "moulana-ibrahim-khan",
     authorName: "Moulana Ibrahim Khan",
     category: "GENERAL_NOTICE",
     title: "Private message for Bilal Ahmad",
@@ -376,7 +376,7 @@ export const demoCourseAnnouncements: DemoCourseAnnouncement[] = [
   {
     id: "seed-demo-course-announcement-5",
     courseId: "quran-nazira-women",
-    teacherId: "5",
+    teacherId: "ustadha-fatima-siddiqui",
     authorName: "Ustadha Fatima Siddiqui",
     category: "STUDY_MATERIALS",
     title: "Sisters batch — Noorani Qaida PDF",
@@ -385,7 +385,7 @@ export const demoCourseAnnouncements: DemoCourseAnnouncement[] = [
   {
     id: "seed-demo-course-announcement-6",
     courseId: "children-nazira",
-    teacherId: "8",
+    teacherId: "ustadha-khadija-rahman",
     authorName: "Ustadha Khadija Rahman",
     category: "CLASS_SCHEDULE",
     title: "Children's class timing update",
@@ -394,7 +394,7 @@ export const demoCourseAnnouncements: DemoCourseAnnouncement[] = [
   {
     id: "seed-demo-course-announcement-7",
     courseId: "tafsir-juz-amma",
-    teacherId: "7",
+    teacherId: "moulana-saeedullah-mir",
     authorName: "Moulana Saeedullah Mir",
     category: "EXAMS_TESTS",
     title: "Surah An-Naba reflection quiz",
@@ -403,7 +403,7 @@ export const demoCourseAnnouncements: DemoCourseAnnouncement[] = [
   {
     id: "seed-demo-course-announcement-8",
     courseId: "sisters-tajweed",
-    teacherId: "10",
+    teacherId: "ustadha-amna-qureshi",
     authorName: "Ustadha Amna Qureshi",
     category: "ASSIGNMENTS_HOMEWORK",
     title: "Record Surah Al-Ikhlas with tajweed rules",
@@ -421,7 +421,7 @@ export const demoCourseAnnouncements: DemoCourseAnnouncement[] = [
   {
     id: "seed-demo-course-announcement-10",
     courseId: "qiraat-advanced",
-    teacherId: "9",
+    teacherId: "qari-tariq-ansari",
     authorName: "Qari Tariq Ansari",
     category: "GENERAL_NOTICE",
     title: "Advanced recitation assessment slots",

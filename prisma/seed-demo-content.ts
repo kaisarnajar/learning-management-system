@@ -55,7 +55,7 @@ export async function seedDemoBooks(prisma: PrismaClient) {
 export async function seedDemoContent(prisma: PrismaClient) {
   await seedDemoBooks(prisma);
 
-  const answererId = demoTeacherUserId("1");
+  const answererId = demoTeacherUserId("moulana-ibrahim-khan");
 
   for (const [index, item] of demoSiteAnnouncements.entries()) {
     const createdAt = staggeredDate(index);

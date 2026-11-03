@@ -4,13 +4,16 @@ import { toCartResponse } from "@/services/api-dto";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
 
+/** Only published, in-stock books can sit in a cart; others are silently left out so clients can notify the student. */
+const PURCHASABLE_BOOK = { published: true, status: "AVAILABLE" } as const;
+
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
   if (errorResponse) return errorResponse;
 
   try {
     const rawCartItems = await prisma.userCartItem.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, book: PURCHASABLE_BOOK },
       include: {
         book: true,
       },
@@ -49,8 +52,8 @@ export async function POST(request: NextRequest) {
           Number.isInteger(item.quantity) &&
           item.quantity > 0
         ) {
-          const bookExists = await tx.book.findUnique({
-            where: { id: item.bookId },
+          const bookExists = await tx.book.findFirst({
+            where: { id: item.bookId, ...PURCHASABLE_BOOK },
           });
 
           if (bookExists) {
@@ -67,7 +70,7 @@ export async function POST(request: NextRequest) {
     });
 
     const updatedRawItems = await prisma.userCartItem.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, book: PURCHASABLE_BOOK },
       include: {
         book: true,
       },

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { bookstoreCheckoutSchema } from "@/utils/validations";
 import { BookCheckoutClient } from "@/components/bookstore/BookCheckoutClient";
+import { CartStaleNotice } from "@/components/bookstore/CartStaleNotice";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { getPaymentSettings } from "@/services/payment-settings";
 import { prisma } from "@/utils/prisma";
@@ -60,6 +61,12 @@ export default async function CartCheckoutPage({
     }), "Database operation failed");
 
 
+  // Books that were unpublished, went out of stock or were deleted since they
+  // were added: report them and purge them from the student's cart.
+  const missingBookIds = selectedItems
+    .filter((selected) => !books.some((b) => b.id === selected.bookId))
+    .map((selected) => selected.bookId);
+
   const resolvedItems = selectedItems
     .map((selected) => {
       const book = books.find((b) => b.id === selected.bookId);
@@ -85,6 +92,21 @@ export default async function CartCheckoutPage({
     quantity: number;
     weightInGrams: number;
   }[];
+
+  if (resolvedItems.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h2 className="font-serif text-lg font-semibold text-foreground">Checkout</h2>
+        <CartStaleNotice missingBookIds={missingBookIds} />
+        <p className="text-sm text-muted">
+          None of the selected books are available any more.{" "}
+          <Link href="/profile/cart" className="font-medium text-primary hover:underline">
+            Back to your cart
+          </Link>
+        </p>
+      </div>
+    );
+  }
 
   const subtotalInrPaise = resolvedItems.reduce(
     (sum, i) => sum + i.priceInrPaise * i.quantity,
@@ -117,6 +139,11 @@ export default async function CartCheckoutPage({
       <p className="mt-1 text-sm text-muted">
         Review your order, transfer the payment, then fill in the details below.
       </p>
+      {missingBookIds.length > 0 && (
+        <div className="mt-4">
+          <CartStaleNotice missingBookIds={missingBookIds} />
+        </div>
+      )}
 
       <div className="mx-auto mt-8 max-w-5xl space-y-8">
         <PaymentDetailsPanel

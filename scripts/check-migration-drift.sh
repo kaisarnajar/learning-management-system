@@ -9,11 +9,20 @@ cd "$(dirname "$0")/.."
 
 if [[ -n "${SHADOW_DATABASE_URL:-}" ]]; then
   echo "== prisma migrate diff (authoritative, shadow database)"
-  npx prisma migrate diff \
+  # Partial unique indexes (names containing "_partial") are migration-only
+  # because schema.prisma cannot express them; the only acceptable diff output
+  # is Prisma wanting to drop those.
+  diff_sql="$(npx prisma migrate diff \
     --from-migrations prisma/migrations \
     --shadow-database-url "$SHADOW_DATABASE_URL" \
     --to-schema-datamodel prisma/schema.prisma \
-    --exit-code
+    --script)"
+  remaining="$(printf '%s\n' "$diff_sql" | grep -Ev '^\s*$|^--|DROP INDEX "[^"]*_partial[^"]*";' || true)"
+  if [[ -n "$remaining" ]]; then
+    echo "Drift detected:"
+    printf '%s\n' "$remaining"
+    exit 1
+  fi
   echo "No drift."
 else
   echo "== static drift check (set SHADOW_DATABASE_URL for the authoritative check)"

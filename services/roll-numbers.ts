@@ -1,4 +1,35 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
+
+type Tx = Prisma.TransactionClient;
+
+/**
+ * Assigns the next sequential roll number for an enrollment inside an
+ * existing transaction. No-op when the enrollment already has one.
+ * (Row-level locking of the course is added in a later commit.)
+ */
+export async function assignRollNumberTx(tx: Tx, enrollmentId: string, courseId: string) {
+  const existing = await tx.enrollment.findUnique({
+    where: { id: enrollmentId },
+    select: { rollNumber: true },
+  });
+
+  if (existing?.rollNumber != null) {
+    return; // Already assigned
+  }
+
+  const maxRollResult = await tx.enrollment.aggregate({
+    where: { courseId },
+    _max: { rollNumber: true },
+  });
+
+  const nextRoll = (maxRollResult._max.rollNumber ?? 0) + 1;
+
+  await tx.enrollment.update({
+    where: { id: enrollmentId },
+    data: { rollNumber: nextRoll },
+  });
+}
 
 /**
  * Assigns a unique, sequential roll number for a student in a specific course.
@@ -6,32 +37,7 @@ import { prisma } from "@/utils/prisma";
  * This should be called immediately when an enrollment becomes active (approved).
  */
 export async function assignRollNumber(enrollmentId: string, courseId: string) {
-  // Use a transaction to safely compute and assign the next roll number
-  await prisma.$transaction(async (tx) => {
-    // Check if the enrollment already has a roll number
-    const existing = await tx.enrollment.findUnique({
-      where: { id: enrollmentId },
-      select: { rollNumber: true },
-    });
-
-    if (existing?.rollNumber != null) {
-      return; // Already assigned
-    }
-
-    // Find the current maximum roll number for this course
-    const maxRollResult = await tx.enrollment.aggregate({
-      where: { courseId },
-      _max: { rollNumber: true },
-    });
-
-    const nextRoll = (maxRollResult._max.rollNumber ?? 0) + 1;
-
-    // Assign the new roll number
-    await tx.enrollment.update({
-      where: { id: enrollmentId },
-      data: { rollNumber: nextRoll },
-    });
-  });
+  await prisma.$transaction((tx) => assignRollNumberTx(tx, enrollmentId, courseId));
 }
 
 /**

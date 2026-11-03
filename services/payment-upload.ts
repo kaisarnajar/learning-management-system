@@ -1,5 +1,19 @@
 import { r2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from "@/utils/s3";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+
+/** Removes a previously uploaded payment screenshot (best effort, never throws). */
+export async function deletePaymentScreenshot(pathOrUrl: string | null | undefined): Promise<void> {
+  if (!pathOrUrl) return;
+  let key = pathOrUrl;
+  if (R2_PUBLIC_URL && key.startsWith(R2_PUBLIC_URL)) key = key.slice(R2_PUBLIC_URL.length);
+  key = key.replace(/^\/+/, "");
+  if (!key.startsWith("uploads/payments/")) return;
+  try {
+    await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }));
+  } catch (error) {
+    console.error("[payment-upload] Failed to delete screenshot", key, error);
+  }
+}
 
 import { FILE_CONFIG } from "@/config/constants/file";
 const MAX_SCREENSHOT_BYTES = FILE_CONFIG.MAX_AVATAR_SIZE_BYTES;

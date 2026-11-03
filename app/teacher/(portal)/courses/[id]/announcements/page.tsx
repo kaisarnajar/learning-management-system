@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TeacherCourseAnnouncementCard } from "@/components/teacher/TeacherCourseAnnouncementCard";
+import { AnnouncementCard } from "@/components/announcements/AnnouncementCard";
+import { AnnouncementManageActions } from "@/components/announcements/AnnouncementManageActions";
+import { deleteCourseAnnouncement } from "@/services/course-announcement-actions";
 import { Pagination } from "@/components/shared/Pagination";
 import { requireTeacher } from "@/services/auth-actions";
 import {
@@ -76,9 +78,8 @@ export default async function TeacherCourseAnnouncementsPage({
             const canManage = canTeacherManageCourseAnnouncement(announcement, teacher.id);
             return (
               <li key={announcement.id} className="h-full">
-                <TeacherCourseAnnouncementCard
-                  courseId={course.id}
-                  announcementId={announcement.id}
+                <AnnouncementCard
+                  variant="manage"
                   category={announcement.category}
                   title={announcement.title}
                   body={announcement.body}
@@ -87,8 +88,15 @@ export default async function TeacherCourseAnnouncementsPage({
                   updatedAt={announcement.updatedAt}
                   attachmentPath={announcement.attachmentPath}
                   attachmentName={announcement.attachmentName}
-                  canManage={canManage}
-                  postedByAdmin={announcement.postedByAdmin}
+                  actions={
+                    canManage ? (
+                      <AnnouncementManageActions
+                        editHref={`/teacher/courses/${course.id}/announcements/${announcement.id}/edit`}
+                        deleteAction={deleteCourseAnnouncement.bind(null, course.id, announcement.id)}
+                      />
+                    ) : undefined
+                  }
+                  footerNote={!canManage && announcement.postedByAdmin ? "Posted by the academy administration" : undefined}
                 />
               </li>
             );

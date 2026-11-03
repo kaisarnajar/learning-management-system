@@ -3,6 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
+import { deleteAnnouncementAttachment } from "@/services/announcement-upload";
+import { PAYMENTS } from "@/config/constants/payments";
+import { NOT_DELETED } from "@/services/soft-delete";
 import { syncEnrollmentsWithCourseStatus } from "@/services/completion";
 import { resolveCourseFeaturedUpdate } from "@/services/courses";
 import { prisma } from "@/utils/prisma";
@@ -153,20 +156,55 @@ export async function deleteCourse(id: string) {
       throw new Error("Course not found.");
     }
 
-    const activeStudentCount = await prisma.enrollment.count({
-      where: { courseId: id, status: { in: ["active", "completed"] } },
-    });
+    const [activeStudentCount, pendingSubmissionCount, attendanceCount, gradeCount, couponCount] =
+      await withDbErrorHandling(
+        () =>
+          Promise.all([
+            prisma.enrollment.count({
+              where: { courseId: id, status: { in: ["active", "completed"] } },
+            }),
+            prisma.coursePaymentSubmission.count({
+              where: { courseId: id, status: PAYMENTS.SUBMISSION_STATUS.PENDING, ...NOT_DELETED },
+            }),
+            prisma.courseAttendance.count({ where: { courseId: id } }),
+            prisma.courseGrade.count({ where: { courseId: id } }),
+            prisma.coupon.count({ where: { courseId: id } }),
+          ]),
+        "Database operation failed",
+      );
 
     if (activeStudentCount > 0) {
       throw new Error(`This course can't be deleted because ${activeStudentCount} student${activeStudentCount === 1 ? "" : "s"} ${activeStudentCount === 1 ? "is" : "are"} enrolled.`);
     }
+    if (pendingSubmissionCount > 0) {
+      throw new Error(`This course can't be deleted because ${pendingSubmissionCount} payment submission${pendingSubmissionCount === 1 ? " is" : "s are"} still awaiting verification.`);
+    }
+    if (attendanceCount > 0 || gradeCount > 0 || couponCount > 0) {
+      throw new Error("This course can't be deleted because it still has attendance, grade or coupon records. Set it to Completed or On Hold instead.");
+    }
 
-    // Delete any inactive/pending/rejected enrollments to prevent orphans, since no DB-level FK exists
-    await prisma.enrollment.deleteMany({
-      where: { courseId: id },
+    // The announcements cascade with the course, so their attachment paths are
+    // read first and the files removed only after the database delete commits:
+    // a failed delete then never leaves announcements pointing at missing files.
+    const attachments = await prisma.courseAnnouncement.findMany({
+      where: { courseId: id, attachmentPath: { not: null } },
+      select: { attachmentPath: true },
     });
 
-    await prisma.course.delete({ where: { id } });
+    // No DB-level FK ties enrollments to the course, so inactive, pending and
+    // rejected enrollments are removed together with the course in one transaction.
+    await withDbErrorHandling(
+      () =>
+        prisma.$transaction([
+          prisma.enrollment.deleteMany({ where: { courseId: id } }),
+          prisma.course.delete({ where: { id } }),
+        ]),
+      "Database operation failed",
+    );
+
+    for (const { attachmentPath } of attachments) {
+      await deleteAnnouncementAttachment(attachmentPath);
+    }
 
     revalidatePath("/");
     revalidatePath("/courses");

@@ -126,6 +126,16 @@ export async function deleteTeacherById(id: string): Promise<{ error?: string }>
     return { error: "Teacher not found." };
   }
 
+  const assignedCourses = await withDbErrorHandling(
+    () => prisma.course.count({ where: { teacherId: id } }),
+    "Database operation failed",
+  );
+  if (assignedCourses > 0) {
+    return {
+      error: `${existing.name} is assigned to ${assignedCourses} course${assignedCourses === 1 ? "" : "s"}. Reassign ${assignedCourses === 1 ? "it" : "them"} to another teacher before deleting.`,
+    };
+  }
+
   await withDbErrorHandling(() => prisma.teacher.delete({ where: { id } }), "Database operation failed");
 
   revalidatePath("/teachers");

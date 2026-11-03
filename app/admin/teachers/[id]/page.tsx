@@ -176,7 +176,15 @@ export default async function AdminTeacherDetailPage({
         </div>
       </section>
 
-      <DeleteActionButton action={deleteAction} itemName="teacher" />
+      <DeleteActionButton
+        action={deleteAction}
+        itemName={teacher.name}
+        warningMessage={
+          courses.length > 0
+            ? `${teacher.name} is assigned to ${courses.length} course${courses.length === 1 ? "" : "s"}. Use "Edit course" above to reassign ${courses.length === 1 ? "it" : "them"} before deleting.`
+            : undefined
+        }
+      />
     </div>
   );
 }

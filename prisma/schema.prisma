@@ -869,3 +869,24 @@ model DocumentSequence {
 
   @@id([kind, period])
 }
+
+/**
+ * Append-only audit trail of admin mutations (void, delete, approve, …).
+ * Written by services/audit.ts inside the same transaction as the change.
+ */
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String?
+  action     String
+  entity     String
+  entityId   String
+  reason     String?
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([actorId, createdAt])
+  @@index([createdAt])
+}

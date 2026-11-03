@@ -6,8 +6,9 @@ const googleConfigured =
   Boolean(process.env.AUTH_GOOGLE_ID) && Boolean(process.env.AUTH_GOOGLE_SECRET);
 
 /**
- * Edge-safe Auth.js config (no Prisma/bcrypt). Used by proxy.ts.
- * Database-backed logic lives in lib/auth.ts.
+ * Edge-safe Auth.js config (no Prisma/bcrypt). Used by middleware.ts, whose
+ * `authorized` callback below runs for every matched request.
+ * Database-backed logic lives in services/auth.ts.
  */
 export const authConfig = {
   providers: [

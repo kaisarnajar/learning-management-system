@@ -1,5 +1,12 @@
+import NextAuth from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
+import { authConfig } from "@/services/auth.config";
 import { buildContentSecurityPolicy, generateNonce } from "@/services/security-headers";
+
+// Edge-safe Auth.js instance (no adapter, no Prisma): its `authorized`
+// callback in auth.config.ts gates /admin, /developer, /teacher and /profile
+// before any page code runs, redirecting to /login with a callbackUrl.
+const { auth } = NextAuth(authConfig);
 
 const CORS_METHODS = "GET, POST, PUT, PATCH, DELETE, OPTIONS";
 const CORS_HEADERS = "Content-Type, Authorization, X-Requested-With";
@@ -77,7 +84,7 @@ function withContentSecurityPolicy(request: NextRequest): NextResponse {
 
 const CSP_ENFORCE = process.env.CSP_ENFORCE === "true";
 
-export function middleware(request: NextRequest) {
+function handleRequest(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (pathname.startsWith("/api/v1")) {
@@ -90,6 +97,8 @@ export function middleware(request: NextRequest) {
 
   return withContentSecurityPolicy(request);
 }
+
+export default auth((request) => handleRequest(request));
 
 export const config = {
   matcher: [

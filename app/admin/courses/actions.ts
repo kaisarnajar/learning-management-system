@@ -125,12 +125,32 @@ export async function updateCourse(id: string, formData: FormData) {
       throw new Error(featured.error);
     }
 
+    const statusChanged = existing.status !== courseData.status;
+
+    if (statusChanged && existing.status === "COMPLETED") {
+      // Reopening a completed course flips every completed enrollment back to
+      // active. With certificates already issued that is almost always a
+      // mistake, so it needs an explicit confirmation from the form.
+      const certificates = await prisma.enrollment.count({
+        where: { courseId: id, certificateGeneratedAt: { not: null } },
+      });
+      if (certificates > 0 && formData.get("confirmReopen") !== "on") {
+        throw new Error(
+          `${certificates} certificate${certificates === 1 ? " has" : "s have"} been issued for this completed course. Tick "Reopen this course anyway" to change its status.`,
+        );
+      }
+    }
+
     await prisma.course.update({
       where: { id },
       data: { title, ...courseData, ...featured },
     });
 
-    await syncEnrollmentsWithCourseStatus(id, courseData.status);
+    // Only a status change moves enrollments between active and completed;
+    // editing a title or fee must not touch them.
+    if (statusChanged) {
+      await syncEnrollmentsWithCourseStatus(id, courseData.status);
+    }
 
     revalidatePath("/");
     revalidatePath("/courses");

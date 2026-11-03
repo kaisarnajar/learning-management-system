@@ -5,6 +5,7 @@ import { getAcademySettings } from "@/services/academy-settings";
 import { BRAND_CONFIG } from "@/config/brand";
 import { AUTHORITY_SIGNATURE } from "@/services/academy-contact";
 import { formatRollNumber } from "@/services/roll-numbers";
+import { withMarks } from "@/services/grades";
 import { escapeHtml as e } from "@/utils/html-escape";
 
 
@@ -208,7 +209,7 @@ export async function generateGradeCardPdf(enrollmentId: string): Promise<Buffer
   if (!course) throw new Error("Course not found");
 
   // Load records
-  const records = await prisma.courseGradeRecord.findMany({
+  const records = (await prisma.courseGradeRecord.findMany({
     where: { enrollmentId },
     include: {
       grade: {
@@ -224,7 +225,7 @@ export async function generateGradeCardPdf(enrollmentId: string): Promise<Buffer
         date: "asc"
       }
     }
-  });
+  })).map(withMarks);
 
   // Calculate totals
   const totalExams = records.length;

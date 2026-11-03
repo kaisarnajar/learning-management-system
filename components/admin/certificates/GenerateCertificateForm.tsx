@@ -51,8 +51,8 @@ export function GenerateCertificateForm({ enrollments }: GenerateCertificateForm
       setError("Please select a student.");
       return;
     }
-    if (type === "COMPLETION" && (grade === "" || isNaN(grade as number))) {
-      setError("Grade is required for a Certificate of Completion.");
+    if (type === "COMPLETION" && (grade === "" || !Number.isInteger(grade))) {
+      setError("A whole-number grade from 0 to 10 is required for a Certificate of Completion.");
       return;
     }
 
@@ -160,10 +160,10 @@ export function GenerateCertificateForm({ enrollments }: GenerateCertificateForm
             type="number"
             min="0"
             max="10"
-            step="0.1"
+            step="1"
             value={grade}
             onChange={(e) => setGrade(e.target.value === "" ? "" : Number(e.target.value))}
-            placeholder="e.g. 9.5"
+            placeholder="e.g. 9"
             className={`${inputClassName} mt-1 w-full`}
             disabled={isPending}
             required

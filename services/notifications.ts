@@ -24,6 +24,7 @@ import {
   sendBookOrderRefundedEmail
 } from "@/services/email";
 import { buildUnsubscribeUrl } from "@/services/email-unsubscribe";
+import { sendPushToUsers } from "@/services/push";
 
 /**
  * Runs an asynchronous task in the background safely.
@@ -163,8 +164,14 @@ export function notificationTypeClass(type: StudentNotificationType): string {
   }
 }
 
+/** Mirrors an in-app notification to the student's devices once the response is sent. */
+function pushAfterResponse(userIds: string[], payload: { title: string; body?: string | null; href: string }) {
+  runInBackground(() => sendPushToUsers(userIds, payload));
+}
+
 export async function createStudentNotification(input: CreateStudentNotificationInput) {
   const { userId, type, title, body, href, sourceType, sourceId } = input;
+  pushAfterResponse([userId], { title, body, href });
 
   if (sourceId) {
     return withDbErrorHandling(() => prisma.studentNotification.upsert({
@@ -211,6 +218,7 @@ export async function createStudentNotificationsForUsers(
 
   const uniqueUserIds = [...new Set(userIds)];
   const { type, title, body, href, sourceType, sourceId } = payload;
+  pushAfterResponse(uniqueUserIds, { title, body, href });
 
   if (!sourceId) {
     await withDbErrorHandling(() => prisma.studentNotification.createMany({

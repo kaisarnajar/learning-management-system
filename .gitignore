@@ -41,6 +41,9 @@ yarn-error.log*
 # demo seed credentials (generated per run)
 .seed-credentials.local.json
 
+# snapshots written by data-correction scripts
+/scripts/out/
+
 # vercel
 .vercel
 

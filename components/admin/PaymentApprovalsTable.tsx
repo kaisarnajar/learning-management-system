@@ -107,6 +107,14 @@ export function PaymentApprovalsTable({
             </td>
             <td className="whitespace-nowrap px-4 py-3">
               <div className="flex items-center justify-end gap-2">
+                {submission.status === MONTHLY_PAYMENT_APPROVED && !submission.paymentRecordId && (
+                  <span
+                    className="rounded-full bg-warning-bg px-2.5 py-1 text-xs font-medium text-warning-text"
+                    title="Run scripts/backfill-payment-records.ts to create the missing payment record."
+                  >
+                    No payment record
+                  </span>
+                )}
                 {submission.status === MONTHLY_PAYMENT_APPROVED && submission.paymentRecordId && (
                   <ReceiptActionButtons
                      paymentRecordId={submission.paymentRecordId}

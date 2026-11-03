@@ -88,7 +88,20 @@ Perform these steps in order. Steps 1–4 are read-only.
    `PaymentRecord`, `Enrollment`, `User` before and after) in the release
    ticket.
 
-## 4. Seeding
+## 4. Data-correction scripts
+
+All scripts under `scripts/` that modify rows follow the same contract: they
+print a full report and exit unless `--apply` is passed, and in apply mode they
+first snapshot the affected rows to `scripts/out/` (git-ignored). Run every
+script in dry-run mode against production first, attach the report to the
+release ticket, and apply only after the finance owner has reviewed it.
+
+| Script | Purpose | Idempotent |
+|---|---|---|
+| `scripts/report-duplicate-payment-keys.ts` | read-only: rows that block the partial unique indexes | yes |
+| `scripts/backfill-payment-records.ts` | create the missing `PaymentRecord` for approved fee submissions (the admin page no longer does this while rendering) | yes |
+
+## 5. Seeding
 
 - `npm run db:seed` (added in a later commit) runs the non-destructive
   bootstrap only.

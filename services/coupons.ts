@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
 
 export type ApplicableCoupon = {
@@ -120,27 +121,31 @@ export async function getSelectedCoupon(
   return selectableCoupons.find((c) => c.id === couponId || c.code === couponId) ?? null;
 }
 
-export async function recordCouponUsage(userId: string, couponId: string) {
-  try {
-    await prisma.couponUsage.upsert({
-      where: { couponId_userId: { couponId, userId } },
-      create: { couponId, userId },
-      update: {},
-    });
-    // For SPECIAL coupons, mark as inactive once used
-    const coupon = await prisma.coupon.findUnique({
+/**
+ * Records that `userId` consumed `couponId` as part of the caller's
+ * transaction, so a failed submission never burns the coupon.
+ * SPECIAL (single-use, per-student) coupons are deactivated on use.
+ */
+export async function recordCouponUsageTx(tx: Prisma.TransactionClient, userId: string, couponId: string) {
+  await tx.couponUsage.upsert({
+    where: { couponId_userId: { couponId, userId } },
+    create: { couponId, userId },
+    update: {},
+  });
+  const coupon = await tx.coupon.findUnique({
+    where: { id: couponId },
+    select: { type: true },
+  });
+  if (coupon?.type === "SPECIAL") {
+    await tx.coupon.update({
       where: { id: couponId },
-      select: { type: true },
+      data: { isActive: false },
     });
-    if (coupon?.type === "SPECIAL") {
-      await prisma.coupon.update({
-        where: { id: couponId },
-        data: { isActive: false },
-      });
-    }
-  } catch (e) {
-    console.error("Error recording coupon usage:", e);
   }
+}
+
+export async function recordCouponUsage(userId: string, couponId: string) {
+  await prisma.$transaction((tx) => recordCouponUsageTx(tx, userId, couponId));
 }
 
 export function calculateDiscountedAmount(originalPaise: number, percentage: number): number {

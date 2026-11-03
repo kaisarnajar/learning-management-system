@@ -188,7 +188,12 @@ function main() {
       missing.push(stmt.replace(/^CREATE (UNIQUE )?INDEX /i, (m0, u) => `CREATE ${u ?? ""}INDEX IF NOT EXISTS `) + ";");
     }
   }
-  for (const name of applied.indexes.keys()) if (!target.indexes.has(name)) extra.push(`index ${name} exists in migrations but not in schema`);
+  for (const name of applied.indexes.keys()) {
+    // Partial unique indexes cannot be expressed in schema.prisma; they are
+    // migration-only by convention and carry the "_partial" marker.
+    if (name.includes("_partial")) continue;
+    if (!target.indexes.has(name)) extra.push(`index ${name} exists in migrations but not in schema`);
+  }
 
   for (const [name, stmt] of target.foreignKeys) {
     if (!applied.foreignKeys.has(name)) {

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { bookstoreCheckoutSchema } from "@/utils/validations";
 import { BookCheckoutClient } from "@/components/bookstore/BookCheckoutClient";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { getPaymentSettings } from "@/services/payment-settings";
@@ -24,12 +26,19 @@ export default async function CartCheckoutPage({
   const params = await searchParams;
 
   let selectedItems: { bookId: string; quantity: number }[] = [];
-  try {
-    if (params.books) {
-      selectedItems = JSON.parse(decodeURIComponent(params.books));
+  if (params.books) {
+    let parsedItems = null;
+    try {
+      parsedItems = bookstoreCheckoutSchema.shape.items.safeParse(
+        JSON.parse(decodeURIComponent(params.books)),
+      );
+    } catch {
+      // Malformed JSON or URI encoding falls through to the redirect below.
     }
-  } catch {
-    selectedItems = [];
+    if (!parsedItems?.success) {
+      redirect("/profile/cart");
+    }
+    selectedItems = parsedItems.data;
   }
 
   if (selectedItems.length === 0) {

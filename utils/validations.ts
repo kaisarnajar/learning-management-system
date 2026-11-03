@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_ORDER_QTY } from "@/config/constants/business";
 import {
   PROFILE_COUNTRY_CODES,
   getProfileCountryOrDefault,
@@ -475,7 +476,11 @@ export const bookstoreCheckoutSchema = z.object({
   items: z.array(
     z.object({
       bookId: z.string().min(1, "Book ID is required."),
-      quantity: z.number().int().min(1, "Quantity must be at least 1."),
+      quantity: z
+        .number()
+        .int()
+        .min(1, "Quantity must be at least 1.")
+        .max(MAX_ORDER_QTY, `You can order at most ${MAX_ORDER_QTY} copies of a book.`),
     })
   ).min(1, "Cart cannot be empty."),
   paymentMethod: z.string().min(1, "Payment method is required."),

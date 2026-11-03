@@ -8,6 +8,7 @@ import {
   useMemo,
   useState,
 } from "react";
+import { MAX_ORDER_QTY } from "@/config/constants/business";
 
 type CartItem = {
   bookId: string;
@@ -38,7 +39,11 @@ function loadCart(): CartItem[] {
   if (typeof window === "undefined") return [];
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? (JSON.parse(stored) as CartItem[]) : [];
+    if (!stored) return [];
+    return (JSON.parse(stored) as CartItem[]).map((i) => ({
+      ...i,
+      quantity: Math.min(i.quantity, MAX_ORDER_QTY),
+    }));
   } catch {
     return [];
   }
@@ -104,7 +109,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       const existing = prev.find((i) => i.bookId === newItem.bookId);
       if (existing) {
         return prev.map((i) =>
-          i.bookId === newItem.bookId ? { ...i, quantity: i.quantity + 1 } : i,
+          i.bookId === newItem.bookId
+            ? { ...i, quantity: Math.min(i.quantity + 1, MAX_ORDER_QTY) }
+            : i,
         );
       }
       return [...prev, { ...newItem, quantity: 1 }];
@@ -119,8 +126,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (quantity <= 0) {
       setItems((prev) => prev.filter((i) => i.bookId !== bookId));
     } else {
+      const capped = Math.min(Math.floor(quantity), MAX_ORDER_QTY);
       setItems((prev) =>
-        prev.map((i) => (i.bookId === bookId ? { ...i, quantity } : i)),
+        prev.map((i) => (i.bookId === bookId ? { ...i, quantity: capped } : i)),
       );
     }
   }, []);

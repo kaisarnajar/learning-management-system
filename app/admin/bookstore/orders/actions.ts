@@ -18,6 +18,8 @@ import type { BookOrderStatus } from "@prisma/client";
 import { findStockShortages, formatShortages, lockBooksForUpdate } from "@/services/inventory";
 import { paymentTypeData } from "@/services/status-compat";
 
+const MAX_SHIPMENT_FIELD_LENGTH = 100;
+
 function revalidateOrderPaths(userId: string) {
   const paths = [
     "/admin",
@@ -171,6 +173,14 @@ export async function markBookOrderShipped(
 
   if (!courierServiceName?.trim() || !trackingId?.trim()) {
     return { error: "Courier Service Name and Tracking ID are required." };
+  }
+  if (
+    courierServiceName.trim().length > MAX_SHIPMENT_FIELD_LENGTH ||
+    trackingId.trim().length > MAX_SHIPMENT_FIELD_LENGTH
+  ) {
+    return {
+      error: `Courier Service Name and Tracking ID must be at most ${MAX_SHIPMENT_FIELD_LENGTH} characters.`,
+    };
   }
 
   const order = await withDbErrorHandling(() => prisma.bookOrder.findUnique({

@@ -1,44 +1,10 @@
-import { requireTeacher } from "@/services/auth-actions";
-import { getTeacherCourseForPortal } from "@/services/teacher-portal";
-import { getAttendanceRecordsForDate } from "@/app/actions/attendance";
-import { AttendanceView } from "@/components/attendance/AttendanceView";
-import { notFound } from "next/navigation";
+import { ViewAttendancePage } from "@/components/teaching/AttendancePages";
 
 export default async function TeacherViewAttendancePage({
   params,
 }: {
   params: Promise<{ id: string; date: string }>;
 }) {
-  const { teacher } = await requireTeacher();
   const { id, date } = await params;
-  if (!(await getTeacherCourseForPortal(teacher.id, id))) notFound();
-  const dateObj = new Date(date);
-  
-  if (isNaN(dateObj.getTime())) {
-    notFound();
-  }
-
-  const attendance = await getAttendanceRecordsForDate(id, dateObj);
-
-  if (!attendance) {
-    notFound();
-  }
-
-  const records = attendance.records.map((r) => ({
-    rollNumber: r.enrollment.rollNumber,
-    name: r.enrollment.user.name,
-    email: r.enrollment.user.email,
-    isPresent: r.isPresent,
-  }));
-
-  return (
-    <div className="py-6">
-      <AttendanceView
-        courseId={id}
-        baseUrl="/teacher/courses"
-        date={dateObj}
-        records={records}
-      />
-    </div>
-  );
+  return <ViewAttendancePage role="teacher" basePath="/teacher/courses" courseId={id} date={date} />;
 }

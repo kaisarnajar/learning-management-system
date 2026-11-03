@@ -1,28 +1,10 @@
-import { requireAdmin } from "@/services/auth-actions";
-import { getStudentAttendanceReport } from "@/app/actions/attendance";
-import { StudentAttendanceReport } from "@/components/attendance/StudentAttendanceReport";
+import { StudentAttendanceReportPage } from "@/components/teaching/AttendancePages";
 
 export default async function AdminStudentAttendanceReportPage({
   params,
 }: {
   params: Promise<{ id: string; enrollmentId: string }>;
 }) {
-  await requireAdmin();
   const { id, enrollmentId } = await params;
-  const { enrollment, course, records } = await getStudentAttendanceReport(enrollmentId);
-
-  return (
-    <div className="py-6">
-      <StudentAttendanceReport
-        backUrl={`/admin/courses/${id}/students`}
-        studentName={enrollment.user.name}
-        studentEmail={enrollment.user.email}
-        courseTitle={course.title}
-        records={records}
-        isAdmin={true}
-        courseId={id}
-        enrollmentId={enrollmentId}
-      />
-    </div>
-  );
+  return <StudentAttendanceReportPage role="admin" basePath="/admin/courses" courseId={id} enrollmentId={enrollmentId} />;
 }

@@ -19,6 +19,7 @@ import {
 } from "@/services/status-compat";
 import { calculateDiscountedAmount, getSelectedCoupon, recordCouponUsageTx } from "@/services/coupons";
 import { deletePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
+import { isUploadError } from "@/services/storage";
 import { assignRollNumberTx } from "@/services/roll-numbers";
 import { getPaymentSettings } from "@/services/payment-settings";
 
@@ -90,9 +91,15 @@ export async function getPaymentSubmissionsForUser(userId: string) {
  * part in a DB transaction). The caller deletes it again if the transaction
  * fails, so a failed submission never leaves an orphan object.
  */
+/** Stores the screenshot; a refused file becomes a SubmissionRejected so callers answer 400. */
 async function uploadScreenshot(prefix: string, file: File | null): Promise<string | null> {
   if (!file || file.size === 0) return null;
-  return savePaymentScreenshot(`${prefix}-${Date.now()}`, file);
+  try {
+    return await savePaymentScreenshot(prefix, file);
+  } catch (error) {
+    if (isUploadError(error)) throw new SubmissionRejected(error.message, 400);
+    throw error;
+  }
 }
 
 async function assertUtrNotReused(tx: SubmissionTx, upiTransactionId: string | null, isFree: boolean) {
@@ -172,7 +179,14 @@ export async function processMonthlyPayment(
     };
   }
 
-  const screenshotPath = isFree ? null : await uploadScreenshot(`fee-${userId}`, screenshotFile);
+  let screenshotPath: string | null = null;
+  try {
+    screenshotPath = isFree ? null : await uploadScreenshot(`fee-${userId}`, screenshotFile);
+  } catch (error) {
+    const mapped = mapSubmissionError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 
   try {
     await prisma.$transaction(async (tx) => {
@@ -283,7 +297,14 @@ export async function processEnrollmentPayment(
   const autoApprove = isFree && (await getPaymentSettings()).autoApproveFullWaivers;
   const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
 
-  const screenshotPath = isFree ? null : await uploadScreenshot(`enrollment-${userId}`, screenshotFile);
+  let screenshotPath: string | null = null;
+  try {
+    screenshotPath = isFree ? null : await uploadScreenshot(`enrollment-${userId}`, screenshotFile);
+  } catch (error) {
+    const mapped = mapSubmissionError(error);
+    if (mapped) return mapped;
+    throw error;
+  }
 
   try {
     await prisma.$transaction(async (tx) => {

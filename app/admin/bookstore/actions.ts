@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { saveBookImage, validateBookImage, deleteBookImage } from "@/services/bookstore-upload";
+import { isUploadError } from "@/services/storage";
 import { prisma } from "@/utils/prisma";
 import { resolveBookFeaturedUpdate } from "@/services/bookstore";
 import { bookSchema } from "@/utils/validations";
@@ -65,8 +66,14 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
     return { error: featured.error };
   }
 
+  // Upload first, write the row once with its cover, and remove the object
+  // again if the row cannot be created.
+  let imagePath: string | undefined;
   try {
-    const book = await prisma.book.create({
+    if (imageFile && imageFile.size > 0) {
+      imagePath = await saveBookImage("book", imageFile);
+    }
+    await prisma.book.create({
       data: {
         title: parsed.data.title,
         author: parsed.data.author,
@@ -78,19 +85,14 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
         weightInGrams,
         status: parsed.data.status,
         published: parsed.data.published,
+        ...(imagePath ? { imagePath } : {}),
         ...featured,
       },
     });
-
-    if (imageFile && imageFile.size > 0) {
-      const imagePath = await saveBookImage(book.id, imageFile);
-      await prisma.book.update({
-        where: { id: book.id },
-        data: { imagePath },
-      });
-    }
   } catch (error) {
     if (isRedirectError(error)) { throw error; }
+    if (imagePath) await deleteBookImage(imagePath);
+    if (isUploadError(error)) return { error: error.message };
     console.error("Database error creating book:", error);
     return { error: "An unexpected error occurred while creating the book." };
   }
@@ -135,20 +137,13 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
     return { error: featured.error };
   }
 
-  try {
-    const removeImage = formData.get("removeImage") === "true";
-    let imagePath: string | undefined | null;
+  const removeImage = formData.get("removeImage") === "true";
+  let imagePath: string | undefined | null;
 
+  try {
     if (imageFile && imageFile.size > 0) {
       imagePath = await saveBookImage(bookId, imageFile);
-      // Remove the previous object only after the new upload succeeded.
-      if (existing.imagePath && existing.imagePath !== imagePath) {
-        await deleteBookImage(existing.imagePath);
-      }
     } else if (removeImage) {
-      if (existing.imagePath) {
-        await deleteBookImage(existing.imagePath);
-      }
       imagePath = null;
     }
 
@@ -171,8 +166,16 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
     });
   } catch (error) {
     if (isRedirectError(error)) { throw error; }
+    // The row still references the old cover: drop the new object, keep the old.
+    if (imagePath) await deleteBookImage(imagePath);
+    if (isUploadError(error)) return { error: error.message };
     console.error("Database error updating book:", error);
     return { error: "An unexpected error occurred while updating the book." };
+  }
+
+  // Committed: the previous cover is no longer referenced.
+  if (imagePath !== undefined && existing.imagePath && existing.imagePath !== imagePath) {
+    await deleteBookImage(existing.imagePath);
   }
 
   revalidateBookstorePaths();

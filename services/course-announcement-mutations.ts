@@ -9,6 +9,7 @@ import {
 import { prisma } from "@/utils/prisma";
 import { courseAnnouncementSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { isUploadError } from "@/services/storage";
 
 export type ParsedCourseAnnouncement = z.infer<typeof courseAnnouncementSchema>;
 
@@ -72,29 +73,43 @@ type AttachmentFieldUpdate = {
   attachmentName: string | null;
 };
 
+type AttachmentResolution =
+  | { kind: "keep" }
+  | { kind: "error"; error: string }
+  /** New object already stored; `previous` is removed only after the row update commits. */
+  | { kind: "replace"; data: AttachmentFieldUpdate; previous: string | null }
+  | { kind: "remove"; data: AttachmentFieldUpdate; previous: string };
+
+/**
+ * Uploads a new attachment (if any) BEFORE the row is touched and reports
+ * what the caller must do after its update succeeds or fails. The old object
+ * is never deleted before the new one is both stored and recorded.
+ */
 export async function resolveCourseAnnouncementAttachment(
   formData: FormData,
   announcementId: string,
   existing?: { attachmentPath: string | null; attachmentName: string | null },
-): Promise<AttachmentFieldUpdate | { error: string } | undefined> {
+): Promise<AttachmentResolution> {
   const upload = getCourseAnnouncementAttachmentFile(formData);
   const remove = formData.get("removeAttachment") === "1";
 
   if (upload) {
     const validation = validateAnnouncementAttachment(upload);
-    if (validation.error) return { error: validation.error };
-    if (existing?.attachmentPath) {
-      await deleteAnnouncementAttachment(existing.attachmentPath);
+    if (validation.error) return { kind: "error", error: validation.error };
+    try {
+      const data = await saveAnnouncementAttachment(announcementId, upload);
+      return { kind: "replace", data, previous: existing?.attachmentPath ?? null };
+    } catch (error) {
+      if (isUploadError(error)) return { kind: "error", error: error.message };
+      throw error;
     }
-    return saveAnnouncementAttachment(announcementId, upload);
   }
 
   if (remove && existing?.attachmentPath) {
-    await deleteAnnouncementAttachment(existing.attachmentPath);
-    return { attachmentPath: null, attachmentName: null };
+    return { kind: "remove", data: { attachmentPath: null, attachmentName: null }, previous: existing.attachmentPath };
   }
 
-  return undefined;
+  return { kind: "keep" };
 }
 
 export async function createCourseAnnouncementRecord(params: {
@@ -106,28 +121,30 @@ export async function createCourseAnnouncementRecord(params: {
   data: ParsedCourseAnnouncement;
   upload: File | null;
 }) {
-  const announcement = await withDbErrorHandling(() => prisma.courseAnnouncement.create({
-      data: {
-        courseId: params.courseId,
-        enrollmentId: params.enrollmentId,
-        teacherId: params.teacherId,
-        authorName: params.authorName,
-        postedByAdmin: params.postedByAdmin,
-        category: params.data.category,
-        title: params.data.title,
-        body: params.data.body,
-      },
-    }), "Database operation failed");
+  // Upload first so the row is written once, with its attachment; if the row
+  // cannot be created the object is removed again.
+  const saved = params.upload
+    ? await saveAnnouncementAttachment(`${params.courseId}-${Date.now()}`, params.upload)
+    : null;
 
-  if (params.upload) {
-    const saved = await saveAnnouncementAttachment(announcement.id, params.upload);
-    await withDbErrorHandling(() => prisma.courseAnnouncement.update({
-          where: { id: announcement.id },
-          data: saved,
-        }), "Database operation failed");
+  try {
+    return await withDbErrorHandling(() => prisma.courseAnnouncement.create({
+        data: {
+          courseId: params.courseId,
+          enrollmentId: params.enrollmentId,
+          teacherId: params.teacherId,
+          authorName: params.authorName,
+          postedByAdmin: params.postedByAdmin,
+          category: params.data.category,
+          title: params.data.title,
+          body: params.data.body,
+          ...(saved ?? {}),
+        },
+      }), "Database operation failed");
+  } catch (error) {
+    if (saved) await deleteAnnouncementAttachment(saved.attachmentPath);
+    throw error;
   }
-
-  return announcement;
 }
 
 export async function updateCourseAnnouncementRecord(
@@ -136,20 +153,30 @@ export async function updateCourseAnnouncementRecord(
   formData: FormData,
   existing: Pick<CourseAnnouncement, "attachmentPath" | "attachmentName">,
 ): Promise<{ error?: string }> {
-  const attachmentUpdate = await resolveCourseAnnouncementAttachment(formData, announcementId, existing);
-  if (attachmentUpdate && "error" in attachmentUpdate) {
-    return { error: attachmentUpdate.error };
+  const attachment = await resolveCourseAnnouncementAttachment(formData, announcementId, existing);
+  if (attachment.kind === "error") {
+    return { error: attachment.error };
   }
 
-  await withDbErrorHandling(() => prisma.courseAnnouncement.update({
-      where: { id: announcementId },
-      data: {
-        category: data.category,
-        title: data.title,
-        body: data.body,
-        ...(attachmentUpdate && !("error" in attachmentUpdate) ? attachmentUpdate : {}),
-      },
-    }), "Database operation failed");
+  try {
+    await withDbErrorHandling(() => prisma.courseAnnouncement.update({
+        where: { id: announcementId },
+        data: {
+          category: data.category,
+          title: data.title,
+          body: data.body,
+          ...(attachment.kind === "replace" || attachment.kind === "remove" ? attachment.data : {}),
+        },
+      }), "Database operation failed");
+  } catch (error) {
+    if (attachment.kind === "replace") await deleteAnnouncementAttachment(attachment.data.attachmentPath);
+    throw error;
+  }
+
+  // The row now points at the new object (or none): the old one can go.
+  if ((attachment.kind === "replace" || attachment.kind === "remove") && attachment.previous) {
+    await deleteAnnouncementAttachment(attachment.previous);
+  }
 
   return {};
 }
@@ -157,8 +184,8 @@ export async function updateCourseAnnouncementRecord(
 export async function deleteCourseAnnouncementRecord(
   existing: Pick<CourseAnnouncement, "id" | "attachmentPath">,
 ) {
-  await deleteAnnouncementAttachment(existing.attachmentPath);
   await withDbErrorHandling(() => prisma.courseAnnouncement.delete({ where: { id: existing.id } }), "Database operation failed");
+  await deleteAnnouncementAttachment(existing.attachmentPath);
 }
 
 export async function getCourseAnnouncementRecord(

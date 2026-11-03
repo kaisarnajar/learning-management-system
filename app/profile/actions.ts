@@ -9,6 +9,7 @@ import { Occupation, Gender } from "@prisma/client";
 import { profileUpdateSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { saveProfileImage, validateProfileImage, deleteProfileImage } from "@/services/profile-upload";
+import { isUploadError } from "@/services/storage";
 import { getUserProfile } from "@/services/profile";
 
 export type ProfileUpdateState = {
@@ -41,9 +42,13 @@ export async function updateProfile(
   const imageFile = formData.get("image") as File | null;
   let newImageUrl: string | undefined;
 
+  // The previous upload is removed only after the profile row points at the
+  // new image (or the avatar); a failed save keeps the old photo intact.
+  let previousUpload: string | null = null;
+
   if (parsed.data.gender === "FEMALE") {
-    if (currentProfile?.image && currentProfile.image !== "/assets/female_icon.png") {
-      await deleteProfileImage(currentProfile.image);
+    if (currentProfile?.image && !currentProfile.image.startsWith("/assets/")) {
+      previousUpload = currentProfile.image;
     }
     newImageUrl = "/assets/female_icon.png";
   } else {
@@ -54,11 +59,16 @@ export async function updateProfile(
         return { error: validation.error };
       }
 
-      if (currentProfile?.image && currentProfile.image !== "/assets/female_icon.png" && currentProfile.image !== "/assets/male_icon.png") {
-        await deleteProfileImage(currentProfile.image);
+      if (currentProfile?.image && !currentProfile.image.startsWith("/assets/")) {
+        previousUpload = currentProfile.image;
       }
 
-      newImageUrl = await saveProfileImage(session.user.id, imageFile);
+      try {
+        newImageUrl = await saveProfileImage(session.user.id, imageFile);
+      } catch (error) {
+        if (isUploadError(error)) return { error: error.message };
+        throw error;
+      }
     } else {
       if (currentProfile?.image === "/assets/female_icon.png" || !currentProfile?.image) {
         newImageUrl = "/assets/male_icon.png";
@@ -109,10 +119,20 @@ export async function updateProfile(
     updateData.registrationNumber = await generateNextRegistrationNumber(registrationYear);
   }
 
-  await withDbErrorHandling(() => prisma.user.update({
-      where: { id: session.user.id },
-      data: updateData,
-    }), "Database operation failed");
+  try {
+    await withDbErrorHandling(() => prisma.user.update({
+        where: { id: session.user.id },
+        data: updateData,
+      }), "Database operation failed");
+  } catch (error) {
+    // The row still points at the old photo; drop the one we just stored.
+    if (newImageUrl && !newImageUrl.startsWith("/assets/")) await deleteProfileImage(newImageUrl);
+    throw error;
+  }
+
+  if (previousUpload && previousUpload !== newImageUrl) {
+    await deleteProfileImage(previousUpload);
+  }
 
   revalidatePath("/profile");
   revalidatePath("/profile/courses");

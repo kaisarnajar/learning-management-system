@@ -7,6 +7,7 @@ import {
 } from "@/services/site-announcement-upload";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { deleteManyFromR2, isUploadError } from "@/services/storage";
 
 export function getRemoveAnnouncementImageIds(formData: FormData): string[] {
   return formData
@@ -25,21 +26,25 @@ export async function addImagesToAnnouncement(announcementId: string, formData: 
     };
   }
 
-  let sortOrder = existingCount;
   for (const file of files) {
     const validation = validateAnnouncementImage(file);
     if (validation.error) {
       return { error: validation.error };
     }
+  }
 
-    const imagePath = await saveAnnouncementImage(announcementId, file);
-    await withDbErrorHandling(() => prisma.siteAnnouncementImage.create({
-          data: {
-            siteAnnouncementId: announcementId,
-            imagePath,
-            sortOrder: sortOrder++,
-          },
-        }), "Database operation failed");
+  const uploaded: string[] = [];
+  try {
+    for (const file of files) {
+      uploaded.push(await saveAnnouncementImage(announcementId, file));
+    }
+    await withDbErrorHandling(() => prisma.siteAnnouncementImage.createMany({
+      data: uploaded.map((imagePath, index) => ({ siteAnnouncementId: announcementId, imagePath, sortOrder: existingCount + index })),
+    }), "Database operation failed");
+  } catch (error) {
+    await deleteManyFromR2("announcements", uploaded);
+    if (isUploadError(error)) return { error: error.message };
+    throw error;
   }
 
   return { error: undefined };
@@ -53,9 +58,12 @@ export async function removeAnnouncementImages(imageIds: string[], announcementI
   if (!existing) return;
 
   const toRemove = existing.images.filter((img) => imageIds.includes(img.id));
+  if (toRemove.length === 0) return;
+  await withDbErrorHandling(() => prisma.siteAnnouncementImage.deleteMany({
+    where: { id: { in: toRemove.map((img) => img.id) }, siteAnnouncementId: announcementId },
+  }), "Database operation failed");
   for (const img of toRemove) {
     await deleteAnnouncementImageFile(img.imagePath);
-    await withDbErrorHandling(() => prisma.siteAnnouncementImage.delete({ where: { id: img.id } }), "Database operation failed");
   }
 }
 

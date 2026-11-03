@@ -4,24 +4,44 @@ import { Mail, Loader2, Download } from "lucide-react";
 import { useState, useTransition } from "react";
 import { PageHeader } from "@/components/site/PageHeader";
 import { useToast } from "@/components/shared/ToastProvider";
-import { sendGradeCardToEmailAction } from "@/app/actions/grades";
+import { sendStudentCardToEmailAction } from "@/app/actions/student-card";
 import { BRAND_CONFIG } from "@/config/brand";
 
-export function GradeCardPreview({ enrollmentId }: { enrollmentId: string }) {
+const CARD_COPY = {
+  grade: {
+    label: "Grade Card",
+    title: "Student Grade Card",
+    description: "Official academic record",
+  },
+  attendance: {
+    label: "Attendance Card",
+    title: "Student Attendance Card",
+    description: "Official attendance record",
+  },
+} as const;
+
+export function StudentCardPreview({
+  kind,
+  enrollmentId,
+}: {
+  kind: keyof typeof CARD_COPY;
+  enrollmentId: string;
+}) {
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const { addToast } = useToast();
   const [timestamp] = useState(() => Date.now());
+  const copy = CARD_COPY[kind];
 
-  const iframeSrc = `/api/grade-card?inline=1&enrollmentId=${enrollmentId}&t=${timestamp}#toolbar=0&navpanes=0&scrollbar=0`;
+  const iframeSrc = `/api/student-card/${kind}?inline=1&enrollmentId=${enrollmentId}&t=${timestamp}#toolbar=0&navpanes=0&scrollbar=0`;
 
   const handleSendEmail = () => {
     startTransition(async () => {
-      const result = await sendGradeCardToEmailAction(enrollmentId);
+      const result = await sendStudentCardToEmailAction(kind, enrollmentId);
       if (result.error) {
         addToast(result.error, "error");
       } else {
-        addToast("Grade Card sent successfully. Please check student's Inbox or Spam/Junk folder.", "success");
+        addToast(`${copy.label} sent successfully. Please check student's Inbox or Spam/Junk folder.`, "success");
       }
     });
   };
@@ -30,8 +50,8 @@ export function GradeCardPreview({ enrollmentId }: { enrollmentId: string }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <PageHeader
-          title="Student Grade Card"
-          description={`Official academic record issued by ${BRAND_CONFIG.name}.`}
+          title={copy.title}
+          description={`${copy.description} issued by ${BRAND_CONFIG.name}.`}
         />
         
         <div className="flex items-center gap-3">
@@ -59,22 +79,22 @@ export function GradeCardPreview({ enrollmentId }: { enrollmentId: string }) {
         {isLoading && (
           <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-surface/80 backdrop-blur-sm">
             <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
-            <p className="text-sm font-medium text-muted">Generating Grade Card PDF...</p>
+            <p className="text-sm font-medium text-muted">Generating {copy.label} PDF...</p>
           </div>
         )}
 
-        {/* Constrain max-width for good layout */}
+        {/* Constrain max-width for A4 portrait layout */}
         <div className="relative w-full max-w-ui-850 aspect-[0.707] bg-white rounded-xl overflow-hidden shadow-md ring-1 ring-border/50">
           <iframe
             src={iframeSrc}
             className="w-full h-full border-none"
             onLoad={() => setIsLoading(false)}
-            title="Student Grade Card Preview"
+            title={`${copy.title} Preview`}
           />
         </div>
         
         <p className="mt-6 text-sm text-muted text-center max-w-lg">
-          This is a preview of the official Student Grade Card. You can email the high-quality PDF version directly to the student using the button above.
+          This is a preview of the official {copy.title}. You can email the high-quality PDF version directly to the student using the button above.
         </p>
 
       </div>

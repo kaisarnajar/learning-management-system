@@ -1,30 +1,10 @@
-import { requireTeacher } from "@/services/auth-actions";
-import { getTeacherCourseForPortal } from "@/services/teacher-portal";
-import { notFound } from "next/navigation";
-import { getStudentGradeReport } from "@/app/actions/grades";
-import { StudentGradeReport } from "@/components/grades/StudentGradeReport";
+import { StudentGradeReportPage } from "@/components/teaching/GradePages";
 
 export default async function TeacherStudentGradeReportPage({
   params,
 }: {
   params: Promise<{ id: string; enrollmentId: string }>;
 }) {
-  const { teacher } = await requireTeacher();
   const { id, enrollmentId } = await params;
-  if (!(await getTeacherCourseForPortal(teacher.id, id))) notFound();
-  
-  const report = await getStudentGradeReport(enrollmentId);
-  if (report.course.id !== id) notFound();
-
-  return (
-    <div className="py-6">
-      <StudentGradeReport
-        backUrl={`/teacher/courses/${id}/grades`}
-        studentName={report.enrollment.user.name}
-        studentEmail={report.enrollment.user.email}
-        courseTitle={report.course.title}
-        records={report.records}
-      />
-    </div>
-  );
+  return <StudentGradeReportPage role="teacher" basePath="/teacher/courses" courseId={id} enrollmentId={enrollmentId} />;
 }

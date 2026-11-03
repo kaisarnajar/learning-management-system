@@ -9,6 +9,9 @@ import { renderReceiptToHtml } from "@/utils/receipt-html";
 import { generatePdfFromHtml, wrapHtmlForPdf } from "@/services/pdf-generator";
 import { getPaymentRecordById } from "@/services/payments";
 
+// Chromium cold start plus rendering can exceed the default function timeout.
+export const maxDuration = 60;
+
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ paymentRecordId: string }> },
@@ -46,7 +49,7 @@ export async function GET(
   const componentHtml = renderReceiptToHtml(receiptData);
 
   // 5. Wrap in isolated HTML document with Tailwind CDN
-  const fullHtml = wrapHtmlForPdf(componentHtml, { landscape: false });
+  const fullHtml = await wrapHtmlForPdf(componentHtml, { landscape: false });
 
   try {
     const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false });

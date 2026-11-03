@@ -7,6 +7,9 @@ import { generateIdCardPdf } from "@/utils/id-card-html";
 import { isAdminSession } from "@/services/admin";
 import { contentDisposition } from "@/utils/filename";
 
+// Chromium cold start plus rendering can exceed the default function timeout.
+export const maxDuration = 60;
+
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {

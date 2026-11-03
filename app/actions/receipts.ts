@@ -157,7 +157,7 @@ export async function sendReceiptToEmailAction(paymentRecordId: string): Promise
     });
 
     const componentHtml = renderReceiptToHtml(receiptData);
-    const fullHtml = wrapHtmlForPdf(componentHtml, { landscape: false });
+    const fullHtml = await wrapHtmlForPdf(componentHtml, { landscape: false });
 
     const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false });
     const amountStr = `₹${(record.amountInrPaise / 100).toFixed(2)}`;

@@ -10,7 +10,12 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
-  serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core"],
+  serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core", "sharp"],
+  // The PDF generators read these from disk at runtime; make sure the
+  // serverless bundles carry them.
+  outputFileTracingIncludes: {
+    "/**/*": ["./public/assets/**/*", "./public/fonts/**/*", "./generated/**/*"],
+  },
   experimental: {
     serverActions: {
       // Default is 1 MB; blog images allow up to 5 MB each (max 10 per post).

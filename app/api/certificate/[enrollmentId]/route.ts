@@ -8,6 +8,9 @@ import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { certificateTypeOf } from "@/services/status-compat";
 
+// Chromium cold start plus rendering can exceed the default function timeout.
+export const maxDuration = 60;
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ enrollmentId: string }> },

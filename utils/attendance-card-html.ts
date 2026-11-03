@@ -325,7 +325,7 @@ export async function generateAttendanceCardPdf(enrollmentId: string): Promise<B
     authorityDesignation: AUTHORITY_SIGNATURE.designation
   };
 
-  const html = wrapHtmlForPdf(renderAttendanceCardToHtml(data), { base64Font });
+  const html = await wrapHtmlForPdf(renderAttendanceCardToHtml(data), { base64Font });
   const pdfBuffer = await generatePdfFromHtml(html, {
     format: "A4",
     landscape: false

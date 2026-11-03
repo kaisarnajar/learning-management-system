@@ -11,6 +11,8 @@
     "lint": "eslint",
     "knip": "knip --include files,dependencies",
     "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
     "test:watch": "vitest",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev --skip-seed",

@@ -94,6 +94,25 @@ export const adminEnrollUserSchema = z.object({
   courseId: z.string().min(1, "Select a course."),
 });
 
+/** Shared by the web and mobile registration endpoints. */
+export const registerSchema = z.object({
+  name: z.string().trim().max(100, "Name must be at most 100 characters.").nullish(),
+  email: z
+    .string("Email and password are required.")
+    .trim()
+    .toLowerCase()
+    .min(1, "Email and password are required.")
+    .max(254, "Email must be at most 254 characters.")
+    .email("Enter a valid email address."),
+  password: z
+    .string("Email and password are required.")
+    .min(8, "Password must be at least 8 characters.")
+    .max(128, "Password must be at most 128 characters."),
+  acceptPolicies: z.literal(true, {
+    error: "You must accept the Terms & Conditions and Privacy Policy.",
+  }),
+});
+
 export const forgotPasswordSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
 });

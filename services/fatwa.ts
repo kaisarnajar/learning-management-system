@@ -6,9 +6,19 @@ import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getAppBaseUrl } from "@/services/password-reset";
 
-function fatwaSearchWhere(searchQuery?: string) {
+/** Admin-only search: may match asker name and e-mail. */
+function fatwaAdminSearchWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
   return buildSearchOr(["title", "askerName", "askerEmail", "category"], [], searchQuery);
+}
+
+/**
+ * Public/teacher search: content fields only. Matching on askerEmail here
+ * would let anyone test whether an address has asked a question.
+ */
+function fatwaPublicSearchWhere(searchQuery?: string) {
+  if (!searchQuery) return undefined;
+  return buildSearchOr(["title", "question", "category"], [], searchQuery);
 }
 
 export const HOMEPAGE_FEATURED_FATWA_MAX = 4;
@@ -102,7 +112,7 @@ export async function getAnsweredFatwasPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<FatwaQuestion>> {
   const baseWhere = answeredFatwasWhere(category);
-  const searchWhere = fatwaSearchWhere(searchQuery);
+  const searchWhere = fatwaPublicSearchWhere(searchQuery);
   const where = andWhere(baseWhere, searchWhere) || baseWhere;
   const totalCount = await withDbErrorHandling(() => prisma.fatwaQuestion.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
@@ -122,7 +132,7 @@ export async function getAnsweredFatwaById(id: string): Promise<FatwaQuestion | 
 
 export type FatwaAdminFilter = "pending" | "answered" | "unanswered" | "rejected";
 
-function fatwaAdminWhere(filter?: FatwaAdminFilter, searchQuery?: string) {
+function fatwaAdminWhere(filter?: FatwaAdminFilter, searchQuery?: string, audience: "admin" | "teacher" = "admin") {
   const statusWhere =
     filter === "unanswered"
       ? { answer: null }
@@ -133,7 +143,10 @@ function fatwaAdminWhere(filter?: FatwaAdminFilter, searchQuery?: string) {
           : filter === "answered"
             ? { answer: { not: null }, approvalStatus: "APPROVED" as const }
             : undefined;
-  return andWhere(statusWhere, fatwaSearchWhere(searchQuery));
+  return andWhere(
+    statusWhere,
+    audience === "admin" ? fatwaAdminSearchWhere(searchQuery) : fatwaPublicSearchWhere(searchQuery),
+  );
 }
 
 export async function getAllFatwaQuestionsPaginated(
@@ -160,7 +173,7 @@ export async function getTeacherFatwaQuestionsPaginated(
   filter?: FatwaAdminFilter,
   searchQuery?: string,
 ): Promise<PaginatedResult<FatwaQuestion>> {
-  const baseWhere = fatwaAdminWhere(filter, searchQuery);
+  const baseWhere = fatwaAdminWhere(filter, searchQuery, "teacher");
   
   // Teachers can only see unanswered questions, or questions they themselves answered.
   const teacherWhere = {

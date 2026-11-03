@@ -8,7 +8,6 @@ import { toggleLike, addComment, deleteComment, editComment } from "./actions";
 type User = {
   name: string | null;
   image: string | null;
-  email: string | null;
 };
 
 type Comment = {
@@ -228,7 +227,7 @@ export function BlogEngagement({
                 ) : (
                   <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                     <span className="text-sm font-medium text-foreground uppercase">
-                      {comment.user.name?.charAt(0) || comment.user.email?.charAt(0) || "?"}
+                      {comment.user.name?.charAt(0) || "?"}
                     </span>
                   </div>
                 )}

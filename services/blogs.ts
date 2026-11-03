@@ -104,12 +104,14 @@ export async function getPublishedBlogPostById(id: string) {
       where: { id, ...BLOG_PUBLIC_WHERE },
       include: {
         images: { orderBy: { sortOrder: "asc" } },
-        createdBy: { select: { name: true, image: true, email: true } },
+        // Never select e-mail addresses here: this payload is rendered on a
+        // public page and serialised to the client.
+        createdBy: { select: { name: true, image: true } },
         likes: true,
         comments: {
           orderBy: { createdAt: "desc" },
           include: {
-            user: { select: { name: true, image: true, email: true } },
+            user: { select: { id: true, name: true, image: true } },
           },
         },
       },

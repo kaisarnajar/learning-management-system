@@ -85,6 +85,18 @@ export async function getAttendanceRecordsForDateFromDb(courseId: string, target
 export async function saveCourseAttendanceToDb(courseId: string, targetDate: Date, records: AttendanceRecordInput[]) {
   return withDbErrorHandling(async () => {
     await prisma.$transaction(async (tx) => {
+      // Every enrollment must belong to the authorised course.
+      const enrollmentIds = [...new Set(records.map((r) => r.enrollmentId))];
+      if (enrollmentIds.length > 0) {
+        const found = await tx.enrollment.findMany({
+          where: { courseId, id: { in: enrollmentIds } },
+          select: { id: true },
+        });
+        if (found.length !== enrollmentIds.length) {
+          throw new Error("One or more students do not belong to this course.");
+        }
+      }
+
       // Upsert the main attendance record
       const attendance = await tx.courseAttendance.upsert({
         where: {

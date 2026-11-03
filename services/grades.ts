@@ -51,10 +51,30 @@ export async function getEnrolledStudentsForGradesFromDb(courseId: string) {
   }, "Failed to fetch enrolled students");
 }
 
-export async function getGradeRecordsForGradeIdFromDb(gradeId: string) {
+/**
+ * Ensures every enrollment id in `records` belongs to `courseId`. Callers
+ * authorise on the course, so an id from another course must be rejected.
+ */
+async function assertEnrollmentsBelongToCourse(
+  tx: Pick<typeof prisma, "enrollment">,
+  courseId: string,
+  enrollmentIds: string[],
+) {
+  const unique = [...new Set(enrollmentIds)];
+  if (unique.length === 0) return;
+  const found = await tx.enrollment.findMany({
+    where: { courseId, id: { in: unique } },
+    select: { id: true },
+  });
+  if (found.length !== unique.length) {
+    throw new Error("One or more students do not belong to this course.");
+  }
+}
+
+export async function getGradeRecordsForGradeIdFromDb(courseId: string, gradeId: string) {
   return withDbErrorHandling(async () => {
-    return prisma.courseGrade.findUnique({
-      where: { id: gradeId },
+    return prisma.courseGrade.findFirst({
+      where: { id: gradeId, courseId },
       include: {
         records: {
           include: {
@@ -85,13 +105,21 @@ export async function saveCourseGradeToDb(
 ) {
   return withDbErrorHandling(async () => {
     await prisma.$transaction(async (tx) => {
+      await assertEnrollmentsBelongToCourse(tx, courseId, records.map((r) => r.enrollmentId));
+
       let grade;
-      
+
       if (gradeId) {
-        grade = await tx.courseGrade.update({
-          where: { id: gradeId },
+        // Scope the update to the authorised course; a gradeId from another
+        // course must not be reachable.
+        const updated = await tx.courseGrade.updateMany({
+          where: { id: gradeId, courseId },
           data: { title, date, maxMarks },
         });
+        if (updated.count === 0) {
+          throw new Error("Grade card not found for this course.");
+        }
+        grade = { id: gradeId };
       } else {
         grade = await tx.courseGrade.create({
           data: { courseId, title, date, maxMarks },
@@ -145,11 +173,14 @@ export async function getStudentGradeRecordsFromDb(enrollmentId: string) {
   }, "Failed to fetch student grades");
 }
 
-export async function deleteCourseGradeFromDb(gradeId: string) {
+export async function deleteCourseGradeFromDb(courseId: string, gradeId: string) {
   return withDbErrorHandling(async () => {
-    await prisma.courseGrade.delete({
-      where: { id: gradeId }
+    const deleted = await prisma.courseGrade.deleteMany({
+      where: { id: gradeId, courseId },
     });
+    if (deleted.count === 0) {
+      throw new Error("Grade card not found for this course.");
+    }
   }, "Failed to delete grade record");
 }
 

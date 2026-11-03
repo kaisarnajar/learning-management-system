@@ -51,7 +51,7 @@ export async function getEnrolledStudentsForGrades(courseId: string) {
 
 export async function getGradeRecordsForGradeId(courseId: string, gradeId: string) {
   await authorizeCourseGradeManagement(courseId);
-  return getGradeRecordsForGradeIdFromDb(gradeId);
+  return getGradeRecordsForGradeIdFromDb(courseId, gradeId);
 }
 
 export async function saveCourseGrade(
@@ -94,7 +94,7 @@ export async function getStudentGradeRecords(courseId: string) {
 export async function deleteCourseGrade(courseId: string, gradeId: string) {
   await authorizeCourseGradeManagement(courseId);
 
-  await deleteCourseGradeFromDb(gradeId);
+  await deleteCourseGradeFromDb(courseId, gradeId);
 
   revalidatePath(`/admin/courses/${courseId}/grades`);
   revalidatePath(`/teacher/courses/${courseId}/grades`);

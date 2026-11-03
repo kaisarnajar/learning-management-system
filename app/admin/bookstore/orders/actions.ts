@@ -14,6 +14,7 @@ import { withDbErrorHandling } from "@/utils/db-error";
 import { recordAudit } from "@/services/audit";
 import { normalizeReason } from "@/services/payment-voiding";
 import { PAYMENTS } from "@/config/constants/payments";
+import type { BookOrderStatus } from "@prisma/client";
 
 function revalidateOrderPaths(userId: string) {
   const paths = [
@@ -43,12 +44,12 @@ class OrderStateChanged extends Error {}
 async function transitionOrder(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
   orderId: string,
-  from: "PENDING_VERIFICATION" | "APPROVED" | "SHIPPED",
+  from: BookOrderStatus | BookOrderStatus[],
   to: "APPROVED" | "DECLINED" | "SHIPPED" | "REFUNDED",
   extra: Record<string, unknown> = {},
 ) {
   const updated = await tx.bookOrder.updateMany({
-    where: { id: orderId, status: from, deletedAt: null },
+    where: { id: orderId, status: Array.isArray(from) ? { in: from } : from, deletedAt: null },
     data: { status: to, ...extra },
   });
   if (updated.count === 0) {
@@ -196,24 +197,50 @@ export async function markBookOrderShipped(
   redirect(orderReturnUrl(returnTo, "shipped"));
 }
 
+/**
+ * Refunds an approved or shipped order. The income that was recorded at
+ * approval is voided (kept for audit, excluded from finance and receipts)
+ * and the refund is written to the audit log.
+ */
 export async function markBookOrderRefunded(
   orderId: string,
   returnTo?: string,
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const order = await withDbErrorHandling(() => prisma.bookOrder.findUnique({
       where: { id: orderId },
     }), "Database operation failed");
 
-  if (!order) return { error: "Order not found." };
+  if (!order || order.deletedAt) return { error: "Order not found." };
 
-  if (order.status !== "APPROVED") {
-    return { error: "Only approved orders can be refunded." };
+  if (order.status !== "APPROVED" && order.status !== "SHIPPED") {
+    return { error: "Only approved or shipped orders can be refunded." };
   }
 
   try {
-    await prisma.$transaction((tx) => transitionOrder(tx, orderId, "APPROVED", "REFUNDED"));
+    await prisma.$transaction(async (tx) => {
+      await transitionOrder(tx, orderId, ["APPROVED", "SHIPPED"], "REFUNDED");
+
+      const shortId = orderId.slice(-6).toUpperCase();
+      const voided = await tx.paymentRecord.updateMany({
+        where: {
+          paymentType: PAYMENTS.TYPES.BOOK_ORDER,
+          userId: order.userId,
+          voidedAt: null,
+          OR: [{ bookOrderId: orderId }, { bookOrderId: null, description: `Book order #${shortId}` }],
+        },
+        data: { voidedAt: new Date(), voidReason: `Refunded book order ${shortId}`, voidedById: session.user.id },
+      });
+
+      await recordAudit(tx, session, {
+        action: "refund",
+        entity: "BookOrder",
+        entityId: orderId,
+        before: { status: order.status, totalAmountInrPaise: order.totalAmountInrPaise },
+        after: { status: "REFUNDED", voidedPaymentRecords: voided.count },
+      });
+    });
   } catch (error) {
     if (error instanceof OrderStateChanged) return { error: error.message };
     throw error;

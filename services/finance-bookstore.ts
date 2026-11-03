@@ -42,6 +42,8 @@ export type BookOrderFinanceRecord = {
   deliveryPhoneNumber: string | null;
   status: string;
   totalAmountPaise: number;
+  /** Amount returned to the customer (order total) for REFUNDED orders, else 0. */
+  refundedAmountPaise: number;
   profitContributionPaise: number;
 };
 
@@ -237,6 +239,7 @@ export async function getBookOrderFinancePaginated(
       deliveryPhoneNumber: order.deliveryPhoneNumber,
       status: order.status,
       totalAmountPaise: order.totalAmountInrPaise,
+      refundedAmountPaise: order.status === "REFUNDED" ? order.totalAmountInrPaise : 0,
       profitContributionPaise,
     };
   });
@@ -341,6 +344,7 @@ export async function getBookOrderFinanceAll(
       deliveryPhoneNumber: order.deliveryPhoneNumber,
       status: order.status,
       totalAmountPaise: order.totalAmountInrPaise,
+      refundedAmountPaise: order.status === "REFUNDED" ? order.totalAmountInrPaise : 0,
       profitContributionPaise,
     };
   });

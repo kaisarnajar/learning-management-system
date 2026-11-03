@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { deleteContactInquiryForm } from "@/app/admin/contact-inquiries/actions";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { getContactInquiryById } from "@/services/contact-inquiries";
+import { requireAdmin } from "@/services/auth-actions";
 
 function statusLabel(reply: string | null) {
   return reply ? "Replied" : "Pending";
@@ -19,6 +20,7 @@ export default async function AdminContactInquiryDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const inquiry = await getContactInquiryById(id);

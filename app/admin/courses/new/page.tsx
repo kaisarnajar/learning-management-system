@@ -3,12 +3,14 @@ import { CourseForm } from "@/components/admin/CourseForm";
 import { createCourse } from "@/app/admin/courses/actions";
 import { getFeaturedHomepageCourseCount } from "@/services/courses";
 import { getAllTeachers } from "@/services/teachers";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function NewCoursePage({
   searchParams,
 }: {
   searchParams: Promise<{ saveError?: string }>;
 }) {
+  await requireAdmin();
   const [teachers, featuredCount, params] = await Promise.all([
     getAllTeachers(),
     getFeaturedHomepageCourseCount(),

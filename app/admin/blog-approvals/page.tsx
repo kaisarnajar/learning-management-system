@@ -8,6 +8,7 @@ import { getPendingBlogPostsForAdminPaginated } from "@/services/blog-approval";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 export default async function AdminBlogApprovalsPage({
@@ -15,6 +16,7 @@ export default async function AdminBlogApprovalsPage({
 }: {
   searchParams: Promise<{ approved?: string; rejected?: string; saved?: string; page?: string; q?: string }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
   const { page: requestedPage, pageSize } = parsePaginationParams(params);

@@ -3,6 +3,7 @@ import { getGeneratedReceiptsPaginated } from "@/services/receipts-admin";
 import { AdminReceiptsTable } from "@/components/admin/receipts/AdminReceiptsTable";
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
+import { requireAdmin } from "@/services/auth-actions";
 
 export const metadata: Metadata = {
   title: "Payment Receipts | Admin",
@@ -14,6 +15,7 @@ export default async function AdminReceiptsPage({
 }: {
   searchParams: Promise<{ page?: string; q?: string }>;
 }) {
+  await requireAdmin();
   const { page, q } = await searchParams;
   const safePage = Math.max(1, parseInt(page ?? "1", 10) || 1);
   const pageSize = 20;

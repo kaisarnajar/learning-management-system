@@ -8,6 +8,7 @@ import { getPaymentSettings } from "@/services/payment-settings";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { computeShippingCharge, getShippingSlabs } from "@/services/book-orders";
+import { requireUser } from "@/services/auth-actions";
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
@@ -23,6 +24,7 @@ export default async function CartCheckoutPage({
 }: {
   searchParams: Promise<{ books?: string }>;
 }) {
+  await requireUser();
   const params = await searchParams;
 
   let selectedItems: { bookId: string; quantity: number }[] = [];

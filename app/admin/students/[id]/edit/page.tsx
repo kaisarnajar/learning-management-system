@@ -3,6 +3,7 @@ import Link from "next/link";
 import { StudentForm } from "@/components/admin/StudentForm";
 import { updateStudentUserForm } from "@/app/admin/students/actions";
 import { getStudentUserById } from "@/services/students";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function EditStudentPage({
   params,
@@ -11,6 +12,7 @@ export default async function EditStudentPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
 

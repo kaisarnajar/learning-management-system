@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { createTeacherBlogPost } from "@/app/teacher/(portal)/blogs/actions";
 import { BlogPostForm } from "@/components/admin/BlogPostForm";
+import { requireTeacher } from "@/services/auth-actions";
 
 export default async function NewTeacherBlogPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireTeacher();
   const query = await searchParams;
 
   return (

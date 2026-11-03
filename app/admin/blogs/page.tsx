@@ -32,6 +32,7 @@ function statusBadge(post: Pick<BlogPost, "approvalStatus" | "published">) {
 }
 
 import { adminActionButtonClassName } from "@/utils/form";
+import { requireAdmin } from "@/services/auth-actions";
 
 async function AdminBlogsList({ params, q }: { params: PageParams; q?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params);
@@ -150,6 +151,7 @@ export default async function AdminBlogsPage({
 }: {
   searchParams: Promise<PageParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
 

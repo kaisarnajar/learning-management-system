@@ -5,6 +5,7 @@ import { BlogPostForm } from "@/components/admin/BlogPostForm";
 import { isTeacherSubmittedBlog } from "@/services/blog-approval";
 import { getBlogPostForAdmin, getFeaturedHomepageBlogCount } from "@/services/blogs";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 export default async function EditBlogPostPage({
@@ -14,6 +15,7 @@ export default async function EditBlogPostPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string; posted?: string; error?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const [post, featuredCount] = await Promise.all([getBlogPostForAdmin(id), getFeaturedHomepageBlogCount()]);

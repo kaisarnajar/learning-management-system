@@ -8,6 +8,7 @@ import { getAllContactInquiriesPaginated } from "@/services/contact-inquiries";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 function filterHref(filter: "pending" | "replied" | undefined, q?: string) {
@@ -31,6 +32,7 @@ export default async function AdminContactInquiriesPage({
 }: {
   searchParams: Promise<{ filter?: string; saved?: string; deleted?: string; error?: string; email?: string; page?: string; q?: string }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
   const filter =

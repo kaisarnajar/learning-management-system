@@ -5,6 +5,7 @@ import { updateCourse } from "@/app/admin/courses/actions";
 import { getCourseById, getFeaturedHomepageCourseCount } from "@/services/courses";
 import { getAllTeachers } from "@/services/teachers";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 export default async function EditCoursePage({
@@ -14,6 +15,7 @@ export default async function EditCoursePage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string; created?: string; saveError?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const [course, teachers, featuredCount] = await Promise.all([

@@ -13,6 +13,7 @@ import { ActionToast } from "@/components/shared/ToastProvider";
 
 
 import { Suspense } from "react";
+import { requireAdmin } from "@/services/auth-actions";
 
 type PageParams = {
 
@@ -138,6 +139,7 @@ export default async function AdminLibraryPage({
 }: {
   searchParams: Promise<PageParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
 

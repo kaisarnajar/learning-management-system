@@ -5,6 +5,7 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { ReplyContactInquiryForm } from "@/components/admin/ReplyContactInquiryForm";
 import { getContactInquiryById } from "@/services/contact-inquiries";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 export default async function AdminContactInquiryReplyPage({
@@ -14,6 +15,7 @@ export default async function AdminContactInquiryReplyPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string; error?: string; email?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const inquiry = await getContactInquiryById(id);

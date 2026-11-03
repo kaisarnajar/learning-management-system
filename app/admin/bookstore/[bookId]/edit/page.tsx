@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { BookForm } from "@/components/admin/BookForm";
 import { updateBook } from "@/app/admin/bookstore/actions";
 import { getBookById, getFeaturedHomepageBookCount } from "@/services/bookstore";
+import { requireAdmin } from "@/services/auth-actions";
 
 export const metadata: Metadata = {
   title: "Edit Book — Admin",
@@ -15,6 +16,7 @@ export default async function AdminBookEditPage({
 }: {
   params: Promise<{ bookId: string }>;
 }) {
+  await requireAdmin();
   const { bookId } = await params;
   const [book, featuredCount] = await Promise.all([
     getBookById(bookId),

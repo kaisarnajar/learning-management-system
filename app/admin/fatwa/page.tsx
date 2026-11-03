@@ -45,6 +45,7 @@ type PageParams = {
 
 import { adminActionButtonClassName } from "@/utils/form";
 import { BRAND_CONFIG } from "@/config/brand";
+import { requireAdmin } from "@/services/auth-actions";
 
 async function AdminFatwaList({ params, q }: { params: PageParams; q?: string }) {
   const filter = (params.filter as FatwaAdminFilter) || undefined;
@@ -212,6 +213,7 @@ export default async function AdminFatwaPage({
 }: {
   searchParams: Promise<PageParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
 

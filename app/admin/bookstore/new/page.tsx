@@ -4,6 +4,7 @@ import Link from "next/link";
 import { BookForm } from "@/components/admin/BookForm";
 import { createBook } from "@/app/admin/bookstore/actions";
 import { getFeaturedHomepageBookCount } from "@/services/bookstore";
+import { requireAdmin } from "@/services/auth-actions";
 
 export const metadata: Metadata = {
   title: "Add Book — Admin",
@@ -11,6 +12,7 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminBookstoreNewPage() {
+  await requireAdmin();
   const featuredCount = await getFeaturedHomepageBookCount();
 
   return (

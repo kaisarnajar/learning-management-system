@@ -8,6 +8,7 @@ import { AdminStudentsTable } from "@/components/admin/AdminStudentsTable";
 import { StudentSortSelect } from "@/components/admin/StudentSortSelect";
 
 import { Suspense } from "react";
+import { requireAdmin } from "@/services/auth-actions";
 
 type PageParams = {
   deleted?: string;
@@ -70,6 +71,7 @@ export default async function AdminStudentsPage({
 }: {
   searchParams: Promise<PageParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
   const sort = params.sort || "regNo_asc";

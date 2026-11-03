@@ -52,7 +52,7 @@ export function HomeDailyInspiration({ inspiration }: HomeDailyInspirationProps)
           {/* Title Header with Lines */}
           <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-[0.25em] text-brand-gold-alt sm:text-xs">
             <div className="h-[1.5px] w-5 bg-brand-gold-alt/40 sm:w-8"></div>
-            <span>DAILY WISDOM</span>
+            <h2 id="daily-inspiration-heading">DAILY WISDOM</h2>
             <div className="h-[1.5px] w-5 bg-brand-gold-alt/40 sm:w-8"></div>
           </div>
 

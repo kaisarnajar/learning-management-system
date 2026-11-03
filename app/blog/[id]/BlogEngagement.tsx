@@ -197,6 +197,7 @@ export function BlogEngagement({
           </div>
           <form onSubmit={handleAddComment} className="flex-1">
             <textarea
+              aria-label="Add a comment"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder={currentUserId ? "Add a comment..." : "Sign in to add a comment..."}
@@ -257,7 +258,11 @@ export function BlogEngagement({
                   {(comment.userId === currentUserId || isAdmin) && (
                     <div className="relative">
                       <button
+                        type="button"
                         onClick={() => toggleMenu(comment.id)}
+                        aria-label="Comment actions"
+                        aria-haspopup="menu"
+                        aria-expanded={openMenuId === comment.id}
                         className="p-1 text-muted hover:text-foreground rounded-full hover:bg-muted/50"
                       >
                         <MoreVertical className="h-4 w-4" />
@@ -295,6 +300,7 @@ export function BlogEngagement({
                 {editingCommentId === comment.id ? (
                   <div className="mt-2">
                     <textarea
+                      aria-label="Edit comment"
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-gold min-h-[60px]"

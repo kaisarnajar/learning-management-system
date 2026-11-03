@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, ReactNode } from "react";
+import { cloneElement, isValidElement, useEffect, useId, useRef, useState, ReactNode } from "react";
 import { ActionButton } from "./ActionButton";
 import { inputClassName } from "@/utils/form";
 
@@ -31,6 +31,7 @@ export function ConfirmationModal({
   const [isPending, setIsPending] = useState(false);
   const [reason, setReason] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -72,16 +73,25 @@ export function ConfirmationModal({
 
   return (
     <>
-      <span onClick={() => setIsOpen(true)} className="inline-block">
-        {trigger}
-      </span>
+      {isValidElement<{ onClick?: (event: React.MouseEvent) => void }>(trigger) ? (
+        cloneElement(trigger, {
+          onClick: (event: React.MouseEvent) => {
+            trigger.props.onClick?.(event);
+            if (!event.defaultPrevented) setIsOpen(true);
+          },
+        })
+      ) : (
+        <button type="button" onClick={() => setIsOpen(true)}>
+          {trigger}
+        </button>
+      )}
 
       <dialog
         ref={dialogRef}
         className="backdrop:bg-black/50 backdrop:backdrop-blur-sm fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] max-w-md p-6 bg-surface rounded-xl shadow-xl border border-border open:animate-in open:fade-in-90 open:zoom-in-95 m-0 overflow-hidden text-left whitespace-normal"
-        aria-labelledby="confirmation-modal-title"
+        aria-labelledby={titleId}
       >
-        <h3 id="confirmation-modal-title" className="text-lg font-semibold text-foreground leading-snug break-words whitespace-normal">{title}</h3>
+        <h3 id={titleId} className="text-lg font-semibold text-foreground leading-snug break-words whitespace-normal">{title}</h3>
         <p className="mt-2 text-sm text-muted break-words leading-relaxed whitespace-normal">{description}</p>
 
         {reasonLabel && (

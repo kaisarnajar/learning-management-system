@@ -6,6 +6,7 @@ import { requireTeacher } from "@/services/auth-actions";
 import { sendFatwaSubmissionAdminEmail } from "@/services/email";
 import { prisma } from "@/utils/prisma";
 import { fatwaAnswerSchema } from "@/utils/validations";
+import { sanitizeRichText } from "@/services/rich-text";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { BRAND_CONFIG } from "@/config/brand";
 
@@ -13,7 +14,7 @@ export async function submitTeacherFatwaAnswer(id: string, formData: FormData) {
   const { session, teacher } = await requireTeacher();
 
   const parsed = fatwaAnswerSchema.safeParse({
-    answer: formData.get("answer"),
+    answer: sanitizeRichText(String(formData.get("answer") ?? "")),
   });
 
   if (!parsed.success) {

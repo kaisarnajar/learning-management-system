@@ -7,6 +7,7 @@ import { getFatwaPublicUrl, resolveFatwaFeaturedUpdate } from "@/services/fatwa"
 import { sendFatwaAnswerEmail, sendFatwaStatusTeacherEmail, type EmailSendResult } from "@/services/email";
 import { prisma } from "@/utils/prisma";
 import { fatwaAnswerSchema } from "@/utils/validations";
+import { sanitizeRichText } from "@/services/rich-text";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { BRAND_CONFIG } from "@/config/brand";
 
@@ -14,7 +15,7 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
   const session = await requireAdmin();
 
   const parsed = fatwaAnswerSchema.safeParse({
-    answer: formData.get("answer"),
+    answer: sanitizeRichText(String(formData.get("answer") ?? "")),
   });
 
   if (!parsed.success) {
@@ -130,7 +131,7 @@ export async function rejectFatwaQuestion(id: string, formData: FormData) {
   await requireAdmin();
 
   const parsed = fatwaAnswerSchema.safeParse({
-    answer: formData.get("answer"),
+    answer: sanitizeRichText(String(formData.get("answer") ?? "")),
   });
 
   if (!parsed.success) {

@@ -15,6 +15,7 @@ import { recordAudit } from "@/services/audit";
 import { normalizeReason } from "@/services/payment-voiding";
 import { PAYMENTS } from "@/config/constants/payments";
 import type { BookOrderStatus } from "@prisma/client";
+import { findStockShortages, formatShortages, lockBooksForUpdate } from "@/services/inventory";
 
 function revalidateOrderPaths(userId: string) {
   const paths = [
@@ -75,7 +76,7 @@ export async function approveBookOrder(
 
   const order = await withDbErrorHandling(() => prisma.bookOrder.findUnique({
       where: { id: orderId },
-      include: { user: { select: { id: true, email: true, name: true } } },
+      include: { user: { select: { id: true, email: true, name: true } }, items: { select: { bookId: true, quantity: true } } },
     }), "Database operation failed");
 
   if (!order) return { error: "Order not found." };
@@ -90,6 +91,13 @@ export async function approveBookOrder(
 
   try {
     await prisma.$transaction(async (tx) => {
+    // Approval commits stock: lock the books, then verify availability under the lock.
+    await lockBooksForUpdate(tx, order.items.map((i) => i.bookId));
+    const shortages = await findStockShortages(tx, order.items);
+    if (shortages.length > 0) {
+      throw new OrderStateChanged(`Not enough stock to approve this order: ${formatShortages(shortages)}.`);
+    }
+
     await transitionOrder(tx, orderId, "PENDING_VERIFICATION", "APPROVED");
 
     // Create a payment record for finance tracking

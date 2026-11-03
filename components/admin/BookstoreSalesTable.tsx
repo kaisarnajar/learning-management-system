@@ -47,8 +47,8 @@ export function BookstoreSalesTable({ records }: BookstoreSalesTableProps) {
               <td className="px-4 py-3 text-right">{record.quantityPurchased}</td>
               <td className="px-4 py-3 text-right">{record.quantitySold}</td>
               <td className="px-4 py-3 text-right">
-                <span className={record.remainingStock <= 5 ? "text-destructive-text font-medium" : ""}>
-                  {record.remainingStock}
+                <span className={record.remainingStock <= 5 ? "text-destructive-text font-medium" : ""} title={record.remainingStock < 0 ? "Oversold: more copies committed than were purchased" : undefined}>
+                  {record.remainingStock}{record.remainingStock < 0 ? " (oversold)" : ""}
                 </span>
               </td>
               <td className="px-4 py-3 text-right font-medium text-foreground">

@@ -637,6 +637,7 @@ model Book {
   updatedAt             DateTime        @updatedAt
   orderItems            BookOrderItem[]
   userCartItems         UserCartItem[]
+  stockMovements        BookStockMovement[]
 
   @@index([status])
   @@index([published, status])
@@ -667,6 +668,7 @@ model BookOrder {
   user                   User            @relation(fields: [userId], references: [id], onDelete: Restrict)
   items                  BookOrderItem[]
   paymentRecords         PaymentRecord[]
+  stockMovements         BookStockMovement[]
 
   @@index([userId])
   @@index([status])
@@ -910,4 +912,25 @@ model AuditLog {
   @@index([entity, entityId])
   @@index([actorId, createdAt])
   @@index([createdAt])
+}
+
+/**
+ * Manual stock adjustments (damaged copies, recounts). Available stock is
+ * inventoryPurchased + sum(delta) - quantities in approved/shipped orders;
+ * see services/inventory.ts.
+ */
+model BookStockMovement {
+  id          String    @id @default(cuid())
+  bookId      String
+  orderId     String?
+  delta       Int
+  reason      String
+  createdById String?
+  createdAt   DateTime  @default(now())
+
+  book  Book       @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  order BookOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([bookId])
+  @@index([orderId])
 }

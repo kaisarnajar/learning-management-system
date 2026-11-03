@@ -2,7 +2,10 @@ import type { AnnouncementCategory } from "@prisma/client";
 import Link from "next/link";
 import { AnnouncementCategoryBadge } from "@/components/announcements/AnnouncementCategoryBadge";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { deleteCourseAnnouncement } from "@/services/course-announcement-actions";
+import {
+  deleteCourseAnnouncement,
+  deleteStudentCourseAnnouncement,
+} from "@/services/course-announcement-actions";
 import { formatAnnouncementDate } from "@/services/announcements";
 import { ViewAnnouncementModal } from "@/components/announcements/ViewAnnouncementModal";
 import { adminActionButtonClassName } from "@/utils/form";
@@ -64,8 +67,12 @@ export function TeacherCourseAnnouncementCard({
               Edit
             </Link>
             <DeleteActionButton
-              action={deleteCourseAnnouncement.bind(null, courseId, announcementId)}
-              itemName="announcement"
+              action={
+                enrollmentId
+                  ? deleteStudentCourseAnnouncement.bind(null, courseId, enrollmentId, announcementId)
+                  : deleteCourseAnnouncement.bind(null, courseId, announcementId)
+              }
+              itemName={enrollmentId ? "message" : "announcement"}
             />
           </div>
         )}

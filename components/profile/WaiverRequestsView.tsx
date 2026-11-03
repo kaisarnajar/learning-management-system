@@ -9,6 +9,7 @@ type CouponRequestItem = {
   id: string;
   createdAt: Date;
   reason: string;
+  feeTypeLabel: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
   course: { title: string };
   coupon: { code: string; percentage: number } | null;
@@ -85,11 +86,7 @@ export function WaiverRequestsView({
                       {r.course.title}
                     </td>
                     <td className="px-5 py-4 text-muted whitespace-nowrap">
-                      {r.reason.includes("[Fee Type: Enrollment Fee]")
-                        ? "Enrollment Fee"
-                        : r.reason.includes("[Fee Type: Course Fee]")
-                        ? "Course Fee"
-                        : "Both"}
+                      {r.feeTypeLabel}
                     </td>
                     <td className="px-5 py-4 whitespace-nowrap">
                       <span

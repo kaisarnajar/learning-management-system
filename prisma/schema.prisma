@@ -776,6 +776,13 @@ enum CouponType {
   SPECIAL
 }
 
+/// Which fee a waiver request is about. Null only on rows created before the column existed.
+enum WaiverFeeType {
+  ENROLLMENT
+  COURSE
+  BOTH
+}
+
 enum CouponRequestStatus {
   PENDING
   APPROVED
@@ -814,6 +821,7 @@ model CouponRequest {
   userId    String
   courseId  String
   reason    String
+  feeType   WaiverFeeType?
   status    CouponRequestStatus @default(PENDING)
   couponId  String?
   createdAt DateTime            @default(now())

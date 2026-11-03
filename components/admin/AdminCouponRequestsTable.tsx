@@ -13,6 +13,7 @@ export type CouponRequestItem = {
   id: string;
   createdAt: Date | string;
   reason: string;
+  feeTypeLabel: string;
   status: "PENDING" | "APPROVED" | "REJECTED";
   user: { name: string | null; email: string };
   course: { title: string };
@@ -93,7 +94,10 @@ export function AdminCouponRequestsTable({ requests }: { requests: CouponRequest
                   <p className="text-xs text-muted">{r.user.email}</p>
                 </td>
                 <td className="px-4 py-3 font-medium text-foreground">{r.course.title}</td>
-                <td className="px-4 py-3 max-w-xs text-xs leading-relaxed text-muted font-mono">{r.reason}</td>
+                <td className="px-4 py-3 max-w-xs text-xs leading-relaxed text-muted">
+                  <p className="font-semibold text-foreground">{r.feeTypeLabel}</p>
+                  <p className="font-mono whitespace-pre-wrap break-words">{r.reason}</p>
+                </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${

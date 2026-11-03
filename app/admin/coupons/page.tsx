@@ -1,5 +1,6 @@
 import { requireAdmin } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
+import { resolveWaiverFeeType, waiverFeeTypeLabel } from "@/services/waiver-requests";
 import { AdminCouponsTable } from "@/components/admin/AdminCouponsTable";
 import { AdminCouponRequestsTable } from "@/components/admin/AdminCouponRequestsTable";
 import { CreateCouponDialog } from "@/components/admin/CreateCouponDialog";
@@ -54,13 +55,16 @@ export default async function AdminCouponsPage({
     orderBy: { createdAt: "desc" },
   });
 
-  const requests = await prisma.couponRequest.findMany({
+  const requests = (await prisma.couponRequest.findMany({
     include: {
       user: { select: { name: true, email: true, whatsapp: true } },
       course: { select: { title: true } },
     },
     orderBy: { createdAt: "desc" },
-  });
+  })).map((request) => ({
+    ...request,
+    feeTypeLabel: waiverFeeTypeLabel(resolveWaiverFeeType(request)),
+  }));
 
   const courses = await prisma.course.findMany({
     select: { id: true, title: true },

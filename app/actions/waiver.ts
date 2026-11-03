@@ -2,39 +2,23 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUser } from "@/services/auth-actions";
-import { prisma } from "@/utils/prisma";
+import { createWaiverRequest } from "@/services/waiver-requests";
+import { waiverRequestSchema } from "@/utils/validations";
 
 export async function submitWaiverRequest(formData: FormData) {
   const session = await requireUser();
 
-  const courseId = formData.get("courseId") as string;
-  const reason = formData.get("reason") as string;
-
-  if (!courseId || !reason || reason.length < 10) {
-    return { error: "Please select a course and provide a reason (at least 10 characters)." };
+  const parsed = waiverRequestSchema.safeParse({
+    courseId: formData.get("courseId"),
+    feeType: formData.get("feeType") || "both",
+    reason: formData.get("reason"),
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
   }
 
-  // Check if there is already a pending request for this course
-  const existing = await prisma.couponRequest.findFirst({
-    where: {
-      userId: session.user.id,
-      courseId,
-      status: "PENDING",
-    },
-  });
-
-  if (existing) {
-    return { error: "You already have a pending waiver request for this course." };
-  }
-
-  await prisma.couponRequest.create({
-    data: {
-      userId: session.user.id,
-      courseId,
-      reason,
-      status: "PENDING",
-    },
-  });
+  const result = await createWaiverRequest(session.user.id, parsed.data);
+  if (!result.ok) return { error: result.error };
 
   revalidatePath("/profile/waiver-requests");
   return { success: true };

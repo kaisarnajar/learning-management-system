@@ -448,6 +448,17 @@ export const bookSchema = z.object({
   featuredOnHomepage: z.boolean().optional(),
 });
 
+export const waiverRequestSchema = z.object({
+  courseId: z.string().trim().min(1, "Please select a course."),
+  feeType: z.enum(["enrollment", "course", "both"], { message: "Please choose which fee the waiver is for." }),
+  reason: z
+    .string()
+    .trim()
+    .min(10, "Please provide a reason (at least 10 characters).")
+    .max(1000, "Reason must be at most 1000 characters."),
+});
+export type WaiverRequestInput = z.infer<typeof waiverRequestSchema>;
+
 export const bookstoreCheckoutSchema = z.object({
   items: z.array(
     z.object({

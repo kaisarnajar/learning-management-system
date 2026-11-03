@@ -8,6 +8,7 @@ import { BRAND_CONFIG } from "@/config/brand";
 import { sendFeeWaiverApprovedEmail, sendFeeWaiverRejectedEmail } from "@/services/email";
 import { createStudentNotification } from "@/services/notifications";
 import { recordAudit } from "@/services/audit";
+import { resolveWaiverFeeType } from "@/services/waiver-requests";
 
 const createCouponSchema = z.object({
   code: z.string().trim().min(3).toUpperCase(),
@@ -193,8 +194,9 @@ export async function approveCouponRequest(requestId: string, percentage: number
   const code = `WAIVER-${request.user.name?.substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`;
 
   try {
-    const isEnrollmentOnly = request.reason.includes("[Fee Type: Enrollment Fee]");
-    const isCourseOnly = request.reason.includes("[Fee Type: Course Fee]");
+    const feeType = resolveWaiverFeeType(request);
+    const isEnrollmentOnly = feeType === "ENROLLMENT";
+    const isCourseOnly = feeType === "COURSE";
 
     const untilDate = new Date(validUntil);
     untilDate.setUTCHours(23, 59, 59, 999);

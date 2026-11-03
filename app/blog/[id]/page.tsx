@@ -8,6 +8,7 @@ import { auth } from "@/services/auth";
 import { isAdminSession } from "@/services/admin";
 import { BlogEngagement } from "./BlogEngagement";
 import { getBlogExcerpt, stripHtml } from "@/utils/html";
+import { sanitizeRichText } from "@/services/rich-text";
 
 import { BRAND_CONFIG } from "@/config/brand";
 import { JsonLd } from "@/components/site/JsonLd";
@@ -108,7 +109,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
         )}
 
         <div
-          dangerouslySetInnerHTML={{ __html: post.body }}
+          dangerouslySetInnerHTML={{ __html: sanitizeRichText(post.body) }}
           className="blog-content mt-8 text-base leading-relaxed text-foreground"
         />
 

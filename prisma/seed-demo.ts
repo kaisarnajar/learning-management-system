@@ -3,7 +3,12 @@ import { seedBootstrap } from "./seed-bootstrap";
 import { logDemoTableCounts, seedDemoBulk } from "./seed-demo-bulk";
 import { demoContentLoginHint, seedDemoContent } from "./seed-demo-content";
 import { demoNotificationsHint, seedDemoNotifications } from "./seed-demo-notifications";
+import { generateDemoCredentials, writeDemoCredentialsFile, type DemoCredentials } from "./seed-credentials";
+import { demoStudents } from "../content/demo-students";
+import { demoStudentEmail } from "./seed-helpers";
+import { teachers } from "../content/teachers";
 import {
+  getDemoAdminEmails,
   demoAdminLoginHint,
   demoDataSummaryHint,
   demoStudentLoginHint,
@@ -135,14 +140,14 @@ async function clearDatabase(prisma: PrismaClient) {
   console.log("Database cleared successfully.");
 }
 
-async function runSeedDemo(prismaClient: PrismaClient) {
+async function runSeedDemo(prismaClient: PrismaClient, credentials: DemoCredentials) {
   await assertDatabaseMigrated();
   await clearDatabase(prismaClient);
 
   await seedBootstrap(prismaClient);
-  await seedDemoAdmins(prismaClient);
-  await seedDemoTeachers(prismaClient);
-  await seedDemoData(prismaClient);
+  await seedDemoAdmins(prismaClient, credentials.adminPassword);
+  await seedDemoTeachers(prismaClient, credentials.teacherPassword);
+  await seedDemoData(prismaClient, credentials.studentPassword);
   await seedDemoContent(prismaClient);
   await seedDemoNotifications(prismaClient);
   await seedDemoBulk(prismaClient);
@@ -162,7 +167,13 @@ async function runSeedDemo(prismaClient: PrismaClient) {
 
 async function main() {
   assertDemoSeedAllowed();
-  const summary = await runSeedDemo(prisma);
+  const credentials = generateDemoCredentials();
+  await runSeedDemo(prisma, credentials);
+  const credentialsFile = writeDemoCredentialsFile(credentials, {
+    admins: getDemoAdminEmails(),
+    teachers: teachers.map((t) => t.email),
+    students: demoStudents.map((s) => demoStudentEmail(s.id)),
+  });
 
   console.log(
     "Seeded demo data: courses, teachers, library, testimonials, logins, students, finance, contact inquiries, announcements, blogs, verse/hadith, fatwa, notifications, and bulk QA datasets.",
@@ -174,6 +185,7 @@ async function main() {
   console.log(demoAdminLoginHint());
   console.log(demoTeacherLoginHint());
   console.log(demoStudentLoginHint());
+  console.log(`Demo passwords were written to ${credentialsFile} (git-ignored). They are not printed.`);
 }
 
 if (process.argv[1]?.includes("seed-demo")) {

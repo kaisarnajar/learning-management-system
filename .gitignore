@@ -38,6 +38,9 @@ yarn-error.log*
 # local demo uploads
 /public/uploads/
 
+# demo seed credentials (generated per run)
+.seed-credentials.local.json
+
 # vercel
 .vercel
 

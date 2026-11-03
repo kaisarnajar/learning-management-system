@@ -1,12 +1,6 @@
 import type { OccupationValue } from '../services/occupations';
 import { courses } from "./courses";
 
-/** Shared password for all demo student accounts (local / QA only). */
-export const DEMO_STUDENT_PASSWORD = "Demo@2026";
-
-/** Shared password for admin accounts seeded from `ADMIN_EMAIL` (local / QA only). */
-export const DEMO_ADMIN_PASSWORD = "Admin@2026";
-
 /** Total demo student accounts created by the seed script. */
 export const DEMO_STUDENT_COUNT = 50;
 

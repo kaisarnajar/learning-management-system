@@ -62,13 +62,13 @@ If you intend to use the demo seed script (`npm run db:seed:demo`) to populate t
    ```
 
 3. **Initialize Database:**
-   Push the Prisma schema to your database.
+   Apply the migrations (never `db push` against a shared database; see `docs/OPERATIONS.md`).
    ```bash
-   npx prisma db push
+   npx prisma migrate deploy
    ```
 
 4. **Seed the Database:**
-   Populate the database with necessary setup data (e.g., super admin accounts, initial payment settings).
+   Populate the database with the idempotent bootstrap data (teachers, courses, library items, payment-settings row). Admin access is granted by listing addresses in `ADMIN_EMAIL`; admins sign in with Google or register normally.
    ```bash
    npm run db:seed
    ```

@@ -1,5 +1,5 @@
 import { ANNOUNCEMENT_MAX_UPLOAD_BYTES } from "@/services/announcements";
-import { ATTACHMENT_MIMES, deleteFromR2, uploadToR2, validateUpload, type UploadRules } from "@/services/storage";
+import { ATTACHMENT_MIMES, deleteFromR2, uploadPrivateToR2, validateUpload, type UploadRules } from "@/services/storage";
 
 const RULES: UploadRules = { allowed: ATTACHMENT_MIMES, maxBytes: ANNOUNCEMENT_MAX_UPLOAD_BYTES, label: "Attachment" };
 
@@ -12,12 +12,16 @@ function sanitizeFilename(name: string): string {
   return base.slice(0, 120) || "attachment";
 }
 
-/** Stores a course-announcement attachment (bytes are sniffed); throws UploadError when refused. */
+/**
+ * Stores a course-announcement attachment privately (bytes are sniffed);
+ * the returned path is served through /api/files after an ownership check.
+ * Throws UploadError when refused.
+ */
 export async function saveAnnouncementAttachment(
   announcementId: string,
   file: File,
 ): Promise<{ attachmentPath: string; attachmentName: string }> {
-  const attachmentPath = await uploadToR2("announcements", announcementId, file, RULES);
+  const attachmentPath = await uploadPrivateToR2("announcements", announcementId, file, RULES);
   return { attachmentPath, attachmentName: sanitizeFilename(file.name) };
 }
 

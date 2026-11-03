@@ -16,3 +16,5 @@ export const r2Client = new S3Client({
 
 export const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || "";
 export const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || "";
+/** Bucket for objects served only through /api/files (no public access). Falls back to the main bucket. */
+export const R2_PRIVATE_BUCKET_NAME = process.env.R2_PRIVATE_BUCKET_NAME || R2_BUCKET_NAME;

@@ -11,6 +11,7 @@ import { libraryItemSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { ActionError, executeServerAction } from "@/utils/action-utils";
 import { withFlash } from "@/utils/flash";
+import { isUploadError } from "@/services/storage";
 
 function parseLibraryForm(formData: FormData) {
   const pdfUrl = formData.get("pdfUrl");
@@ -60,7 +61,12 @@ export async function createLibraryItem(formData: FormData) {
     async (id) => {
       let imagePath: string | undefined;
       if (imageFile && imageFile.size > 0) {
-        imagePath = await saveLibraryImage(id, imageFile);
+        try {
+          imagePath = await saveLibraryImage(id, imageFile);
+        } catch (error) {
+          if (isUploadError(error)) throw new ActionError(error.message);
+          throw error;
+        }
       }
       try {
         return await withDbErrorHandling(() => prisma.libraryItem.create({ data: { id, ...data, ...(imagePath ? { imagePath } : {}) } }), "Database operation failed");
@@ -109,22 +115,34 @@ export async function updateLibraryItem(id: string, formData: FormData) {
   let imagePath: string | undefined | null;
 
   if (imageFile && imageFile.size > 0) {
-    imagePath = await saveLibraryImage(id, imageFile);
-  } else if (removeImage) {
-    if (existing.imagePath) {
-      await deleteLibraryImage(existing.imagePath);
+    try {
+      imagePath = await saveLibraryImage(id, imageFile);
+    } catch (error) {
+      if (isUploadError(error)) throw new ActionError(error.message);
+      throw error;
     }
+  } else if (removeImage) {
     imagePath = null;
   }
 
-  await withDbErrorHandling(() => prisma.libraryItem.update({
-      where: { id },
-      data: {
-        ...parsed.data,
-        ...featured,
-        ...(imagePath !== undefined ? { imagePath } : {}),
-      },
-    }), "Database operation failed");
+  try {
+    await withDbErrorHandling(() => prisma.libraryItem.update({
+        where: { id },
+        data: {
+          ...parsed.data,
+          ...featured,
+          ...(imagePath !== undefined ? { imagePath } : {}),
+        },
+      }), "Database operation failed");
+  } catch (error) {
+    if (imagePath) await deleteLibraryImage(imagePath);
+    throw error;
+  }
+
+  // The row no longer references the old cover: remove it now.
+  if (imagePath !== undefined && existing.imagePath && existing.imagePath !== imagePath) {
+    await deleteLibraryImage(existing.imagePath);
+  }
 
   revalidatePath("/");
   revalidatePath("/library");

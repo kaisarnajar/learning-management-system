@@ -5,6 +5,7 @@ import { withDbErrorHandling } from "@/utils/db-error";
 import { bookstoreCheckoutSchema } from "@/utils/validations";
 import { findStockShortages, formatShortages } from "@/services/inventory";
 import { deletePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
+import { isUploadError } from "@/services/storage";
 
 /**
  * Single place for everything a book order submission needs. Used by the web
@@ -180,6 +181,7 @@ export async function createBookOrder(params: {
       console.error("[book-orders] Screenshot upload failed; withdrawing order", order.id, error);
       await prisma.bookOrder.update({ where: { id: order.id }, data: { deletedAt: new Date() } }).catch(() => undefined);
       await deletePaymentScreenshot(paymentScreenshotPath);
+      if (isUploadError(error)) return { ok: false, error: error.message, status: 400 };
       return { ok: false, error: "Could not store the payment screenshot. Please try again.", status: 500 };
     }
   }

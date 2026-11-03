@@ -34,12 +34,9 @@ async function CoursesContent({ params, userId }: { params: PageParams; userId: 
   const totalCount = enrollmentsPaginated.totalCount;
   const page = clampPage(requestedPage, totalCount, pageSize);
 
-  const courseIds = [...new Set(enrollments.map((e) => e.courseId))];
-  const courseMap = await import("@/services/courses").then((m) => m.getCoursesByIds(courseIds));
-
   const enrollmentRows = enrollments.map((enrollment) => ({
     enrollment,
-    course: courseMap.get(enrollment.courseId),
+    course: enrollment.course,
   }));
 
   return (

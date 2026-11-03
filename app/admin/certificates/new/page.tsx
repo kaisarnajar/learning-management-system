@@ -18,32 +18,17 @@ export default async function AdminGenerateCertificatePage() {
           email: true,
         },
       },
+      course: { select: { id: true, title: true } },
     },
     orderBy: [
       { user: { name: "asc" } },
     ],
   });
 
-  const courseIds = Array.from(new Set(enrollments.map((e) => e.courseId)));
-  const courses = await prisma.course.findMany({
-    where: {
-      id: { in: courseIds },
-    },
-    select: {
-      id: true,
-      title: true,
-    },
-  });
-
-  const courseMap = new Map(courses.map((c) => [c.id, c.title]));
-
   const processedEnrollments = enrollments.map((env) => ({
     id: env.id,
     user: env.user,
-    course: {
-      id: env.courseId,
-      title: courseMap.get(env.courseId) || "Unknown Course",
-    },
+    course: env.course,
   }));
 
   return (

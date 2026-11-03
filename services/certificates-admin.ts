@@ -69,18 +69,11 @@ export async function getGeneratedCertificatesPaginated(
         certificateGrade: true,
         status: true,
         user: { select: { id: true, name: true, email: true } },
+        course: { select: { id: true, title: true } },
       },
       orderBy: { certificateGeneratedAt: "desc" },
       ...paginationArgs(safePage, pageSize),
     });
-
-    const courseIdsToFetch = Array.from(new Set(items.map(item => item.courseId)));
-    const courses = await prisma.course.findMany({
-      where: { id: { in: courseIdsToFetch } },
-      select: { id: true, title: true },
-    });
-    
-    const courseMap = new Map(courses.map(c => [c.id, c.title]));
 
     const processedItems: AdminCertificateEntry[] = items.map(item => ({
       id: item.id,
@@ -92,10 +85,7 @@ export async function getGeneratedCertificatesPaginated(
       certificateGrade: item.certificateGrade,
       status: item.status,
       user: item.user,
-      course: {
-        id: item.courseId,
-        title: courseMap.get(item.courseId) || "Unknown Course",
-      },
+      course: item.course,
     }));
 
     return { items: processedItems, totalCount };

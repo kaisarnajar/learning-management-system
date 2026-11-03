@@ -73,18 +73,11 @@ export async function getGeneratedReceiptsPaginated(
         receiptFeeAmountPaise: true,
         receiptGstAmountPaise: true,
         user: { select: { id: true, name: true, email: true } },
+        course: { select: { id: true, title: true } },
       },
       orderBy: { receiptGeneratedAt: "desc" },
       ...paginationArgs(safePage, pageSize),
     });
-
-    const courseIdsToFetch = Array.from(new Set(items.map(item => item.courseId).filter(Boolean))) as string[];
-    const courses = await prisma.course.findMany({
-      where: { id: { in: courseIdsToFetch } },
-      select: { id: true, title: true },
-    });
-    
-    const courseMap = new Map(courses.map(c => [c.id, c.title]));
 
     const processedItems: AdminReceiptEntry[] = items.map(item => ({
       id: item.id,
@@ -98,10 +91,7 @@ export async function getGeneratedReceiptsPaginated(
       receiptFeeAmountPaise: item.receiptFeeAmountPaise,
       receiptGstAmountPaise: item.receiptGstAmountPaise,
       user: item.user,
-      course: item.courseId ? {
-        id: item.courseId,
-        title: courseMap.get(item.courseId) || "Unknown Course",
-      } : null,
+      course: item.course,
     }));
 
     return { items: processedItems, totalCount };

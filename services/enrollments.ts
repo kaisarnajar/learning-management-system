@@ -1,5 +1,5 @@
 import { unstable_noStore as noStore } from "next/cache";
-import type { CourseStatus } from "@prisma/client";
+import type { CourseStatus, Prisma } from "@prisma/client";
 import {
   AWAITING_ENROLLMENT_FEE,
   PENDING_ENROLLMENT_APPROVAL,
@@ -54,16 +54,22 @@ export async function getUserEnrollments(userId: string) {
     }), "Database operation failed");
 }
 
+export type UserEnrollmentWithCourse = Prisma.EnrollmentGetPayload<{
+  include: { course: { include: { teacher: true } } };
+}>;
+
+/** A student's enrollments with the course (and its teacher) joined in. */
 export async function getUserEnrollmentsPaginated(
   userId: string,
   page: number,
   pageSize: number,
-): Promise<PaginatedResult<Awaited<ReturnType<typeof getUserEnrollments>>[number]>> {
+): Promise<PaginatedResult<UserEnrollmentWithCourse>> {
   const where = { userId };
   return paginateQuery(prisma.enrollment, {
     where,
     orderBy: { createdAt: "desc" },
-  }, page, pageSize);
+    include: { course: { include: { teacher: true } } },
+  }, page, pageSize) as unknown as Promise<PaginatedResult<UserEnrollmentWithCourse>>;
 }
 
 export function enrollmentStatusLabel(status: string) {

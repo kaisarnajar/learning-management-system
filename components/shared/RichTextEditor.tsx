@@ -16,6 +16,7 @@ import {
   Undo,
   Redo,
 } from "lucide-react";
+import { isAllowedLinkUrl, sanitizeRichText } from "@/services/rich-text";
 
 interface RichTextEditorProps {
   value: string;
@@ -33,10 +34,14 @@ export function RichTextEditor({
   const editorRef = useRef<HTMLDivElement>(null);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
 
-  // Sync value to editor innerHTML ONLY if it differs to prevent cursor jumping
+  // Sync value to editor innerHTML ONLY if it differs to prevent cursor jumping.
+  // The value may come from the database (e.g. an admin reviewing a teacher's
+  // draft), so it is sanitised before it is assigned to innerHTML.
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== value) {
-      editorRef.current.innerHTML = value;
+    if (!editorRef.current) return;
+    const safeValue = sanitizeRichText(value);
+    if (editorRef.current.innerHTML !== safeValue && editorRef.current.innerHTML !== value) {
+      editorRef.current.innerHTML = safeValue;
     }
   }, [value]);
 
@@ -63,8 +68,10 @@ export function RichTextEditor({
       defaultUrl = selection.toString().startsWith("http") ? selection.toString() : "";
     }
     const url = prompt("Enter hyperlink URL:", defaultUrl || "https://");
-    if (url) {
-      executeCommand("createLink", url);
+    if (url && isAllowedLinkUrl(url)) {
+      executeCommand("createLink", url.trim());
+    } else if (url) {
+      alert("Only http://, https:// and mailto: links are allowed.");
     }
   };
 

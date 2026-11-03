@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/site/PageHeader";
 import { Section } from "@/components/site/Section";
 import { getAnsweredFatwaById } from "@/services/fatwa";
+import { sanitizeRichText } from "@/services/rich-text";
 
 import { BRAND_CONFIG } from "@/config/brand";
 import { JsonLd } from "@/components/site/JsonLd";
@@ -105,7 +106,7 @@ export default async function FatwaDetailPage({ params }: FatwaDetailPageProps) 
             <h2 className="font-serif text-lg font-semibold text-primary">Answer</h2>
             <div
               className="blog-content mt-4 text-base leading-relaxed text-foreground"
-              dangerouslySetInnerHTML={{ __html: fatwa.answer }}
+              dangerouslySetInnerHTML={{ __html: sanitizeRichText(fatwa.answer) }}
             />
           </section>
         </div>

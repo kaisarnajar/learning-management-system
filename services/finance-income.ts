@@ -5,6 +5,7 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/paginat
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { PAYMENTS } from "@/config/constants/payments";
 
 function incomeSearchWhere(q?: string) {
   if (!q) return undefined;
@@ -25,7 +26,7 @@ function buildIncomeWhere(filters: FinanceFilters) {
     voidedAt: null,
     ...(filters.courseId ? { courseId: filters.courseId } : {}),
     ...(filters.studentId ? { userId: filters.studentId } : {}),
-    paymentType: filters.paymentType ? filters.paymentType : { not: "book_purchase" },
+    paymentType: filters.paymentType ? filters.paymentType : { not: PAYMENTS.TYPES.BOOK_ORDER },
     ...(paidAt ? { paidAt } : {}),
   };
 

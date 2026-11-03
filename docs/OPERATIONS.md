@@ -100,6 +100,7 @@ release ticket, and apply only after the finance owner has reviewed it.
 |---|---|---|
 | `scripts/report-duplicate-payment-keys.ts` | read-only: rows that block the partial unique indexes | yes |
 | `scripts/backfill-payment-records.ts` | create the missing `PaymentRecord` for approved fee submissions (the admin page no longer does this while rendering) | yes |
+| `scripts/backfill-book-order-links.ts` | link legacy book-purchase payment records to their order via `PaymentRecord.bookOrderId`; ambiguous matches are listed, never guessed | yes |
 | `scripts/recompute-receipt-gst.ts` | report receipts whose stored fee/GST split used the old "18% of total" formula; `--apply` (optionally `--ids=`) rewrites them. Recommendation: leave issued invoices untouched and use credit notes; apply only on the finance owner's written instruction | yes |
 
 ## 5. Seeding

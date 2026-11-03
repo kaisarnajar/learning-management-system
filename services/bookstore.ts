@@ -4,6 +4,7 @@ import { buildSearchOr } from "@/utils/text-search";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { resolveHomepageFeaturedUpdate } from "@/services/homepage-featured";
+import { PAYMENTS } from "@/config/constants/payments";
 
 export { BookStatus };
 
@@ -205,15 +206,21 @@ async function fetchBookOrdersPaginated(
   if (items.length > 0) {
     const paymentRecords = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
       where: {
-        paymentType: "book_purchase",
+        paymentType: PAYMENTS.TYPES.BOOK_ORDER,
         voidedAt: null,
-        userId: { in: items.map((o) => o.userId) },
+        OR: [
+          { bookOrderId: { in: items.map((o) => o.id) } },
+          { bookOrderId: null, userId: { in: items.map((o) => o.userId) } },
+        ],
       },
     }), "Database operation failed");
 
     itemsWithPaymentRecord = items.map((order) => {
       const shortId = order.id.slice(-6).toUpperCase();
-      const pr = paymentRecords?.find((p) => p.description === `Book order #${shortId}` && p.userId === order.userId);
+      // Prefer the real link; fall back to the legacy description match for records not yet backfilled.
+      const pr =
+        paymentRecords?.find((p) => p.bookOrderId === order.id) ??
+        paymentRecords?.find((p) => !p.bookOrderId && p.description === `Book order #${shortId}` && p.userId === order.userId);
       return {
         ...order,
         paymentRecordId: pr?.id ?? null,
@@ -279,7 +286,7 @@ export async function getBookOrdersForUser(userId: string): Promise<BookOrderWit
   
   const paymentRecords = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
     where: {
-      paymentType: "book_purchase",
+      paymentType: PAYMENTS.TYPES.BOOK_ORDER,
       voidedAt: null,
       userId,
     },
@@ -287,7 +294,9 @@ export async function getBookOrdersForUser(userId: string): Promise<BookOrderWit
   
   return items.map((order) => {
     const shortId = order.id.slice(-6).toUpperCase();
-    const pr = paymentRecords?.find((p) => p.description === `Book order #${shortId}`);
+    const pr =
+      paymentRecords?.find((p) => p.bookOrderId === order.id) ??
+      paymentRecords?.find((p) => !p.bookOrderId && p.description === `Book order #${shortId}`);
     return {
       ...order,
       paymentRecordId: pr?.id ?? null,

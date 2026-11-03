@@ -13,6 +13,7 @@ import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { recordAudit } from "@/services/audit";
 import { normalizeReason } from "@/services/payment-voiding";
+import { PAYMENTS } from "@/config/constants/payments";
 
 function revalidateOrderPaths(userId: string) {
   const paths = [
@@ -94,9 +95,10 @@ export async function approveBookOrder(
     await tx.paymentRecord.create({
       data: {
         userId: order.userId,
+        bookOrderId: orderId,
         amountInrPaise: order.totalAmountInrPaise,
         paidAt: new Date(),
-        paymentType: "book_purchase",
+        paymentType: PAYMENTS.TYPES.BOOK_ORDER,
         description: `Book order #${orderId.slice(-6).toUpperCase()}`,
       },
     });
@@ -252,14 +254,14 @@ export async function voidBookOrder(
   }
 
   await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
-    // Linked payment record (matched by description until the FK lands): void, never delete.
+    // Linked payment record (FK, with the legacy description match as fallback): void, never delete.
     const shortId = orderId.slice(-6).toUpperCase();
     await tx.paymentRecord.updateMany({
       where: {
-        paymentType: "book_purchase",
+        paymentType: PAYMENTS.TYPES.BOOK_ORDER,
         userId: order.userId,
-        description: `Book order #${shortId}`,
         voidedAt: null,
+        OR: [{ bookOrderId: orderId }, { bookOrderId: null, description: `Book order #${shortId}` }],
       },
       data: { voidedAt: new Date(), voidReason: normalizedReason, voidedById: session.user.id },
     });

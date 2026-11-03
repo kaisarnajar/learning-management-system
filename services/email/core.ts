@@ -1,4 +1,4 @@
-import nodemailer from "nodemailer";
+import nodemailer, { type Transporter } from "nodemailer";
 import { randomBytes } from "crypto";
 import { BRAND_CONFIG } from "@/config/brand";
 
@@ -27,6 +27,11 @@ export type DeliverMailParams = {
   html: string;
   preview?: string;
   priority?: EmailPriority;
+  /**
+   * A per-recipient URL that opts them out when posted to (RFC 8058
+   * one-click). Only announcement-style mail should set it; transactional
+   * mail (receipts, verification) carries no unsubscribe header.
+   */
   listUnsubscribeUrl?: string;
   attachments?: MailAttachment[];
 };
@@ -53,45 +58,49 @@ function getSmtpPassword(): string {
   return (process.env.SMTP_PASS ?? "").replace(/\s/g, "");
 }
 
-export function getSenderEmail(): string {
+/**
+ * The configured sender, parsed once: EMAIL_FROM may be "Name <addr>" or a
+ * bare address; SMTP_USER is the fallback, then a noreply address on the
+ * site's domain.
+ */
+export function getSender(): { address: string; display: string } {
   const raw =
     process.env.EMAIL_FROM?.trim() ||
     process.env.SMTP_USER?.trim() ||
     `noreply@${new URL(BRAND_CONFIG.websiteUrl).hostname}`;
   const stripped = stripEnvQuotes(raw);
   const match = stripped.match(/<([^>]+)>/);
-  return match ? match[1].trim() : stripped;
+  const address = match ? match[1].trim() : stripped;
+  const display = match ? stripped : `${BRAND_CONFIG.name} <${stripped}>`;
+  return { address, display };
 }
 
-function getFromAddress(): string {
-  const raw =
-    process.env.EMAIL_FROM?.trim() ||
-    process.env.SMTP_USER?.trim() ||
-    `noreply@${BRAND_CONFIG.websiteUrl.replace(/^https?:\/\//, "")}`;
-  const stripped = stripEnvQuotes(raw);
-  if (stripped.includes("<")) return stripped;
-  return `${BRAND_CONFIG.name} <${stripped}>`;
+export function getSenderEmail(): string {
+  return getSender().address;
 }
 
 function getReplyTo(): string {
   const raw = process.env.EMAIL_REPLY_TO?.trim();
   if (raw) return stripEnvQuotes(raw);
-  return getSenderEmail();
+  return getSender().address;
 }
 
 function generateMessageId(): string {
-  const domain = getSenderEmail().split("@")[1] || BRAND_CONFIG.websiteUrl.replace(/^https?:\/\//, "");
+  const domain = getSender().address.split("@")[1] || new URL(BRAND_CONFIG.websiteUrl).hostname;
   const unique = randomBytes(16).toString("hex");
   return `<${unique}@${domain}>`;
 }
 
 // ---------------------------------------------------------------------------
-// SMTP transport
+// SMTP transport: one pooled transport per process
 // ---------------------------------------------------------------------------
 
-function createTransport() {
+let transport: Transporter | null = null;
+
+function getTransport(): Transporter {
+  if (transport) return transport;
   const port = Number(process.env.SMTP_PORT || 587);
-  return nodemailer.createTransport({
+  transport = nodemailer.createTransport({
     host: process.env.SMTP_HOST?.trim(),
     port,
     secure: port === 465,
@@ -99,10 +108,26 @@ function createTransport() {
       user: process.env.SMTP_USER?.trim(),
       pass: getSmtpPassword(),
     },
+    // A pool reuses connections across the announcement fan-out instead of
+    // a fresh TLS handshake (and login) per message.
+    pool: true,
+    maxConnections: 3,
+    maxMessages: 100,
     connectionTimeout: 20_000,
     greetingTimeout: 20_000,
     socketTimeout: 30_000,
   });
+  return transport;
+}
+
+const TRANSIENT_CODES = new Set(["ECONNECTION", "ETIMEDOUT", "ECONNRESET", "EAI_AGAIN", "ESOCKET", "EPIPE"]);
+const RETRY_DELAYS_MS = [1_000, 3_000];
+
+/** Connection drops and 4xx "try again later" replies are worth a retry; rejections are not. */
+function isTransientError(error: unknown): boolean {
+  const e = error as { code?: string; responseCode?: number };
+  if (e?.code && TRANSIENT_CODES.has(e.code)) return true;
+  return typeof e?.responseCode === "number" && e.responseCode >= 420 && e.responseCode < 460;
 }
 
 // ---------------------------------------------------------------------------
@@ -148,26 +173,34 @@ export async function deliverMail({
     headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
   }
 
-  try {
-    const transport = createTransport();
-    await transport.sendMail({
-      from: getFromAddress(),
-      replyTo: getReplyTo(),
-      to,
-      subject,
-      text,
-      html,
-      headers,
-      attachments: attachments?.map((a) => ({
-        filename: a.filename,
-        content: a.content,
-        contentType: a.contentType,
-      })),
-    });
-    return { sent: true };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Failed to send email.";
-    console.error("[email] Failed to send email to:", to, message);
-    return { sent: false, error: message };
+  const message = {
+    from: getSender().display,
+    replyTo: getReplyTo(),
+    to,
+    subject,
+    text,
+    html,
+    headers,
+    attachments: attachments?.map((a) => ({
+      filename: a.filename,
+      content: a.content,
+      contentType: a.contentType,
+    })),
+  };
+
+  for (let attempt = 0; ; attempt++) {
+    try {
+      await getTransport().sendMail(message);
+      return { sent: true };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to send email.";
+      if (isTransientError(error) && attempt < RETRY_DELAYS_MS.length) {
+        console.warn(`[email] Transient failure sending to ${to} (attempt ${attempt + 1}): ${message}; retrying`);
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAYS_MS[attempt]));
+        continue;
+      }
+      console.error("[email] Failed to send email to:", to, message);
+      return { sent: false, error: message };
+    }
   }
 }

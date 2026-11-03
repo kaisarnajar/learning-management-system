@@ -23,6 +23,7 @@ import {
   sendBookOrderShippedEmail,
   sendBookOrderRefundedEmail
 } from "@/services/email";
+import { buildUnsubscribeUrl } from "@/services/email-unsubscribe";
 
 /**
  * Runs an asynchronous task in the background safely.
@@ -77,12 +78,12 @@ async function processEmailBatch<T>(
   return { successCount, failureCount };
 }
 
-async function getUserEmailData(userId: string): Promise<{ email: string; name: string } | null> {
+async function getUserEmailData(userId: string): Promise<{ email: string; name: string; announcementEmailsOptOut: boolean } | null> {
   const user = await withDbErrorHandling(() => prisma.user.findUnique({
-    where: { id: userId },
-    select: { email: true, name: true }
+    where: { id: userId, deletedAt: null },
+    select: { email: true, name: true, announcementEmailsOptOut: true }
   }), "Database operation failed");
-  return user ? { email: user.email, name: user.name || "" } : null;
+  return user ? { email: user.email, name: user.name || "", announcementEmailsOptOut: user.announcementEmailsOptOut } : null;
 }
 
 function toAbsoluteUrl(href: string): string {
@@ -403,7 +404,7 @@ export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
       100,
       async (userId) => {
         const user = await getUserEmailData(userId);
-        if (user && user.email) {
+        if (user && user.email && !user.announcementEmailsOptOut) {
           await sendCourseAnnouncementEmail({
             to: user.email,
             studentName: user.name,
@@ -411,6 +412,7 @@ export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
             announcementTitle: params.title,
             announcementBody: params.body,
             announcementUrl,
+            unsubscribeUrl: buildUnsubscribeUrl(userId),
           });
         }
       },
@@ -486,13 +488,14 @@ export async function notifyAllStudentsOfSiteAnnouncement(params: {
       100,
       async (userId) => {
         const user = await getUserEmailData(userId);
-        if (user && user.email) {
+        if (user && user.email && !user.announcementEmailsOptOut) {
           await sendSiteAnnouncementEmail({
             to: user.email,
             studentName: user.name,
             announcementTitle: params.title,
             announcementBody: params.body,
             announcementUrl,
+            unsubscribeUrl: buildUnsubscribeUrl(userId),
           });
         }
       },

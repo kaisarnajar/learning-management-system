@@ -196,6 +196,8 @@ model User {
   policiesAcceptedVersion  String?
   /// Soft delete; the account can no longer sign in and is hidden from lists.
   deletedAt                DateTime?
+  /// Set through the signed List-Unsubscribe link; stops announcement emails only.
+  announcementEmailsOptOut Boolean                   @default(false)
   coupons                  Coupon[]
   couponRequests           CouponRequest[]
   couponUsages             CouponUsage[]

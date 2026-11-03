@@ -132,6 +132,12 @@ export const paymentSettingsSchema = z.object({
   feeWaiverEnabled: z.boolean().default(false),
 });
 
+/** Amount the client displayed; the server refuses the submission when it differs. */
+export const expectedAmountPaiseSchema = z.preprocess(
+  (value) => (value === "" || value === null || value === undefined ? undefined : value),
+  z.coerce.number().int().nonnegative().optional(),
+);
+
 export const monthlyPaymentSubmitSchema = z.object({
   courseId: z.string().min(1),
   paymentMonth: z.string().regex(/^(0[1-9]|1[0-2])$/, "Select a valid month."),
@@ -148,6 +154,7 @@ export const monthlyPaymentSubmitSchema = z.object({
     .or(z.literal(""))
     .or(z.null()),
   couponId: z.string().optional().or(z.literal("")).or(z.null()),
+  expectedAmountPaise: expectedAmountPaiseSchema,
 });
 
 export const enrollmentPaymentSubmitSchema = z.object({
@@ -161,6 +168,7 @@ export const enrollmentPaymentSubmitSchema = z.object({
     .or(z.literal(""))
     .or(z.null()),
   couponId: z.string().optional().or(z.literal("")).or(z.null()),
+  expectedAmountPaise: expectedAmountPaiseSchema,
 });
 
 export const occupationEnum = z.enum(OCCUPATION_VALUES);

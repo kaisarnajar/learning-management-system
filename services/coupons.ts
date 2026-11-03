@@ -109,21 +109,15 @@ export async function getSelectedCoupon(
   feeType?: "enrollment" | "course",
   couponId?: string | null
 ): Promise<ApplicableCoupon | null> {
+  // A coupon is applied only when the client explicitly selected it. Never
+  // fall back to "the best available coupon": the student may have paid the
+  // full fee shown on screen, and a silently applied coupon would record a
+  // lower amount and burn the coupon.
+  if (!couponId || couponId === "none") return null;
+
   const applicableCoupons = await getApplicableCoupons(userId, courseId, feeType);
   const selectableCoupons = applicableCoupons.filter((c) => !c.isUsed);
-  if (selectableCoupons.length === 0) return null;
-
-  if (couponId === "none" || couponId === "") {
-    return null;
-  }
-
-  if (couponId) {
-    const found = selectableCoupons.find((c) => c.id === couponId || c.code === couponId);
-    if (found) return found;
-  }
-
-  // Default to highest discount usable coupon if not specified
-  return selectableCoupons[0];
+  return selectableCoupons.find((c) => c.id === couponId || c.code === couponId) ?? null;
 }
 
 export async function recordCouponUsage(userId: string, couponId: string) {

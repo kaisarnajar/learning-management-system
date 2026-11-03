@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
 import { slabSchema } from "@/utils/validations";
+import { validateSlabSet } from "@/services/book-orders";
 
 export async function createShippingSlab(formData: FormData) {
   await requireAdmin();
@@ -21,16 +22,15 @@ export async function createShippingSlab(formData: FormData) {
   const chargeInrPaise = Math.round(parsed.data.chargeInr * 100);
 
   try {
-    // Basic overlap check
+    // The full set (existing + new) must stay contiguous from 0 g with no overlaps,
+    // otherwise some order weights would fall through to the wrong charge.
     const existing = await prisma.shippingChargeSlab.findMany();
-    for (const slab of existing) {
-      if (
-        (parsed.data.minWeightGrams >= slab.minWeightGrams && parsed.data.minWeightGrams <= slab.maxWeightGrams) ||
-        (parsed.data.maxWeightGrams >= slab.minWeightGrams && parsed.data.maxWeightGrams <= slab.maxWeightGrams) ||
-        (parsed.data.minWeightGrams <= slab.minWeightGrams && parsed.data.maxWeightGrams >= slab.maxWeightGrams)
-      ) {
-        return { error: "Slab weight range overlaps with an existing slab." };
-      }
+    const problems = validateSlabSet([
+      ...existing,
+      { minWeightGrams: parsed.data.minWeightGrams, maxWeightGrams: parsed.data.maxWeightGrams, chargeInrPaise },
+    ]);
+    if (problems.length > 0) {
+      return { error: problems[0] };
     }
 
     await prisma.shippingChargeSlab.create({
@@ -53,6 +53,12 @@ export async function deleteShippingSlab(id: string) {
   await requireAdmin();
 
   try {
+    const existing = await prisma.shippingChargeSlab.findMany();
+    const remaining = existing.filter((slab) => slab.id !== id);
+    const problems = validateSlabSet(remaining);
+    if (remaining.length > 0 && problems.length > 0) {
+      return { error: `Removing this slab would leave an invalid set: ${problems[0]} Delete slabs from the top down, or add a replacement first.` };
+    }
     await prisma.shippingChargeSlab.delete({
       where: { id },
     });

@@ -9,7 +9,7 @@ import {
   normalizeTeacherEmail,
 } from "@/services/teacher-admin";
 import { prisma } from "@/utils/prisma";
-import { uniqueSlug } from "@/utils/slug";
+import { createWithUniqueSlug } from "@/utils/slug";
 import { teacherAdminSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
 
@@ -47,11 +47,10 @@ export async function createTeacher(formData: FormData) {
       ? parsed.data.initials.toUpperCase()
       : deriveTeacherInitials(account.name);
 
-  const id = await uniqueSlug(account.name, async (slug) => {
-    return Boolean(await withDbErrorHandling(() => prisma.teacher.findUnique({ where: { id: slug } }), "Database operation failed"));
-  });
-
-  await withDbErrorHandling(() => prisma.teacher.create({
+  await createWithUniqueSlug(
+    account.name,
+    async (slug) => Boolean(await withDbErrorHandling(() => prisma.teacher.findUnique({ where: { id: slug } }), "Database operation failed")),
+    (id) => withDbErrorHandling(() => prisma.teacher.create({
       data: {
         id,
         name: account.name,
@@ -62,13 +61,15 @@ export async function createTeacher(formData: FormData) {
         imageUrl: account.image || null,
         published: parsed.data.published,
       },
-    }), "Database operation failed");
+    }), "Database operation failed"),
+  ).then((teacher) => teacher.id).then((id) => {
+    revalidatePath(`/admin/teachers/${id}`);
+    revalidatePath(`/teachers/${id}`);
+  });
 
   revalidatePath("/teachers");
   revalidatePath("/");
   revalidatePath("/admin/teachers");
-  revalidatePath(`/admin/teachers/${id}`);
-  revalidatePath(`/teachers/${id}`);
   redirect(teacherFormPath("", "?created=1"));
 }
 

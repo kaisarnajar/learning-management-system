@@ -10,12 +10,12 @@ import { syncEnrollmentsWithCourseStatus } from "@/services/completion";
 import { resolveCourseFeaturedUpdate } from "@/services/courses";
 import { prisma } from "@/utils/prisma";
 import { getDefaultFeesForLevel } from "@/services/course-pricing";
-import { uniqueSlug } from "@/utils/slug";
+import { createWithUniqueSlug } from "@/utils/slug";
 import { getCourseStartDateFromForm } from "@/services/course-start-date";
 import { courseSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
 
-import { executeServerAction } from "@/utils/action-utils";
+import { ActionError, executeServerAction } from "@/utils/action-utils";
 
 function parseCourseForm(formData: FormData) {
   const level = String(formData.get("level") ?? "Beginner");
@@ -66,7 +66,7 @@ export async function createCourse(formData: FormData) {
     const parsed = parseCourseForm(formData);
 
     if (!parsed.success) {
-      throw new Error("Invalid course data");
+      throw new ActionError(parsed.error.issues[0]?.message ?? "Please check the course details.");
     }
 
     const { title, featuredOnHomepage, ...courseData } = parsed.data;
@@ -79,17 +79,14 @@ export async function createCourse(formData: FormData) {
     });
 
     if ("error" in featured) {
-      throw new Error(featured.error);
+      throw new ActionError(featured.error);
     }
 
-    const id = await uniqueSlug(title, async (slug) => {
-      const existing = await prisma.course.findUnique({ where: { id: slug } });
-      return Boolean(existing);
-    });
-
-    await prisma.course.create({
-      data: { id, title, ...courseData, ...featured },
-    });
+    await createWithUniqueSlug(
+      title,
+      async (slug) => Boolean(await withDbErrorHandling(() => prisma.course.findUnique({ where: { id: slug } }), "Database operation failed")),
+      (id) => withDbErrorHandling(() => prisma.course.create({ data: { id, title, ...courseData, ...featured } }), "Database operation failed"),
+    );
 
     revalidatePath("/");
     revalidatePath("/courses");
@@ -104,12 +101,12 @@ export async function updateCourse(id: string, formData: FormData) {
     const parsed = parseCourseForm(formData);
 
     if (!parsed.success) {
-      throw new Error("Invalid course data");
+      throw new ActionError(parsed.error.issues[0]?.message ?? "Please check the course details.");
     }
 
     const existing = await prisma.course.findUnique({ where: { id } });
     if (!existing) {
-      throw new Error("Course not found");
+      throw new ActionError("Course not found.");
     }
 
     const { title, featuredOnHomepage, ...courseData } = parsed.data;
@@ -122,7 +119,7 @@ export async function updateCourse(id: string, formData: FormData) {
     });
 
     if ("error" in featured) {
-      throw new Error(featured.error);
+      throw new ActionError(featured.error);
     }
 
     const statusChanged = existing.status !== courseData.status;
@@ -135,7 +132,7 @@ export async function updateCourse(id: string, formData: FormData) {
         where: { courseId: id, certificateGeneratedAt: { not: null } },
       });
       if (certificates > 0 && formData.get("confirmReopen") !== "on") {
-        throw new Error(
+        throw new ActionError(
           `${certificates} certificate${certificates === 1 ? " has" : "s have"} been issued for this completed course. Tick "Reopen this course anyway" to change its status.`,
         );
       }
@@ -173,7 +170,7 @@ export async function deleteCourse(id: string) {
       }), "Database operation failed");
 
     if (!course) {
-      throw new Error("Course not found.");
+      throw new ActionError("Course not found.");
     }
 
     const [activeStudentCount, pendingSubmissionCount, attendanceCount, gradeCount, couponCount] =
@@ -194,13 +191,13 @@ export async function deleteCourse(id: string) {
       );
 
     if (activeStudentCount > 0) {
-      throw new Error(`This course can't be deleted because ${activeStudentCount} student${activeStudentCount === 1 ? "" : "s"} ${activeStudentCount === 1 ? "is" : "are"} enrolled.`);
+      throw new ActionError(`This course can't be deleted because ${activeStudentCount} student${activeStudentCount === 1 ? "" : "s"} ${activeStudentCount === 1 ? "is" : "are"} enrolled.`);
     }
     if (pendingSubmissionCount > 0) {
-      throw new Error(`This course can't be deleted because ${pendingSubmissionCount} payment submission${pendingSubmissionCount === 1 ? " is" : "s are"} still awaiting verification.`);
+      throw new ActionError(`This course can't be deleted because ${pendingSubmissionCount} payment submission${pendingSubmissionCount === 1 ? " is" : "s are"} still awaiting verification.`);
     }
     if (attendanceCount > 0 || gradeCount > 0 || couponCount > 0) {
-      throw new Error("This course can't be deleted because it still has attendance, grade or coupon records. Set it to Completed or On Hold instead.");
+      throw new ActionError("This course can't be deleted because it still has attendance, grade or coupon records. Set it to Completed or On Hold instead.");
     }
 
     // The announcements cascade with the course, so their attachment paths are
@@ -230,6 +227,6 @@ export async function deleteCourse(id: string) {
     revalidatePath("/courses");
     revalidatePath("/admin/courses");
     redirect("/admin/courses?deleted=1");
-  }, "/admin/courses", "deleting course", "deleteError");
+  }, "/admin/courses", "deleting course");
 }
 

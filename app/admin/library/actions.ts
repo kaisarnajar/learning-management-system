@@ -6,9 +6,11 @@ import { requireAdmin } from "@/services/auth-actions";
 import { resolveLibraryFeaturedUpdate } from "@/services/library";
 import { deleteLibraryImage, saveLibraryImage, validateLibraryImage } from "@/services/library-upload";
 import { prisma } from "@/utils/prisma";
-import { uniqueSlug } from "@/utils/slug";
+import { createWithUniqueSlug } from "@/utils/slug";
 import { libraryItemSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { ActionError, executeServerAction } from "@/utils/action-utils";
+import { withFlash } from "@/utils/flash";
 
 function parseLibraryForm(formData: FormData) {
   const pdfUrl = formData.get("pdfUrl");
@@ -24,16 +26,15 @@ function parseLibraryForm(formData: FormData) {
 }
 
 export async function createLibraryItem(formData: FormData) {
+  return executeServerAction(async () => {
   await requireAdmin();
   const parsed = parseLibraryForm(formData);
-  if (!parsed.success) throw new Error("Invalid library item data");
+  if (!parsed.success) throw new ActionError(parsed.error.issues[0]?.message ?? "Please check the item details.");
 
   const imageFile = formData.get("image") as File | null;
   if (imageFile && imageFile.size > 0) {
     const { error } = validateLibraryImage(imageFile);
-    if (error) {
-      redirect(`/admin/library/new?saveError=${encodeURIComponent(error)}`);
-    }
+    if (error) throw new ActionError(error);
   }
 
   const featuredOnHomepage = formData.get("featuredOnHomepage") === "on";
@@ -46,46 +47,50 @@ export async function createLibraryItem(formData: FormData) {
     requestFeatured: featuredOnHomepage,
   });
 
-  if ("error" in featured) {
-    redirect(`/admin/library/new?saveError=${encodeURIComponent(featured.error)}`);
-  }
+  if ("error" in featured) throw new ActionError(featured.error);
 
   const data = {
     ...parsed.data,
     ...featured,
   };
 
-  const id = await uniqueSlug(parsed.data.title, async (slug) => {
-    return Boolean(await withDbErrorHandling(() => prisma.libraryItem.findUnique({ where: { id: slug } }), "Database operation failed"));
-  });
-
-  let imagePath: string | undefined;
-  if (imageFile && imageFile.size > 0) {
-    imagePath = await saveLibraryImage(id, imageFile);
-  }
-
-  await withDbErrorHandling(() => prisma.libraryItem.create({ data: { id, ...data, ...(imagePath ? { imagePath } : {}) } }), "Database operation failed");
+  await createWithUniqueSlug(
+    parsed.data.title,
+    async (slug) => Boolean(await withDbErrorHandling(() => prisma.libraryItem.findUnique({ where: { id: slug } }), "Database operation failed")),
+    async (id) => {
+      let imagePath: string | undefined;
+      if (imageFile && imageFile.size > 0) {
+        imagePath = await saveLibraryImage(id, imageFile);
+      }
+      try {
+        return await withDbErrorHandling(() => prisma.libraryItem.create({ data: { id, ...data, ...(imagePath ? { imagePath } : {}) } }), "Database operation failed");
+      } catch (error) {
+        if (imagePath) await deleteLibraryImage(imagePath).catch(() => undefined);
+        throw error;
+      }
+    },
+  );
 
   revalidatePath("/");
   revalidatePath("/library");
   revalidatePath("/admin/library");
   redirect("/admin/library?created=1");
+  }, "/admin/library/new", "creating library item");
 }
 
 export async function updateLibraryItem(id: string, formData: FormData) {
+  return executeServerAction(async () => {
   await requireAdmin();
   const parsed = parseLibraryForm(formData);
-  if (!parsed.success) throw new Error("Invalid library item data");
+  if (!parsed.success) throw new ActionError(parsed.error.issues[0]?.message ?? "Please check the item details.");
 
   const existing = await withDbErrorHandling(() => prisma.libraryItem.findUnique({ where: { id } }), "Database operation failed");
-  if (!existing) throw new Error("Library item not found");
+  if (!existing) throw new ActionError("Library item not found.");
 
   const imageFile = formData.get("image") as File | null;
   if (imageFile && imageFile.size > 0) {
     const { error } = validateLibraryImage(imageFile);
-    if (error) {
-      redirect(`/admin/library/${id}/edit?saveError=${encodeURIComponent(error)}`);
-    }
+    if (error) throw new ActionError(error);
   }
 
   const featuredOnHomepage = formData.get("featuredOnHomepage") === "on";
@@ -98,9 +103,7 @@ export async function updateLibraryItem(id: string, formData: FormData) {
     requestFeatured: featuredOnHomepage,
   });
 
-  if ("error" in featured) {
-    redirect(`/admin/library/${id}/edit?saveError=${encodeURIComponent(featured.error)}`);
-  }
+  if ("error" in featured) throw new ActionError(featured.error);
 
   const removeImage = formData.get("removeImage") === "true";
   let imagePath: string | undefined | null;
@@ -128,6 +131,7 @@ export async function updateLibraryItem(id: string, formData: FormData) {
   revalidatePath("/admin/library");
   revalidatePath(`/admin/library/${id}`);
   redirect("/admin/library?saved=1");
+  }, `/admin/library/${id}/edit`, "updating library item");
 }
 
 export async function deleteLibraryItemById(id: string): Promise<{ error?: string }> {
@@ -157,7 +161,7 @@ export async function deleteLibraryItemAction(id: string, returnTo: "list" | "pr
   if (result.error) {
     const errorUrl = returnTo === "profile" 
       ? `/admin/library/${id}?error=${encodeURIComponent(result.error)}`
-      : `/admin/library/${id}/edit?saveError=${encodeURIComponent(result.error)}`;
+      : withFlash(`/admin/library/${id}/edit`, { message: result.error });
     redirect(errorUrl);
   }
   redirect("/admin/library?deleted=1");

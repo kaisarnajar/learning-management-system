@@ -13,6 +13,7 @@ import {
 import { getBlogPostForTeacher } from "@/services/blogs";
 import { deleteBlogImageFile } from "@/services/blog-upload";
 import { prisma } from "@/utils/prisma";
+import { executeServerAction } from "@/utils/action-utils";
 
 function teacherListPath(suffix = "") {
   return `/teacher/blogs${suffix}`;
@@ -26,6 +27,7 @@ function revalidateBlogPaths() {
 }
 
 export async function createTeacherBlogPost(formData: FormData) {
+  return executeServerAction(async () => {
   const { session } = await requireTeacher();
   const parsed = parseTeacherBlogForm(formData);
 
@@ -54,9 +56,11 @@ export async function createTeacherBlogPost(formData: FormData) {
 
   revalidateBlogPaths();
   redirect(teacherListPath("?submitted=1"));
+  }, teacherListPath("/new"), "creating teacher blog post");
 }
 
 export async function updateTeacherBlogPost(id: string, formData: FormData) {
+  return executeServerAction(async () => {
   const { session } = await requireTeacher();
 
   const parsed = parseTeacherBlogForm(formData);
@@ -101,9 +105,11 @@ export async function updateTeacherBlogPost(id: string, formData: FormData) {
 
   revalidateBlogPaths();
   redirect(teacherListPath("?resubmitted=1"));
+  }, teacherListPath(`/${id}/edit`), "updating teacher blog post");
 }
 
 export async function deleteTeacherBlogPost(id: string) {
+  return executeServerAction(async () => {
   const { session } = await requireTeacher();
 
   const existing = await getBlogPostForTeacher(id, session.user.id);
@@ -123,4 +129,5 @@ export async function deleteTeacherBlogPost(id: string) {
 
   revalidateBlogPaths();
   redirect(teacherListPath("?deleted=1"));
+  }, teacherListPath(), "deleting teacher blog post");
 }

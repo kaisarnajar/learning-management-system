@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
-import { getStudentAttendanceRecordsFromDb } from "@/services/attendance";
 import { prisma } from "@/utils/prisma";
 
 export async function GET(request: NextRequest) {
@@ -17,16 +16,21 @@ export async function GET(request: NextRequest) {
         userId: user.id,
         courseId: courseId ? courseId : undefined,
       },
+      // One query: the records come with their enrollment instead of one
+      // round trip per course.
       select: {
         id: true,
         courseId: true,
         rollNumber: true,
+        attendanceRecords: {
+          select: { id: true, isPresent: true, attendance: { select: { date: true } } },
+          orderBy: { attendance: { date: "desc" } },
+        },
       },
     });
 
-    const results = await Promise.all(
-      enrollments.map(async (e) => {
-        const records = await getStudentAttendanceRecordsFromDb(e.id);
+    const results = enrollments.map((e) => {
+        const records = e.attendanceRecords;
         const total = records.length;
         const presentCount = records.filter((r) => r.isPresent).length;
 
@@ -44,8 +48,7 @@ export async function GET(request: NextRequest) {
             isPresent: r.isPresent,
           })),
         };
-      })
-    );
+    });
 
     return NextResponse.json({
       success: true,

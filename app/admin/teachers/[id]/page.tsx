@@ -26,10 +26,8 @@ export default async function AdminTeacherDetailPage({
 
   if (!teacher) notFound();
 
-  const [courses, enrollmentCounts] = await Promise.all([
-    getCoursesForTeacher(id),
-    getEnrollmentCountsByCourse(),
-  ]);
+  const courses = await getCoursesForTeacher(id);
+  const enrollmentCounts = await getEnrollmentCountsByCourse(courses.map((course) => course.id));
 
   const deleteAction = deleteTeacherFromProfile.bind(null, id);
 

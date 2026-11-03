@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { Heart, MessageCircle, Share2, MoreVertical, Edit2, Trash2, User as UserIcon } from "lucide-react";
 import Image from "next/image";
-import { toggleLike, addComment, deleteComment, editComment } from "./actions";
+import { toggleLike, addComment, deleteComment, editComment, loadMoreComments } from "./actions";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { useToast } from "@/components/shared/ToastProvider";
 
@@ -25,6 +25,8 @@ type BlogEngagementProps = {
   initialLikeCount: number;
   initialHasLiked: boolean;
   initialComments: Comment[];
+  /** Total comment count on the post; more than initialComments.length means more pages. */
+  totalComments: number;
   currentUserId?: string;
   isAdmin: boolean;
 };
@@ -34,6 +36,7 @@ export function BlogEngagement({
   initialLikeCount,
   initialHasLiked,
   initialComments,
+  totalComments,
   currentUserId,
   isAdmin,
 }: BlogEngagementProps) {
@@ -43,6 +46,26 @@ export function BlogEngagement({
   const [isPendingLike, startTransitionLike] = useTransition();
 
   const [comments, setComments] = useState<Comment[]>(initialComments);
+  const [commentTotal, setCommentTotal] = useState(totalComments);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  async function handleLoadMore() {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const res = await loadMoreComments(blogPostId, comments.length);
+      if (res.error || !res.comments) {
+        addToast(res.error ?? "Failed to load comments", "error");
+        return;
+      }
+      const known = new Set(comments.map((c) => c.id));
+      const fresh = res.comments.filter((c) => !known.has(c.id));
+      setComments((prev) => [...prev, ...fresh]);
+      if (fresh.length === 0) setCommentTotal(comments.length);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
   const [newComment, setNewComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [commentError, setCommentError] = useState("");
@@ -111,6 +134,7 @@ export function BlogEngagement({
       setCommentError(res.error);
     } else if (res?.comment) {
       setComments([res.comment as unknown as Comment, ...comments]);
+      setCommentTotal((total) => total + 1);
       setNewComment("");
     }
   };
@@ -119,6 +143,7 @@ export function BlogEngagement({
     setOpenMenuId(null);
     const originalComments = [...comments];
     setComments(comments.filter((c) => c.id !== commentId));
+    setCommentTotal((total) => Math.max(0, total - 1));
 
     const res = await deleteComment(commentId);
     if (res?.error) {
@@ -172,7 +197,7 @@ export function BlogEngagement({
 
         <div className="flex items-center space-x-2 text-sm font-medium text-muted">
           <MessageCircle className="h-5 w-5" />
-          <span>{comments.length} {comments.length === 1 ? "Comment" : "Comments"}</span>
+          <span>{commentTotal} {commentTotal === 1 ? "Comment" : "Comments"}</span>
         </div>
 
         <button
@@ -329,6 +354,18 @@ export function BlogEngagement({
           ))}
           {comments.length === 0 && (
             <p className="text-sm text-muted text-center py-4">No comments yet. Be the first to share your thoughts!</p>
+          )}
+          {comments.length < commentTotal && (
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent-muted/40 disabled:opacity-60"
+              >
+                {isLoadingMore ? "Loading…" : `Load more comments (${commentTotal - comments.length} more)`}
+              </button>
+            </div>
           )}
         </div>
       </div>

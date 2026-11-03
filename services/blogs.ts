@@ -8,6 +8,7 @@ import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { paginateQuery } from "@/utils/prisma-utils";
 import { cachedPublic } from "@/services/public-cache";
+import { cache } from "react";
 
 function adminBlogPostsWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -103,7 +104,19 @@ export async function getPublishedBlogPostsPaginated(
   }, page, pageSize);
 }
 
-export async function getPublishedBlogPostById(id: string) {
+export const BLOG_COMMENTS_PAGE_SIZE = 20;
+
+const blogCommentInclude = {
+  user: { select: { id: true, name: true, image: true } },
+} as const;
+
+/**
+ * A published post for the public detail page: like/comment counts via
+ * _count, only the viewer's own like row (to know whether they liked it)
+ * and the first page of comments. Memoised per request so generateMetadata
+ * and the page share one query.
+ */
+export const getPublishedBlogPostById = cache(async (id: string, viewerUserId?: string) => {
   return withDbErrorHandling(() => prisma.blogPost.findFirst({
       where: { id, ...BLOG_PUBLIC_WHERE },
       include: {
@@ -111,14 +124,25 @@ export async function getPublishedBlogPostById(id: string) {
         // Never select e-mail addresses here: this payload is rendered on a
         // public page and serialised to the client.
         createdBy: { select: { name: true, image: true } },
-        likes: true,
+        _count: { select: { likes: true, comments: true } },
+        likes: viewerUserId ? { where: { userId: viewerUserId }, select: { userId: true } } : false,
         comments: {
           orderBy: { createdAt: "desc" },
-          include: {
-            user: { select: { id: true, name: true, image: true } },
-          },
+          take: BLOG_COMMENTS_PAGE_SIZE,
+          include: blogCommentInclude,
         },
       },
+    }), "Database operation failed");
+});
+
+/** The next page of comments for a public post (newest first), offset by `skip`. */
+export async function getBlogCommentsPage(blogPostId: string, skip: number) {
+  return withDbErrorHandling(() => prisma.blogComment.findMany({
+      where: { blogPostId, blogPost: BLOG_PUBLIC_WHERE },
+      orderBy: { createdAt: "desc" },
+      skip: Math.max(0, skip),
+      take: BLOG_COMMENTS_PAGE_SIZE,
+      include: blogCommentInclude,
     }), "Database operation failed");
 }
 

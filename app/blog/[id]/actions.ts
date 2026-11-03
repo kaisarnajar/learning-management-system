@@ -6,6 +6,18 @@ import { prisma } from "@/utils/prisma";
 import { isAdminSession } from "@/services/admin";
 import { rateLimit, RATE_LIMIT_MESSAGE, RATE_LIMITS } from "@/services/rate-limit";
 import { BLOG_PUBLIC_WHERE } from "@/services/blog-approval";
+import { getBlogCommentsPage } from "@/services/blogs";
+
+/** Next page of comments for the "Load more" button; no sign-in needed. */
+export async function loadMoreComments(blogPostId: string, skip: number) {
+  try {
+    const comments = await getBlogCommentsPage(blogPostId, Number.isFinite(skip) ? Math.floor(skip) : 0);
+    return { success: true, comments };
+  } catch (err: unknown) {
+    console.error("Failed to load comments:", err);
+    return { error: "Failed to load comments" };
+  }
+}
 import { blogCommentSchema } from "@/utils/validations";
 
 /** Only published, approved posts take likes and comments. */

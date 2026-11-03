@@ -197,21 +197,26 @@ export async function getCourseRosterEnrollmentsPaginated(
   }, page, pageSize);
 }
 
-export async function getEnrollmentCountsByCourse(): Promise<Map<string, number>> {
+/** Roster size per course; pass `courseIds` to limit the work to the courses on the page. */
+export async function getEnrollmentCountsByCourse(courseIds?: string[]): Promise<Map<string, number>> {
   noStore();
+  if (courseIds && courseIds.length === 0) return new Map();
+  const courseWhere = courseIds ? { id: { in: courseIds } } : {};
+  const enrollmentScope = courseIds ? { courseId: { in: courseIds } } : {};
   const courses = await withDbErrorHandling(() => prisma.course.findMany({
+      where: courseWhere,
       select: { id: true, status: true },
     }), "Database operation failed");
 
   const [activeCounts, completedCounts] = await Promise.all([
     withDbErrorHandling(() => prisma.enrollment.groupBy({
             by: ["courseId"],
-            where: { status: ENROLLMENT_STATUS.ACTIVE },
+            where: { ...enrollmentScope, status: ENROLLMENT_STATUS.ACTIVE },
             _count: { _all: true },
           }), "Database operation failed"),
     withDbErrorHandling(() => prisma.enrollment.groupBy({
             by: ["courseId"],
-            where: { status: ENROLLMENT_STATUS.COMPLETED },
+            where: { ...enrollmentScope, status: ENROLLMENT_STATUS.COMPLETED },
             _count: { _all: true },
           }), "Database operation failed"),
   ]);

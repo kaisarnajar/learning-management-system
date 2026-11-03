@@ -1,6 +1,7 @@
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { BRAND_CONFIG } from "@/config/brand";
+import { cache } from "react";
 
 export type BankDetails = {
   accountName: string;
@@ -71,7 +72,8 @@ function rowToSettings(row: {
   };
 }
 
-export async function getPaymentSettings(): Promise<PaymentSettingsData> {
+/** Memoised per request: several components on one page read the settings. */
+export const getPaymentSettings = cache(async (): Promise<PaymentSettingsData> => {
   const row = await withDbErrorHandling(
     () =>
       prisma.paymentSettings.findUnique({
@@ -85,7 +87,7 @@ export async function getPaymentSettings(): Promise<PaymentSettingsData> {
   }
 
   return rowToSettings(row);
-}
+});
 
 export function toBankDetails(settings: PaymentSettingsData): BankDetails {
   return {

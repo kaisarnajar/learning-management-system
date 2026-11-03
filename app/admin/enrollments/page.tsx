@@ -23,6 +23,7 @@ function tabHref(type: TabType) {
 }
 
 import { Suspense } from "react";
+import { requireAdmin } from "@/services/auth-actions";
 
 type PageParams = {
 
@@ -188,6 +189,7 @@ export default async function AdminEnrollmentsPage({
 }: {
   searchParams: Promise<PageParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
 

@@ -33,6 +33,7 @@ function statusBadge(published: boolean, showOnHomepage: boolean) {
 }
 
 import { adminActionButtonClassName } from "@/utils/form";
+import { requireAdmin } from "@/services/auth-actions";
 
 async function AdminAnnouncementsList({ params, q }: { params: PageParams; q?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params);
@@ -155,6 +156,7 @@ export default async function AdminAnnouncementsPage({
 }: {
   searchParams: Promise<PageParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
 

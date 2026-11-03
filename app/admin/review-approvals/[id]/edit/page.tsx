@@ -7,6 +7,7 @@ import {
   getFeaturedHomepageReviewCount,
   getStudentReviewForAdmin,
 } from "@/services/student-reviews";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function AdminReviewEditPage({
   params,
@@ -15,6 +16,7 @@ export default async function AdminReviewEditPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const [review, featuredCount] = await Promise.all([

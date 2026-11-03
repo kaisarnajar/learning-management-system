@@ -14,6 +14,7 @@ import { getCourseRosterEnrollmentsPaginated } from "@/services/enrollments";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { formatRollNumber } from "@/services/roll-numbers";
 import { parseSearchQuery } from "@/utils/text-search";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function CourseStudentsPage({
   params,
@@ -22,6 +23,7 @@ export default async function CourseStudentsPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ page?: string; q?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const queryParams = await searchParams;
   const q = parseSearchQuery(queryParams.q);

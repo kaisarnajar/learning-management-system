@@ -6,6 +6,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { getBookById } from "@/services/bookstore";
 import { deleteBookFromProfile } from "@/app/admin/bookstore/actions";
+import { requireAdmin } from "@/services/auth-actions";
 
 function formatPrice(paise: number): string {
   return `₹${(paise / 100).toFixed(2)}`;
@@ -18,6 +19,7 @@ export default async function AdminBookDetailPage({
   params: Promise<{ bookId: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdmin();
   const { bookId } = await params;
   const query = await searchParams;
   const book = await getBookById(bookId);

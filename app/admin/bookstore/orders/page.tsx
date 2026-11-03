@@ -11,6 +11,7 @@ import {
 import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export default async function AdminBookOrdersPage({
     q?: string;
   }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
   const status =

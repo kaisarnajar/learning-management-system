@@ -8,6 +8,7 @@ import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { AdminCoursesTable } from "@/components/admin/AdminCoursesTable";
 import { Suspense } from "react";
+import { requireAdmin } from "@/services/auth-actions";
 
 type PageParams = {
 
@@ -74,6 +75,7 @@ export default async function AdminCoursesPage({
 }: {
   searchParams: Promise<PageParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
 

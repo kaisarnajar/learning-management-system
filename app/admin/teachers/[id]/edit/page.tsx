@@ -6,6 +6,7 @@ import { deleteTeacher, updateTeacher } from "@/app/admin/teachers/actions";
 import { getTeacherById } from "@/services/teachers";
 import { getCoursesForTeacher } from "@/services/teacher-portal";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 export default async function EditTeacherPage({
@@ -15,6 +16,7 @@ export default async function EditTeacherPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string; created?: string; error?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const teacher = await getTeacherById(id);

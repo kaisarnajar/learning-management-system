@@ -2,12 +2,14 @@ import Link from "next/link";
 import { LibraryForm } from "@/components/admin/LibraryForm";
 import { createLibraryItem } from "@/app/admin/library/actions";
 import { getFeaturedHomepageLibraryCount } from "@/services/library";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function NewLibraryPage({
   searchParams,
 }: {
   searchParams: Promise<{ saveError?: string }>;
 }) {
+  await requireAdmin();
   const [featuredCount, params] = await Promise.all([
     getFeaturedHomepageLibraryCount(),
     searchParams,

@@ -5,6 +5,7 @@ import { LibraryForm } from "@/components/admin/LibraryForm";
 import { deleteLibraryItemAction, updateLibraryItem } from "@/app/admin/library/actions";
 import { getFeaturedHomepageLibraryCount, getLibraryItemById } from "@/services/library";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 export default async function EditLibraryPage({
@@ -14,6 +15,7 @@ export default async function EditLibraryPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string; created?: string; saveError?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const [item, featuredCount] = await Promise.all([

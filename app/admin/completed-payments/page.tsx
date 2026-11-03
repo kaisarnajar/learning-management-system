@@ -19,6 +19,7 @@ import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pa
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import type { FinanceSearchParams } from "@/services/finance-filters";
+import { requireAdmin } from "@/services/auth-actions";
 
 export const metadata: Metadata = {
   title: "Completed Payments — Admin",
@@ -96,6 +97,7 @@ export default async function AdminCompletedPaymentsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
 

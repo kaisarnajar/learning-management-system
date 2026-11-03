@@ -6,12 +6,14 @@ import { ReviewDetailActions } from "@/components/admin/ReviewDetailActions";
 
 import { StarRating } from "@/components/reviews/StarRating";
 import { reviewStatusClass, reviewStatusLabel, getStudentReviewForAdmin } from "@/services/student-reviews";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function AdminReviewDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const review = await getStudentReviewForAdmin(id);
 

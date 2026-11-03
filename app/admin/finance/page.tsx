@@ -22,6 +22,7 @@ import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { getStudentUsers } from "@/services/students";
 import { getAllTeachers } from "@/services/teachers";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 export default async function AdminFinancePage({
@@ -29,6 +30,7 @@ export default async function AdminFinancePage({
 }: {
   searchParams: Promise<FinanceSearchParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const filters = parseFinanceFilters(params);
   const { page: requestedPage, pageSize } = parsePaginationParams(params);

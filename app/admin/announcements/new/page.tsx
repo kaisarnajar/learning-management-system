@@ -6,12 +6,14 @@ import {
   getFeaturedHomepageAnnouncementCount,
   HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX,
 } from "@/services/site-announcements";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function NewSiteAnnouncementPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdmin();
   const { error } = await searchParams;
   const featuredCount = await getFeaturedHomepageAnnouncementCount();
 

@@ -10,6 +10,7 @@ import { getEnrollmentCountsByCourse } from "@/services/enrollments";
 import { getTeacherById } from "@/services/teachers";
 import { getCoursesForTeacher } from "@/services/teacher-portal";
 import { getInitialsFromName } from "@/services/student-reviews";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function AdminTeacherDetailPage({
   params,
@@ -18,6 +19,7 @@ export default async function AdminTeacherDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const teacher = await getTeacherById(id);

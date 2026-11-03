@@ -11,6 +11,7 @@ import {
 } from "@/services/student-reviews";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 type TabType = "pending" | "approved";
@@ -36,6 +37,7 @@ export default async function AdminReviewApprovalsPage({
     q?: string;
   }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
   

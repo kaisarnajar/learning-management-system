@@ -5,6 +5,7 @@ import { RecordExpenseForm } from "@/components/admin/RecordExpenseForm";
 import { getAllCourses } from "@/services/courses";
 import { getAllTeachers } from "@/services/teachers";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 type TabType = "payments" | "expenses";
 
@@ -20,6 +21,7 @@ export default async function AdminTransactionsPage({
 }: {
   searchParams: Promise<{ tab?: string; saved?: string; error?: string }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const tab: TabType = params.tab === "expenses" ? "expenses" : "payments";
 

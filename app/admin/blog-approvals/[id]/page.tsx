@@ -7,12 +7,14 @@ import { BlogApprovalActions } from "@/components/admin/BlogApprovalActions";
 import { stripHtml } from "@/utils/html";
 import { sanitizeRichText } from "@/services/rich-text";
 import Image from "next/image";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function AdminBlogApprovalDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const post = await getBlogPostForAdmin(id);
 

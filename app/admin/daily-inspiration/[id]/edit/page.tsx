@@ -4,6 +4,7 @@ import { updateDailyInspiration } from "@/app/admin/daily-inspiration/actions";
 import { DailyInspirationForm } from "@/components/admin/DailyInspirationForm";
 import { getDailyInspirationForAdmin } from "@/services/daily-inspiration";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 export default async function EditDailyInspirationPage({
@@ -13,6 +14,7 @@ export default async function EditDailyInspirationPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const item = await getDailyInspirationForAdmin(id);

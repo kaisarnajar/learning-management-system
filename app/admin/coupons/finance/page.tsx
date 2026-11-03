@@ -14,6 +14,7 @@ import {
 import { getFeeWaiverFinanceData } from "@/services/waiver-finance";
 import { getStudentUsers } from "@/services/students";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { requireAdmin } from "@/services/auth-actions";
 
 export const metadata = {
   title: "Fee Waiver Finance | Admin",
@@ -25,6 +26,7 @@ export default async function FeeWaiverFinancePage({
 }: {
   searchParams: Promise<FinanceSearchParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const filters = parseFinanceFilters(params);
   const { page: requestedPage, pageSize } = parsePaginationParams(params);

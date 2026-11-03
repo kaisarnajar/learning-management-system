@@ -27,6 +27,7 @@ type PageParams = {
 };
 
 import { adminActionButtonClassName } from "@/utils/form";
+import { requireAdmin } from "@/services/auth-actions";
 
 async function AdminDailyInspirationList({ params, q }: { params: PageParams; q?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params);
@@ -151,6 +152,7 @@ export default async function AdminDailyInspirationPage({
 }: {
   searchParams: Promise<PageParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
 

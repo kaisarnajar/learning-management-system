@@ -2,12 +2,14 @@ import Link from "next/link";
 import { createBlogPost } from "@/app/admin/blogs/actions";
 import { BlogPostForm } from "@/components/admin/BlogPostForm";
 import { getFeaturedHomepageBlogCount, HOMEPAGE_FEATURED_BLOGS_MAX } from "@/services/blogs";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function NewBlogPostPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdmin();
   const [query, featuredCount] = await Promise.all([searchParams, getFeaturedHomepageBlogCount()]);
 
   return (

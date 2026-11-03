@@ -17,12 +17,14 @@ import {
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { formatBusinessDate } from "@/services/business-time";
 import Link from "next/link";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function AdminBookstoreFinancePage({
   searchParams,
 }: {
   searchParams: Promise<FinanceSearchParams & { view?: string }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const filters = parseFinanceFilters(params);
   const { page: requestedPage, pageSize } = parsePaginationParams(params);

@@ -90,6 +90,7 @@ export function CreateCouponDialog({ courses }: { courses: CourseOption[] }) {
               type="number"
               min="1"
               max="100"
+              step="1"
               name="percentage"
               className={inputClassName}
               placeholder="50"

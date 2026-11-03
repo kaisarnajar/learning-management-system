@@ -86,7 +86,7 @@ export default async function AdminFinancePage({
       <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Expense deleted." variant="info" />
       {params.error && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
-          {decodeURIComponent(params.error)}
+          {params.error}
         </p>
       )}
 

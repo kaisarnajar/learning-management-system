@@ -49,7 +49,7 @@ export default async function AdminBookDetailPage({
 
       {query.error && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
-          {decodeURIComponent(query.error)}
+          {query.error}
         </p>
       )}
 

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { requireTeacher } from "@/services/auth-actions";
 import { sendFatwaSubmissionAdminEmail } from "@/services/email";
 import { prisma } from "@/utils/prisma";
@@ -53,11 +54,12 @@ export async function submitTeacherFatwaAnswer(id: string, formData: FormData) {
 
   if (isNewSubmission) {
     const adminReviewUrl = `${process.env.NEXT_PUBLIC_APP_URL || BRAND_CONFIG.websiteUrl}/admin/fatwa/${id}`;
-    await sendFatwaSubmissionAdminEmail({
+    // Notify admins after the response; the teacher's save must not wait on SMTP.
+    after(() => sendFatwaSubmissionAdminEmail({
       teacherName: teacher.name,
       questionTitle: existing.title,
       adminReviewUrl,
-    });
+    }));
   }
 
   redirect(`/teacher/fatwa/${id}?saved=1`);

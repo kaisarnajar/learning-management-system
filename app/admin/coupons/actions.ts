@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { requireAdmin } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
 import { randomInt } from "node:crypto";
@@ -295,8 +296,9 @@ export async function approveCouponRequest(requestId: string, rawPercentage: num
     const actionUrl = `${BRAND_CONFIG.websiteUrl}${targetPath}`;
 
     if (request.user.email) {
-      await sendFeeWaiverApprovedEmail({
-        to: request.user.email,
+      const to = request.user.email;
+      after(() => sendFeeWaiverApprovedEmail({
+        to,
         studentName: request.user.name || "Student",
         courseTitle: request.course.title,
         couponCode: code,
@@ -304,7 +306,7 @@ export async function approveCouponRequest(requestId: string, rawPercentage: num
         validUntil: formattedValidUntil,
         feeTypeLabel,
         actionUrl,
-      });
+      }));
     }
 
     await createStudentNotification({
@@ -347,12 +349,13 @@ export async function rejectCouponRequest(requestId: string) {
     if (claimed.count === 0) return { error: "Request already processed" };
 
     if (request.user.email) {
-      await sendFeeWaiverRejectedEmail({
-        to: request.user.email,
+      const to = request.user.email;
+      after(() => sendFeeWaiverRejectedEmail({
+        to,
         studentName: request.user.name || "Student",
         courseTitle: request.course.title,
         courseUrl: `${BRAND_CONFIG.websiteUrl}/profile/courses`,
-      });
+      }));
     }
 
     await createStudentNotification({

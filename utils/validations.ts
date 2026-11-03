@@ -481,6 +481,13 @@ export const bookSchema = z.object({
   featuredOnHomepage: z.boolean().optional(),
 });
 
+/** A blog comment body: trimmed, non-empty, capped so the page and notifications stay readable. */
+export const blogCommentSchema = z
+  .string()
+  .trim()
+  .min(1, "Comment content cannot be empty")
+  .max(2000, "Comments must be at most 2000 characters.");
+
 export const waiverRequestSchema = z.object({
   courseId: z.string().trim().min(1, "Please select a course."),
   feeType: z.enum(["enrollment", "course", "both"], { message: "Please choose which fee the waiver is for." }),

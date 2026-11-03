@@ -44,8 +44,14 @@ export function blogApprovalStatusClass(status: BlogApprovalStatus, published: b
   return "bg-info-bg text-info-text";
 }
 
+/**
+ * A teacher may edit their own post until it is approved. An approved post is
+ * live on the site; changing it would silently bypass the admin review, so it
+ * is locked (the admin can still edit it, or the teacher asks for it to be
+ * sent back).
+ */
 export function canTeacherEditBlogPost(post: Pick<BlogPost, "approvalStatus" | "createdById">, userId: string) {
-  return post.createdById === userId;
+  return post.createdById === userId && post.approvalStatus !== "APPROVED";
 }
 
 /** Teachers may delete their own posts at any approval stage. */

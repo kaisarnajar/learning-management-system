@@ -196,7 +196,7 @@ export function BlogEngagement({
             </div>
           </div>
           <form onSubmit={handleAddComment} className="flex-1">
-            <textarea
+            <textarea maxLength={2000}
               aria-label="Add a comment"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
@@ -220,7 +220,7 @@ export function BlogEngagement({
         {/* Comment List */}
         <div className="space-y-6">
           {comments.map((comment) => (
-            <div key={comment.id} className="flex items-start space-x-4">
+            <div key={comment.id} id={`comment-${comment.id}`} className="flex items-start space-x-4 scroll-mt-24">
               <div className="flex-shrink-0">
                 {comment.user.image ? (
                   <Image
@@ -299,7 +299,7 @@ export function BlogEngagement({
 
                 {editingCommentId === comment.id ? (
                   <div className="mt-2">
-                    <textarea
+                    <textarea maxLength={2000}
                       aria-label="Edit comment"
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}

@@ -11,7 +11,7 @@ export const PAYMENTS = {
     ONE_TIME: "one_time",
     CERTIFICATE_FEE: "certificate",
     ID_CARD_FEE: "id_card",
-    BOOK_ORDER: "book_order",
+    BOOK_ORDER: "book_purchase",
     ENROLLMENT: "enrollment",
     MANUAL: "manual",
   },

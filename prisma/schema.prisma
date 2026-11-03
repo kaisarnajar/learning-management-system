@@ -508,10 +508,15 @@ model PaymentRecord {
   voidedAt              DateTime?
   voidReason            String?
   voidedById            String?
+  /// The book order this record paid for (book_purchase records only).
+  bookOrderId           String?                  @unique
+  /// Shipping component captured when the receipt was generated.
+  receiptShippingAmountPaise Int?
   createdAt             DateTime                 @default(now())
   updatedAt             DateTime                 @updatedAt
   user                  User                     @relation(fields: [userId], references: [id], onDelete: Restrict)
   course                Course?                  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  bookOrder             BookOrder?               @relation(fields: [bookOrderId], references: [id], onDelete: SetNull)
   submission            CoursePaymentSubmission?
 
   @@index([userId])
@@ -661,6 +666,7 @@ model BookOrder {
   updatedAt              DateTime        @updatedAt
   user                   User            @relation(fields: [userId], references: [id], onDelete: Restrict)
   items                  BookOrderItem[]
+  paymentRecords         PaymentRecord[]
 
   @@index([userId])
   @@index([status])

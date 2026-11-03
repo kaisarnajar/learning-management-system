@@ -4,6 +4,8 @@ import { auth } from "@/services/auth";
 import { BRAND_CONFIG } from "@/config/brand";
 
 import { splitInclusiveGst } from "@/services/gst";
+import { PAYMENTS } from "@/config/constants/payments";
+import { findBookOrderForRecord } from "@/services/payment-receipt";
 import { isAdminSession } from "@/services/admin";
 import { prisma } from "@/utils/prisma";
 import { sendReceiptEmail } from "@/services/email";
@@ -45,20 +47,10 @@ export async function generateReceipt(paymentRecordId: string) {
   let gstAmount = 0;
   let shippingAmountPaise = 0;
 
-  if (record.paymentType === "book_purchase") {
-    const match = record.description?.match(/Book order #([A-Z0-9]+)/i);
-    if (match) {
-      const shortId = match[1];
-      const bookOrder = await prisma.bookOrder.findFirst({
-        where: { 
-          userId: record.userId,
-          id: { endsWith: shortId.toLowerCase() },
-          totalAmountInrPaise: record.amountInrPaise 
-        }
-      });
-      if (bookOrder) {
-        shippingAmountPaise = bookOrder.shippingChargeInrPaise;
-      }
+  if (record.paymentType === PAYMENTS.TYPES.BOOK_ORDER) {
+    const bookOrder = await findBookOrderForRecord(record);
+    if (bookOrder) {
+      shippingAmountPaise = bookOrder.shippingChargeInrPaise;
     }
   }
 
@@ -86,6 +78,7 @@ export async function generateReceipt(paymentRecordId: string) {
         receiptIncludesGst: includeGst,
         receiptFeeAmountPaise: baseAmount,
         receiptGstAmountPaise: gstAmount,
+        receiptShippingAmountPaise: shippingAmountPaise,
       },
     });
     if (updated.count === 0) {

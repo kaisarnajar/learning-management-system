@@ -15,7 +15,7 @@ import {
   getSocialLinksSettings,
 } from "@/services/social-links";
 import { BRAND_CONFIG } from "@/config/brand";
-import { CREDITS_CONFIG } from "@/config/credits";
+import { CREDITS_CONFIG, shouldShowDeveloperCredits } from "@/config/credits";
 
 const quickLinks = [
   { href: "/", label: "Home" },
@@ -212,6 +212,7 @@ export async function Footer() {
               </Link>
             </div>
           </div>
+          {shouldShowDeveloperCredits() && (
           <div className="flex flex-col items-center gap-8 sm:flex-row sm:items-start sm:gap-12 lg:gap-16">
             <FooterCreditBlock
               title={CREDITS_CONFIG.developer.role}
@@ -232,6 +233,7 @@ export async function Footer() {
               linkedInHref={CREDITS_CONFIG.supporter.linkedIn}
             />
           </div>
+          )}
         </div>
       </div>
     </footer>

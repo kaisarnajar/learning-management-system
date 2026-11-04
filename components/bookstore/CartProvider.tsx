@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { BRAND_CONFIG } from "@/config/brand";
 import { MAX_ORDER_QTY } from "@/config/constants/business";
 
 type CartItem = {
@@ -42,7 +43,8 @@ type CartContextValue = {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-const STORAGE_KEY = "dqa-bookstore-cart";
+// Same value as before the key was derived from the brand, so carts already stored in browsers survive.
+const STORAGE_KEY = `${BRAND_CONFIG.shortName.toLowerCase()}-bookstore-cart`;
 const SYNC_DEBOUNCE_MS = 500;
 const CART_API = "/api/v1/bookstore/cart";
 

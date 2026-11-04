@@ -27,3 +27,13 @@ export const CREDITS_CONFIG: CreditsConfig = {
     linkedIn: "https://www.linkedin.com/in/barkat-bashir-070a68178/",
   },
 };
+
+/**
+ * Developer and supporter credits (footer, About page) are shown only when
+ * SHOW_DEVELOPER_CREDITS is "true"; with the variable unset they are omitted,
+ * so a white-label deployment never carries another team's contact details.
+ * Read on the server only (the footer and About page are server components).
+ */
+export function shouldShowDeveloperCredits(): boolean {
+  return process.env.SHOW_DEVELOPER_CREDITS === "true";
+}

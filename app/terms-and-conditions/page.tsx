@@ -9,11 +9,11 @@ const pageUrl = `${BRAND_CONFIG.websiteUrl.replace(/\/$/, "")}/terms-and-conditi
 
 export const metadata: Metadata = {
   title: "Terms & Conditions",
-  description: "Read the Terms & Conditions for accessing and using Darse Quran Academy services, courses, publications, and platform.",
+  description: `Read the Terms & Conditions for accessing and using ${BRAND_CONFIG.name} services, courses, publications, and platform.`,
   alternates: { canonical: pageUrl },
   openGraph: {
     title: `Terms & Conditions | ${BRAND_CONFIG.name}`,
-    description: "Read the Terms & Conditions for accessing and using Darse Quran Academy services, courses, publications, and platform.",
+    description: `Read the Terms & Conditions for accessing and using ${BRAND_CONFIG.name} services, courses, publications, and platform.`,
     url: pageUrl,
     siteName: BRAND_CONFIG.name,
     type: "website",
@@ -29,7 +29,7 @@ const termsSections = [
     content: (
       <>
         <p className="leading-relaxed text-muted">
-          Darse Quran Academy is an Islamic educational and service platform dedicated to promoting authentic Islamic knowledge. Our services may include, but are not limited to:
+          {BRAND_CONFIG.name} is an Islamic educational and service platform dedicated to promoting authentic Islamic knowledge. Our services may include, but are not limited to:
         </p>
         <ul className="mt-3 list-disc space-y-2 pl-6 text-muted">
           <li>Online and offline Islamic courses</li>
@@ -64,7 +64,7 @@ const termsSections = [
     title: "Registration",
     content: (
       <ul className="list-disc space-y-2 pl-6 text-muted">
-        <li>Registration for any course or service is subject to availability and approval by Darse Quran Academy.</li>
+        <li>Registration for any course or service is subject to availability and approval by {BRAND_CONFIG.name}.</li>
         <li>The Academy reserves the right to accept, reject, suspend or cancel any registration or account at its sole discretion.</li>
         <li>Providing false, incomplete or misleading information may result in cancellation of registration without prior notice.</li>
       </ul>
@@ -78,7 +78,7 @@ const termsSections = [
       <ul className="list-disc space-y-2 pl-6 text-muted">
         <li>Some of our courses and services are offered free of charge, while others require payment.</li>
         <li>Applicable fees will be displayed before registration or purchase.</li>
-        <li>Darse Quran Academy reserves the right to revise fees for future courses, batches or services without prior notice.</li>
+        <li>{BRAND_CONFIG.name} reserves the right to revise fees for future courses, batches or services without prior notice.</li>
       </ul>
     ),
   },
@@ -103,14 +103,14 @@ const termsSections = [
         <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4 sm:p-5">
           <p className="font-semibold text-foreground">Default Standard Policy:</p>
           <p className="mt-1 leading-relaxed text-muted">
-            All payments made to Darse Quran Academy are, by default, strictly <strong className="text-foreground">NON-REFUNDABLE</strong> unless a particular course or service is explicitly marked as &quot;Refundable.&quot;
+            All payments made to {BRAND_CONFIG.name} are, by default, strictly <strong className="text-foreground">NON-REFUNDABLE</strong> unless a particular course or service is explicitly marked as &quot;Refundable.&quot;
           </p>
         </div>
         <p className="leading-relaxed text-muted">
           Where a course or service is specifically identified as refundable, refunds shall be governed by the refund policy stated for that particular course or service.
         </p>
         <p className="leading-relaxed text-muted">
-          If Darse Quran Academy cancels a paid course before it begins, the Academy shall have the sole and absolute discretion to determine the appropriate resolution. This may include, but is not limited to:
+          If {BRAND_CONFIG.name} cancels a paid course before it begins, the Academy shall have the sole and absolute discretion to determine the appropriate resolution. This may include, but is not limited to:
         </p>
         <ul className="list-disc space-y-1 pl-6 text-muted">
           <li>Issuing a full or partial refund;</li>
@@ -119,7 +119,7 @@ const termsSections = [
           <li>Any other resolution deemed appropriate by the Academy.</li>
         </ul>
         <p className="font-medium text-foreground">
-          The decision of Darse Quran Academy regarding refunds or alternative arrangements shall be final.
+          The decision of {BRAND_CONFIG.name} regarding refunds or alternative arrangements shall be final.
         </p>
       </div>
     ),
@@ -155,7 +155,7 @@ const termsSections = [
       <ul className="list-disc space-y-2 pl-6 text-muted">
         <li>Students are expected to attend classes regularly and punctually.</li>
         <li>Students who repeatedly remain absent, miss multiple classes without prior permission or a valid reason, or remain inactive for an extended period may be removed from the batch without further notice.</li>
-        <li>Any decision regarding restoration of access, re-enrollment or continuation in the course shall be entirely at the sole discretion of Darse Quran Academy. The Academy is under no obligation to restore access after removal.</li>
+        <li>Any decision regarding restoration of access, re-enrollment or continuation in the course shall be entirely at the sole discretion of {BRAND_CONFIG.name}. The Academy is under no obligation to restore access after removal.</li>
       </ul>
     ),
   },
@@ -165,7 +165,7 @@ const termsSections = [
     title: "Termination of Services",
     content: (
       <p className="leading-relaxed text-muted">
-        Darse Quran Academy reserves the right to suspend or permanently terminate any user&apos;s access to its website, courses or services at any time if the user violates these Terms & Conditions or engages in conduct that the Academy reasonably considers harmful to its students, staff, reputation or operations. Such action may be taken without prior notice, and no refund shall be due unless expressly approved by the Academy.
+        {BRAND_CONFIG.name} reserves the right to suspend or permanently terminate any user&apos;s access to its website, courses or services at any time if the user violates these Terms & Conditions or engages in conduct that the Academy reasonably considers harmful to its students, staff, reputation or operations. Such action may be taken without prior notice, and no refund shall be due unless expressly approved by the Academy.
       </p>
     ),
   },
@@ -175,7 +175,7 @@ const termsSections = [
     title: "Certificates",
     content: (
       <p className="leading-relaxed text-muted">
-        Certificates, where applicable, shall only be awarded to students who successfully satisfy all requirements determined by Darse Quran Academy, including attendance, assessments, assignments and any other applicable criteria.
+        Certificates, where applicable, shall only be awarded to students who successfully satisfy all requirements determined by {BRAND_CONFIG.name}, including attendance, assessments, assignments and any other applicable criteria.
       </p>
     ),
   },
@@ -186,7 +186,7 @@ const termsSections = [
     content: (
       <div className="space-y-2 text-muted">
         <p className="leading-relaxed">
-          All website content, course materials, books, PDFs, articles, videos, graphics, logos, software, recordings and educational resources are the exclusive intellectual property of Darse Quran Academy unless otherwise stated.
+          All website content, course materials, books, PDFs, articles, videos, graphics, logos, software, recordings and educational resources are the exclusive intellectual property of {BRAND_CONFIG.name} unless otherwise stated.
         </p>
         <p className="leading-relaxed">
           No material may be copied, reproduced, recorded, published, sold, redistributed or otherwise used without prior written permission from the Academy.
@@ -228,7 +228,7 @@ const termsSections = [
     content: (
       <div className="space-y-2 text-muted">
         <p className="leading-relaxed">
-          Darse Quran Academy makes reasonable efforts to ensure that the information and educational content provided through its website and services are accurate and beneficial.
+          {BRAND_CONFIG.name} makes reasonable efforts to ensure that the information and educational content provided through its website and services are accurate and beneficial.
         </p>
         <p className="leading-relaxed">
           However, the Academy does not guarantee uninterrupted website availability, error-free operation or continuous access to its services.
@@ -245,7 +245,7 @@ const termsSections = [
     title: "Limitation of Liability",
     content: (
       <p className="leading-relaxed text-muted">
-        To the maximum extent permitted by applicable law, Darse Quran Academy shall not be liable for any direct, indirect, incidental, consequential or special damages arising from the use of its website, products or services.
+        To the maximum extent permitted by applicable law, {BRAND_CONFIG.name} shall not be liable for any direct, indirect, incidental, consequential or special damages arising from the use of its website, products or services.
       </p>
     ),
   },
@@ -255,7 +255,7 @@ const termsSections = [
     title: "Changes to These Terms",
     content: (
       <p className="leading-relaxed text-muted">
-        Darse Quran Academy reserves the right to modify, update or replace these Terms & Conditions at any time without prior notice. Any revised version becomes effective immediately upon publication on this website. Continued use of the website or services constitutes acceptance of the updated Terms.
+        {BRAND_CONFIG.name} reserves the right to modify, update or replace these Terms & Conditions at any time without prior notice. Any revised version becomes effective immediately upon publication on this website. Continued use of the website or services constitutes acceptance of the updated Terms.
       </p>
     ),
   },
@@ -266,7 +266,7 @@ const termsSections = [
     content: (
       <div className="space-y-3">
         <p className="leading-relaxed text-muted">
-          If you have any questions regarding these Terms & Conditions, please contact Darse Quran Academy using the contact details provided on our website.
+          If you have any questions regarding these Terms & Conditions, please contact {BRAND_CONFIG.name} using the contact details provided on our website.
         </p>
         <div className="pt-2">
           <Link

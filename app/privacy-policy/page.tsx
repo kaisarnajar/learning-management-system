@@ -9,11 +9,11 @@ const pageUrl = `${BRAND_CONFIG.websiteUrl.replace(/\/$/, "")}/privacy-policy`;
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
-  description: "Learn how Darse Quran Academy collects, uses, and protects your personal information and privacy.",
+  description: `Learn how ${BRAND_CONFIG.name} collects, uses, and protects your personal information and privacy.`,
   alternates: { canonical: pageUrl },
   openGraph: {
     title: `Privacy Policy | ${BRAND_CONFIG.name}`,
-    description: "Learn how Darse Quran Academy collects, uses, and protects your personal information and privacy.",
+    description: `Learn how ${BRAND_CONFIG.name} collects, uses, and protects your personal information and privacy.`,
     url: pageUrl,
     siteName: BRAND_CONFIG.name,
     type: "website",
@@ -29,7 +29,7 @@ const privacySections = [
     content: (
       <>
         <p className="leading-relaxed text-muted">
-          Darse Quran Academy is an Islamic educational and service platform providing:
+          {BRAND_CONFIG.name} is an Islamic educational and service platform providing:
         </p>
         <ul className="mt-3 list-disc space-y-2 pl-6 text-muted">
           <li>Online and offline Islamic courses</li>
@@ -68,7 +68,7 @@ const privacySections = [
         <div>
           <h3 className="font-semibold text-foreground">Payment Information</h3>
           <p className="mt-1 leading-relaxed text-muted">
-            Payments are processed through secure third-party payment providers. Darse Quran Academy does not store complete debit card, credit card or banking information on its own servers.
+            Payments are processed through secure third-party payment providers. {BRAND_CONFIG.name} does not store complete debit card, credit card or banking information on its own servers.
           </p>
         </div>
         <div>
@@ -125,7 +125,7 @@ const privacySections = [
     content: (
       <div className="space-y-2">
         <p className="leading-relaxed text-muted">
-          By registering with Darse Quran Academy, you consent to receive communications relating to your courses, registrations, purchases, announcements, payment confirmations and other service-related matters through email, phone calls, WhatsApp, SMS or other appropriate communication channels.
+          By registering with {BRAND_CONFIG.name}, you consent to receive communications relating to your courses, registrations, purchases, announcements, payment confirmations and other service-related matters through email, phone calls, WhatsApp, SMS or other appropriate communication channels.
         </p>
         <p className="leading-relaxed text-muted">
           You may opt out of promotional communications at any time. However, important service-related communications may still be sent where necessary.
@@ -140,13 +140,13 @@ const privacySections = [
     content: (
       <div className="space-y-3">
         <p className="leading-relaxed text-muted">
-          Darse Quran Academy does not sell, rent or trade your personal information.
+          {BRAND_CONFIG.name} does not sell, rent or trade your personal information.
         </p>
         <p className="font-semibold text-foreground">Your information may be shared only where necessary:</p>
         <ul className="list-disc space-y-1.5 pl-6 text-muted">
           <li>With trusted service providers assisting in website operation, payment processing or communication.</li>
           <li>Where required by applicable law or lawful authority.</li>
-          <li>To protect the rights, safety or security of Darse Quran Academy, its students, staff or users.</li>
+          <li>To protect the rights, safety or security of {BRAND_CONFIG.name}, its students, staff or users.</li>
         </ul>
       </div>
     ),
@@ -194,7 +194,7 @@ const privacySections = [
           Our website may use third-party services including payment gateways, analytics providers, communication platforms, and social media integrations.
         </p>
         <p className="leading-relaxed">
-          These third-party services operate under their own privacy policies, and Darse Quran Academy is not responsible for their privacy practices.
+          These third-party services operate under their own privacy policies, and {BRAND_CONFIG.name} is not responsible for their privacy practices.
         </p>
       </div>
     ),
@@ -245,7 +245,7 @@ const privacySections = [
     title: "Changes to This Privacy Policy",
     content: (
       <p className="leading-relaxed text-muted">
-        Darse Quran Academy reserves the right to modify or update this Privacy Policy at any time. Any revised version becomes effective immediately upon publication on this website. Continued use of our website or services constitutes acceptance of the updated Privacy Policy.
+        {BRAND_CONFIG.name} reserves the right to modify or update this Privacy Policy at any time. Any revised version becomes effective immediately upon publication on this website. Continued use of our website or services constitutes acceptance of the updated Privacy Policy.
       </p>
     ),
   },
@@ -256,7 +256,7 @@ const privacySections = [
     content: (
       <div className="space-y-3">
         <p className="leading-relaxed text-muted">
-          If you have any questions regarding this Privacy Policy or the handling of your personal information, please contact Darse Quran Academy using the contact information available on our website.
+          If you have any questions regarding this Privacy Policy or the handling of your personal information, please contact {BRAND_CONFIG.name} using the contact information available on our website.
         </p>
         <div className="pt-2">
           <Link

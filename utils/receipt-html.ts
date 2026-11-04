@@ -9,6 +9,13 @@ export function renderReceiptToHtml(data: ReceiptData): string {
     .map(term => `<li>${e(term)}</li>`)
     .join('');
 
+  // The round "Payment Successful" seal repeats the academy name over two lines: the last word goes on the second.
+  const nameWords = academy.name.trim().split(/\s+/);
+  const stampName =
+    nameWords.length > 1
+      ? `${e(nameWords.slice(0, -1).join(' '))}<br/>${e(nameWords[nameWords.length - 1])}`
+      : e(academy.name);
+
   const stampHtml = authority.stampUrl
     ? `<img src="${e(authority.stampUrl)}" alt="Official Stamp" class="w-24 absolute z-10 opacity-90 process-white-bg mix-blend-multiply" style="top: 50%; left: 50%; transform: translate(-50%, -50%);" />`
     : '';
@@ -76,7 +83,7 @@ export function renderReceiptToHtml(data: ReceiptData): string {
               <div class="absolute inset-2 rounded-full border border-red-600/20"></div>
               
               <div class="text-center font-bold text-red-600 flex flex-col items-center justify-center z-10">
-                <span class="text-pdf-7 uppercase tracking-[0.15em] leading-tight mb-0.5">Darse Quran<br/>Academy</span>
+                <span class="text-pdf-7 uppercase tracking-[0.15em] leading-tight mb-0.5">${stampName}</span>
                 <span class="w-7 border-t-pdf-hairline border-red-600 my-[2px]"></span>
                 <span class="text-pdf-9 uppercase tracking-wider leading-tight">${payment.amount === 0 ? 'Waiver<br/>Granted' : 'Payment<br/>Successful'}</span>
               </div>

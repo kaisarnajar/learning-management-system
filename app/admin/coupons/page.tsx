@@ -9,7 +9,7 @@ import { Pagination } from "@/components/shared/Pagination";
 import { clampPage, paginationArgs, parsePaginationParams } from "@/utils/pagination";
 
 export const metadata = {
-  title: "Fee Waivers & Coupons | Admin | Darse Quran Academy",
+  title: "Fee Waivers & Coupons | Admin",
 };
 
 type SearchParams = {

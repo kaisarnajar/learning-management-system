@@ -57,6 +57,8 @@ export type BrandConfig = {
   name: string;
   arabicName?: string;
   shortName: string;
+  /** The parent organisation the academy belongs to, as named in about-us copy and on invoices. */
+  organizationName: string;
   websiteUrl: string;
   assets: BrandAssets;
   colors: BrandColors;
@@ -74,6 +76,7 @@ export const BRAND_CONFIG: BrandConfig = {
   name: "Darse Quran Academy",
   arabicName: "دار القرآن الكريم", // Placeholder if we had one
   shortName: "DQA",
+  organizationName: "Darse-Quran",
   websiteUrl: "https://darsequranacademy.com",
   
   assets: {

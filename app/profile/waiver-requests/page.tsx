@@ -4,7 +4,7 @@ import { WaiverRequestsView } from "@/components/profile/WaiverRequestsView";
 import { resolveWaiverFeeType, waiverFeeTypeLabel } from "@/services/waiver-requests";
 
 export const metadata = {
-  title: "Fee Waiver Requests | Darse Quran Academy",
+  title: "Fee Waiver Requests",
 };
 
 export default async function WaiverRequestsPage({

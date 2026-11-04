@@ -1,7 +1,7 @@
 # Incremental Commit Plan — remediation of `LMS_CODE_REVIEW_AND_IMPLEMENTATION_PLAN.md`
 
 **Branch:** all commits land directly on `dev` (currently identical to `master` @ `402ba9c`). No PR, no merge into `master` until the whole plan is reviewed.
-**Status:** EXECUTED on `dev` (2026-11-03) except C74 (Playwright journeys, three of four passing, uncommitted in the batch-2 session), C75 (CI pipeline), C86 (env/README regeneration) and C87 (brand strings), which remain open. See "Execution notes and deviations" below for where the landed code differs from an entry.
+**Status:** EXECUTED in full on `dev` (C01–C92, 2026-11-03/04). See "Execution notes and deviations" below for where the landed code differs from an entry. Not yet done: the production rollout steps in `docs/OPERATIONS.md` (Neon-branch rehearsal, dry-run scripts, baseline cut-over) and the PR from `dev` to `master`.
 
 ## How to read this plan
 
@@ -646,6 +646,11 @@ Every commit landed with the subject in its entry; where the landed change diffe
 - **C78:** the PDF stylesheet is compiled with the Tailwind v3 engine (`tailwindcss-v3` alias) to match the Play CDN the templates were written for; fonts are self-hosted under `public/fonts` (OFL); the white-background removal uses `sharp` server side so the page runs without JavaScript.
 - **C80:** nodemailer is on the 8.x line, the newest within next-auth's peer range, so a clean install resolves; the plan said v10.
 - **C91:** the server-action body limit was not lowered; the presigned direct-to-R2 upload flow it needs is listed in Appendix A as follow-up work.
+- **Extra commit after C60:** `fix(profile): cast the registration-number substring offset` — the race-safe allocator passed the `SUBSTRING` offset as a bigint, which Postgres rejects, so completing a profile failed; the Playwright journey caught it and an integration test now covers it. Deploy C60 only together with this fix.
+- **C74:** the bookstore journey ships from the Approved tab and refunds from the Completed tab (`?status=`), matching the admin UI; 8 of 8 journeys pass against `next start` with `CSP_ENFORCE=true`.
+- **C75:** `npm audit --audit-level=high` is `continue-on-error` in CI because `xlsx` carries an unfixable high advisory (replaced by `exceljs` in C85); the 7 pre-existing `no-explicit-any` errors are baselined in `eslint-suppressions.json` so new ones fail; `knip` is not in the workflow; the workflow has not yet run on GitHub.
+- **C86:** `BUSINESS_TIMEZONE` is a constant in `config/constants/business.ts`, not an environment variable, so it is absent from `.env.example`.
+- **C87:** developer credits are hidden unless `SHOW_DEVELOPER_CREDITS=true` (set it in Vercel before deploying if they should stay visible); `public/sw.js` became the statically built `app/sw.js/route.ts`; the `package.json` name is `academy-lms` because that file cannot read the brand config.
 - **C71–C73:** the DB-backed suites skip when `DATABASE_URL_TEST` is absent; the batch-2 session ran them against a Postgres installed outside the repo (no Docker on the machine). The Vitest config is `vitest.config.mts`.
 
 ## Appendix A — "Contract later" backlog (not executed in this plan)

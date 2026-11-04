@@ -3,16 +3,20 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
+import { deleteAnnouncementAttachment } from "@/services/announcement-upload";
+import { PAYMENTS } from "@/config/constants/payments";
+import { NOT_DELETED } from "@/services/soft-delete";
 import { syncEnrollmentsWithCourseStatus } from "@/services/completion";
 import { resolveCourseFeaturedUpdate } from "@/services/courses";
 import { prisma } from "@/utils/prisma";
 import { getDefaultFeesForLevel } from "@/services/course-pricing";
-import { uniqueSlug } from "@/utils/slug";
+import { createWithUniqueSlug } from "@/utils/slug";
 import { getCourseStartDateFromForm } from "@/services/course-start-date";
 import { courseSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
 
-import { executeServerAction } from "@/utils/action-utils";
+import { ActionError, executeServerAction } from "@/utils/action-utils";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function parseCourseForm(formData: FormData) {
   const level = String(formData.get("level") ?? "Beginner");
@@ -63,7 +67,7 @@ export async function createCourse(formData: FormData) {
     const parsed = parseCourseForm(formData);
 
     if (!parsed.success) {
-      throw new Error("Invalid course data");
+      throw new ActionError(parsed.error.issues[0]?.message ?? "Please check the course details.");
     }
 
     const { title, featuredOnHomepage, ...courseData } = parsed.data;
@@ -76,19 +80,19 @@ export async function createCourse(formData: FormData) {
     });
 
     if ("error" in featured) {
-      throw new Error(featured.error);
+      throw new ActionError(featured.error);
     }
 
-    const id = await uniqueSlug(title, async (slug) => {
-      const existing = await prisma.course.findUnique({ where: { id: slug } });
-      return Boolean(existing);
-    });
-
-    await prisma.course.create({
-      data: { id, title, ...courseData, ...featured },
-    });
+    await createWithUniqueSlug(
+      title,
+      async (slug) => Boolean(await withDbErrorHandling(() => prisma.course.findUnique({ where: { id: slug } }), "Database operation failed")),
+      (id) => withDbErrorHandling(() => prisma.course.create({ data: { id, title, ...courseData, ...featured } }), "Database operation failed"),
+    );
 
     revalidatePath("/");
+
+
+    revalidatePublicContent();
     revalidatePath("/courses");
     revalidatePath("/admin/courses");
     redirect("/admin/courses?created=1");
@@ -101,12 +105,12 @@ export async function updateCourse(id: string, formData: FormData) {
     const parsed = parseCourseForm(formData);
 
     if (!parsed.success) {
-      throw new Error("Invalid course data");
+      throw new ActionError(parsed.error.issues[0]?.message ?? "Please check the course details.");
     }
 
     const existing = await prisma.course.findUnique({ where: { id } });
     if (!existing) {
-      throw new Error("Course not found");
+      throw new ActionError("Course not found.");
     }
 
     const { title, featuredOnHomepage, ...courseData } = parsed.data;
@@ -119,7 +123,23 @@ export async function updateCourse(id: string, formData: FormData) {
     });
 
     if ("error" in featured) {
-      throw new Error(featured.error);
+      throw new ActionError(featured.error);
+    }
+
+    const statusChanged = existing.status !== courseData.status;
+
+    if (statusChanged && existing.status === "COMPLETED") {
+      // Reopening a completed course flips every completed enrollment back to
+      // active. With certificates already issued that is almost always a
+      // mistake, so it needs an explicit confirmation from the form.
+      const certificates = await prisma.enrollment.count({
+        where: { courseId: id, certificateGeneratedAt: { not: null } },
+      });
+      if (certificates > 0 && formData.get("confirmReopen") !== "on") {
+        throw new ActionError(
+          `${certificates} certificate${certificates === 1 ? " has" : "s have"} been issued for this completed course. Tick "Reopen this course anyway" to change its status.`,
+        );
+      }
     }
 
     await prisma.course.update({
@@ -127,9 +147,16 @@ export async function updateCourse(id: string, formData: FormData) {
       data: { title, ...courseData, ...featured },
     });
 
-    await syncEnrollmentsWithCourseStatus(id, courseData.status);
+    // Only a status change moves enrollments between active and completed;
+    // editing a title or fee must not touch them.
+    if (statusChanged) {
+      await syncEnrollmentsWithCourseStatus(id, courseData.status);
+    }
 
     revalidatePath("/");
+
+
+    revalidatePublicContent();
     revalidatePath("/courses");
     revalidatePath("/admin/courses");
     revalidatePath(`/admin/courses/${id}/edit`);
@@ -150,28 +177,66 @@ export async function deleteCourse(id: string) {
       }), "Database operation failed");
 
     if (!course) {
-      throw new Error("Course not found.");
+      throw new ActionError("Course not found.");
     }
 
-    const activeStudentCount = await prisma.enrollment.count({
-      where: { courseId: id, status: { in: ["active", "completed"] } },
-    });
+    const [activeStudentCount, pendingSubmissionCount, attendanceCount, gradeCount, couponCount] =
+      await withDbErrorHandling(
+        () =>
+          Promise.all([
+            prisma.enrollment.count({
+              where: { courseId: id, status: { in: ["active", "completed"] } },
+            }),
+            prisma.coursePaymentSubmission.count({
+              where: { courseId: id, status: PAYMENTS.SUBMISSION_STATUS.PENDING, ...NOT_DELETED },
+            }),
+            prisma.courseAttendance.count({ where: { courseId: id } }),
+            prisma.courseGrade.count({ where: { courseId: id } }),
+            prisma.coupon.count({ where: { courseId: id } }),
+          ]),
+        "Database operation failed",
+      );
 
     if (activeStudentCount > 0) {
-      throw new Error(`This course can't be deleted because ${activeStudentCount} student${activeStudentCount === 1 ? "" : "s"} ${activeStudentCount === 1 ? "is" : "are"} enrolled.`);
+      throw new ActionError(`This course can't be deleted because ${activeStudentCount} student${activeStudentCount === 1 ? "" : "s"} ${activeStudentCount === 1 ? "is" : "are"} enrolled.`);
+    }
+    if (pendingSubmissionCount > 0) {
+      throw new ActionError(`This course can't be deleted because ${pendingSubmissionCount} payment submission${pendingSubmissionCount === 1 ? " is" : "s are"} still awaiting verification.`);
+    }
+    if (attendanceCount > 0 || gradeCount > 0 || couponCount > 0) {
+      throw new ActionError("This course can't be deleted because it still has attendance, grade or coupon records. Set it to Completed or On Hold instead.");
     }
 
-    // Delete any inactive/pending/rejected enrollments to prevent orphans, since no DB-level FK exists
-    await prisma.enrollment.deleteMany({
-      where: { courseId: id },
+    // The announcements cascade with the course, so their attachment paths are
+    // read first and the files removed only after the database delete commits:
+    // a failed delete then never leaves announcements pointing at missing files.
+    const attachments = await prisma.courseAnnouncement.findMany({
+      where: { courseId: id, attachmentPath: { not: null } },
+      select: { attachmentPath: true },
     });
 
-    await prisma.course.delete({ where: { id } });
+    // No DB-level FK ties enrollments to the course, so inactive, pending and
+    // rejected enrollments are removed together with the course in one transaction.
+    await withDbErrorHandling(
+      () =>
+        prisma.$transaction([
+          prisma.enrollment.deleteMany({ where: { courseId: id } }),
+          prisma.course.delete({ where: { id } }),
+        ]),
+      "Database operation failed",
+    );
+
+    for (const { attachmentPath } of attachments) {
+      await deleteAnnouncementAttachment(attachmentPath);
+    }
 
     revalidatePath("/");
+
+
+    revalidatePublicContent();
     revalidatePath("/courses");
     revalidatePath("/admin/courses");
     redirect("/admin/courses?deleted=1");
-  }, "/admin/courses", "deleting course", "deleteError");
+  }, "/admin/courses", "deleting course");
 }
 

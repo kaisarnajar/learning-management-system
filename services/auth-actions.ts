@@ -1,5 +1,7 @@
-"use server";
-
+// Plain server helpers (NOT a "use server" module): the require* guards are
+// called from server components and server actions only. Marking this file
+// "use server" would expose every export as a public server action endpoint
+// that any client could invoke.
 import { auth } from "@/services/auth";
 import { isAdminSession } from "@/services/admin";
 import { isDeveloperSession } from "@/services/developer";

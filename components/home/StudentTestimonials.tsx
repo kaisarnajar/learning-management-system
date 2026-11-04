@@ -1,17 +1,8 @@
-import Link from "next/link";
-import type { Session } from "next-auth";
 import { StarRating } from "@/components/reviews/StarRating";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
-import { auth } from "@/services/auth";
+import { WriteReviewLink } from "@/components/home/WriteReviewLink";
 import type { HomepageReview } from "@/services/student-reviews";
-import { getFeaturedHomepageReviews } from "@/services/student-reviews";
-
-function getWriteReviewHref(session: Session | null) {
-  if (session?.user?.id && session.user.role !== "TEACHER") {
-    return "/profile/reviews";
-  }
-  return `/login?callbackUrl=${encodeURIComponent("/profile/reviews")}`;
-}
+import { getCachedFeaturedHomepageReviews as getFeaturedHomepageReviews } from "@/services/home-content";
 
 function TestimonialCard({ item }: { item: HomepageReview }) {
   return (
@@ -48,8 +39,9 @@ function TestimonialCard({ item }: { item: HomepageReview }) {
 }
 
 export async function StudentTestimonials() {
-  const [reviews, session] = await Promise.all([getFeaturedHomepageReviews(), auth()]);
-  const writeReviewHref = getWriteReviewHref(session);
+  // No session read here: the only session-dependent piece (the review link)
+  // is a client component, so the section can be cached with the page.
+  const reviews = await getFeaturedHomepageReviews();
 
   return (
     <section className="pattern-islamic py-16 sm:py-20" aria-labelledby="testimonials-heading">
@@ -64,12 +56,7 @@ export async function StudentTestimonials() {
             Hear from learners across Jammu &amp; Kashmir and beyond who study Quran, Tajweed, and Islamic
             sciences with us online.
           </p>
-          <Link
-            href={writeReviewHref}
-            className="btn-gold-solid mt-6 inline-flex min-h-11 items-center justify-center px-8 py-3 text-sm font-semibold"
-          >
-            Write Review
-          </Link>
+          <WriteReviewLink className="btn-gold-solid mt-6 inline-flex min-h-11 items-center justify-center px-8 py-3 text-sm font-semibold" />
         </div>
 
         {reviews.length > 0 ? (

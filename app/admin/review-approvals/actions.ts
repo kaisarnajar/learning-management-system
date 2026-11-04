@@ -1,41 +1,25 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { createAdminCrudActions } from "@/services/admin-crud";
+import { adminReturnUrl } from "@/utils/admin-redirects";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
 import { HOMEPAGE_FEATURED_REVIEWS_MAX, getFeaturedHomepageReviewCount } from "@/services/student-reviews";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function revalidateReviewPaths(reviewId?: string) {
   revalidatePath("/");
+
+  revalidatePublicContent();
   revalidatePath("/profile/reviews");
   revalidatePath("/admin/review-approvals");
   if (reviewId) {
     revalidatePath(`/admin/review-approvals/${reviewId}`);
     revalidatePath(`/admin/review-approvals/${reviewId}/edit`);
   }
-}
-
-function returnUrl(
-  returnTo: string | undefined,
-  event: "approved" | "rejected" | "unfeatured" | "featured",
-): string {
-  const param =
-    event === "approved"
-      ? "approved"
-      : event === "rejected"
-        ? "rejected"
-        : event === "featured"
-          ? "featured"
-          : "unfeatured";
-  const fallback = `/admin/review-approvals?${param}=1`;
-  if (!returnTo?.startsWith("/admin")) return fallback;
-  const [pathname, query = ""] = returnTo.split("?");
-  const params = new URLSearchParams(query);
-  params.set(param, "1");
-  const qs = params.toString();
-  return qs ? `${pathname}?${qs}` : `${pathname}?${param}=1`;
 }
 
 export async function approveStudentReview(
@@ -75,7 +59,7 @@ export async function approveStudentReview(
     }), "Database operation failed");
 
   revalidateReviewPaths(reviewId);
-  redirect(returnUrl(returnTo, "approved"));
+  redirect(adminReturnUrl(returnTo, "/admin/review-approvals", "approved"));
 }
 
 export async function rejectStudentReview(
@@ -100,7 +84,7 @@ export async function rejectStudentReview(
     }), "Database operation failed");
 
   revalidateReviewPaths(reviewId);
-  redirect(returnUrl(returnTo, "rejected"));
+  redirect(adminReturnUrl(returnTo, "/admin/review-approvals", "rejected"));
 }
 
 export async function saveApprovedReviewHomepageSetting(
@@ -147,19 +131,19 @@ export async function saveApprovedReviewHomepageSetting(
   redirect("/admin/review-approvals?saved=1");
 }
 
+const reviewCrud = createAdminCrudActions({
+  label: "review",
+  notFoundMessage: "Review not found.",
+  deleteFailedMessage: "Failed to delete review.",
+  model: {
+    find: (id) => prisma.studentReview.findUnique({ where: { id } }),
+    remove: (id) => prisma.studentReview.delete({ where: { id } }),
+  },
+  paths: { list: "/admin/review-approvals", revalidate: revalidateReviewPaths },
+});
+
 export async function deleteStudentReview(
   reviewId: string,
 ): Promise<{ error?: string }> {
-  await requireAdmin();
-
-  try {
-    await prisma.studentReview.delete({
-      where: { id: reviewId },
-    });
-    revalidateReviewPaths(reviewId);
-    return {};
-  } catch (err) {
-    console.error("Failed to delete review:", err);
-    return { error: "Failed to delete review." };
-  }
+  return reviewCrud.removeById(reviewId);
 }

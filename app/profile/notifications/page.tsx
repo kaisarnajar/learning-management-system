@@ -1,6 +1,6 @@
 import { SubmitButton } from "@/components/shared/SubmitButton";
-import Link from "next/link";
 import { NotificationList } from "@/components/profile/NotificationList";
+import { TabPills } from "@/components/shared/TabPills";
 import { Pagination } from "@/components/shared/Pagination";
 import { requireUser } from "@/services/auth-actions";
 import { getNotificationsForUserPaginated, getUnreadNotificationCount } from "@/services/notifications";
@@ -47,31 +47,19 @@ export default async function ProfileNotificationsPage({
         )}
       </div>
 
-      <nav
+      <TabPills
         className="mt-6 flex flex-wrap gap-2"
-        aria-label="Notification filters"
-      >
-        <Link
-          href={filterHref("all")}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-            filter === "all"
-              ? "bg-primary text-white"
-              : "border border-border text-foreground hover:bg-accent-muted/50"
-          }`}
-        >
-          All
-        </Link>
-        <Link
-          href={filterHref("unread")}
-          className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-            filter === "unread"
-              ? "bg-primary text-white"
-              : "border border-border text-foreground hover:bg-accent-muted/50"
-          }`}
-        >
-          Unread{unreadCount > 0 ? ` (${unreadCount})` : ""}
-        </Link>
-      </nav>
+        ariaLabel="Notification filters"
+        transition
+        items={[
+          { href: filterHref("all"), label: "All", active: filter === "all" },
+          {
+            href: filterHref("unread"),
+            label: `Unread${unreadCount > 0 ? ` (${unreadCount})` : ""}`,
+            active: filter === "unread",
+          },
+        ]}
+      />
 
       <div className="mt-8">
         <NotificationList

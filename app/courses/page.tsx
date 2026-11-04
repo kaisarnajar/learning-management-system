@@ -6,13 +6,12 @@ import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { auth } from "@/services/auth";
 import { getPublicCoursesPaginated } from "@/services/courses";
 import { getUserCourseEnrollmentMap } from "@/services/enrollments";
+import { isApprovedEnrollment } from "@/services/status-compat";
 import { getPendingEnrollmentFeeSubmissionMap } from "@/services/monthly-payments";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import { isUserProfileComplete } from "@/services/profile";
-import { Source_Serif_4 } from "next/font/google";
-
-const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
+import { PageHero } from "@/components/shared/PageHero";
 
 const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
 
@@ -89,7 +88,7 @@ async function PublicCoursesList({ params, q, userId }: { params: PageParams; q?
             >
               <CourseCard
                 course={course}
-                isEnrolled={enrollment?.status === "active" || enrollment?.status === "completed"}
+                isEnrolled={enrollment ? isApprovedEnrollment(enrollment) : false}
                 enrollmentStatus={enrollment?.status ?? null}
                 enrollmentId={enrollment?.id ?? null}
                 profileComplete={profileComplete}
@@ -135,21 +134,7 @@ export default async function CoursesPage({
   return (
     <>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#003527] via-teal-900 to-[#002117] px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
-        <div className="pattern-islamic absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none" />
-        <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-[#cca72f]/0 via-[#cca72f] to-[#cca72f]/0 opacity-50"></div>
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="motion-safe:animate-fade-up">
-            <h1 className={`${sourceSerif.className} text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl`}>
-              Course Announcements
-            </h1>
-            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-brand-gold-alt"></div>
-            <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">
-              Browse programs and request enrollment. Enrollment and monthly fees are set per course; see each listing for details.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero title="Courses" description="Browse programs and request enrollment. Enrollment and monthly fees are set per course; see each listing for details." />
 
       {/* Main Content Area */}
       <section className="bg-surface py-12 sm:py-16">

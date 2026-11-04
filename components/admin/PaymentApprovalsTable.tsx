@@ -5,9 +5,9 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { getReturnToUrl } from "@/components/shared/ActionButton";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
-import { confirmMonthlyPayment, declineMonthlyPayment, deleteApprovedPayment } from "@/app/admin/payments/actions";
+import { confirmMonthlyPayment, declineMonthlyPayment, voidApprovedPayment } from "@/app/admin/payments/actions";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
-import { formatPrice } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import type { CoursePaymentSubmissionWithUser } from "@/services/monthly-payments";
 import { MONTHLY_PAYMENT_APPROVED } from "@/services/monthly-payment-status";
 import { useToast } from "@/components/shared/ToastProvider";
@@ -107,6 +107,14 @@ export function PaymentApprovalsTable({
             </td>
             <td className="whitespace-nowrap px-4 py-3">
               <div className="flex items-center justify-end gap-2">
+                {submission.status === MONTHLY_PAYMENT_APPROVED && !submission.paymentRecordId && (
+                  <span
+                    className="rounded-full bg-warning-bg px-2.5 py-1 text-xs font-medium text-warning-text"
+                    title="Run scripts/backfill-payment-records.ts to create the missing payment record."
+                  >
+                    No payment record
+                  </span>
+                )}
                 {submission.status === MONTHLY_PAYMENT_APPROVED && submission.paymentRecordId && (
                   <ReceiptActionButtons
                      paymentRecordId={submission.paymentRecordId}
@@ -141,13 +149,17 @@ export function PaymentApprovalsTable({
                     />
                   </>
                 )}
-                <DeleteActionButton
-                  action={async () => {
-                     const result = await deleteApprovedPayment(submission.id, returnTo);
-                     if (result?.error) addToast(result.error, "error");
-                  }}
-                  itemName="payment"
-                />
+                {submission.status === MONTHLY_PAYMENT_APPROVED && (
+                  <DeleteActionButton
+                    verb="Void"
+                    reasonLabel="Reason for voiding"
+                    action={async (reason) => {
+                       const result = await voidApprovedPayment(submission.id, reason, returnTo);
+                       if (result?.error) addToast(result.error, "error");
+                    }}
+                    itemName="payment"
+                  />
+                )}
               </div>
             </td>
           </tr>

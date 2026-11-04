@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { formatPrice } from "@/utils/money";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { BookStatusBadge } from "@/components/bookstore/BookStatusBadge";
@@ -6,10 +7,7 @@ import { StatusBadge } from "@/components/admin/StatusBadge";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { getBookById } from "@/services/bookstore";
 import { deleteBookFromProfile } from "@/app/admin/bookstore/actions";
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function AdminBookDetailPage({
   params,
@@ -18,6 +16,7 @@ export default async function AdminBookDetailPage({
   params: Promise<{ bookId: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdmin();
   const { bookId } = await params;
   const query = await searchParams;
   const book = await getBookById(bookId);
@@ -49,7 +48,7 @@ export default async function AdminBookDetailPage({
 
       {query.error && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
-          {decodeURIComponent(query.error)}
+          {query.error}
         </p>
       )}
 
@@ -78,7 +77,7 @@ export default async function AdminBookDetailPage({
           </div>
           <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
             <dt className="shrink-0 font-medium text-foreground sm:w-28">Price</dt>
-            <dd className="text-muted">{formatPrice(book.priceInrPaise)}</dd>
+            <dd className="text-muted">{formatPrice(book.priceInrPaise, { exact: true })}</dd>
           </div>
           <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
             <dt className="shrink-0 font-medium text-foreground sm:w-28">Availability</dt>

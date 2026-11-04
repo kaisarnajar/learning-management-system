@@ -5,13 +5,18 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/paginat
 import { buildSearchOr } from "@/utils/text-search";
 import type { Prisma } from "@prisma/client";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { getStockLevels, STOCK_HOLDING_STATUSES } from "@/services/inventory";
 
 export type BookstoreFinanceSummary = {
   totalBooksPurchased: number;
   totalBooksSold: number;
   currentInventoryCount: number;
   totalPurchaseCostPaise: number;
+  /** Book revenue of approved/shipped orders, excluding shipping charges. */
   totalSalesRevenuePaise: number;
+  /** Shipping charges collected on approved/shipped orders (pass-through, not revenue). */
+  totalShippingCollectedPaise: number;
+  /** totalSalesRevenuePaise minus cost of the books sold. */
   totalProfitLossPaise: number;
   pendingOrdersValuePaise: number;
   approvedOrdersValuePaise: number;
@@ -25,9 +30,13 @@ export type BookSalesRecord = {
   author: string;
   purchasePriceInrPaise: number;
   sellingPriceInrPaise: number;
+  /** All-time: inventory purchased plus manual adjustments. */
   quantityPurchased: number;
+  /** Within the report's date range. */
   quantitySold: number;
+  /** Current stock (all-time figure, independent of the date range). */
   remainingStock: number;
+  /** Within the report's date range, excluding shipping. */
   revenuePaise: number;
   profitPaise: number;
 };
@@ -42,6 +51,10 @@ export type BookOrderFinanceRecord = {
   deliveryPhoneNumber: string | null;
   status: string;
   totalAmountPaise: number;
+  /** Shipping component of totalAmountPaise. */
+  shippingChargePaise: number;
+  /** Amount returned to the customer (order total) for REFUNDED orders, else 0. */
+  refundedAmountPaise: number;
   profitContributionPaise: number;
 };
 
@@ -53,10 +66,11 @@ export async function getBookstoreFinanceSummary(filters: Pick<FinanceFilters, "
             select: {
               inventoryPurchased: true,
               purchasePriceInrPaise: true,
+              stockMovements: { select: { delta: true } },
             },
           }), "Database operation failed"),
     withDbErrorHandling(() => prisma.bookOrder.findMany({
-            where: dateWhere,
+            where: { ...dateWhere, deletedAt: null },
             include: {
               items: {
                 include: {
@@ -79,6 +93,7 @@ export async function getBookstoreFinanceSummary(filters: Pick<FinanceFilters, "
 
   let totalBooksSold = 0;
   let totalSalesRevenuePaise = 0;
+  let totalShippingCollectedPaise = 0;
   let totalProfitLossPaise = 0;
   let pendingOrdersValuePaise = 0;
   let approvedOrdersValuePaise = 0;
@@ -95,20 +110,32 @@ export async function getBookstoreFinanceSummary(filters: Pick<FinanceFilters, "
     }
 
     if (order.status === "APPROVED" || order.status === "SHIPPED") {
-      totalSalesRevenuePaise += order.totalAmountInrPaise;
+      // Shipping is collected on behalf of the courier, not earned on books:
+      // keep it out of revenue so revenue - cost really is the profit.
+      totalShippingCollectedPaise += order.shippingChargeInrPaise;
       validOrderCount++;
 
       for (const item of order.items) {
         totalBooksSold += item.quantity;
         const itemRevenue = item.quantity * item.priceAtPurchaseInrPaise;
         const itemCost = item.quantity * (item.book?.purchasePriceInrPaise || 0);
+        totalSalesRevenuePaise += itemRevenue;
         totalProfitLossPaise += (itemRevenue - itemCost);
       }
     }
   }
 
-  const currentInventoryCount = totalBooksPurchased - totalBooksSold;
-  const averageOrderValuePaise = validOrderCount > 0 ? Math.round(totalSalesRevenuePaise / validOrderCount) : 0;
+  // Inventory is a point-in-time figure: it must ignore the report's date
+  // filter and include manual stock adjustments.
+  const totalAdjustments = books.reduce((sum, b) => sum + b.stockMovements.reduce((s, m) => s + m.delta, 0), 0);
+  const committedAllTime = await withDbErrorHandling(() => prisma.bookOrderItem.aggregate({
+    where: { order: { status: { in: ["APPROVED", "SHIPPED"] }, deletedAt: null } },
+    _sum: { quantity: true },
+  }), "Database operation failed");
+  const currentInventoryCount = totalBooksPurchased + totalAdjustments - (committedAllTime._sum.quantity ?? 0);
+  const averageOrderValuePaise = validOrderCount > 0
+    ? Math.round((totalSalesRevenuePaise + totalShippingCollectedPaise) / validOrderCount)
+    : 0;
 
   return {
     totalBooksPurchased,
@@ -116,6 +143,7 @@ export async function getBookstoreFinanceSummary(filters: Pick<FinanceFilters, "
     currentInventoryCount,
     totalPurchaseCostPaise,
     totalSalesRevenuePaise,
+    totalShippingCollectedPaise,
     totalProfitLossPaise,
     pendingOrdersValuePaise,
     approvedOrdersValuePaise,
@@ -124,30 +152,27 @@ export async function getBookstoreFinanceSummary(filters: Pick<FinanceFilters, "
   };
 }
 
-export async function getBookSalesPaginated(
-  page: number,
-  pageSize: number,
-  q?: string,
-): Promise<PaginatedResult<BookSalesRecord>> {
-  const where: Prisma.BookWhereInput = q ? buildSearchOr(["title", "author"], [], q) : {};
+type BookSalesSource = Prisma.BookGetPayload<{
+  include: { orderItems: true; stockMovements: { select: { delta: true } } };
+}>;
 
-  const totalCount = await withDbErrorHandling(() => prisma.book.count({ where }), "Database operation failed");
-  const safePage = clampPage(page, totalCount, pageSize);
-
-  const books = await withDbErrorHandling(() => prisma.book.findMany({
-      where,
-      include: {
-        orderItems: {
-          where: {
-            order: { status: { in: ["APPROVED", "SHIPPED"] } },
-          },
-        },
+function bookSalesInclude(filters: Pick<FinanceFilters, "from" | "to">) {
+  const dateWhere = filters.from || filters.to ? { createdAt: financePaidAtWhere(filters) } : {};
+  return {
+    orderItems: {
+      where: {
+        order: { status: { in: [...STOCK_HOLDING_STATUSES] }, deletedAt: null, ...dateWhere },
       },
-      orderBy: { title: "asc" },
-      ...paginationArgs(safePage, pageSize),
-    }), "Database operation failed");
+    },
+    stockMovements: { select: { delta: true } },
+  } satisfies Prisma.BookInclude;
+}
 
-  const items = books.map((book) => {
+/** Sold/revenue columns follow the date range; stock is always the current figure. */
+async function toBookSalesRecords(books: BookSalesSource[]): Promise<BookSalesRecord[]> {
+  const stock = await getStockLevels(prisma, books.map((b) => b.id));
+
+  return books.map((book) => {
     let quantitySold = 0;
     let revenuePaise = 0;
 
@@ -156,9 +181,8 @@ export async function getBookSalesPaginated(
       revenuePaise += item.quantity * item.priceAtPurchaseInrPaise;
     }
 
-    const remainingStock = book.inventoryPurchased - quantitySold;
+    const adjustments = book.stockMovements.reduce((sum, m) => sum + m.delta, 0);
     const costOfGoodsSold = quantitySold * book.purchasePriceInrPaise;
-    const profitPaise = revenuePaise - costOfGoodsSold;
 
     return {
       id: book.id,
@@ -166,15 +190,33 @@ export async function getBookSalesPaginated(
       author: book.author,
       purchasePriceInrPaise: book.purchasePriceInrPaise,
       sellingPriceInrPaise: book.priceInrPaise,
-      quantityPurchased: book.inventoryPurchased,
+      quantityPurchased: book.inventoryPurchased + adjustments,
       quantitySold,
-      remainingStock,
+      remainingStock: stock.get(book.id)?.available ?? book.inventoryPurchased + adjustments,
       revenuePaise,
-      profitPaise,
+      profitPaise: revenuePaise - costOfGoodsSold,
     };
   });
+}
 
-  return { items, totalCount };
+export async function getBookSalesPaginated(
+  filters: Pick<FinanceFilters, "from" | "to" | "q">,
+  page: number,
+  pageSize: number,
+): Promise<PaginatedResult<BookSalesRecord>> {
+  const where: Prisma.BookWhereInput = filters.q ? buildSearchOr(["title", "author"], [], filters.q) : {};
+
+  const totalCount = await withDbErrorHandling(() => prisma.book.count({ where }), "Database operation failed");
+  const safePage = clampPage(page, totalCount, pageSize);
+
+  const books = await withDbErrorHandling(() => prisma.book.findMany({
+      where,
+      include: bookSalesInclude(filters),
+      orderBy: { title: "asc" },
+      ...paginationArgs(safePage, pageSize),
+    }), "Database operation failed");
+
+  return { items: await toBookSalesRecords(books), totalCount };
 }
 
 export async function getBookOrderFinancePaginated(
@@ -196,7 +238,7 @@ export async function getBookOrderFinancePaginated(
     : {};
 
   const where: Prisma.BookOrderWhereInput = {
-    AND: [dateWhere, searchWhere],
+    AND: [dateWhere, searchWhere, { deletedAt: null }],
   };
 
   const totalCount = await withDbErrorHandling(() => prisma.bookOrder.count({ where }), "Database operation failed");
@@ -237,6 +279,8 @@ export async function getBookOrderFinancePaginated(
       deliveryPhoneNumber: order.deliveryPhoneNumber,
       status: order.status,
       totalAmountPaise: order.totalAmountInrPaise,
+      shippingChargePaise: order.shippingChargeInrPaise,
+      refundedAmountPaise: order.status === "REFUNDED" ? order.totalAmountInrPaise : 0,
       profitContributionPaise,
     };
   });
@@ -244,47 +288,18 @@ export async function getBookOrderFinancePaginated(
   return { items, totalCount };
 }
 
-export async function getBookSalesAll(q?: string): Promise<BookSalesRecord[]> {
-  const where: Prisma.BookWhereInput = q ? buildSearchOr(["title", "author"], [], q) : {};
+export async function getBookSalesAll(
+  filters: Pick<FinanceFilters, "from" | "to" | "q">,
+): Promise<BookSalesRecord[]> {
+  const where: Prisma.BookWhereInput = filters.q ? buildSearchOr(["title", "author"], [], filters.q) : {};
 
   const books = await withDbErrorHandling(() => prisma.book.findMany({
       where,
-      include: {
-        orderItems: {
-          where: {
-            order: { status: { in: ["APPROVED", "SHIPPED"] } },
-          },
-        },
-      },
+      include: bookSalesInclude(filters),
       orderBy: { title: "asc" },
     }), "Database operation failed");
 
-  return books.map((book) => {
-    let quantitySold = 0;
-    let revenuePaise = 0;
-
-    for (const item of book.orderItems) {
-      quantitySold += item.quantity;
-      revenuePaise += item.quantity * item.priceAtPurchaseInrPaise;
-    }
-
-    const remainingStock = book.inventoryPurchased - quantitySold;
-    const costOfGoodsSold = quantitySold * book.purchasePriceInrPaise;
-    const profitPaise = revenuePaise - costOfGoodsSold;
-
-    return {
-      id: book.id,
-      title: book.title,
-      author: book.author,
-      purchasePriceInrPaise: book.purchasePriceInrPaise,
-      sellingPriceInrPaise: book.priceInrPaise,
-      quantityPurchased: book.inventoryPurchased,
-      quantitySold,
-      remainingStock,
-      revenuePaise,
-      profitPaise,
-    };
-  });
+  return toBookSalesRecords(books);
 }
 
 export async function getBookOrderFinanceAll(
@@ -304,7 +319,7 @@ export async function getBookOrderFinanceAll(
     : {};
 
   const where: Prisma.BookOrderWhereInput = {
-    AND: [dateWhere, searchWhere],
+    AND: [dateWhere, searchWhere, { deletedAt: null }],
   };
 
   const orders = await withDbErrorHandling(() => prisma.bookOrder.findMany({
@@ -341,6 +356,8 @@ export async function getBookOrderFinanceAll(
       deliveryPhoneNumber: order.deliveryPhoneNumber,
       status: order.status,
       totalAmountPaise: order.totalAmountInrPaise,
+      shippingChargePaise: order.shippingChargeInrPaise,
+      refundedAmountPaise: order.status === "REFUNDED" ? order.totalAmountInrPaise : 0,
       profitContributionPaise,
     };
   });

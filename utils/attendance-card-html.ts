@@ -5,6 +5,7 @@ import { getAcademySettings } from "@/services/academy-settings";
 import { BRAND_CONFIG } from "@/config/brand";
 import { AUTHORITY_SIGNATURE } from "@/services/academy-contact";
 import { formatRollNumber } from "@/services/roll-numbers";
+import { escapeHtml as e } from "@/utils/html-escape";
 
 
 export type AttendanceCardRecordData = {
@@ -73,7 +74,7 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
   <div class="w-full h-full border-pdf-lg border-brand-primary rounded-xl p-6 bg-surface-cream relative flex flex-col justify-between" style="box-sizing: border-box; height: 100%;">
     <!-- Watermark -->
     <div class="absolute inset-0 flex items-center justify-center opacity-[0.03] pointer-events-none">
-      <img src="${data.logoUrl}" class="w-[300px] process-white-bg" alt="Watermark" />
+      <img src="${e(data.logoUrl)}" class="w-[300px] process-white-bg" alt="Watermark" />
     </div>
 
     <div class="relative z-10 flex flex-col justify-between h-full">
@@ -84,12 +85,12 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
           <div class="flex justify-between items-center w-full">
             <!-- Top Left: Logo -->
             <div class="relative w-20 h-20">
-              <img src="${data.logoUrl}" alt="${data.academyName} Logo" class="object-contain w-full h-full process-white-bg" />
+              <img src="${e(data.logoUrl)}" alt="${e(data.academyName)} Logo" class="object-contain w-full h-full process-white-bg" />
             </div>
             <!-- Top Right: Academy Name & Arabic Verse -->
             <div class="text-right flex flex-col items-end">
               <h1 class="text-2xl font-serif font-bold text-brand-primary tracking-wide mb-0.5 uppercase">
-                ${data.academyName}
+                ${e(data.academyName)}
               </h1>
               <h2 class="text-base font-bold text-brand-primary mt-0.5" style="font-family: 'Scheherazade New', 'Amiri', serif; line-height: 1; word-spacing: 2px;">
                 خَيْرُكُمْ مَنْ تَعَلَّمَ الْقُرْآنَ وَعَلَّمَهُ
@@ -98,9 +99,9 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
           </div>
           <!-- Academy info below header -->
           <div class="text-center mt-2.5 text-pdf-10 text-slate-600 flex justify-between items-center w-full border-t border-slate-200 pt-2">
-            <span>Address: ${data.academyAddress}</span>
-            <span>Phone: ${data.academyPhone} | Email: ${data.academyEmail}</span>
-            <span>Website: ${data.academyWebsite}</span>
+            <span>Address: ${e(data.academyAddress)}</span>
+            <span>Phone: ${e(data.academyPhone)} | Email: ${e(data.academyEmail)}</span>
+            <span>Website: ${e(data.academyWebsite)}</span>
           </div>
         </header>
 
@@ -116,14 +117,14 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
         <div class="grid grid-cols-2 gap-4 mb-4 bg-white border-l-4 border-brand-primary p-4 rounded-r border border-slate-100 shadow-sm text-xs">
           <div class="space-y-0.5">
             <h3 class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Student Information</h3>
-            <p class="font-bold text-sm text-slate-800">${data.studentName}</p>
-            <p class="text-slate-600">Roll Number: <span class="font-semibold">${data.rollNumber}</span></p>
-            <p class="text-slate-600">Email: <span class="font-medium">${data.studentEmail}</span></p>
+            <p class="font-bold text-sm text-slate-800">${e(data.studentName)}</p>
+            <p class="text-slate-600">Roll Number: <span class="font-semibold">${e(data.rollNumber)}</span></p>
+            <p class="text-slate-600">Email: <span class="font-medium">${e(data.studentEmail)}</span></p>
           </div>
           <div class="space-y-0.5">
             <h3 class="text-pdf-10 font-bold text-slate-400 uppercase tracking-wider mb-1">Academic Course</h3>
-            <p class="font-bold text-sm text-brand-primary">${data.courseTitle}</p>
-            <p class="text-slate-600">Issue Date: <span class="font-medium">${data.issueDate}</span></p>
+            <p class="font-bold text-sm text-brand-primary">${e(data.courseTitle)}</p>
+            <p class="text-slate-600">Issue Date: <span class="font-medium">${e(data.issueDate)}</span></p>
           </div>
         </div>
         ` : ''}
@@ -146,14 +147,14 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
                 </tr>
               ` : pageRecords.map(record => `
                 <tr class="hover:bg-slate-50/50">
-                  <td class="py-2 px-4 font-medium text-slate-800">${record.date}</td>
+                  <td class="py-2 px-4 font-medium text-slate-800">${e(record.date)}</td>
                   <td class="py-2 px-4 text-right">
                     <span class="inline-flex px-2 py-0.5 rounded text-pdf-10 font-bold ${
                       record.status === "Present" 
                         ? "bg-emerald-100 text-emerald-800" 
                         : "bg-rose-100 text-rose-800"
                     }">
-                      ${record.status}
+                      ${e(record.status)}
                     </span>
                   </td>
                 </tr>
@@ -170,19 +171,19 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
         <div class="grid grid-cols-4 gap-4 bg-white border-y-2 border-brand-primary py-3 px-4 mb-4 text-center rounded shadow-sm border border-slate-100">
           <div>
             <div class="text-pdf-9 font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Classes</div>
-            <div class="text-base font-bold text-slate-800">${data.totalClasses}</div>
+            <div class="text-base font-bold text-slate-800">${e(data.totalClasses)}</div>
           </div>
           <div>
             <div class="text-pdf-9 font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Present</div>
-            <div class="text-base font-bold text-emerald-600">${data.totalPresent}</div>
+            <div class="text-base font-bold text-emerald-600">${e(data.totalPresent)}</div>
           </div>
           <div>
             <div class="text-pdf-9 font-bold text-slate-400 uppercase tracking-wider mb-0.5">Total Absent</div>
-            <div class="text-base font-bold text-rose-600">${data.totalAbsent}</div>
+            <div class="text-base font-bold text-rose-600">${e(data.totalAbsent)}</div>
           </div>
           <div>
             <div class="text-pdf-9 font-bold text-slate-400 uppercase tracking-wider mb-0.5">Attendance Rate</div>
-            <div class="text-base font-bold text-brand-primary">${data.attendancePercentage}%</div>
+            <div class="text-base font-bold text-brand-primary">${e(data.attendancePercentage)}%</div>
           </div>
         </div>
 
@@ -190,17 +191,17 @@ export function renderAttendanceCardToHtml(data: AttendanceCardData): string {
         <div class="flex justify-between items-end mt-4">
           <div class="w-7/12 pr-4">
             <p class="text-pdf-9 text-slate-500 leading-relaxed bg-white border border-slate-200/80 rounded p-2.5 italic shadow-sm">
-              This Attendance Card is an official attendance record issued by ${BRAND_CONFIG.name}.
+              This Attendance Card is an official attendance record issued by ${e(BRAND_CONFIG.name)}.
             </p>
           </div>
           <div class="w-5/12 text-center flex flex-col items-center relative">
             <div class="relative flex justify-center items-center h-[70px] w-full">
-              ${data.stampUrl ? `<img src="${data.stampUrl}" alt="Official Stamp" class="w-16 absolute z-10 opacity-90 process-white-bg mix-blend-multiply" style="top: 50%; left: 50%; transform: translate(-50%, -50%);" />` : ''}
-              ${data.signatureUrl ? `<img src="${data.signatureUrl}" alt="Authorized Signature" class="max-h-[60px] max-w-[120px] object-contain relative z-20 translate-y-1 process-white-bg" />` : ''}
+              ${data.stampUrl ? `<img src="${e(data.stampUrl)}" alt="Official Stamp" class="w-16 absolute z-10 opacity-90 process-white-bg mix-blend-multiply" style="top: 50%; left: 50%; transform: translate(-50%, -50%);" />` : ''}
+              ${data.signatureUrl ? `<img src="${e(data.signatureUrl)}" alt="Authorized Signature" class="max-h-[60px] max-w-[120px] object-contain relative z-20 translate-y-1 process-white-bg" />` : ''}
             </div>
             <div class="w-full border-t border-slate-300 pt-1 relative z-30">
-              <p class="font-bold text-pdf-10 text-slate-850">${data.authorityName}</p>
-              <p class="text-pdf-9 text-slate-500">${data.authorityDesignation}</p>
+              <p class="font-bold text-pdf-10 text-slate-850">${e(data.authorityName)}</p>
+              <p class="text-pdf-9 text-slate-500">${e(data.authorityDesignation)}</p>
             </div>
           </div>
         </div>
@@ -291,7 +292,8 @@ export async function generateAttendanceCardPdf(enrollmentId: string): Promise<B
     date: r.attendance.date.toLocaleDateString("en-IN", {
       day: "numeric",
       month: "short",
-      year: "numeric"
+      year: "numeric",
+      timeZone: "UTC",
     }),
     status: r.isPresent ? "Present" : "Absent"
   }));
@@ -323,7 +325,7 @@ export async function generateAttendanceCardPdf(enrollmentId: string): Promise<B
     authorityDesignation: AUTHORITY_SIGNATURE.designation
   };
 
-  const html = wrapHtmlForPdf(renderAttendanceCardToHtml(data), { base64Font });
+  const html = await wrapHtmlForPdf(renderAttendanceCardToHtml(data), { base64Font });
   const pdfBuffer = await generatePdfFromHtml(html, {
     format: "A4",
     landscape: false

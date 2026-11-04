@@ -1,10 +1,11 @@
 import { z } from "zod";
+import { MAX_ORDER_QTY } from "@/config/constants/business";
 import {
   PROFILE_COUNTRY_CODES,
   getProfileCountryOrDefault,
   isValidProfileLocalNumber,
 } from "@/services/countries";
-import { EXPENSE_CATEGORY_TEACHER_SALARY } from "@/services/expense-categories";
+import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_OTHER, EXPENSE_CATEGORY_TEACHER_SALARY } from "@/services/expense-categories";
 import { isPaymentYearAllowed } from "@/services/monthly-payments";
 import { OCCUPATION_VALUES } from "@/services/occupations";
 
@@ -70,7 +71,8 @@ export const libraryItemSchema = z.object({
     .string()
     .trim()
     .min(1, "PDF URL is required.")
-    .url("Enter a valid PDF URL."),
+    .url("Enter a valid PDF URL.")
+    .refine((value) => /^https?:\/\//i.test(value), "PDF URL must start with http:// or https://."),
   published: z.coerce.boolean(),
 });
 
@@ -91,6 +93,25 @@ export const fatwaAnswerSchema = z.object({
 export const adminEnrollUserSchema = z.object({
   email: z.string().trim().email("Enter a valid student email."),
   courseId: z.string().min(1, "Select a course."),
+});
+
+/** Shared by the web and mobile registration endpoints. */
+export const registerSchema = z.object({
+  name: z.string().trim().max(100, "Name must be at most 100 characters.").nullish(),
+  email: z
+    .string("Email and password are required.")
+    .trim()
+    .toLowerCase()
+    .min(1, "Email and password are required.")
+    .max(254, "Email must be at most 254 characters.")
+    .email("Enter a valid email address."),
+  password: z
+    .string("Email and password are required.")
+    .min(8, "Password must be at least 8 characters.")
+    .max(128, "Password must be at most 128 characters."),
+  acceptPolicies: z.literal(true, {
+    error: "You must accept the Terms & Conditions and Privacy Policy.",
+  }),
 });
 
 export const forgotPasswordSchema = z.object({
@@ -130,7 +151,14 @@ export const paymentSettingsSchema = z.object({
   bankBranch: z.string().trim().max(200).optional().or(z.literal("")),
   includeGstByDefault: z.boolean().default(false),
   feeWaiverEnabled: z.boolean().default(false),
+  autoApproveFullWaivers: z.boolean().default(false),
 });
+
+/** Amount the client displayed; the server refuses the submission when it differs. */
+export const expectedAmountPaiseSchema = z.preprocess(
+  (value) => (value === "" || value === null || value === undefined ? undefined : value),
+  z.coerce.number().int().nonnegative().optional(),
+);
 
 export const monthlyPaymentSubmitSchema = z.object({
   courseId: z.string().min(1),
@@ -148,6 +176,7 @@ export const monthlyPaymentSubmitSchema = z.object({
     .or(z.literal(""))
     .or(z.null()),
   couponId: z.string().optional().or(z.literal("")).or(z.null()),
+  expectedAmountPaise: expectedAmountPaiseSchema,
 });
 
 export const enrollmentPaymentSubmitSchema = z.object({
@@ -161,6 +190,7 @@ export const enrollmentPaymentSubmitSchema = z.object({
     .or(z.literal(""))
     .or(z.null()),
   couponId: z.string().optional().or(z.literal("")).or(z.null()),
+  expectedAmountPaise: expectedAmountPaiseSchema,
 });
 
 export const occupationEnum = z.enum(OCCUPATION_VALUES);
@@ -171,7 +201,8 @@ export const genderEnum = z.enum(["MALE", "FEMALE"], {
   message: "Gender is required.",
 });
 
-export const profileUpdateSchema = z
+/** Base profile field rules shared by the web form and the mobile API. */
+export const profileFieldsSchema = z
   .object({
     name: z.string().trim().min(2, "Name must be at least 2 characters.").max(100),
     fatherName: z.string().trim().min(2, "Father's name must be at least 2 characters.").max(100),
@@ -196,7 +227,9 @@ export const profileUpdateSchema = z
     country: profileCountryEnum,
     whatsapp: z.string().trim(),
     gender: genderEnum,
-  })
+  });
+
+export const profileUpdateSchema = profileFieldsSchema
   .superRefine((data, ctx) => {
     const country = getProfileCountryOrDefault(data.country);
     const digits = data.whatsapp.replace(/\D/g, "");
@@ -222,6 +255,45 @@ export const profileUpdateSchema = z
       });
     }
   });
+
+/**
+ * Profile image URLs may only point at hosts the application itself stores
+ * images on. user.image is later fetched server-side for the ID card, so an
+ * arbitrary URL or local path would be an SSRF / file-read vector.
+ */
+export function isAllowedProfileImageUrl(value: string): boolean {
+  if (value === "/assets/male_icon.png" || value === "/assets/female_icon.png") return true;
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    if (host.endsWith(".googleusercontent.com")) return true;
+    const r2 = process.env.R2_PUBLIC_URL;
+    if (!r2) return false;
+    return host === new URL(r2).hostname.toLowerCase();
+  } catch {
+    return false;
+  }
+}
+
+export const profileImageUrlSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine(isAllowedProfileImageUrl, "Profile image must be hosted on the academy's storage.");
+
+/** Mobile API profile update: every field optional, no unknown keys, image host-restricted. */
+export const apiProfileUpdateSchema = profileFieldsSchema
+  .omit({ country: true })
+  .extend({
+    whatsapp: z
+      .string()
+      .trim()
+      .regex(/^\+?\d{7,15}$/, "WhatsApp number must be 7 to 15 digits."),
+    image: profileImageUrlSchema.nullable(),
+  })
+  .partial()
+  .strict();
 
 export const announcementCategoryEnum = z.enum([
   "EXAMS_TESTS",
@@ -285,24 +357,36 @@ export const courseAnnouncementSchema = z.object({
   body: z.string().trim().min(10, "Message must be at least 10 characters.").max(10000),
 });
 
+/** A calendar day as the date input sends it; interpreted in the business timezone. */
+export const calendarDateSchema = z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date.");
+
 export const paymentRecordSchema = z.object({
   courseId: z.string().optional(),
   amountInr: z.coerce.number().positive("Amount must be greater than zero."),
-  paidAt: z.string().min(1, "Payment date is required."),
+  paidAt: calendarDateSchema,
   paymentType: z.enum(["monthly", "quarterly", "half_yearly", "yearly", "one_time", "enrollment", "manual"]),
 });
 
-const expenseCategoryEnum = z.string().trim().min(2, "Category is required.").max(100, "Category is too long.");
+const expenseCategoryEnum = z.enum(EXPENSE_CATEGORIES, { message: "Choose a category." });
 
 export const expenseSchema = z
   .object({
     category: expenseCategoryEnum,
     amountInr: z.coerce.number().positive("Amount must be greater than zero."),
-    paidAt: z.string().min(1, "Payment date is required."),
+    paidAt: calendarDateSchema,
     description: z.string().trim().max(500).optional(),
+    /** Free text naming the category when "Other" is chosen. */
+    note: z.string().trim().max(100, "Keep the category note under 100 characters.").optional(),
     teacherId: z.string().optional(),
   })
   .superRefine((data, ctx) => {
+    if (data.category === EXPENSE_CATEGORY_OTHER && !data.note?.trim()) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Specify what the expense was for.",
+        path: ["note"],
+      });
+    }
     if (data.category === EXPENSE_CATEGORY_TEACHER_SALARY && !data.teacherId?.trim()) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -397,11 +481,33 @@ export const bookSchema = z.object({
   featuredOnHomepage: z.boolean().optional(),
 });
 
+/** A blog comment body: trimmed, non-empty, capped so the page and notifications stay readable. */
+export const blogCommentSchema = z
+  .string()
+  .trim()
+  .min(1, "Comment content cannot be empty")
+  .max(2000, "Comments must be at most 2000 characters.");
+
+export const waiverRequestSchema = z.object({
+  courseId: z.string().trim().min(1, "Please select a course."),
+  feeType: z.enum(["enrollment", "course", "both"], { message: "Please choose which fee the waiver is for." }),
+  reason: z
+    .string()
+    .trim()
+    .min(10, "Please provide a reason (at least 10 characters).")
+    .max(1000, "Reason must be at most 1000 characters."),
+});
+export type WaiverRequestInput = z.infer<typeof waiverRequestSchema>;
+
 export const bookstoreCheckoutSchema = z.object({
   items: z.array(
     z.object({
       bookId: z.string().min(1, "Book ID is required."),
-      quantity: z.number().int().min(1, "Quantity must be at least 1."),
+      quantity: z
+        .number()
+        .int()
+        .min(1, "Quantity must be at least 1.")
+        .max(MAX_ORDER_QTY, `You can order at most ${MAX_ORDER_QTY} copies of a book.`),
     })
   ).min(1, "Cart cannot be empty."),
   paymentMethod: z.string().min(1, "Payment method is required."),
@@ -412,6 +518,101 @@ export const bookstoreCheckoutSchema = z.object({
   notes: z.string().trim().optional(),
 });
 
+const isoDateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date.")
+  .refine((value) => !Number.isNaN(Date.parse(value)), "Enter a valid date.");
+
+const couponPercentage = z.coerce
+  .number("Discount must be a number.")
+  .int("Discount must be a whole number.")
+  .min(1, "Discount must be at least 1%.")
+  .max(100, "Discount cannot exceed 100%.");
+
+const couponDateOrder = (value: { validFrom: string; validUntil: string }) =>
+  value.validFrom <= value.validUntil;
+const COUPON_DATE_ORDER_MESSAGE = "Valid until must be on or after valid from.";
+
+const couponFieldsSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .min(3, "Code must be at least 3 characters.")
+    .max(32, "Code must be at most 32 characters.")
+    .regex(/^[A-Za-z0-9_-]+$/, "Code may only contain letters, numbers, hyphens and underscores.")
+    .toUpperCase(),
+  percentage: couponPercentage,
+  validFrom: isoDateString,
+  validUntil: isoDateString,
+  courseId: z.string().optional().or(z.literal("")),
+  gender: z.enum(["MALE", "FEMALE"]).optional().or(z.literal("")),
+  isActive: z.boolean().default(true),
+  applyTo: z.enum(["BOTH", "ENROLLMENT", "COURSE"]).default("BOTH"),
+});
+
+/** Create or edit a DEFAULT (public) coupon. A future `validFrom` schedules the coupon. */
+export const couponSchema = couponFieldsSchema.refine(couponDateOrder, {
+  message: COUPON_DATE_ORDER_MESSAGE,
+  path: ["validUntil"],
+});
+
+/** SPECIAL (per-student waiver) coupons only allow dates, percentage and active state to change. */
+export const specialCouponUpdateSchema = couponFieldsSchema
+  .pick({ percentage: true, validFrom: true, validUntil: true, isActive: true })
+  .refine(couponDateOrder, { message: COUPON_DATE_ORDER_MESSAGE, path: ["validUntil"] });
+
+export const couponRequestApprovalSchema = z.object({
+  percentage: couponPercentage,
+  validUntil: isoDateString.refine(
+    (value) => value >= new Date().toISOString().slice(0, 10),
+    "Valid until cannot be in the past.",
+  ),
+});
+
+/**
+ * A grade card save. `marksObtained: null` means "not graded": the student's
+ * row is removed (or never created) instead of being stored as 0.
+ */
+export const courseGradeInputSchema = z
+  .object({
+    title: z
+      .string()
+      .trim()
+      .min(1, "Exam title is required.")
+      .max(200, "Exam title must be at most 200 characters."),
+    maxMarks: z
+      .number("Maximum marks must be a number.")
+      .int("Maximum marks must be a whole number.")
+      .min(1, "Maximum marks must be at least 1."),
+    records: z.array(
+      z.object({
+        enrollmentId: z.string().min(1),
+        marksObtained: z
+          .number("Marks must be a number.")
+          .finite("Marks must be a number.")
+          .min(0, "Marks cannot be negative.")
+          .nullable(),
+      }),
+    ),
+  })
+  .superRefine((value, ctx) => {
+    const seen = new Set<string>();
+    for (const record of value.records) {
+      if (seen.has(record.enrollmentId)) {
+        ctx.addIssue({ code: "custom", message: "A student appears more than once." });
+        return;
+      }
+      seen.add(record.enrollmentId);
+      if (record.marksObtained !== null && record.marksObtained > value.maxMarks) {
+        ctx.addIssue({
+          code: "custom",
+          message: `Marks cannot exceed the maximum of ${value.maxMarks}.`,
+        });
+        return;
+      }
+    }
+  });
+
 export const slabSchema = z.object({
   minWeightGrams: z.coerce.number().int().min(0, "Minimum weight must be 0 or more."),
   maxWeightGrams: z.coerce.number().int().min(1, "Maximum weight must be at least 1."),
@@ -421,15 +622,12 @@ export const slabSchema = z.object({
   path: ["maxWeightGrams"]
 });
 
-export const adminStudentSchema = z.object({
-  name: z.string().min(2, "Name is required"),
-  fatherName: z.string().min(2, "Father's name is required"),
-  dateOfBirth: z.string().min(1, "Date of birth is required"),
-  occupation: z.string().min(1, "Occupation is required"),
-  address: z.string().min(5, "Address is required"),
-  whatsapp: z.string().min(5, "WhatsApp is required"),
-  gender: z.enum(["MALE", "FEMALE"], {
-    message: "Gender is required.",
-  }),
+/**
+ * Admin edit of a student profile: the same field rules the student's own
+ * profile form enforces (occupation and gender as enums, real date of birth,
+ * address length), minus the country, which the admin form does not edit.
+ */
+export const adminStudentSchema = profileFieldsSchema.omit({ country: true }).extend({
+  whatsapp: z.string().trim().min(5, "WhatsApp number is required.").max(20, "WhatsApp number is too long."),
 });
 

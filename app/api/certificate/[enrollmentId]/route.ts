@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/services/auth";
+import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { isAdminSession } from "@/services/admin";
 import { getCourseById } from "@/services/courses";
-import { getCertificateFilename, generateCertificatePdf } from "@/services/certificate";
+import { getCertificatePdf } from "@/services/documents";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
+
+// Chromium cold start plus rendering can exceed the default function timeout.
+export const maxDuration = 60;
 
 export async function GET(
   request: Request,
@@ -14,6 +18,8 @@ export async function GET(
   const inline = new URL(request.url).searchParams.get("inline") === "1";
 
   const session = await auth();
+  const limited = await enforceRateLimit(RATE_LIMITS.DOCUMENT_USER, session?.user?.id ?? "anonymous");
+  if (limited) return limited;
   const isAdmin = isAdminSession(session);
 
   if (!isAdmin) {
@@ -40,30 +46,10 @@ export async function GET(
     return NextResponse.json({ error: "Certificate has not been generated yet." }, { status: 400 });
   }
 
-  const filename = getCertificateFilename(course.title, enrollmentId);
-  
-  const issueDate = enrollment.certificateGeneratedAt 
-    ? enrollment.certificateGeneratedAt.toLocaleDateString("en-IN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      })
-    : new Date().toLocaleDateString("en-IN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-
   try {
-    const pdfBuffer = await generateCertificatePdf({
-      studentName: enrollment.user.name || "Student",
-      studentAddress: enrollment.user.address,
-      courseTitle: course.title,
-      issueDate,
-      certificateNumber: enrollment.certificateNumber,
-      certificateType: (enrollment.certificateType as "APPRECIATION" | "COMPLETION" | null) || "COMPLETION",
-      certificateGrade: enrollment.certificateGrade,
-    });
+    // The stored file when the certificate was rendered at issue time;
+    // Chromium only for enrollments without one.
+    const { pdf: pdfBuffer, filename } = await getCertificatePdf(enrollment, course.title);
 
     return new NextResponse(new Uint8Array(pdfBuffer), {
       status: 200,
@@ -77,7 +63,7 @@ export async function GET(
     const err = error as Error;
     console.error("PDF Generation Error:", err.stack || err);
     return NextResponse.json(
-      { error: "Failed to generate PDF", details: err.message || String(error) },
+      { error: "Failed to generate PDF" },
       { status: 500 },
     );
   }

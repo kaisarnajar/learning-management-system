@@ -4,7 +4,9 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { TeacherForm } from "@/components/admin/TeacherForm";
 import { deleteTeacher, updateTeacher } from "@/app/admin/teachers/actions";
 import { getTeacherById } from "@/services/teachers";
+import { getCoursesForTeacher } from "@/services/teacher-portal";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 export default async function EditTeacherPage({
@@ -14,12 +16,14 @@ export default async function EditTeacherPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string; created?: string; error?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const teacher = await getTeacherById(id);
 
   if (!teacher) notFound();
 
+  const courses = await getCoursesForTeacher(id);
   const boundUpdate = updateTeacher.bind(null, id);
   const boundDelete = deleteTeacher.bind(null, id);
 
@@ -42,7 +46,15 @@ export default async function EditTeacherPage({
         />
       </div>
 
-      <DeleteActionButton action={boundDelete} itemName="teacher" />
+      <DeleteActionButton
+        action={boundDelete}
+        itemName={teacher.name}
+        warningMessage={
+          courses.length > 0
+            ? `${teacher.name} is assigned to ${courses.length} course${courses.length === 1 ? "" : "s"}. Reassign ${courses.length === 1 ? "it" : "them"} from the course edit page before deleting.`
+            : undefined
+        }
+      />
     </div>
   );
 }

@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { MAX_ORDER_QTY } from "@/config/constants/business";
+import { toCartResponse } from "@/services/api-dto";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
+
+/** Only published, in-stock books can sit in a cart; others are silently left out so clients can notify the student. */
+const PURCHASABLE_BOOK = { published: true, status: "AVAILABLE" } as const;
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -8,39 +13,14 @@ export async function GET(request: NextRequest) {
 
   try {
     const rawCartItems = await prisma.userCartItem.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, book: PURCHASABLE_BOOK },
       include: {
         book: true,
       },
       orderBy: { createdAt: "asc" },
     });
 
-    const items = rawCartItems.map((item) => ({
-      bookId: item.book.id,
-      title: item.book.title,
-      author: item.book.author,
-      priceInrPaise: item.book.priceInrPaise,
-      mrpInrPaise: item.book.mrpInrPaise,
-      imagePath: item.book.imagePath,
-      quantity: item.quantity,
-      book: {
-        id: item.book.id,
-        title: item.book.title,
-        author: item.book.author,
-        description: item.book.description,
-        priceInrPaise: item.book.priceInrPaise,
-        mrpInrPaise: item.book.mrpInrPaise,
-        status: item.book.status,
-        imagePath: item.book.imagePath,
-        category: "Islamic Books",
-      },
-    }));
-
-    return NextResponse.json({
-      success: true,
-      data: items,
-      items,
-    });
+    return NextResponse.json(toCartResponse(rawCartItems));
   } catch (error) {
     console.error("[api/v1/bookstore/cart] GET Error:", error);
     return NextResponse.json(
@@ -66,9 +46,14 @@ export async function POST(request: NextRequest) {
       });
 
       for (const item of inputItems) {
-        if (item.bookId && item.quantity > 0) {
-          const bookExists = await tx.book.findUnique({
-            where: { id: item.bookId },
+        if (
+          typeof item.bookId === "string" &&
+          item.bookId &&
+          Number.isInteger(item.quantity) &&
+          item.quantity > 0
+        ) {
+          const bookExists = await tx.book.findFirst({
+            where: { id: item.bookId, ...PURCHASABLE_BOOK },
           });
 
           if (bookExists) {
@@ -76,7 +61,7 @@ export async function POST(request: NextRequest) {
               data: {
                 userId: user.id,
                 bookId: item.bookId,
-                quantity: item.quantity,
+                quantity: Math.min(item.quantity, MAX_ORDER_QTY),
               },
             });
           }
@@ -85,39 +70,14 @@ export async function POST(request: NextRequest) {
     });
 
     const updatedRawItems = await prisma.userCartItem.findMany({
-      where: { userId: user.id },
+      where: { userId: user.id, book: PURCHASABLE_BOOK },
       include: {
         book: true,
       },
       orderBy: { createdAt: "asc" },
     });
 
-    const items = updatedRawItems.map((item) => ({
-      bookId: item.book.id,
-      title: item.book.title,
-      author: item.book.author,
-      priceInrPaise: item.book.priceInrPaise,
-      mrpInrPaise: item.book.mrpInrPaise,
-      imagePath: item.book.imagePath,
-      quantity: item.quantity,
-      book: {
-        id: item.book.id,
-        title: item.book.title,
-        author: item.book.author,
-        description: item.book.description,
-        priceInrPaise: item.book.priceInrPaise,
-        mrpInrPaise: item.book.mrpInrPaise,
-        status: item.book.status,
-        imagePath: item.book.imagePath,
-        category: "Islamic Books",
-      },
-    }));
-
-    return NextResponse.json({
-      success: true,
-      data: items,
-      items,
-    });
+    return NextResponse.json(toCartResponse(updatedRawItems));
   } catch (error) {
     console.error("[api/v1/bookstore/cart] POST Error:", error);
     return NextResponse.json(

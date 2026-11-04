@@ -1,40 +1,20 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Share2, Link as LinkIcon, QrCode, Download, X } from "lucide-react";
 import QRCode from "qrcode";
+import { useToast } from "@/components/shared/ToastProvider";
+import { useDialog } from "@/components/shared/useDialog";
 
 interface CourseShareButtonProps {
   courseTitle: string;
 }
 
 export function CourseShareButton({ courseTitle }: CourseShareButtonProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const { addToast } = useToast();
+  const { dialogRef, isOpen, open, close } = useDialog();
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
-  const dialogRef = useRef<HTMLDialogElement>(null);
   const url = typeof window !== "undefined" ? window.location.href : "";
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (isOpen && dialog && !dialog.open) {
-      dialog.showModal();
-    } else if (!isOpen && dialog && dialog.open) {
-      dialog.close();
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
-    const dialog = dialogRef.current;
-    if (!dialog) return;
-
-    const handleCancel = (e: Event) => {
-      e.preventDefault();
-      setIsOpen(false);
-    };
-
-    dialog.addEventListener("cancel", handleCancel);
-    return () => dialog.removeEventListener("cancel", handleCancel);
-  }, []);
 
   useEffect(() => {
     if (isOpen && url && !qrCodeUrl) {
@@ -58,16 +38,20 @@ export function CourseShareButton({ courseTitle }: CourseShareButtonProps) {
           title: courseTitle,
           url,
         });
-        setIsOpen(false);
+        close();
       } catch (err) {
         console.error("Error sharing natively:", err);
       }
     }
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(url);
-    alert("Link copied to clipboard!");
+  const handleCopyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      addToast("Link copied to clipboard.", "success");
+    } catch {
+      addToast("Could not copy the link.", "error");
+    }
   };
 
   const handleDownloadQr = () => {
@@ -83,7 +67,7 @@ export function CourseShareButton({ courseTitle }: CourseShareButtonProps) {
   return (
     <>
       <button
-        onClick={() => setIsOpen(true)}
+        onClick={() => open()}
         className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-muted text-muted transition-colors hover:bg-gold hover:text-white"
         aria-label="Share Course"
         title="Share Course"
@@ -98,7 +82,7 @@ export function CourseShareButton({ courseTitle }: CourseShareButtonProps) {
         <div className="flex items-center justify-between border-b border-border p-4">
           <h3 className="text-lg font-semibold text-foreground">Share Course</h3>
           <button
-            onClick={() => setIsOpen(false)}
+            onClick={() => close()}
             className="rounded-full p-1 text-muted transition-colors hover:bg-surface-muted hover:text-foreground"
             aria-label="Close"
           >

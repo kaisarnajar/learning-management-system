@@ -20,8 +20,11 @@ export interface PaymentInfo {
   courseName: string;
   academicTerm?: string;
   amount: number;
+  /** Taxable value (amount excluding GST) when GST applies. */
   baseAmount?: number;
+  /** GST component INCLUDED in `amount`; rendered as a memo line, never added again. */
   gstAmount?: number;
+  gstRatePercent?: number;
   shippingAmount?: number;
   discountAmount?: number;
   discountPercentage?: number;

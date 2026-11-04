@@ -4,10 +4,9 @@ import { ensureAuth } from "@/utils/auth-utils";
 import { isCourseEnrollmentOpen } from "@/services/course-status";
 import { getRegistrationFeePaise } from "@/services/course-pricing";
 import { getCourseById } from "@/services/courses";
-import {
-  AWAITING_ENROLLMENT_FEE,
-  PENDING_ENROLLMENT_APPROVAL,
-} from "@/services/enrollment-status";
+import { canReapplyForEnrollment } from "@/services/enrollment-status";
+import { startEnrollment } from "@/services/enrollments";
+import { enrollmentStatusOf, isApprovedEnrollment } from "@/services/status-compat";
 import { isUserProfileComplete, PROFILE_COMPLETE_REDIRECT } from "@/services/profile";
 import { prisma } from "@/utils/prisma";
 import { isUpiConfigured } from "@/services/upi";
@@ -49,7 +48,9 @@ export async function submitCheckout(courseId: string) {
       },
     });
 
-    if (existing?.status === "active" || existing?.status === "completed") {
+    const existingStatus = existing ? enrollmentStatusOf(existing) : null;
+
+    if (existing && isApprovedEnrollment(existing)) {
       return {
         error: "You are already enrolled in this course.",
         alreadyEnrolled: true,
@@ -57,21 +58,21 @@ export async function submitCheckout(courseId: string) {
       };
     }
 
-    if (existing?.status === PENDING_ENROLLMENT_APPROVAL) {
+    if (existingStatus === "PENDING_APPROVAL") {
       return {
         redirectUrl: "/profile/courses",
         alreadyEnrolled: true,
       };
     }
 
-    if (existing?.status === AWAITING_ENROLLMENT_FEE) {
+    if (existingStatus === "AWAITING_ENROLLMENT_FEE") {
       return {
         redirectUrl: `/profile/courses/${courseId}/enrollment-pay`,
         alreadyEnrolled: true,
       };
     }
 
-    if (existing) {
+    if (existing && !canReapplyForEnrollment(existing.status)) {
       return {
         redirectUrl: "/profile/courses",
         alreadyEnrolled: true,
@@ -88,30 +89,21 @@ export async function submitCheckout(courseId: string) {
       };
     }
 
+    // A previously rejected request is reused (same row, status reset) so the
+    // (userId, courseId) uniqueness holds and the history stays on one row.
+    await startEnrollment(
+      session.user.id,
+      course.id,
+      requiresEnrollmentFee ? "AWAITING_ENROLLMENT_FEE" : "PENDING_APPROVAL",
+    );
+
     if (requiresEnrollmentFee) {
-      if (!existing) {
-        await prisma.enrollment.create({
-          data: {
-            userId: session.user.id,
-            courseId: course.id,
-            status: AWAITING_ENROLLMENT_FEE,
-          },
-        });
-      }
       return {
         redirectUrl: `/profile/courses/${courseId}/enrollment-pay`,
       };
     }
 
-    // Free course: create enrollment immediately and await admin approval.
-    await prisma.enrollment.create({
-      data: {
-        userId: session.user.id,
-        courseId: course.id,
-        status: PENDING_ENROLLMENT_APPROVAL,
-      },
-    });
-
+    // Free course: the request now awaits admin approval.
     return { redirectUrl: "/profile/courses" };
   } catch (error) {
     console.error("Caught error:", error);

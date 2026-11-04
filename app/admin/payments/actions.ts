@@ -1,22 +1,26 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { adminReturnUrl, revalidateAdminPaths } from "@/utils/admin-redirects";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { requireAdmin } from "@/services/auth-actions";
 import { sendPaymentDeclinedEmail } from "@/services/email";
-import { AWAITING_ENROLLMENT_FEE } from "@/services/enrollment-status";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
 import {
-  MONTHLY_PAYMENT_APPROVED,
-  MONTHLY_PAYMENT_DECLINED,
-  MONTHLY_PAYMENT_PENDING,
-  PAYMENT_TYPE_ENROLLMENT,
-} from "@/services/monthly-payment-status";
+  enrollmentStatusData,
+  enrollmentStatusOf,
+  paymentTypeOf,
+  paymentTypeWrite,
+  submissionStatusData,
+  submissionStatusOf,
+} from "@/services/status-compat";
 import { prisma } from "@/utils/prisma";
+import { ENROLLMENT_STATUS } from "@/config/constants/business";
 import { getCourseById } from "@/services/courses";
 import { notifyPaymentApproved, revalidateNotificationPaths } from "@/services/notifications";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getAppBaseUrl } from "@/services/password-reset";
+import { normalizeReason, softDeleteSubmissionTx, voidPaymentRecordTx, VoidError } from "@/services/payment-voiding";
 
 function revalidatePaymentPaths(userId: string, courseId?: string | null) {
   const paths = [
@@ -33,21 +37,7 @@ function revalidatePaymentPaths(userId: string, courseId?: string | null) {
   if (courseId) {
     paths.push(`/admin/courses/${courseId}/students`);
   }
-  for (const path of paths) {
-    revalidatePath(path, "layout");
-    revalidatePath(path, "page");
-  }
-}
-
-function paymentReturnUrl(returnTo: string | undefined, event: "confirmed" | "declined" | "deleted"): string {
-  const param = event === "confirmed" ? "confirmed" : event === "declined" ? "declined" : "deleted";
-  const fallback = `/admin/payments?${param}=1`;
-  if (!returnTo?.startsWith("/admin")) return fallback;
-  const [pathname, query = ""] = returnTo.split("?");
-  const params = new URLSearchParams(query);
-  params.set(param, "1");
-  const qs = params.toString();
-  return qs ? `${pathname}?${qs}` : `${pathname}?${param}=1`;
+  revalidateAdminPaths(paths);
 }
 
 export async function confirmMonthlyPayment(
@@ -65,28 +55,31 @@ export async function confirmMonthlyPayment(
     return { error: "Payment submission not found." };
   }
 
-  if (submission.status === MONTHLY_PAYMENT_APPROVED) {
-    redirect(paymentReturnUrl(returnTo, "confirmed"));
+  const submissionStatus = submissionStatusOf(submission);
+  const isEnrollmentFee = paymentTypeOf(submission) === "ENROLLMENT";
+
+  if (submissionStatus === "APPROVED") {
+    redirect(adminReturnUrl(returnTo, "/admin/payments", "confirmed"));
   }
 
-  if (submission.status !== MONTHLY_PAYMENT_PENDING) {
+  if (submissionStatus !== "PENDING_VERIFICATION") {
     return { error: "This payment cannot be confirmed." };
   }
 
-  if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT) {
+  if (isEnrollmentFee) {
     const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
           where: {
             userId_courseId: { userId: submission.userId, courseId: submission.courseId },
           },
         }), "Database operation failed");
 
-    if (!enrollment || enrollment.status !== AWAITING_ENROLLMENT_FEE) {
+    if (!enrollment || enrollmentStatusOf(enrollment) !== "AWAITING_ENROLLMENT_FEE") {
       return { error: "Enrollment is not awaiting an enrollment fee payment." };
     }
   }
 
   const course = await getCourseById(submission.courseId);
-  if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT && !course) {
+  if (isEnrollmentFee && !course) {
     return { error: "Course not found." };
   }
 
@@ -97,7 +90,7 @@ export async function confirmMonthlyPayment(
         courseId: submission.courseId,
         amountInrPaise: submission.amountInrPaise,
         paidAt: new Date(),
-        paymentType: submission.paymentType,
+        ...paymentTypeWrite(submission.paymentType),
         description: submission.label,
       },
     });
@@ -105,24 +98,24 @@ export async function confirmMonthlyPayment(
     await tx.coursePaymentSubmission.update({
       where: { id: submissionId },
       data: {
-        status: MONTHLY_PAYMENT_APPROVED,
+        ...submissionStatusData("APPROVED"),
         paymentRecordId: record.id,
       },
     });
 
-      if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT && course) {
+      if (isEnrollmentFee && course) {
         await tx.enrollment.updateMany({
           where: {
             userId: submission.userId,
             courseId: submission.courseId,
-            status: AWAITING_ENROLLMENT_FEE,
+            status: ENROLLMENT_STATUS.AWAITING_FEE,
           },
-          data: { status: getRosterEnrollmentStatusForCourse(course.status) },
+          data: enrollmentStatusData(getRosterEnrollmentStatusForCourse(course.status)),
         });
       }
     }), "Database operation failed");
 
-    if (submission.paymentType === PAYMENT_TYPE_ENROLLMENT && course && getRosterEnrollmentStatusForCourse(course.status) === "active") {
+    if (isEnrollmentFee && course && getRosterEnrollmentStatusForCourse(course.status) === "ACTIVE") {
       const enrollment = await prisma.enrollment.findUnique({
         where: { userId_courseId: { userId: submission.userId, courseId: submission.courseId } },
         select: { id: true },
@@ -145,7 +138,7 @@ export async function confirmMonthlyPayment(
   }
 
   revalidatePaymentPaths(submission.userId, submission.courseId);
-  redirect(paymentReturnUrl(returnTo, "confirmed"));
+  redirect(adminReturnUrl(returnTo, "/admin/payments", "confirmed"));
 }
 
 export async function declineMonthlyPayment(
@@ -163,7 +156,7 @@ export async function declineMonthlyPayment(
     return { error: "Payment submission not found." };
   }
 
-  if (submission.status !== MONTHLY_PAYMENT_PENDING) {
+  if (submissionStatusOf(submission) !== "PENDING_VERIFICATION") {
     return { error: "Only pending payments can be declined." };
   }
 
@@ -175,85 +168,106 @@ export async function declineMonthlyPayment(
   await withDbErrorHandling(() => prisma.coursePaymentSubmission.update({
       where: { id: submissionId },
       data: {
-        status: MONTHLY_PAYMENT_DECLINED,
+        ...submissionStatusData("DECLINED"),
         upiTransactionId: null,
         paymentScreenshotPath: null,
         paymentMethod: null,
+        paymentMethodEnum: null,
       },
     }), "Database operation failed");
 
   const base = getAppBaseUrl();
   const paymentUrl =
-    submission.paymentType === PAYMENT_TYPE_ENROLLMENT
+    paymentTypeOf(submission) === "ENROLLMENT"
       ? `${base.replace(/\/$/, "")}/profile/courses/${submission.courseId}/enrollment-pay`
       : `${base.replace(/\/$/, "")}/profile/courses/${submission.courseId}/pay`;
 
-  await sendPaymentDeclinedEmail({
+  // The decline is committed; the email goes out after the response.
+  after(() => sendPaymentDeclinedEmail({
     to: submission.user.email,
     studentName: submission.user.name ?? "",
     courseTitle: course.title,
     paymentUrl,
-  });
+  }));
 
   revalidatePaymentPaths(submission.userId, submission.courseId);
-  redirect(paymentReturnUrl(returnTo, "declined"));
+  redirect(adminReturnUrl(returnTo, "/admin/payments", "declined"));
 }
 
-export async function deleteApprovedPayment(
+/**
+ * Voids an approved fee payment: the PaymentRecord is marked voided (kept for
+ * audit), the submission is soft-deleted, and both are written to the audit
+ * log with the admin's reason. Nothing is hard-deleted.
+ */
+export async function voidApprovedPayment(
   submissionId: string,
+  reason: string | undefined,
   returnTo?: string,
 ): Promise<{ error?: string } | void> {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const normalizedReason = normalizeReason(reason);
+  if (!normalizedReason) {
+    return { error: "Please give a reason (at least 3 characters); it is recorded in the audit log." };
+  }
 
   const submission = await withDbErrorHandling(() => prisma.coursePaymentSubmission.findUnique({
       where: { id: submissionId },
     }), "Database operation failed");
 
-  if (!submission) {
+  if (!submission || submission.deletedAt) {
     return { error: "Payment submission not found." };
   }
 
-  if (submission.status !== MONTHLY_PAYMENT_APPROVED) {
-    return { error: "Only approved payments can be deleted." };
+  if (submissionStatusOf(submission) !== "APPROVED") {
+    return { error: "Only approved payments can be voided." };
   }
 
-  if (submission.paymentRecordId) {
-    const recordId = submission.paymentRecordId;
-    await withDbErrorHandling(() => prisma.paymentRecord.delete({
-        where: { id: recordId },
-      }), "Database operation failed");
+  try {
+    await prisma.$transaction(async (tx) => {
+      if (submission.paymentRecordId) {
+        await voidPaymentRecordTx(tx, session, submission.paymentRecordId, normalizedReason);
+      }
+      await softDeleteSubmissionTx(tx, session, submissionId, normalizedReason);
+    });
+  } catch (error) {
+    if (error instanceof VoidError) return { error: error.message };
+    throw error;
   }
-
-  await withDbErrorHandling(() => prisma.coursePaymentSubmission.delete({
-      where: { id: submissionId },
-    }), "Database operation failed");
 
   revalidatePaymentPaths(submission.userId, submission.courseId);
-  redirect(paymentReturnUrl(returnTo, "deleted"));
+  redirect(adminReturnUrl(returnTo, "/admin/payments", "deleted"));
 }
 
-export async function deleteManualPaymentRecord(
+/** Voids a manually recorded payment (kept for audit; excluded from finance). */
+export async function voidManualPaymentRecord(
   recordId: string,
+  reason: string | undefined,
   returnTo?: string,
 ): Promise<{ error?: string } | void> {
-  await requireAdmin();
+  const session = await requireAdmin();
+  const normalizedReason = normalizeReason(reason);
+  if (!normalizedReason) {
+    return { error: "Please give a reason (at least 3 characters); it is recorded in the audit log." };
+  }
 
   const record = await withDbErrorHandling(
     () => prisma.paymentRecord.findUnique({ where: { id: recordId } }),
     "Database operation failed",
   );
 
-  if (!record) {
+  if (!record || record.voidedAt) {
     return { error: "Payment record not found." };
   }
 
-  await withDbErrorHandling(
-    () => prisma.paymentRecord.delete({ where: { id: recordId } }),
-    "Database operation failed",
-  );
+  try {
+    await prisma.$transaction((tx) => voidPaymentRecordTx(tx, session, recordId, normalizedReason));
+  } catch (error) {
+    if (error instanceof VoidError) return { error: error.message };
+    throw error;
+  }
 
   revalidatePaymentPaths(record.userId);
   const param = new URLSearchParams({ type: "manual_transactions", deleted: "1" });
-  redirect(returnTo ?? `/admin/payments?${param.toString()}`);
+  redirect(returnTo?.startsWith("/admin") ? adminReturnUrl(returnTo, "/admin/payments", "deleted") : `/admin/payments?${param.toString()}`);
 }
 

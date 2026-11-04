@@ -2,10 +2,8 @@ import Link from "next/link";
 import { SiteAnnouncementCard } from "@/components/announcements/SiteAnnouncementCard";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { BRAND_CONFIG } from "@/config/brand";
-import {
-  getHomepageSiteAnnouncements,
-  HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX,
-} from "@/services/site-announcements";
+import { getCachedHomepageSiteAnnouncements as getHomepageSiteAnnouncements } from "@/services/home-content";
+import { HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX } from "@/services/site-announcements";
 
 export async function HomeAnnouncements() {
   const announcements = await getHomepageSiteAnnouncements(HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX);

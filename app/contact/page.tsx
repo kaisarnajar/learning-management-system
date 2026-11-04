@@ -3,6 +3,7 @@ import { BRAND_CONFIG } from "@/config/brand";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { auth } from "@/services/auth";
 import { Source_Serif_4 } from "next/font/google";
+import { PageHero } from "@/components/shared/PageHero";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
@@ -46,21 +47,7 @@ export default async function ContactPage({
   return (
     <>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#003527] via-teal-900 to-[#002117] px-4 py-24 sm:px-6 lg:px-8">
-        <div className="pattern-islamic absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none" />
-        <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-[#cca72f]/0 via-[#cca72f] to-[#cca72f]/0 opacity-50"></div>
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="motion-safe:animate-fade-up">
-            <h1 className={`${sourceSerif.className} text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl`}>
-              Send a Message
-            </h1>
-            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-brand-gold-alt"></div>
-            <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">
-              We would love to hear from you. Please fill out the form below and our team will get back to you within 2-3 business days.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero tall title="Send a Message" description="We would love to hear from you. Please fill out the form below and our team will get back to you within 2-3 business days." />
 
       {/* Form Section */}
       <section className="relative bg-surface py-20 sm:py-24">

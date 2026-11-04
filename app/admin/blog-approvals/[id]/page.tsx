@@ -5,13 +5,16 @@ import { notFound } from "next/navigation";
 import { getBlogPostForAdmin } from "@/services/blogs";
 import { BlogApprovalActions } from "@/components/admin/BlogApprovalActions";
 import { stripHtml } from "@/utils/html";
+import { sanitizeRichText } from "@/services/rich-text";
 import Image from "next/image";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function AdminBlogApprovalDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const post = await getBlogPostForAdmin(id);
 
@@ -62,7 +65,7 @@ export default async function AdminBlogApprovalDetailPage({
       <section className="mt-8">
         <h2 className="font-serif text-lg font-semibold text-foreground">Content</h2>
         <div
-          dangerouslySetInnerHTML={{ __html: post.body }}
+          dangerouslySetInnerHTML={{ __html: sanitizeRichText(post.body) }}
           className="blog-content mt-3 text-sm leading-relaxed text-foreground"
         />
       </section>

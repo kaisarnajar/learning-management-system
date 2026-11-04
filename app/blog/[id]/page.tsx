@@ -8,6 +8,7 @@ import { auth } from "@/services/auth";
 import { isAdminSession } from "@/services/admin";
 import { BlogEngagement } from "./BlogEngagement";
 import { getBlogExcerpt, stripHtml } from "@/utils/html";
+import { sanitizeRichText } from "@/services/rich-text";
 
 import { BRAND_CONFIG } from "@/config/brand";
 import { JsonLd } from "@/components/site/JsonLd";
@@ -59,17 +60,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function BlogDetailPage({ params }: PageProps) {
   const { id } = await params;
-  const [post, session] = await Promise.all([
-    getPublishedBlogPostById(id),
-    auth(),
-  ]);
+  const session = await auth();
+  const currentUserId = session?.user?.id;
+  const post = await getPublishedBlogPostById(id, currentUserId);
 
   if (!post) notFound();
 
-  const currentUserId = session?.user?.id;
   const isAdmin = isAdminSession(session);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const initialHasLiked = currentUserId ? (post as any).likes?.some((like: any) => like.userId === currentUserId) : false;
+  const initialHasLiked = Boolean(currentUserId) && post.likes.length > 0;
 
 
   const blogPostingSchema = getBlogPostingSchema({
@@ -108,7 +106,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
         )}
 
         <div
-          dangerouslySetInnerHTML={{ __html: post.body }}
+          dangerouslySetInnerHTML={{ __html: sanitizeRichText(post.body) }}
           className="blog-content mt-8 text-base leading-relaxed text-foreground"
         />
 
@@ -142,11 +140,10 @@ export default async function BlogDetailPage({ params }: PageProps) {
 
         <BlogEngagement
           blogPostId={post.id}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          initialLikeCount={(post as any).likes?.length || 0}
-          initialHasLiked={initialHasLiked ?? false}
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          initialComments={(post as any).comments || []}
+          initialLikeCount={post._count.likes}
+          initialHasLiked={initialHasLiked}
+          initialComments={post.comments}
+          totalComments={post._count.comments}
           currentUserId={currentUserId}
           isAdmin={isAdmin}
         />

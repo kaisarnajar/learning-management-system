@@ -3,16 +3,16 @@
 import { auth } from "@/services/auth";
 import { BRAND_CONFIG } from "@/config/brand";
 
+import { splitInclusiveGst } from "@/services/gst";
 import { PAYMENTS } from "@/config/constants/payments";
+import { findBookOrderForRecord } from "@/services/payment-receipt";
 import { isAdminSession } from "@/services/admin";
 import { prisma } from "@/utils/prisma";
 import { sendReceiptEmail } from "@/services/email";
-import { generatePdfFromHtml, wrapHtmlForPdf } from "@/services/pdf-generator";
-import { renderReceiptToHtml } from "@/utils/receipt-html";
-import { prepareReceiptData } from "@/services/payment-receipt";
+import { deleteStoredReceiptPdf, getReceiptPdf, storeReceiptPdf } from "@/services/documents";
 import { getCourseById } from "@/services/courses";
 import { getPaymentSettings } from "@/services/payment-settings";
-import crypto from "crypto";
+import { allocateDocumentNumber } from "@/services/document-numbers";
 
 export async function generateReceipt(paymentRecordId: string) {
   const session = await auth();
@@ -41,50 +41,60 @@ export async function generateReceipt(paymentRecordId: string) {
     throw new Error("Receipt has already been generated.");
   }
 
-  const invoiceNumber = `DQA-INV-${crypto.randomBytes(3).toString("hex").toUpperCase()}`;
-
   let baseAmount = record.amountInrPaise;
   let gstAmount = 0;
   let shippingAmountPaise = 0;
 
-  if (record.paymentType === "book_purchase") {
-    const match = record.description?.match(/Book order #([A-Z0-9]+)/i);
-    if (match) {
-      const shortId = match[1];
-      const bookOrder = await prisma.bookOrder.findFirst({
-        where: { 
-          userId: record.userId,
-          id: { endsWith: shortId.toLowerCase() },
-          totalAmountInrPaise: record.amountInrPaise 
-        }
-      });
-      if (bookOrder) {
-        shippingAmountPaise = bookOrder.shippingChargeInrPaise;
-      }
+  if (record.paymentType === PAYMENTS.TYPES.BOOK_ORDER) {
+    const bookOrder = await findBookOrderForRecord(record);
+    if (bookOrder) {
+      shippingAmountPaise = bookOrder.shippingChargeInrPaise;
     }
   }
 
   const itemTotalPaise = record.amountInrPaise - shippingAmountPaise;
 
   if (includeGst) {
-    // "Total: ₹100, GST: ₹18, Fee: ₹82" => GST is calculated from config
-    const gstRate = PAYMENTS.GST_PERCENTAGE / 100;
-    gstAmount = Math.round(itemTotalPaise * gstRate);
-    baseAmount = itemTotalPaise - gstAmount;
+    // Prices are GST-inclusive: ₹100 total → base ₹84.75 + GST ₹15.25 (18/118).
+    const split = splitInclusiveGst(itemTotalPaise);
+    gstAmount = split.gstPaise;
+    baseAmount = split.basePaise;
   } else {
     baseAmount = itemTotalPaise;
   }
 
-  await prisma.paymentRecord.update({
+  // Allocate the sequential number and mark the receipt generated atomically.
+  // The updateMany guard makes a concurrent second click a no-op instead of
+  // a second invoice number.
+  const invoiceNumber = await prisma.$transaction(async (tx) => {
+    const number = await allocateDocumentNumber(tx, "invoice");
+    const updated = await tx.paymentRecord.updateMany({
+      where: { id: paymentRecordId, receiptGeneratedAt: null },
+      data: {
+        receiptGeneratedAt: new Date(),
+        invoiceNumber: number,
+        receiptIncludesGst: includeGst,
+        receiptFeeAmountPaise: baseAmount,
+        receiptGstAmountPaise: gstAmount,
+        receiptShippingAmountPaise: shippingAmountPaise,
+      },
+    });
+    if (updated.count === 0) {
+      throw new Error("Receipt has already been generated.");
+    }
+    return number;
+  });
+
+  // Render once now and keep the file; downloads and emails reuse it. A
+  // failure here is logged and the first download renders instead.
+  const issued = await prisma.paymentRecord.findUnique({
     where: { id: paymentRecordId },
-    data: {
-      receiptGeneratedAt: new Date(),
-      invoiceNumber,
-      receiptIncludesGst: includeGst,
-      receiptFeeAmountPaise: baseAmount,
-      receiptGstAmountPaise: gstAmount,
+    include: {
+      user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } },
+      submission: { select: { paymentMethod: true, upiTransactionId: true, label: true, couponId: true } },
     },
   });
+  if (issued) await storeReceiptPdf(issued);
 
   return { success: true, invoiceNumber };
 }
@@ -118,8 +128,10 @@ export async function deleteReceipt(paymentRecordId: string) {
       receiptFeeAmountPaise: null,
       receiptGstAmountPaise: null,
       receiptEmailSentAt: null,
+      receiptPdfKey: null,
     },
   });
+  await deleteStoredReceiptPdf(record);
 
   return { success: true };
 }
@@ -148,17 +160,8 @@ export async function sendReceiptToEmailAction(paymentRecordId: string): Promise
     const course = record.courseId ? await getCourseById(record.courseId) : null;
     const courseTitle = course?.title ?? `${BRAND_CONFIG.name}`;
 
-    const { receiptData, filename: pdfFilename } = await prepareReceiptData(record, courseTitle, {
-      invoiceNumberOverride: record.invoiceNumber,
-      includeGstOverride: record.receiptIncludesGst ?? false,
-      baseAmountPaiseOverride: record.receiptFeeAmountPaise ?? record.amountInrPaise,
-      gstAmountPaiseOverride: record.receiptGstAmountPaise ?? 0,
-    });
-
-    const componentHtml = renderReceiptToHtml(receiptData);
-    const fullHtml = wrapHtmlForPdf(componentHtml, { landscape: false });
-
-    const pdfBuffer = await generatePdfFromHtml(fullHtml, { format: "A4", landscape: false });
+    // Reuses the stored PDF; renders only when none is stored.
+    const { pdf: pdfBuffer, filename: pdfFilename } = await getReceiptPdf(record);
     const amountStr = `₹${(record.amountInrPaise / 100).toFixed(2)}`;
 
     const result = await sendReceiptEmail({

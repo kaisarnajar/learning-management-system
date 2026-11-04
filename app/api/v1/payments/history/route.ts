@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
+import { toPaymentRecordDto, toPaymentSubmissionDto } from "@/services/api-dto";
 import { prisma } from "@/utils/prisma";
 
 export async function GET(request: NextRequest) {
@@ -9,19 +10,19 @@ export async function GET(request: NextRequest) {
   try {
     const [submissions, records] = await Promise.all([
       prisma.coursePaymentSubmission.findMany({
-        where: { userId: user.id },
+        where: { userId: user.id, deletedAt: null },
         orderBy: { createdAt: "desc" },
       }),
       prisma.paymentRecord.findMany({
-        where: { userId: user.id },
+        where: { userId: user.id, voidedAt: null },
         orderBy: { paidAt: "desc" },
       }),
     ]);
 
     return NextResponse.json({
       success: true,
-      submissions,
-      records,
+      submissions: submissions.map(toPaymentSubmissionDto),
+      records: records.map(toPaymentRecordDto),
     });
   } catch (error) {
     console.error("[api/v1/payments/history] Error:", error);

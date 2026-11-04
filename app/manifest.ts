@@ -10,8 +10,8 @@ export default function manifest(): MetadataRoute.Manifest {
     description: BRAND_CONFIG.seo.defaultDescription,
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#1e293b",
+    background_color: BRAND_CONFIG.colors.background,
+    theme_color: BRAND_CONFIG.colors.theme,
     icons: [
       {
         src: "/favicon.ico",

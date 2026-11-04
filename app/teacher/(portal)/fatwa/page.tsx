@@ -6,6 +6,7 @@ import { getTeacherFatwaQuestionsPaginated, type FatwaAdminFilter } from "@/serv
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import { requireTeacher } from "@/services/auth-actions";
+import { TabPills } from "@/components/shared/TabPills";
 
 function filterHref(filter: FatwaAdminFilter | undefined, q?: string) {
   const params = new URLSearchParams();
@@ -57,8 +58,9 @@ export default async function TeacherFatwaPage({
           <h1 className="font-serif text-2xl font-bold text-primary">Fatwa Q&A</h1>
           <p className="mt-1 text-sm text-muted">{totalCount} questions</p>
         </div>
-        <nav className="flex flex-wrap gap-2" aria-label="Filter questions">
-          {(
+        <TabPills
+          ariaLabel="Filter questions"
+          items={(
             [
               { label: "All", value: undefined },
               { label: "Unanswered", value: "unanswered" as const },
@@ -66,22 +68,13 @@ export default async function TeacherFatwaPage({
               { label: "Answered", value: "answered" as const },
               { label: "Rejected", value: "rejected" as const },
             ] as const
-          ).map((item) => {
-            const active = filter === item.value;
-            const href = filterHref(item.value, q);
-            return (
-              <Link
-                key={item.label}
-                href={href}
-                className={`rounded-full px-4 py-2 text-sm font-medium ${
-                  active ? "bg-primary text-white" : "border border-border text-foreground hover:bg-accent-muted/50"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+          ).map((item) => ({
+            key: item.label,
+            label: item.label,
+            href: filterHref(item.value, q),
+            active: filter === item.value,
+          }))}
+        />
       </div>
 
       <div className="mt-6">

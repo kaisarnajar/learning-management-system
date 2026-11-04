@@ -1,4 +1,6 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
+import { PAYMENTS } from "@/config/constants/payments";
 
 export type ApplicableCoupon = {
   id: string;
@@ -38,7 +40,8 @@ export async function getApplicableCoupons(
       where: {
         userId,
         couponId: { not: null },
-        status: { in: ["pending_verification", "approved"] },
+        deletedAt: null,
+        status: { in: [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED] },
       },
       select: { couponId: true },
     }),
@@ -109,44 +112,42 @@ export async function getSelectedCoupon(
   feeType?: "enrollment" | "course",
   couponId?: string | null
 ): Promise<ApplicableCoupon | null> {
+  // A coupon is applied only when the client explicitly selected it. Never
+  // fall back to "the best available coupon": the student may have paid the
+  // full fee shown on screen, and a silently applied coupon would record a
+  // lower amount and burn the coupon.
+  if (!couponId || couponId === "none") return null;
+
   const applicableCoupons = await getApplicableCoupons(userId, courseId, feeType);
   const selectableCoupons = applicableCoupons.filter((c) => !c.isUsed);
-  if (selectableCoupons.length === 0) return null;
+  return selectableCoupons.find((c) => c.id === couponId || c.code === couponId) ?? null;
+}
 
-  if (couponId === "none" || couponId === "") {
-    return null;
+/**
+ * Records that `userId` consumed `couponId` as part of the caller's
+ * transaction, so a failed submission never burns the coupon.
+ * SPECIAL (single-use, per-student) coupons are deactivated on use.
+ */
+export async function recordCouponUsageTx(tx: Prisma.TransactionClient, userId: string, couponId: string) {
+  await tx.couponUsage.upsert({
+    where: { couponId_userId: { couponId, userId } },
+    create: { couponId, userId },
+    update: {},
+  });
+  const coupon = await tx.coupon.findUnique({
+    where: { id: couponId },
+    select: { type: true },
+  });
+  if (coupon?.type === "SPECIAL") {
+    await tx.coupon.update({
+      where: { id: couponId },
+      data: { isActive: false },
+    });
   }
-
-  if (couponId) {
-    const found = selectableCoupons.find((c) => c.id === couponId || c.code === couponId);
-    if (found) return found;
-  }
-
-  // Default to highest discount usable coupon if not specified
-  return selectableCoupons[0];
 }
 
 export async function recordCouponUsage(userId: string, couponId: string) {
-  try {
-    await prisma.couponUsage.upsert({
-      where: { couponId_userId: { couponId, userId } },
-      create: { couponId, userId },
-      update: {},
-    });
-    // For SPECIAL coupons, mark as inactive once used
-    const coupon = await prisma.coupon.findUnique({
-      where: { id: couponId },
-      select: { type: true },
-    });
-    if (coupon?.type === "SPECIAL") {
-      await prisma.coupon.update({
-        where: { id: couponId },
-        data: { isActive: false },
-      });
-    }
-  } catch (e) {
-    console.error("Error recording coupon usage:", e);
-  }
+  await prisma.$transaction((tx) => recordCouponUsageTx(tx, userId, couponId));
 }
 
 export function calculateDiscountedAmount(originalPaise: number, percentage: number): number {

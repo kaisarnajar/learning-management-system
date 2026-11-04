@@ -5,6 +5,7 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { answerFatwaQuestion, deleteFatwaQuestionForm, rejectFatwaQuestion } from "@/app/admin/fatwa/actions";
 import { getFeaturedHomepageFatwaCount, getFatwaQuestionById } from "@/services/fatwa";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 export default async function AdminFatwaDetailPage({
@@ -14,6 +15,7 @@ export default async function AdminFatwaDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ saved?: string; error?: string; email?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const [question, featuredCount] = await Promise.all([

@@ -1,9 +1,11 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import type { CourseAnnouncement } from "@prisma/client";
 import { requireAdmin, requireTeacher } from "@/services/auth-actions";
 import { canTeacherManageCourseAnnouncement } from "@/services/announcements";
 import {
+  type ParsedCourseAnnouncement,
   createCourseAnnouncementRecord,
   deleteCourseAnnouncementRecord,
   parseCourseAnnouncementFormOrError,
@@ -19,18 +21,6 @@ import {
   notifyStudentOfPersonalMessage,
 } from "@/services/notifications";
 import { getTeacherCourseForPortal, getTeacherEnrollmentInCourse } from "@/services/teacher-portal";
-
-function teacherCourseAnnouncementPath(courseId: string, suffix = "") {
-  return `/teacher/courses/${courseId}/announcements${suffix}`;
-}
-
-function teacherStudentAnnouncementPath(courseId: string, enrollmentId: string, suffix = "") {
-  return `/teacher/courses/${courseId}/students/${enrollmentId}/announcements${suffix}`;
-}
-
-function adminCourseAnnouncementPath(courseId: string, suffix = "") {
-  return `/admin/courses/${courseId}/announcements${suffix}`;
-}
 
 function redirectWithError(path: string, error: string): never {
   redirect(`${path}?error=${encodeURIComponent(error)}`);
@@ -59,12 +49,12 @@ async function requireTeacherEnrollment(courseId: string, enrollmentId: string) 
 }
 
 async function requireAdminCourse(courseId: string) {
-  await requireAdmin();
+  const session = await requireAdmin();
   const course = await getCourseById(courseId);
   if (!course) {
     redirect("/admin/courses");
   }
-  return course;
+  return { session, course };
 }
 
 function adminAuthorName(session: Awaited<ReturnType<typeof requireAdmin>>) {
@@ -72,38 +62,189 @@ function adminAuthorName(session: Awaited<ReturnType<typeof requireAdmin>>) {
   return name ? `${name} (Admin)` : "Academy Admin";
 }
 
+/** What `runAnnouncementMutation` needs to know about whoever is posting. */
+type AnnouncementActor = {
+  teacherId: string | null;
+  authorName: string;
+  postedByAdmin: boolean;
+  /** Absent: the actor may change any announcement in scope (admins). */
+  canManage?: (existing: Pick<CourseAnnouncement, "teacherId" | "postedByAdmin">) => boolean;
+  notifyCreated: (announcement: { id: string }, data: ParsedCourseAnnouncement) => Promise<void>;
+};
+
+type AnnouncementMutation =
+  | { kind: "create"; formData: FormData }
+  | { kind: "update"; announcementId: string; formData: FormData }
+  | { kind: "delete"; announcementId: string };
+
+/**
+ * Create/update/delete for course announcements and per-student messages, shared by the
+ * teacher and admin portals. `redirectBase` is the portal's announcements list path; errors
+ * and success flags are reported on it (or on `/new` / `/<id>/edit` for form errors).
+ * Attachments are uploaded before the row is written and old objects are removed only
+ * after the row commits (see course-announcement-mutations).
+ */
+async function runAnnouncementMutation({
+  mutation,
+  authorize,
+  scope,
+  redirectBase,
+}: {
+  mutation: AnnouncementMutation;
+  authorize: () => Promise<AnnouncementActor>;
+  scope: { courseId: string; enrollmentId: string | null };
+  redirectBase: string;
+}): Promise<never> {
+  const { courseId, enrollmentId } = scope;
+  const actor = await authorize();
+  const revalidate = () =>
+    enrollmentId
+      ? revalidateStudentAnnouncementPaths(courseId, enrollmentId)
+      : revalidateCourseAnnouncementPaths(courseId);
+
+  if (mutation.kind === "create") {
+    const newPath = `${redirectBase}/new`;
+    const parsed = parseCourseAnnouncementFormOrError(mutation.formData);
+    if (!parsed.ok) {
+      redirectWithError(newPath, parsed.error);
+    }
+
+    const attachment = validateCreateCourseAnnouncementAttachment(mutation.formData);
+    if (!attachment.ok) {
+      redirectWithError(newPath, attachment.error);
+    }
+
+    const announcement = await createCourseAnnouncementRecord({
+      courseId,
+      enrollmentId,
+      teacherId: actor.teacherId,
+      authorName: actor.authorName,
+      postedByAdmin: actor.postedByAdmin,
+      data: parsed.data,
+      upload: attachment.upload,
+    });
+
+    await actor.notifyCreated(announcement, parsed.data);
+
+    revalidate();
+    redirectWithSuccess(redirectBase, "posted");
+  }
+
+  const { announcementId } = mutation;
+  let parsedUpdate: ParsedCourseAnnouncement | null = null;
+  if (mutation.kind === "update") {
+    const parsed = parseCourseAnnouncementFormOrError(mutation.formData);
+    if (!parsed.ok) {
+      redirectWithError(`${redirectBase}/${announcementId}/edit`, parsed.error);
+    }
+    parsedUpdate = parsed.data;
+  }
+
+  const existing = await getCourseAnnouncementRecord(announcementId, courseId, enrollmentId);
+  if (!existing) {
+    redirectWithError(redirectBase, "notfound");
+  }
+  if (actor.canManage && !actor.canManage(existing)) {
+    redirectWithError(redirectBase, "forbidden");
+  }
+
+  if (mutation.kind === "update" && parsedUpdate) {
+    const result = await updateCourseAnnouncementRecord(
+      announcementId,
+      parsedUpdate,
+      mutation.formData,
+      existing,
+    );
+    if (result.error) {
+      redirectWithError(`${redirectBase}/${announcementId}/edit`, result.error);
+    }
+    revalidate();
+    redirectWithSuccess(redirectBase, "saved");
+  }
+
+  await deleteCourseAnnouncementRecord(existing);
+  revalidate();
+  redirectWithSuccess(redirectBase, "deleted");
+}
+
+function teacherCourseMutation(courseId: string, mutation: AnnouncementMutation) {
+  return runAnnouncementMutation({
+    mutation,
+    scope: { courseId, enrollmentId: null },
+    redirectBase: `/teacher/courses/${courseId}/announcements`,
+    authorize: async () => {
+      const { teacher, course } = await requireTeacherCourse(courseId);
+      return {
+        teacherId: teacher.id,
+        authorName: teacher.name,
+        postedByAdmin: false,
+        canManage: (existing) => canTeacherManageCourseAnnouncement(existing, teacher.id),
+        notifyCreated: (announcement, data) =>
+          notifyEnrolledStudentsOfCourseAnnouncement({
+            courseId,
+            courseTitle: course.title,
+            announcementId: announcement.id,
+            title: data.title,
+            body: data.body,
+          }),
+      };
+    },
+  });
+}
+
+function teacherStudentMutation(courseId: string, enrollmentId: string, mutation: AnnouncementMutation) {
+  return runAnnouncementMutation({
+    mutation,
+    scope: { courseId, enrollmentId },
+    redirectBase: `/teacher/courses/${courseId}/students/${enrollmentId}/announcements`,
+    authorize: async () => {
+      const { teacher, course, enrollment } = await requireTeacherEnrollment(courseId, enrollmentId);
+      return {
+        teacherId: teacher.id,
+        authorName: teacher.name,
+        postedByAdmin: false,
+        canManage: (existing) => canTeacherManageCourseAnnouncement(existing, teacher.id),
+        notifyCreated: (announcement, data) =>
+          notifyStudentOfPersonalMessage({
+            userId: enrollment.userId,
+            courseId,
+            courseTitle: course.title,
+            announcementId: announcement.id,
+            title: data.title,
+            body: data.body,
+            teacherName: teacher.name,
+          }),
+      };
+    },
+  });
+}
+
+function adminCourseMutation(courseId: string, mutation: AnnouncementMutation) {
+  return runAnnouncementMutation({
+    mutation,
+    scope: { courseId, enrollmentId: null },
+    redirectBase: `/admin/courses/${courseId}/announcements`,
+    authorize: async () => {
+      const { session, course } = await requireAdminCourse(courseId);
+      return {
+        teacherId: null,
+        authorName: adminAuthorName(session),
+        postedByAdmin: true,
+        notifyCreated: (announcement, data) =>
+          notifyEnrolledStudentsOfCourseAnnouncement({
+            courseId,
+            courseTitle: course.title,
+            announcementId: announcement.id,
+            title: data.title,
+            body: data.body,
+          }),
+      };
+    },
+  });
+}
+
 export async function createCourseAnnouncement(courseId: string, formData: FormData) {
-  const { teacher, course } = await requireTeacherCourse(courseId);
-  const parsed = parseCourseAnnouncementFormOrError(formData);
-  if (!parsed.ok) {
-    redirectWithError(teacherCourseAnnouncementPath(courseId, "/new"), parsed.error);
-  }
-
-  const attachment = validateCreateCourseAnnouncementAttachment(formData);
-  if (!attachment.ok) {
-    redirectWithError(teacherCourseAnnouncementPath(courseId, "/new"), attachment.error);
-  }
-
-  const announcement = await createCourseAnnouncementRecord({
-    courseId,
-    enrollmentId: null,
-    teacherId: teacher.id,
-    authorName: teacher.name,
-    postedByAdmin: false,
-    data: parsed.data,
-    upload: attachment.upload,
-  });
-
-  await notifyEnrolledStudentsOfCourseAnnouncement({
-    courseId,
-    courseTitle: course.title,
-    announcementId: announcement.id,
-    title: parsed.data.title,
-    body: parsed.data.body,
-  });
-
-  revalidateCourseAnnouncementPaths(courseId);
-  redirectWithSuccess(teacherCourseAnnouncementPath(courseId), "posted");
+  return teacherCourseMutation(courseId, { kind: "create", formData });
 }
 
 export async function updateCourseAnnouncement(
@@ -111,51 +252,11 @@ export async function updateCourseAnnouncement(
   announcementId: string,
   formData: FormData,
 ) {
-  const { teacher } = await requireTeacherCourse(courseId);
-  const parsed = parseCourseAnnouncementFormOrError(formData);
-  if (!parsed.ok) {
-    redirectWithError(
-      teacherCourseAnnouncementPath(courseId, `/${announcementId}/edit`),
-      parsed.error,
-    );
-  }
-
-  const existing = await getCourseAnnouncementRecord(announcementId, courseId);
-  if (!existing) {
-    redirectWithError(teacherCourseAnnouncementPath(courseId), "notfound");
-  }
-  if (!canTeacherManageCourseAnnouncement(existing, teacher.id)) {
-    redirectWithError(teacherCourseAnnouncementPath(courseId), "forbidden");
-  }
-
-  const result = await updateCourseAnnouncementRecord(
-    announcementId,
-    parsed.data,
-    formData,
-    existing,
-  );
-  if (result.error) {
-    redirectWithError(teacherCourseAnnouncementPath(courseId, `/${announcementId}/edit`), result.error);
-  }
-
-  revalidateCourseAnnouncementPaths(courseId);
-  redirectWithSuccess(teacherCourseAnnouncementPath(courseId), "saved");
+  return teacherCourseMutation(courseId, { kind: "update", announcementId, formData });
 }
 
 export async function deleteCourseAnnouncement(courseId: string, announcementId: string) {
-  const { teacher } = await requireTeacherCourse(courseId);
-
-  const existing = await getCourseAnnouncementRecord(announcementId, courseId);
-  if (!existing) {
-    redirectWithError(teacherCourseAnnouncementPath(courseId), "notfound");
-  }
-  if (!canTeacherManageCourseAnnouncement(existing, teacher.id)) {
-    redirectWithError(teacherCourseAnnouncementPath(courseId), "forbidden");
-  }
-
-  await deleteCourseAnnouncementRecord(existing);
-  revalidateCourseAnnouncementPaths(courseId);
-  redirectWithSuccess(teacherCourseAnnouncementPath(courseId), "deleted");
+  return teacherCourseMutation(courseId, { kind: "delete", announcementId });
 }
 
 export async function createStudentCourseAnnouncement(
@@ -163,39 +264,7 @@ export async function createStudentCourseAnnouncement(
   enrollmentId: string,
   formData: FormData,
 ) {
-  const { teacher, course, enrollment } = await requireTeacherEnrollment(courseId, enrollmentId);
-  const parsed = parseCourseAnnouncementFormOrError(formData);
-  if (!parsed.ok) {
-    redirectWithError(teacherStudentAnnouncementPath(courseId, enrollmentId, "/new"), parsed.error);
-  }
-
-  const attachment = validateCreateCourseAnnouncementAttachment(formData);
-  if (!attachment.ok) {
-    redirectWithError(teacherStudentAnnouncementPath(courseId, enrollmentId, "/new"), attachment.error);
-  }
-
-  const announcement = await createCourseAnnouncementRecord({
-    courseId,
-    enrollmentId,
-    teacherId: teacher.id,
-    authorName: teacher.name,
-    postedByAdmin: false,
-    data: parsed.data,
-    upload: attachment.upload,
-  });
-
-  await notifyStudentOfPersonalMessage({
-    userId: enrollment.userId,
-    courseId,
-    courseTitle: course.title,
-    announcementId: announcement.id,
-    title: parsed.data.title,
-    body: parsed.data.body,
-    teacherName: teacher.name,
-  });
-
-  revalidateStudentAnnouncementPaths(courseId, enrollmentId);
-  redirectWithSuccess(teacherStudentAnnouncementPath(courseId, enrollmentId), "posted");
+  return teacherStudentMutation(courseId, enrollmentId, { kind: "create", formData });
 }
 
 export async function updateStudentCourseAnnouncement(
@@ -204,74 +273,19 @@ export async function updateStudentCourseAnnouncement(
   announcementId: string,
   formData: FormData,
 ) {
-  const { teacher } = await requireTeacherEnrollment(courseId, enrollmentId);
-  const parsed = parseCourseAnnouncementFormOrError(formData);
-  if (!parsed.ok) {
-    redirectWithError(
-      teacherStudentAnnouncementPath(courseId, enrollmentId, `/${announcementId}/edit`),
-      parsed.error,
-    );
-  }
-
-  const existing = await getCourseAnnouncementRecord(announcementId, courseId, enrollmentId);
-  if (!existing) {
-    redirectWithError(teacherStudentAnnouncementPath(courseId, enrollmentId), "notfound");
-  }
-  if (!canTeacherManageCourseAnnouncement(existing, teacher.id)) {
-    redirectWithError(teacherStudentAnnouncementPath(courseId, enrollmentId), "forbidden");
-  }
-
-  const result = await updateCourseAnnouncementRecord(
-    announcementId,
-    parsed.data,
-    formData,
-    existing,
-  );
-  if (result.error) {
-    redirectWithError(
-      teacherStudentAnnouncementPath(courseId, enrollmentId, `/${announcementId}/edit`),
-      result.error,
-    );
-  }
-
-  revalidateStudentAnnouncementPaths(courseId, enrollmentId);
-  redirectWithSuccess(teacherStudentAnnouncementPath(courseId, enrollmentId), "saved");
+  return teacherStudentMutation(courseId, enrollmentId, { kind: "update", announcementId, formData });
 }
 
+export async function deleteStudentCourseAnnouncement(
+  courseId: string,
+  enrollmentId: string,
+  announcementId: string,
+) {
+  return teacherStudentMutation(courseId, enrollmentId, { kind: "delete", announcementId });
+}
 
 export async function createAdminCourseAnnouncement(courseId: string, formData: FormData) {
-  const session = await requireAdmin();
-  const course = await requireAdminCourse(courseId);
-  const parsed = parseCourseAnnouncementFormOrError(formData);
-  if (!parsed.ok) {
-    redirectWithError(adminCourseAnnouncementPath(courseId, "/new"), parsed.error);
-  }
-
-  const attachment = validateCreateCourseAnnouncementAttachment(formData);
-  if (!attachment.ok) {
-    redirectWithError(adminCourseAnnouncementPath(courseId, "/new"), attachment.error);
-  }
-
-  const announcement = await createCourseAnnouncementRecord({
-    courseId,
-    enrollmentId: null,
-    teacherId: null,
-    authorName: adminAuthorName(session),
-    postedByAdmin: true,
-    data: parsed.data,
-    upload: attachment.upload,
-  });
-
-  await notifyEnrolledStudentsOfCourseAnnouncement({
-    courseId,
-    courseTitle: course.title,
-    announcementId: announcement.id,
-    title: parsed.data.title,
-    body: parsed.data.body,
-  });
-
-  revalidateCourseAnnouncementPaths(courseId);
-  redirectWithSuccess(adminCourseAnnouncementPath(courseId), "posted");
+  return adminCourseMutation(courseId, { kind: "create", formData });
 }
 
 export async function updateAdminCourseAnnouncement(
@@ -279,45 +293,9 @@ export async function updateAdminCourseAnnouncement(
   announcementId: string,
   formData: FormData,
 ) {
-  await requireAdmin();
-  await requireAdminCourse(courseId);
-  const parsed = parseCourseAnnouncementFormOrError(formData);
-  if (!parsed.ok) {
-    redirectWithError(
-      adminCourseAnnouncementPath(courseId, `/${announcementId}/edit`),
-      parsed.error,
-    );
-  }
-
-  const existing = await getCourseAnnouncementRecord(announcementId, courseId);
-  if (!existing) {
-    redirectWithError(adminCourseAnnouncementPath(courseId), "notfound");
-  }
-
-  const result = await updateCourseAnnouncementRecord(
-    announcementId,
-    parsed.data,
-    formData,
-    existing,
-  );
-  if (result.error) {
-    redirectWithError(adminCourseAnnouncementPath(courseId, `/${announcementId}/edit`), result.error);
-  }
-
-  revalidateCourseAnnouncementPaths(courseId);
-  redirectWithSuccess(adminCourseAnnouncementPath(courseId), "saved");
+  return adminCourseMutation(courseId, { kind: "update", announcementId, formData });
 }
 
 export async function deleteAdminCourseAnnouncement(courseId: string, announcementId: string) {
-  await requireAdmin();
-  await requireAdminCourse(courseId);
-
-  const existing = await getCourseAnnouncementRecord(announcementId, courseId);
-  if (!existing) {
-    redirectWithError(adminCourseAnnouncementPath(courseId), "notfound");
-  }
-
-  await deleteCourseAnnouncementRecord(existing);
-  revalidateCourseAnnouncementPaths(courseId);
-  redirectWithSuccess(adminCourseAnnouncementPath(courseId), "deleted");
+  return adminCourseMutation(courseId, { kind: "delete", announcementId });
 }

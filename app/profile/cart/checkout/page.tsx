@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
+import { formatPrice } from "@/utils/money";
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { bookstoreCheckoutSchema } from "@/utils/validations";
 import { BookCheckoutClient } from "@/components/bookstore/BookCheckoutClient";
+import { CartStaleNotice } from "@/components/bookstore/CartStaleNotice";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { getPaymentSettings } from "@/services/payment-settings";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
+import { computeShippingCharge, getShippingSlabs } from "@/services/book-orders";
+import { requireUser } from "@/services/auth-actions";
 
 export const metadata: Metadata = {
   title: "Checkout",
@@ -20,15 +22,23 @@ export default async function CartCheckoutPage({
 }: {
   searchParams: Promise<{ books?: string }>;
 }) {
+  await requireUser();
   const params = await searchParams;
 
   let selectedItems: { bookId: string; quantity: number }[] = [];
-  try {
-    if (params.books) {
-      selectedItems = JSON.parse(decodeURIComponent(params.books));
+  if (params.books) {
+    let parsedItems = null;
+    try {
+      parsedItems = bookstoreCheckoutSchema.shape.items.safeParse(
+        JSON.parse(decodeURIComponent(params.books)),
+      );
+    } catch {
+      // Malformed JSON or URI encoding falls through to the redirect below.
     }
-  } catch {
-    selectedItems = [];
+    if (!parsedItems?.success) {
+      redirect("/profile/cart");
+    }
+    selectedItems = parsedItems.data;
   }
 
   if (selectedItems.length === 0) {
@@ -47,6 +57,12 @@ export default async function CartCheckoutPage({
       where: { id: { in: bookIds }, published: true, status: "AVAILABLE" },
     }), "Database operation failed");
 
+
+  // Books that were unpublished, went out of stock or were deleted since they
+  // were added: report them and purge them from the student's cart.
+  const missingBookIds = selectedItems
+    .filter((selected) => !books.some((b) => b.id === selected.bookId))
+    .map((selected) => selected.bookId);
 
   const resolvedItems = selectedItems
     .map((selected) => {
@@ -74,6 +90,21 @@ export default async function CartCheckoutPage({
     weightInGrams: number;
   }[];
 
+  if (resolvedItems.length === 0) {
+    return (
+      <div className="space-y-4">
+        <h2 className="font-serif text-lg font-semibold text-foreground">Checkout</h2>
+        <CartStaleNotice missingBookIds={missingBookIds} />
+        <p className="text-sm text-muted">
+          None of the selected books are available any more.{" "}
+          <Link href="/profile/cart" className="font-medium text-primary hover:underline">
+            Back to your cart
+          </Link>
+        </p>
+      </div>
+    );
+  }
+
   const subtotalInrPaise = resolvedItems.reduce(
     (sum, i) => sum + i.priceInrPaise * i.quantity,
     0,
@@ -84,35 +115,13 @@ export default async function CartCheckoutPage({
     0,
   );
 
-  // Fetch applicable shipping charge
-  const slabs = await prisma.shippingChargeSlab.findMany({
-    orderBy: { maxWeightGrams: "asc" },
-  });
-
-  let shippingChargeInrPaise = 0;
-  if (slabs.length > 0) {
-    const applicableSlab = slabs.find(
-      (slab) => totalWeightGrams >= slab.minWeightGrams && totalWeightGrams <= slab.maxWeightGrams
-    );
-    if (applicableSlab) {
-      shippingChargeInrPaise = applicableSlab.chargeInrPaise;
-    } else {
-      // If it exceeds all, pick the highest slab. 
-      // If it's lower than all (e.g. 0), pick the lowest.
-      const highestSlab = slabs[slabs.length - 1];
-      const lowestSlab = slabs[0];
-      if (totalWeightGrams > highestSlab.maxWeightGrams) {
-        shippingChargeInrPaise = highestSlab.chargeInrPaise;
-      } else if (totalWeightGrams < lowestSlab.minWeightGrams) {
-        shippingChargeInrPaise = 0; // or lowestSlab.chargeInrPaise depending on business logic, here we do 0
-      }
-    }
-  }
+  // Shipping preview uses the same rule as order submission.
+  const shippingChargeInrPaise = computeShippingCharge(totalWeightGrams, await getShippingSlabs());
 
   const paymentSettings = await getPaymentSettings();
   const totalAmountInrPaise = subtotalInrPaise + shippingChargeInrPaise;
 
-  const amountLabel = formatPrice(totalAmountInrPaise);
+  const amountLabel = formatPrice(totalAmountInrPaise, { exact: true });
 
   return (
     <div>
@@ -127,6 +136,11 @@ export default async function CartCheckoutPage({
       <p className="mt-1 text-sm text-muted">
         Review your order, transfer the payment, then fill in the details below.
       </p>
+      {missingBookIds.length > 0 && (
+        <div className="mt-4">
+          <CartStaleNotice missingBookIds={missingBookIds} />
+        </div>
+      )}
 
       <div className="mx-auto mt-8 max-w-5xl space-y-8">
         <PaymentDetailsPanel

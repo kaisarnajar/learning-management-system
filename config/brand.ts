@@ -40,23 +40,43 @@ export type BrandFooter = {
   description: string;
 };
 
+/** Prefixes for sequential document numbers: <prefix>/<financial year>/<00001>. */
+export type BrandDocumentNumbering = {
+  invoicePrefix: string;
+  certificatePrefix: string;
+};
+
+/** Colours used outside the stylesheet (web app manifest, browser chrome). */
+export type BrandColors = {
+  /** Matches `--color-brand-primary` in app/globals.css. */
+  theme: string;
+  background: string;
+};
+
 export type BrandConfig = {
   name: string;
   arabicName?: string;
   shortName: string;
+  /** The parent organisation the academy belongs to, as named in about-us copy and on invoices. */
+  organizationName: string;
   websiteUrl: string;
   assets: BrandAssets;
+  colors: BrandColors;
   contact: BrandContact;
   social: BrandSocial;
   seo: BrandSEO;
   content: BrandContent;
   footer: BrandFooter;
+  documentNumbering: BrandDocumentNumbering;
+  /** Prefix of student registration numbers, e.g. DQA2026-00042. */
+  registrationPrefix: string;
 };
 
 export const BRAND_CONFIG: BrandConfig = {
   name: "Darse Quran Academy",
   arabicName: "دار القرآن الكريم", // Placeholder if we had one
   shortName: "DQA",
+  organizationName: "Darse-Quran",
   websiteUrl: "https://darsequranacademy.com",
   
   assets: {
@@ -65,6 +85,11 @@ export const BRAND_CONFIG: BrandConfig = {
     defaultImage: ASSET_URLS.logo,
   },
   
+  colors: {
+    theme: "#0f3d2e",
+    background: "#ffffff",
+  },
+
   contact: {
     email: "darsequraann@gmail.com",
     phone: "+919622966911", // General phone, fallback to whatsapp
@@ -95,5 +120,11 @@ export const BRAND_CONFIG: BrandConfig = {
     text: "Serving students worldwide",
     copyrightText: `© ${new Date().getFullYear()} Darse Quran Academy. All rights reserved.`,
     description: "Dedicated to authentic Islamic education—Quran, Arabic, and Islamic studies for all ages, taught online by qualified scholars.",
-  }
+  },
+
+  documentNumbering: {
+    invoicePrefix: "DQA-INV",
+    certificatePrefix: "DQA-CERT",
+  },
+  registrationPrefix: "DQA",
 };

@@ -5,9 +5,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { saveBookImage, validateBookImage, deleteBookImage } from "@/services/bookstore-upload";
+import { isUploadError } from "@/services/storage";
 import { prisma } from "@/utils/prisma";
 import { resolveBookFeaturedUpdate } from "@/services/bookstore";
 import { bookSchema } from "@/utils/validations";
+import { revalidatePublicContent } from "@/services/public-cache";
 
 function parseBookForm(formData: FormData) {
   return bookSchema.safeParse({
@@ -29,6 +31,8 @@ function revalidateBookstorePaths() {
   revalidatePath("/admin/bookstore", "page");
   revalidatePath("/admin/bookstore", "layout");
   revalidatePath("/bookstore", "page");
+
+  revalidatePublicContent();
   revalidatePath("/admin", "page");
 }
 
@@ -65,8 +69,14 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
     return { error: featured.error };
   }
 
+  // Upload first, write the row once with its cover, and remove the object
+  // again if the row cannot be created.
+  let imagePath: string | undefined;
   try {
-    const book = await prisma.book.create({
+    if (imageFile && imageFile.size > 0) {
+      imagePath = await saveBookImage("book", imageFile);
+    }
+    await prisma.book.create({
       data: {
         title: parsed.data.title,
         author: parsed.data.author,
@@ -78,19 +88,14 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
         weightInGrams,
         status: parsed.data.status,
         published: parsed.data.published,
+        ...(imagePath ? { imagePath } : {}),
         ...featured,
       },
     });
-
-    if (imageFile && imageFile.size > 0) {
-      const imagePath = await saveBookImage(book.id, imageFile);
-      await prisma.book.update({
-        where: { id: book.id },
-        data: { imagePath },
-      });
-    }
   } catch (error) {
     if (isRedirectError(error)) { throw error; }
+    if (imagePath) await deleteBookImage(imagePath);
+    if (isUploadError(error)) return { error: error.message };
     console.error("Database error creating book:", error);
     return { error: "An unexpected error occurred while creating the book." };
   }
@@ -135,14 +140,13 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
     return { error: featured.error };
   }
 
-  try {
-    const removeImage = formData.get("removeImage") === "true";
-    let imagePath: string | undefined | null;
+  const removeImage = formData.get("removeImage") === "true";
+  let imagePath: string | undefined | null;
 
+  try {
     if (imageFile && imageFile.size > 0) {
       imagePath = await saveBookImage(bookId, imageFile);
     } else if (removeImage) {
-      await deleteBookImage(bookId);
       imagePath = null;
     }
 
@@ -165,8 +169,16 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
     });
   } catch (error) {
     if (isRedirectError(error)) { throw error; }
+    // The row still references the old cover: drop the new object, keep the old.
+    if (imagePath) await deleteBookImage(imagePath);
+    if (isUploadError(error)) return { error: error.message };
     console.error("Database error updating book:", error);
     return { error: "An unexpected error occurred while updating the book." };
+  }
+
+  // Committed: the previous cover is no longer referenced.
+  if (imagePath !== undefined && existing.imagePath && existing.imagePath !== imagePath) {
+    await deleteBookImage(existing.imagePath);
   }
 
   revalidateBookstorePaths();
@@ -180,18 +192,15 @@ export async function deleteBook(bookId: string): Promise<{ error?: string }> {
     const book = await prisma.book.findUnique({ where: { id: bookId } });
     if (!book) return { error: "Book not found." };
 
-    // Check for any non-declined orders containing this book
-    const activeOrderItem = await prisma.bookOrderItem.findFirst({
-      where: {
-        bookId,
-        order: { status: { in: ["PENDING_VERIFICATION", "APPROVED"] } },
-      },
-    });
+    // Any order line (including shipped/refunded/declined history) references
+    // this book; deleting would cascade those lines away and corrupt sales
+    // history. Unpublish instead.
+    const orderItemCount = await prisma.bookOrderItem.count({ where: { bookId } });
 
-    if (activeOrderItem) {
+    if (orderItemCount > 0) {
       return {
         error:
-          "Cannot delete a book with existing active or pending orders. Set it to Out of Stock instead.",
+          "This book appears in past or active orders and cannot be deleted. Unpublish it or set it to Out of Stock instead.",
       };
     }
 

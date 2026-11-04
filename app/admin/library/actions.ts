@@ -2,162 +2,189 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin } from "@/services/auth-actions";
+import type { Prisma } from "@prisma/client";
+import { createAdminCrudActions, parseFormWith } from "@/services/admin-crud";
 import { resolveLibraryFeaturedUpdate } from "@/services/library";
 import { deleteLibraryImage, saveLibraryImage, validateLibraryImage } from "@/services/library-upload";
 import { prisma } from "@/utils/prisma";
-import { uniqueSlug } from "@/utils/slug";
+import { createWithUniqueSlug } from "@/utils/slug";
 import { libraryItemSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { ActionError } from "@/utils/action-utils";
+import { withFlash } from "@/utils/flash";
+import { isUploadError } from "@/services/storage";
+import { revalidatePublicContent } from "@/services/public-cache";
 
-function parseLibraryForm(formData: FormData) {
-  const pdfUrl = formData.get("pdfUrl");
-  return libraryItemSchema.safeParse({
-    title: formData.get("title"),
-    author: formData.get("author"),
-    topic: formData.get("topic"),
-    level: formData.get("level"),
-    language: formData.get("language"),
-    pdfUrl: pdfUrl ? String(pdfUrl) : "",
-    published: formData.get("published") === "on",
-  });
-}
+const parseLibraryForm = parseFormWith(
+  libraryItemSchema,
+  (formData: FormData) => {
+    const pdfUrl = formData.get("pdfUrl");
+    return {
+      title: formData.get("title"),
+      author: formData.get("author"),
+      topic: formData.get("topic"),
+      level: formData.get("level"),
+      language: formData.get("language"),
+      pdfUrl: pdfUrl ? String(pdfUrl) : "",
+      published: formData.get("published") === "on",
+    };
+  },
+  "Please check the item details.",
+);
 
-export async function createLibraryItem(formData: FormData) {
-  await requireAdmin();
-  const parsed = parseLibraryForm(formData);
-  if (!parsed.success) throw new Error("Invalid library item data");
-
-  const imageFile = formData.get("image") as File | null;
-  if (imageFile && imageFile.size > 0) {
-    const { error } = validateLibraryImage(imageFile);
-    if (error) {
-      redirect(`/admin/library/new?saveError=${encodeURIComponent(error)}`);
-    }
-  }
-
-  const featuredOnHomepage = formData.get("featuredOnHomepage") === "on";
-  const featured = await resolveLibraryFeaturedUpdate({
-    item: {
-      published: parsed.data.published,
-      featuredOnHomepage: false,
-      featuredAt: null,
-    },
-    requestFeatured: featuredOnHomepage,
-  });
-
-  if ("error" in featured) {
-    redirect(`/admin/library/new?saveError=${encodeURIComponent(featured.error)}`);
-  }
-
-  const data = {
-    ...parsed.data,
-    ...featured,
-  };
-
-  const id = await uniqueSlug(parsed.data.title, async (slug) => {
-    return Boolean(await withDbErrorHandling(() => prisma.libraryItem.findUnique({ where: { id: slug } }), "Database operation failed"));
-  });
-
-  let imagePath: string | undefined;
-  if (imageFile && imageFile.size > 0) {
-    imagePath = await saveLibraryImage(id, imageFile);
-  }
-
-  await withDbErrorHandling(() => prisma.libraryItem.create({ data: { id, ...data, ...(imagePath ? { imagePath } : {}) } }), "Database operation failed");
-
+function revalidateLibraryPaths(id?: string) {
   revalidatePath("/");
+
+  revalidatePublicContent();
   revalidatePath("/library");
   revalidatePath("/admin/library");
-  redirect("/admin/library?created=1");
+  if (id) {
+    revalidatePath(`/admin/library/${id}`);
+  }
+}
+
+/** The cover image the form uploads, or null; invalid files stop the action with the validation message. */
+function uploadedImage(formData: FormData) {
+  const imageFile = formData.get("image") as File | null;
+  if (!imageFile || imageFile.size === 0) return null;
+  const { error } = validateLibraryImage(imageFile);
+  return error ? { error } : { file: imageFile };
+}
+
+async function saveImage(id: string, file: File) {
+  try {
+    return await saveLibraryImage(id, file);
+  } catch (error) {
+    if (isUploadError(error)) throw new ActionError(error.message);
+    throw error;
+  }
+}
+
+const crud = createAdminCrudActions({
+  label: "library item",
+  errorStyle: "flash",
+  notFoundMessage: "Library item not found.",
+  flags: { created: "created" },
+  model: {
+    find: (id) => prisma.libraryItem.findUnique({ where: { id } }),
+    update: (id, data) => prisma.libraryItem.update({ where: { id }, data: data as Prisma.LibraryItemUncheckedUpdateInput }),
+    remove: (id) => prisma.libraryItem.delete({ where: { id } }),
+  },
+  parse: parseLibraryForm,
+  paths: {
+    list: "/admin/library",
+    revalidate: (id, operation) => revalidateLibraryPaths(operation === "create" ? undefined : id),
+  },
+  hooks: {
+    prepareCreate: async ({ formData, data }) => {
+      const image = uploadedImage(formData);
+      if (image && "error" in image) return { error: image.error };
+
+      const featured = await resolveLibraryFeaturedUpdate({
+        item: { published: data.published, featuredOnHomepage: false, featuredAt: null },
+        requestFeatured: formData.get("featuredOnHomepage") === "on",
+      });
+      if ("error" in featured) return { error: featured.error };
+
+      return { columns: featured };
+    },
+
+    // The image is stored under the item id, so it is uploaded once the slug is known and
+    // removed again if the row cannot be created.
+    writeCreate: async ({ formData, data }, columns) => {
+      const image = uploadedImage(formData);
+      const imageFile = image && "file" in image ? image.file : null;
+      return createWithUniqueSlug(
+        data.title,
+        async (slug) => Boolean(await withDbErrorHandling(() => prisma.libraryItem.findUnique({ where: { id: slug } }), "Database operation failed")),
+        async (id) => {
+          const imagePath = imageFile ? await saveImage(id, imageFile) : undefined;
+          try {
+            return await withDbErrorHandling(
+              () => prisma.libraryItem.create({
+                data: { id, ...columns, ...(imagePath ? { imagePath } : {}) } as Prisma.LibraryItemUncheckedCreateInput,
+              }),
+              "Database operation failed",
+            );
+          } catch (error) {
+            if (imagePath) await deleteLibraryImage(imagePath).catch(() => undefined);
+            throw error;
+          }
+        },
+      );
+    },
+
+    prepareUpdate: async ({ id, existing, formData, data }) => {
+      const image = uploadedImage(formData);
+      if (image && "error" in image) return { error: image.error };
+
+      const featured = await resolveLibraryFeaturedUpdate({
+        item: {
+          published: data.published,
+          featuredOnHomepage: existing.featuredOnHomepage,
+          featuredAt: existing.featuredAt,
+        },
+        requestFeatured: formData.get("featuredOnHomepage") === "on",
+      });
+      if ("error" in featured) return { error: featured.error };
+
+      // The new cover is stored before the row is touched; the old one goes after the row commits.
+      let imagePath: string | undefined | null;
+      if (image && "file" in image) {
+        imagePath = await saveImage(id, image.file);
+      } else if (formData.get("removeImage") === "true") {
+        imagePath = null;
+      }
+
+      return { columns: { ...featured, ...(imagePath !== undefined ? { imagePath } : {}) } };
+    },
+
+    writeUpdate: async ({ id }, columns) => {
+      try {
+        await withDbErrorHandling(
+          () => prisma.libraryItem.update({ where: { id }, data: columns as Prisma.LibraryItemUncheckedUpdateInput }),
+          "Database operation failed",
+        );
+      } catch (error) {
+        if (columns.imagePath) await deleteLibraryImage(columns.imagePath as string);
+        throw error;
+      }
+    },
+
+    // The row no longer references the old cover: remove it now.
+    afterUpdate: async ({ existing }, columns) => {
+      const imagePath = columns.imagePath as string | null | undefined;
+      if (imagePath !== undefined && existing.imagePath && existing.imagePath !== imagePath) {
+        await deleteLibraryImage(existing.imagePath);
+      }
+    },
+
+    beforeDelete: async (existing) => {
+      if (existing.imagePath) {
+        await deleteLibraryImage(existing.imagePath);
+      }
+    },
+  },
+});
+
+export async function createLibraryItem(formData: FormData) {
+  return crud.create(formData);
 }
 
 export async function updateLibraryItem(id: string, formData: FormData) {
-  await requireAdmin();
-  const parsed = parseLibraryForm(formData);
-  if (!parsed.success) throw new Error("Invalid library item data");
-
-  const existing = await withDbErrorHandling(() => prisma.libraryItem.findUnique({ where: { id } }), "Database operation failed");
-  if (!existing) throw new Error("Library item not found");
-
-  const imageFile = formData.get("image") as File | null;
-  if (imageFile && imageFile.size > 0) {
-    const { error } = validateLibraryImage(imageFile);
-    if (error) {
-      redirect(`/admin/library/${id}/edit?saveError=${encodeURIComponent(error)}`);
-    }
-  }
-
-  const featuredOnHomepage = formData.get("featuredOnHomepage") === "on";
-  const featured = await resolveLibraryFeaturedUpdate({
-    item: {
-      published: parsed.data.published,
-      featuredOnHomepage: existing.featuredOnHomepage,
-      featuredAt: existing.featuredAt,
-    },
-    requestFeatured: featuredOnHomepage,
-  });
-
-  if ("error" in featured) {
-    redirect(`/admin/library/${id}/edit?saveError=${encodeURIComponent(featured.error)}`);
-  }
-
-  const removeImage = formData.get("removeImage") === "true";
-  let imagePath: string | undefined | null;
-
-  if (imageFile && imageFile.size > 0) {
-    imagePath = await saveLibraryImage(id, imageFile);
-  } else if (removeImage) {
-    if (existing.imagePath) {
-      await deleteLibraryImage(existing.imagePath);
-    }
-    imagePath = null;
-  }
-
-  await withDbErrorHandling(() => prisma.libraryItem.update({
-      where: { id },
-      data: {
-        ...parsed.data,
-        ...featured,
-        ...(imagePath !== undefined ? { imagePath } : {}),
-      },
-    }), "Database operation failed");
-
-  revalidatePath("/");
-  revalidatePath("/library");
-  revalidatePath("/admin/library");
-  revalidatePath(`/admin/library/${id}`);
-  redirect("/admin/library?saved=1");
+  return crud.update(id, formData);
 }
 
 export async function deleteLibraryItemById(id: string): Promise<{ error?: string }> {
-  await requireAdmin();
-
-  const existing = await withDbErrorHandling(() => prisma.libraryItem.findUnique({ where: { id } }), "Database operation failed");
-  if (!existing) {
-    return { error: "Library item not found." };
-  }
-
-  if (existing.imagePath) {
-    await deleteLibraryImage(existing.imagePath);
-  }
-
-  await withDbErrorHandling(() => prisma.libraryItem.delete({ where: { id } }), "Database operation failed");
-
-  revalidatePath("/");
-  revalidatePath("/library");
-  revalidatePath("/admin/library");
-  revalidatePath(`/admin/library/${id}`);
-
-  return {};
+  return crud.removeById(id);
 }
 
 export async function deleteLibraryItemAction(id: string, returnTo: "list" | "profile" = "list") {
   const result = await deleteLibraryItemById(id);
   if (result.error) {
-    const errorUrl = returnTo === "profile" 
+    const errorUrl = returnTo === "profile"
       ? `/admin/library/${id}?error=${encodeURIComponent(result.error)}`
-      : `/admin/library/${id}/edit?saveError=${encodeURIComponent(result.error)}`;
+      : withFlash(`/admin/library/${id}/edit`, { message: result.error });
     redirect(errorUrl);
   }
   redirect("/admin/library?deleted=1");

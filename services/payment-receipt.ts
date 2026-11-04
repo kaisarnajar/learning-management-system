@@ -5,7 +5,35 @@ import { INVOICE_TERMS, AUTHORITY_SIGNATURE } from "@/services/academy-contact";
 import { ReceiptData } from "@/types/receipt";
 import { incomePaymentTypeLabel } from "@/services/monthly-payment-status";
 import { loadStandardPdfAssets } from "@/services/pdf-generator";
+import { PAYMENTS } from "@/config/constants/payments";
+import { paymentMethodFromText, paymentTypeOf } from "@/services/status-compat";
 
+
+/**
+ * Resolves the book order a payment record paid for: by the bookOrderId link
+ * first, falling back to the legacy "Book order #XXXXXX" description match
+ * for records that pre-date the link (scripts/backfill-book-order-links.ts).
+ */
+export async function findBookOrderForRecord(record: {
+  userId: string;
+  amountInrPaise: number;
+  description: string | null;
+  bookOrderId?: string | null;
+}) {
+  if (record.bookOrderId) {
+    return prisma.bookOrder.findUnique({ where: { id: record.bookOrderId } });
+  }
+  const match = record.description?.match(/Book order #([A-Z0-9]+)/i);
+  if (!match) return null;
+  return prisma.bookOrder.findFirst({
+    where: {
+      userId: record.userId,
+      id: { endsWith: match[1].toLowerCase() },
+      totalAmountInrPaise: record.amountInrPaise,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
 
 export function getReceiptFilename(courseTitle: string, paymentRecordId: string): string {
   const slug = courseTitle
@@ -27,6 +55,8 @@ export type ReceiptRecordInput = {
   receiptGeneratedAt: Date | null;
   receiptFeeAmountPaise: number | null;
   receiptGstAmountPaise: number | null;
+  receiptShippingAmountPaise?: number | null;
+  bookOrderId?: string | null;
   user: {
     name: string | null;
     address: string | null;
@@ -54,24 +84,15 @@ export async function prepareReceiptData(
   let shippingAmount = 0;
   let paymentMethod = record.submission?.paymentMethod || record.paymentType || "MANUAL";
   
-  if (record.paymentType === "book_purchase") {
+  if (record.paymentType === PAYMENTS.TYPES.BOOK_ORDER) {
     finalCourseTitle = "Book Order";
-    const match = record.description?.match(/Book order #([A-Z0-9]+)/i);
-    if (match) {
-      const shortId = match[1];
-      const bookOrder = await prisma.bookOrder.findFirst({
-        where: { 
-          userId: record.userId,
-          id: { endsWith: shortId.toLowerCase() },
-          totalAmountInrPaise: record.amountInrPaise 
-        }
-      });
-      if (bookOrder) {
-        shippingAmount = bookOrder.shippingChargeInrPaise / 100;
-        if (bookOrder.paymentMethod) {
-          paymentMethod = bookOrder.paymentMethod;
-        }
-      }
+    const bookOrder = await findBookOrderForRecord(record);
+    // Prefer the shipping amount captured at generation time so the printed
+    // rows always reconcile with the stored base/GST split.
+    const shippingPaise = record.receiptShippingAmountPaise ?? bookOrder?.shippingChargeInrPaise ?? 0;
+    shippingAmount = shippingPaise / 100;
+    if (bookOrder?.paymentMethod) {
+      paymentMethod = bookOrder.paymentMethod;
     }
   }
 
@@ -83,7 +104,7 @@ export async function prepareReceiptData(
     Boolean(record.submission?.couponId) ||
     Boolean(record.description?.toLowerCase().includes("waiver")) ||
     Boolean(record.submission?.label?.toLowerCase().includes("waiver")) ||
-    record.submission?.paymentMethod === "waiver";
+    paymentMethodFromText(record.submission?.paymentMethod) === "WAIVER";
 
   if (record.courseId && isWaiverOrDiscountUsed) {
     const { getCourseById } = await import("@/services/courses");
@@ -91,7 +112,7 @@ export async function prepareReceiptData(
     const course = await getCourseById(record.courseId);
 
     if (course) {
-      const fullFeePaise = record.paymentType === "enrollment"
+      const fullFeePaise = paymentTypeOf(record) === "ENROLLMENT"
         ? getRegistrationFeePaise(course)
         : getMonthlyFeePaise(course);
 
@@ -155,12 +176,13 @@ export async function prepareReceiptData(
       amount: record.amountInrPaise / 100,
       baseAmount: baseAmount ? baseAmount / 100 : undefined,
       gstAmount: gstAmount ? gstAmount / 100 : undefined,
+      gstRatePercent: gstAmount ? PAYMENTS.GST_PERCENTAGE : undefined,
       shippingAmount: shippingAmount > 0 ? shippingAmount : undefined,
       discountAmount,
       discountPercentage,
       originalAmount,
       currency: "₹",
-      typeLabel: record.paymentType === "book_purchase" ? "Books" : incomePaymentTypeLabel(record.paymentType),
+      typeLabel: record.paymentType === PAYMENTS.TYPES.BOOK_ORDER ? "Books" : incomePaymentTypeLabel(record.paymentType),
     },
     authority: {
       name: AUTHORITY_SIGNATURE.name,

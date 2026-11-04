@@ -35,8 +35,19 @@ yarn-error.log*
 !.env.example
 
 
+# playwright
+/test-results/
+/playwright-report/
+/tests/e2e/.auth/
+
 # local demo uploads
 /public/uploads/
+
+# demo seed credentials (generated per run)
+.seed-credentials.local.json
+
+# snapshots written by data-correction scripts
+/scripts/out/
 
 # vercel
 .vercel
@@ -44,3 +55,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Build artefacts
+generated/

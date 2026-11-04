@@ -1,14 +1,21 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/services/auth";
+import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { generateIdCardPdf } from "@/utils/id-card-html";
 import { isAdminSession } from "@/services/admin";
+import { contentDisposition } from "@/utils/filename";
+
+// Chromium cold start plus rendering can exceed the default function timeout.
+export const maxDuration = 60;
 
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const session = await auth();
+  const limited = await enforceRateLimit(RATE_LIMITS.DOCUMENT_USER, session?.user?.id ?? "anonymous");
+  if (limited) return limited;
   if (!isAdminSession(session)) {
     return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
   }
@@ -33,13 +40,13 @@ export async function GET(request: Request) {
 
   const pdfBuffer = await generateIdCardPdf(user);
 
-  const filename = `ID_Card_${user.name?.replace(/\s+/g, '_') || "Student"}.pdf`;
+  const displayName = `ID Card ${user.name || "Student"}`;
 
   return new NextResponse(new Uint8Array(pdfBuffer), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}"`,
+      "Content-Disposition": contentDisposition(inline ? "inline" : "attachment", displayName, "pdf"),
       "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
     },
   });

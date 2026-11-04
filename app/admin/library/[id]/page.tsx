@@ -4,6 +4,7 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { deleteLibraryItemAction } from "@/app/admin/library/actions";
 import { getLibraryItemById } from "@/services/library";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function AdminLibraryDetailPage({
   params,
@@ -12,6 +13,7 @@ export default async function AdminLibraryDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const item = await getLibraryItemById(id);

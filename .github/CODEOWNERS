@@ -1,0 +1,11 @@
+# Every change needs a review from the repository owner.
+*                       @kaisarnajar
+
+# Money, access control and the database deserve an explicit owner even if
+# the default above is later widened to a team.
+/prisma/                @kaisarnajar
+/services/payments*.ts  @kaisarnajar
+/services/finance*.ts   @kaisarnajar
+/services/auth*.ts      @kaisarnajar
+/middleware.ts          @kaisarnajar
+/.github/               @kaisarnajar

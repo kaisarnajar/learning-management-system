@@ -1,3 +1,4 @@
+import { escapeHtml } from "../layout";
 import { deliverMail, NotificationEmailBaseParams } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailButton, EmailInfoCard } from "../components";
@@ -25,7 +26,7 @@ export async function sendBookOrderApprovedEmail(
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>Your book order (<strong>${totalAmountStr}</strong>) has been <strong style="color:#166534;">approved</strong> and is being processed.</p>
+    <p>Your book order (<strong>${escapeHtml(totalAmountStr)}</strong>) has been <strong style="color:#166534;">approved</strong> and is being processed.</p>
     <p>You will receive another notification when your order ships.</p>
     ${EmailButton({ href: orderUrl, label: "View Order", color: "#3730a3" })}
   `;

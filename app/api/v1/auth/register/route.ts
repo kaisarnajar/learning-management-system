@@ -1,39 +1,29 @@
 import { hash } from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/utils/prisma";
-import { generateApiToken } from "@/services/api-auth";
-import { generateVerificationToken } from "@/services/tokens";
+import { issueApiSession } from "@/services/api-auth";
+import { buildVerificationUrl, generateVerificationToken } from "@/services/tokens";
+import { registerSchema } from "@/utils/validations";
 import { sendVerificationEmail } from "@/services/email";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
+import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 
 export async function POST(request: NextRequest) {
+  const limited = await enforceRateLimit(RATE_LIMITS.REGISTER_IP, getClientIp(request.headers), {
+    success: false,
+    error: "Too many registrations from this network. Please try again later.",
+  });
+  if (limited) return limited;
+
   try {
-    const body = await request.json();
-    const name = typeof body.name === "string" ? body.name.trim() : "";
-    const email = typeof body.email === "string" ? body.email.toLowerCase().trim() : "";
-    const password = typeof body.password === "string" ? body.password : "";
-    const acceptPolicies = body.acceptPolicies;
-
-    if (!email || !password) {
+    const parsed = registerSchema.safeParse(await request.json());
+    if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: "Email and password are required." },
+        { success: false, error: parsed.error.issues[0]?.message ?? "Invalid registration details." },
         { status: 400 }
       );
     }
-
-    if (password.length < 8) {
-      return NextResponse.json(
-        { success: false, error: "Password must be at least 8 characters long." },
-        { status: 400 }
-      );
-    }
-
-    if (acceptPolicies !== true) {
-      return NextResponse.json(
-        { success: false, error: "You must accept the Terms & Conditions and Privacy Policy." },
-        { status: 400 }
-      );
-    }
+    const { name, email, password } = parsed.data;
 
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) {
@@ -66,14 +56,12 @@ export async function POST(request: NextRequest) {
     // Verification Email
     try {
       const verificationToken = await generateVerificationToken(email);
-      const origin = new URL(request.url).origin;
-      const verificationUrl = `${origin}/verify-email?token=${verificationToken.token}`;
-      await sendVerificationEmail({ to: email, verificationUrl });
+      await sendVerificationEmail({ to: email, verificationUrl: buildVerificationUrl(verificationToken.token) });
     } catch (emailErr) {
       console.error("[api/v1/auth/register] Failed to send verification email:", emailErr);
     }
 
-    const token = await generateApiToken({
+    const tokens = await issueApiSession({
       id: user.id,
       email: user.email,
       name: user.name,
@@ -82,7 +70,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      token,
+      // `token` is the legacy name for the access token; kept for one release.
+      token: tokens.accessToken,
+      ...tokens,
       user: {
         id: user.id,
         email: user.email,

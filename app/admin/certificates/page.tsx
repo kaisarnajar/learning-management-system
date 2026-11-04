@@ -4,6 +4,7 @@ import { AdminCertificatesTable } from "@/components/admin/certificates/AdminCer
 import { Pagination } from "@/components/shared/Pagination";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import Link from "next/link";
+import { requireAdmin } from "@/services/auth-actions";
 
 export const metadata: Metadata = {
   title: "Certificates Management | Admin",
@@ -15,6 +16,7 @@ export default async function AdminCertificatesPage({
 }: {
   searchParams: Promise<{ page?: string; q?: string }>;
 }) {
+  await requireAdmin();
   const { page, q } = await searchParams;
   const safePage = Math.max(1, parseInt(page ?? "1", 10) || 1);
   const pageSize = 20;

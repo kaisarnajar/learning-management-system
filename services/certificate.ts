@@ -49,7 +49,7 @@ export async function generateCertificatePdf(params: CertificatePdfParams): Prom
   };
 
   const componentHtml = renderCertificateToHtml(certData);
-  const fullHtml = wrapHtmlForPdf(componentHtml, { landscape: true });
+  const fullHtml = await wrapHtmlForPdf(componentHtml, { landscape: true });
 
   return await generatePdfFromHtml(fullHtml, {
     format: "A4",

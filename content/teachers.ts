@@ -1,6 +1,3 @@
-/** Shared password for all demo teacher accounts (local / QA only). */
-export const DEMO_TEACHER_PASSWORD = "Teacher@2026";
-
 export type Teacher = {
   id: string;
   name: string;
@@ -12,7 +9,7 @@ export type Teacher = {
 
 export const teachers: Teacher[] = [
   {
-    id: "1",
+    id: "moulana-ibrahim-khan",
     name: "Moulana Ibrahim Khan",
     email: "ibrahim.khan@teachers.academy.local",
     specialization: "Quran & Tajweed",
@@ -20,7 +17,7 @@ export const teachers: Teacher[] = [
     initials: "IK",
   },
   {
-    id: "2",
+    id: "moulana-yusuf-ahmed",
     name: "Moulana Yusuf Ahmed",
     email: "yusuf.ahmed@teachers.academy.local",
     specialization: "Hifz & Qiraat",
@@ -28,7 +25,7 @@ export const teachers: Teacher[] = [
     initials: "YA",
   },
   {
-    id: "3",
+    id: "moulana-farid-hassan",
     name: "Moulana Farid Hassan",
     email: "farid.hassan@teachers.academy.local",
     specialization: "Arabic & Nahw",
@@ -36,7 +33,7 @@ export const teachers: Teacher[] = [
     initials: "FH",
   },
   {
-    id: "4",
+    id: "moulana-abdul-rahman",
     name: "Moulana Abdul Rahman",
     email: "abdul.rahman@teachers.academy.local",
     specialization: "Fiqh & Islamic Studies",
@@ -44,7 +41,7 @@ export const teachers: Teacher[] = [
     initials: "AR",
   },
   {
-    id: "5",
+    id: "ustadha-fatima-siddiqui",
     name: "Ustadha Fatima Siddiqui",
     email: "fatima.siddiqui@teachers.academy.local",
     specialization: "Women's Quran Classes",
@@ -52,7 +49,7 @@ export const teachers: Teacher[] = [
     initials: "FS",
   },
   {
-    id: "6",
+    id: "moulana-hamza-malik",
     name: "Moulana Hamza Malik",
     email: "hamza.malik@teachers.academy.local",
     specialization: "Seerah & Youth Programs",
@@ -60,7 +57,7 @@ export const teachers: Teacher[] = [
     initials: "HM",
   },
   {
-    id: "7",
+    id: "moulana-saeedullah-mir",
     name: "Moulana Saeedullah Mir",
     email: "saeedullah.mir@teachers.academy.local",
     specialization: "Tafsir & Quranic Sciences",
@@ -68,7 +65,7 @@ export const teachers: Teacher[] = [
     initials: "SM",
   },
   {
-    id: "8",
+    id: "ustadha-khadija-rahman",
     name: "Ustadha Khadija Rahman",
     email: "khadija.rahman@teachers.academy.local",
     specialization: "Children's Quran Programs",
@@ -76,7 +73,7 @@ export const teachers: Teacher[] = [
     initials: "KR",
   },
   {
-    id: "9",
+    id: "qari-tariq-ansari",
     name: "Qari Tariq Ansari",
     email: "tariq.ansari@teachers.academy.local",
     specialization: "Qiraat & Advanced Recitation",
@@ -84,7 +81,7 @@ export const teachers: Teacher[] = [
     initials: "TA",
   },
   {
-    id: "10",
+    id: "ustadha-amna-qureshi",
     name: "Ustadha Amna Qureshi",
     email: "amna.qureshi@teachers.academy.local",
     specialization: "Sisters Tajweed Circle",
@@ -92,7 +89,7 @@ export const teachers: Teacher[] = [
     initials: "AQ",
   },
   {
-    id: "11",
+    id: "moulana-zain-ul-abideen",
     name: "Moulana Zain Ul Abideen",
     email: "zain.abideen@teachers.academy.local",
     specialization: "Islamic History & Tarikh",
@@ -100,7 +97,7 @@ export const teachers: Teacher[] = [
     initials: "ZA",
   },
   {
-    id: "12",
+    id: "hafiz-bilal-wani",
     name: "Hafiz Bilal Wani",
     email: "bilal.wani@teachers.academy.local",
     specialization: "Maktab & Beginner Literacy",

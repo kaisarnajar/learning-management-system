@@ -2,6 +2,7 @@ import { resolveUserRole } from "@/services/teacher-auth";
 import { generatePdfFromHtml, loadStandardPdfAssets, loadProfilePictureAsBase64, wrapHtmlForPdf } from "@/services/pdf-generator";
 import { BRAND_CONFIG } from "@/config/brand";
 import type { Gender } from "@prisma/client";
+import { escapeHtml as e } from "@/utils/html-escape";
 
 
 export function renderIdCardToHtml(data: {
@@ -29,9 +30,9 @@ export function renderIdCardToHtml(data: {
   };
 
   const profileContent = data.profilePicUrl
-    ? `<img src="${data.profilePicUrl}" class="w-full h-full object-cover rounded-t-lg" alt="Profile" />`
+    ? `<img src="${e(data.profilePicUrl)}" class="w-full h-full object-cover rounded-t-lg" alt="Profile" />`
     : `<div class="w-full h-full flex flex-col items-center justify-center bg-brand-primary/10 text-brand-primary rounded-t-lg">
-         <span class="text-7xl font-bold font-serif">${getInitials(data.studentName)}</span>
+         <span class="text-7xl font-bold font-serif">${e(getInitials(data.studentName))}</span>
        </div>`;
 
   let cardRole = "STUDENT";
@@ -67,7 +68,7 @@ export function renderIdCardToHtml(data: {
         <!-- LEFT COLUMN -->
         <div class="w-[250px] flex flex-col items-center flex-shrink-0">
           <!-- Logo -->
-          <img src="${data.logoUrl}" class="w-[130px] h-[130px] object-contain mb-3 process-white-bg" alt="Logo" />
+          <img src="${e(data.logoUrl)}" class="w-[130px] h-[130px] object-contain mb-3 process-white-bg" alt="Logo" />
           
           <!-- Photo -->
           <div class="w-pdf-photo-w h-pdf-photo-h border-pdf-sm border-brand-primary rounded-t-xl bg-white overflow-hidden relative shadow-md">
@@ -75,16 +76,16 @@ export function renderIdCardToHtml(data: {
           </div>
           <!-- Banner -->
           <div class="w-pdf-photo-w bg-brand-primary text-white text-center py-2 rounded-b-xl border-pdf-sm border-t-0 border-brand-primary font-bold text-pdf-22 tracking-wider shadow-md">
-            ${cardRole} CARD
+            ${e(cardRole)} CARD
           </div>
 
           <!-- Stamp & Signature -->
           <div class="mt-4 flex flex-col items-center relative w-pdf-photo-w">
              <div class="relative flex justify-center items-center h-[85px] w-full">
                <!-- Stamp as background layer -->
-               <img src="${data.stampUrl}" class="w-20 absolute z-10 opacity-90 process-white-bg mix-blend-multiply" style="top: 50%; left: 50%; transform: translate(-50%, -50%);" alt="Stamp" />
+               <img src="${e(data.stampUrl)}" class="w-20 absolute z-10 opacity-90 process-white-bg mix-blend-multiply" style="top: 50%; left: 50%; transform: translate(-50%, -50%);" alt="Stamp" />
                <!-- Signature as foreground layer -->
-               <img src="${data.signatureUrl}" class="max-h-[85px] max-w-[150px] object-contain relative z-20 translate-y-1 process-white-bg" alt="Signature" />
+               <img src="${e(data.signatureUrl)}" class="max-h-[85px] max-w-[150px] object-contain relative z-20 translate-y-1 process-white-bg" alt="Signature" />
              </div>
              <div class="w-48 h-[2px] bg-brand-gold mt-1"></div>
              <p class="text-pdf-17 font-semibold text-brand-primary mt-1 tracking-wide">Founder / CEO</p>
@@ -97,7 +98,7 @@ export function renderIdCardToHtml(data: {
           <div class="flex flex-col items-center mb-6 relative">
             <div class="flex flex-col items-center relative -left-6">
               <h1 class="text-pdf-46 font-serif font-bold text-brand-primary tracking-wider uppercase mb-1 whitespace-nowrap">
-                ${BRAND_CONFIG.name.toUpperCase()}
+                ${e(BRAND_CONFIG.name.toUpperCase())}
               </h1>
               
               <div class="flex items-center gap-4 mb-4">
@@ -110,7 +111,7 @@ export function renderIdCardToHtml(data: {
             <div class="bg-brand-primary text-white px-8 py-2.5 rounded-lg flex items-center gap-4 shadow-md">
               <span class="text-pdf-22 font-bold tracking-wide">REGISTRATION NO.</span>
               <div class="w-[2px] h-6 bg-brand-gold"></div>
-              <span class="text-pdf-22 font-bold tracking-wide">${data.registrationNo || "PENDING"}</span>
+              <span class="text-pdf-22 font-bold tracking-wide">${e(data.registrationNo || "PENDING")}</span>
             </div>
           </div>
 
@@ -121,7 +122,7 @@ export function renderIdCardToHtml(data: {
               <div class="flex items-baseline">
                 <span class="text-pdf-22 font-bold text-brand-primary w-pdf-label-w shrink-0">Name</span>
                 <span class="text-pdf-22 font-bold text-brand-primary mx-3">:</span>
-                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${data.studentName}</span>
+                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${e(data.studentName)}</span>
               </div>
               <div class="h-[1.5px] w-full bg-brand-gold/80 mt-[8px]"></div>
             </div>
@@ -130,7 +131,7 @@ export function renderIdCardToHtml(data: {
               <div class="flex items-baseline">
                 <span class="text-pdf-22 font-bold text-brand-primary w-pdf-label-w shrink-0">Father's Name</span>
                 <span class="text-pdf-22 font-bold text-brand-primary mx-3">:</span>
-                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${data.fathersName}</span>
+                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${e(data.fathersName)}</span>
               </div>
               <div class="h-[1.5px] w-full bg-brand-gold/80 mt-[8px]"></div>
             </div>
@@ -139,7 +140,7 @@ export function renderIdCardToHtml(data: {
               <div class="flex items-baseline">
                 <span class="text-pdf-22 font-bold text-brand-primary w-pdf-label-w shrink-0">Residence</span>
                 <span class="text-pdf-22 font-bold text-brand-primary mx-3">:</span>
-                <span class="text-pdf-20 text-gray-800 font-medium leading-snug">${data.residence}</span>
+                <span class="text-pdf-20 text-gray-800 font-medium leading-snug">${e(data.residence)}</span>
               </div>
               <div class="h-[1.5px] w-full bg-brand-gold/80 mt-[8px]"></div>
             </div>
@@ -148,7 +149,7 @@ export function renderIdCardToHtml(data: {
               <div class="flex items-baseline">
                 <span class="text-pdf-22 font-bold text-brand-primary w-pdf-label-w shrink-0">Email</span>
                 <span class="text-pdf-22 font-bold text-brand-primary mx-3">:</span>
-                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${data.email}</span>
+                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${e(data.email)}</span>
               </div>
               <div class="h-[1.5px] w-full bg-brand-gold/80 mt-[8px]"></div>
             </div>
@@ -157,7 +158,7 @@ export function renderIdCardToHtml(data: {
               <div class="flex items-baseline">
                 <span class="text-pdf-22 font-bold text-brand-primary w-pdf-label-w shrink-0">Phone</span>
                 <span class="text-pdf-22 font-bold text-brand-primary mx-3">:</span>
-                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${data.phone}</span>
+                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${e(data.phone)}</span>
               </div>
               <div class="h-[1.5px] w-full bg-brand-gold/80 mt-[8px]"></div>
             </div>
@@ -166,7 +167,7 @@ export function renderIdCardToHtml(data: {
               <div class="flex items-baseline">
                 <span class="text-pdf-22 font-bold text-brand-primary w-pdf-label-w shrink-0">Date of Birth</span>
                 <span class="text-pdf-22 font-bold text-brand-primary mx-3">:</span>
-                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${data.dob}</span>
+                <span class="text-pdf-22 text-gray-800 font-medium leading-tight">${e(data.dob)}</span>
               </div>
               <div class="h-[1.5px] w-full bg-brand-gold/80 mt-[8px]"></div>
             </div>
@@ -181,7 +182,7 @@ export function renderIdCardToHtml(data: {
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
         </svg>
         <div class="w-[1.5px] h-6 bg-white/50"></div>
-        <span class="text-white font-medium tracking-wider text-pdf-20">${BRAND_CONFIG.websiteUrl.replace(/^https?:\/\//, "")}</span>
+        <span class="text-white font-medium tracking-wider text-pdf-20">${e(BRAND_CONFIG.websiteUrl.replace(/^https?:\/\//, ""))}</span>
       </div>
 
     </div>
@@ -231,7 +232,7 @@ export async function generateIdCardPdf(user: {
     role: targetRole,
   };
 
-  const htmlString = wrapHtmlForPdf(renderIdCardToHtml(data), { base64Font });
+  const htmlString = await wrapHtmlForPdf(renderIdCardToHtml(data), { base64Font });
   const pdfBuffer = await generatePdfFromHtml(htmlString, { 
     width: "1011px", 
     height: "638px" 

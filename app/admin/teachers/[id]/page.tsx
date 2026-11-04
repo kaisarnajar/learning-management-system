@@ -10,6 +10,7 @@ import { getEnrollmentCountsByCourse } from "@/services/enrollments";
 import { getTeacherById } from "@/services/teachers";
 import { getCoursesForTeacher } from "@/services/teacher-portal";
 import { getInitialsFromName } from "@/services/student-reviews";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function AdminTeacherDetailPage({
   params,
@@ -18,16 +19,15 @@ export default async function AdminTeacherDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const teacher = await getTeacherById(id);
 
   if (!teacher) notFound();
 
-  const [courses, enrollmentCounts] = await Promise.all([
-    getCoursesForTeacher(id),
-    getEnrollmentCountsByCourse(),
-  ]);
+  const courses = await getCoursesForTeacher(id);
+  const enrollmentCounts = await getEnrollmentCountsByCourse(courses.map((course) => course.id));
 
   const deleteAction = deleteTeacherFromProfile.bind(null, id);
 
@@ -101,19 +101,6 @@ export default async function AdminTeacherDetailPage({
           <dt className="shrink-0 font-medium text-foreground sm:w-28">Bio</dt>
           <dd className="whitespace-pre-wrap text-muted">{teacher.bio}</dd>
         </div>
-        {teacher.imageUrl && (
-          <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
-            <dt className="shrink-0 font-medium text-foreground sm:w-28">Photo</dt>
-            <dd className="text-muted">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={teacher.imageUrl}
-                alt={teacher.name}
-                className="h-32 w-32 rounded-lg object-cover ring-1 ring-border shadow-sm"
-              />
-            </dd>
-          </div>
-        )}
         <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-4">
           <dt className="shrink-0 font-medium text-foreground sm:w-28">Registered</dt>
           <dd className="text-muted">
@@ -176,7 +163,15 @@ export default async function AdminTeacherDetailPage({
         </div>
       </section>
 
-      <DeleteActionButton action={deleteAction} itemName="teacher" />
+      <DeleteActionButton
+        action={deleteAction}
+        itemName={teacher.name}
+        warningMessage={
+          courses.length > 0
+            ? `${teacher.name} is assigned to ${courses.length} course${courses.length === 1 ? "" : "s"}. Use "Edit course" above to reassign ${courses.length === 1 ? "it" : "them"} before deleting.`
+            : undefined
+        }
+      />
     </div>
   );
 }

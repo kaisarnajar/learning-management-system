@@ -1,4 +1,4 @@
-import type { PaymentRecord } from "@prisma/client";
+import type { PaymentRecord, Prisma } from "@prisma/client";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/pagination";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
@@ -6,13 +6,48 @@ import { getMonthlyFeePaise, getRegistrationFeePaise } from "@/services/course-p
 import { getCourseById } from "@/services/courses";
 import { buildMonthlyFeeLabel, buildEnrollmentFeeLabel } from "@/services/monthly-payments";
 import { getFeeFrequencyPaymentType } from "@/services/fee-frequency";
+import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
+import { PAYMENTS } from "@/config/constants/payments";
 import {
-  MONTHLY_PAYMENT_PENDING,
-  MONTHLY_PAYMENT_APPROVED,
-  PAYMENT_TYPE_ENROLLMENT,
-} from "@/services/monthly-payment-status";
-import { createCoursePaymentSubmission } from "@/services/payment-submission";
-import { AWAITING_ENROLLMENT_FEE } from "@/services/enrollment-status";
+  enrollmentStatusData,
+  isApprovedEnrollment,
+  paymentMethodWrite,
+  paymentTypeData,
+  paymentTypeWrite,
+  submissionStatusData,
+  submissionStatusOf,
+} from "@/services/status-compat";
+import { calculateDiscountedAmount, getSelectedCoupon, recordCouponUsageTx } from "@/services/coupons";
+import { deletePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
+import { isUploadError } from "@/services/storage";
+import { assignRollNumberTx } from "@/services/roll-numbers";
+import { getPaymentSettings } from "@/services/payment-settings";
+
+const AMOUNT_MISMATCH_MESSAGE =
+  "The payable amount has changed (for example a coupon is no longer available). Please refresh the page and try again.";
+const DUPLICATE_UTR_MESSAGE =
+  "This transaction reference was already used. Contact support if this is a mistake.";
+
+/** Sentinel values written for 100 % fee waivers (no money changes hands). */
+export const WAIVER_PAYMENT_METHOD = "waiver";
+export const WAIVER_TRANSACTION_REF = "FEE-WAIVER";
+
+type SubmissionTx = Prisma.TransactionClient;
+
+export type ProcessPaymentResult =
+  | { success: true; error?: never; status?: never }
+  | { success?: never; error: string; status: number };
+
+/** Thrown inside the submission transaction to abort with a user-facing message. */
+class SubmissionRejected extends Error {
+  constructor(message: string, public readonly status: number = 400) {
+    super(message);
+  }
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: string }).code === "P2002";
+}
 
 export async function getPaymentRecordById(id: string) {
   return withDbErrorHandling(() => prisma.paymentRecord.findUnique({
@@ -33,7 +68,7 @@ export async function getPaymentRecordsForUserPaginated(
   page: number,
   pageSize: number,
 ): Promise<PaginatedResult<PaymentRecord>> {
-  const where = { userId };
+  const where = { userId, voidedAt: null };
   const totalCount = await withDbErrorHandling(() => prisma.paymentRecord.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
@@ -46,9 +81,43 @@ export async function getPaymentRecordsForUserPaginated(
 
 export async function getPaymentSubmissionsForUser(userId: string) {
   return withDbErrorHandling(() => prisma.coursePaymentSubmission.findMany({
-      where: { userId },
+      where: { userId, deletedAt: null },
       orderBy: { createdAt: "desc" },
     }), "Database operation failed");
+}
+
+/**
+ * Uploads the screenshot BEFORE the transaction (object storage cannot take
+ * part in a DB transaction). The caller deletes it again if the transaction
+ * fails, so a failed submission never leaves an orphan object.
+ */
+/** Stores the screenshot; a refused file becomes a SubmissionRejected so callers answer 400. */
+async function uploadScreenshot(prefix: string, file: File | null): Promise<string | null> {
+  if (!file || file.size === 0) return null;
+  try {
+    return await savePaymentScreenshot(prefix, file);
+  } catch (error) {
+    if (isUploadError(error)) throw new SubmissionRejected(error.message, 400);
+    throw error;
+  }
+}
+
+async function assertUtrNotReused(tx: SubmissionTx, upiTransactionId: string | null, isFree: boolean) {
+  if (!upiTransactionId || isFree || upiTransactionId === WAIVER_TRANSACTION_REF) return;
+  const duplicate = await tx.coursePaymentSubmission.findFirst({
+    where: { upiTransactionId },
+    select: { id: true },
+  });
+  if (duplicate) throw new SubmissionRejected(DUPLICATE_UTR_MESSAGE);
+}
+
+function mapSubmissionError(error: unknown): { error: string; status: number } | null {
+  if (error instanceof SubmissionRejected) return { error: error.message, status: error.status };
+  if (isUniqueViolation(error)) {
+    // Partial unique indexes: same UTR reused, or same fee period submitted twice.
+    return { error: "This payment appears to have been submitted already. Please refresh and check your payment history.", status: 409 };
+  }
+  return null;
 }
 
 export async function processMonthlyPayment(
@@ -59,8 +128,9 @@ export async function processMonthlyPayment(
   paymentMethod: string | null,
   upiTransactionId: string | null,
   screenshotFile: File | null,
-  couponId?: string | null
-) {
+  couponId?: string | null,
+  expectedAmountPaise?: number | null,
+): Promise<ProcessPaymentResult> {
   const course = await getCourseById(courseId);
   if (!course) return { error: "Course not found.", status: 404 };
 
@@ -70,74 +140,104 @@ export async function processMonthlyPayment(
     where: { userId_courseId: { userId, courseId: course.id } },
   });
 
-  if (!enrollment || (enrollment.status !== "active" && enrollment.status !== "completed")) {
+  if (!enrollment || !isApprovedEnrollment(enrollment)) {
     return { error: "You must be enrolled and approved in this course before paying course fees.", status: 400 };
   }
 
   const label = buildMonthlyFeeLabel(paymentMonth, paymentYear, derivedPaymentType);
+  const baseAmountInrPaise = getMonthlyFeePaise(course);
 
+  const coupon = await getSelectedCoupon(userId, courseId, "course", couponId);
+  const amountInrPaise = coupon ? calculateDiscountedAmount(baseAmountInrPaise, coupon.percentage) : baseAmountInrPaise;
+  if (expectedAmountPaise != null && expectedAmountPaise !== amountInrPaise) {
+    return { error: AMOUNT_MISMATCH_MESSAGE, status: 409 };
+  }
+  const isFree = amountInrPaise === 0;
+  // A fully waived fee is auto-approved only when the academy opted in;
+  // otherwise it queues for admin confirmation like any other payment.
+  const autoApprove = isFree && (await getPaymentSettings()).autoApproveFullWaivers;
+  const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
+
+  // Cheap pre-check outside the transaction for a friendly message; the
+  // partial unique index on (userId, courseId, label) is the real guard.
   const duplicatePending = await prisma.coursePaymentSubmission.findFirst({
     where: {
       userId,
       courseId: course.id,
-      label,
-      status: { in: [MONTHLY_PAYMENT_PENDING, MONTHLY_PAYMENT_APPROVED] },
+      label: { in: [label, finalLabel] },
+      deletedAt: null,
+      status: { in: [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED] },
     },
+    select: { status: true, statusEnum: true },
   });
-
   if (duplicatePending) {
     return {
-      error: duplicatePending.status === MONTHLY_PAYMENT_APPROVED
+      error: submissionStatusOf(duplicatePending) === "APPROVED"
         ? `Payment for ${label} is already recorded.`
         : `A payment for ${label} is already awaiting verification.`,
       status: 400,
     };
   }
 
-  const baseAmountInrPaise = getMonthlyFeePaise(course);
-  
-  const { getSelectedCoupon, calculateDiscountedAmount, recordCouponUsage } = await import("@/services/coupons");
-  const coupon = await getSelectedCoupon(userId, courseId, "course", couponId);
-  const amountInrPaise = coupon ? calculateDiscountedAmount(baseAmountInrPaise, coupon.percentage) : baseAmountInrPaise;
-  const isFree = amountInrPaise === 0;
-  const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
-
-  const submissionResult = await createCoursePaymentSubmission({
-    userId,
-    courseId: course.id,
-    paymentType: derivedPaymentType,
-    label: finalLabel,
-    amountInrPaise,
-    status: isFree ? MONTHLY_PAYMENT_APPROVED : MONTHLY_PAYMENT_PENDING,
-    paymentMethod: isFree ? "waiver" : paymentMethod,
-    upiTransactionId: isFree ? "FEE-WAIVER" : upiTransactionId,
-    screenshotFile: isFree ? null : screenshotFile,
-    couponId: coupon?.id,
-  });
-
-  if (submissionResult.error) return { error: submissionResult.error, status: 400 };
-
-  if (coupon) {
-    await recordCouponUsage(userId, coupon.id);
+  let screenshotPath: string | null = null;
+  try {
+    screenshotPath = isFree ? null : await uploadScreenshot(`fee-${userId}`, screenshotFile);
+  } catch (error) {
+    const mapped = mapSubmissionError(error);
+    if (mapped) return mapped;
+    throw error;
   }
 
-  if (isFree && submissionResult.createdId) {
-    // Auto-create PaymentRecord for 100% waiver
-    const record = await prisma.paymentRecord.create({
-      data: {
-        userId,
-        courseId,
-        amountInrPaise: 0,
-        paidAt: new Date(),
-        paymentType: derivedPaymentType,
-        description: label + " (100% Fee Waiver)",
-      },
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+      await assertUtrNotReused(tx, upiTransactionId, isFree);
 
-    await prisma.coursePaymentSubmission.update({
-      where: { id: submissionResult.createdId },
-      data: { paymentRecordId: record.id },
+      const submission = await tx.coursePaymentSubmission.create({
+        data: {
+          userId,
+          courseId: course.id,
+          ...paymentTypeWrite(derivedPaymentType),
+          label: finalLabel,
+          amountInrPaise,
+          ...submissionStatusData(autoApprove ? "APPROVED" : "PENDING_VERIFICATION"),
+          ...paymentMethodWrite(isFree ? WAIVER_PAYMENT_METHOD : paymentMethod),
+          upiTransactionId: isFree ? WAIVER_TRANSACTION_REF : upiTransactionId,
+          paymentScreenshotPath: screenshotPath,
+          couponId: coupon?.id ?? null,
+        },
+      });
+      await tx.coursePaymentSubmission.update({
+        where: { id: submission.id },
+        data: { paymentReference: submission.id },
+      });
+
+      if (coupon) {
+        await recordCouponUsageTx(tx, userId, coupon.id);
+      }
+
+      if (autoApprove) {
+        // 100 % waiver with auto-approval enabled: nothing to verify, record it immediately.
+        const record = await tx.paymentRecord.create({
+          data: {
+            userId,
+            courseId,
+            amountInrPaise: 0,
+            paidAt: new Date(),
+            ...paymentTypeWrite(derivedPaymentType),
+            description: `${label} (100% Fee Waiver)`,
+          },
+        });
+        await tx.coursePaymentSubmission.update({
+          where: { id: submission.id },
+          data: { paymentRecordId: record.id },
+        });
+      }
     });
+  } catch (error) {
+    if (screenshotPath) await deletePaymentScreenshot(screenshotPath);
+    const mapped = mapSubmissionError(error);
+    if (mapped) return mapped;
+    throw error;
   }
 
   return { success: true };
@@ -149,8 +249,9 @@ export async function processEnrollmentPayment(
   paymentMethod: string | null,
   upiTransactionId: string | null,
   screenshotFile: File | null,
-  couponId?: string | null
-) {
+  couponId?: string | null,
+  expectedAmountPaise?: number | null,
+): Promise<ProcessPaymentResult> {
   const course = await getCourseById(courseId);
   if (!course) return { error: "Course not found.", status: 404 };
 
@@ -161,7 +262,7 @@ export async function processEnrollmentPayment(
     where: { userId_courseId: { userId, courseId } },
   });
 
-  if (enrollment?.status === "active" || enrollment?.status === "completed") {
+  if (enrollment && isApprovedEnrollment(enrollment)) {
     return { error: "You are already enrolled and approved in this course.", status: 400 };
   }
 
@@ -171,103 +272,103 @@ export async function processEnrollmentPayment(
     where: {
       userId,
       courseId,
-      paymentType: PAYMENT_TYPE_ENROLLMENT,
-      status: { in: [MONTHLY_PAYMENT_PENDING, MONTHLY_PAYMENT_APPROVED] },
+      paymentType: PAYMENTS.TYPES.ENROLLMENT,
+      deletedAt: null,
+      status: { in: [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED] },
     },
+    select: { status: true, statusEnum: true },
   });
 
   if (duplicatePending) {
     return {
-      error: duplicatePending.status === MONTHLY_PAYMENT_APPROVED
+      error: submissionStatusOf(duplicatePending) === "APPROVED"
         ? "Your enrollment fee is already recorded."
         : "Your enrollment fee payment is already awaiting verification.",
       status: 400,
     };
   }
 
-  const { getSelectedCoupon, calculateDiscountedAmount, recordCouponUsage } = await import("@/services/coupons");
   const coupon = await getSelectedCoupon(userId, courseId, "enrollment", couponId);
   const enrollmentFeePaise = coupon ? calculateDiscountedAmount(baseEnrollmentFeePaise, coupon.percentage) : baseEnrollmentFeePaise;
+  if (expectedAmountPaise != null && expectedAmountPaise !== enrollmentFeePaise) {
+    return { error: AMOUNT_MISMATCH_MESSAGE, status: 409 };
+  }
   const isFree = enrollmentFeePaise === 0;
+  const autoApprove = isFree && (await getPaymentSettings()).autoApproveFullWaivers;
   const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
 
-  if (upiTransactionId && !isFree && upiTransactionId !== "FEE-WAIVER") {
-    const duplicateUtr = await prisma.coursePaymentSubmission.findFirst({
-      where: { upiTransactionId },
-    });
-    if (duplicateUtr) {
-      return { error: "This transaction reference was already used. Contact support if this is a mistake.", status: 400 };
-    }
+  let screenshotPath: string | null = null;
+  try {
+    screenshotPath = isFree ? null : await uploadScreenshot(`enrollment-${userId}`, screenshotFile);
+  } catch (error) {
+    const mapped = mapSubmissionError(error);
+    if (mapped) return mapped;
+    throw error;
   }
 
-  const created = await prisma.$transaction(async (tx) => {
-    // If it's free, auto-approve the enrollment right away
-    const newStatus = isFree ? (await import("@/services/enrollments")).getRosterEnrollmentStatusForCourse(course.status) : AWAITING_ENROLLMENT_FEE;
+  try {
+    await prisma.$transaction(async (tx) => {
+      await assertUtrNotReused(tx, upiTransactionId, isFree);
 
-    await tx.enrollment.upsert({
-      where: { userId_courseId: { userId, courseId } },
-      create: { userId, courseId, status: newStatus },
-      update: { status: newStatus },
-    });
+      // Auto-approved waivers activate the enrollment immediately; everything
+      // else (paid, or waived without auto-approval) waits for the admin.
+      const rosterStatus = getRosterEnrollmentStatusForCourse(course.status);
+      const newStatus = autoApprove ? rosterStatus : "AWAITING_ENROLLMENT_FEE";
 
-    return tx.coursePaymentSubmission.create({
-      data: {
-        userId,
-        courseId,
-        paymentType: PAYMENT_TYPE_ENROLLMENT,
-        label: finalLabel,
-        amountInrPaise: enrollmentFeePaise,
-        status: isFree ? MONTHLY_PAYMENT_APPROVED : MONTHLY_PAYMENT_PENDING,
-        paymentMethod: isFree ? "waiver" : paymentMethod,
-        upiTransactionId: isFree ? "FEE-WAIVER" : upiTransactionId,
-        couponId: coupon?.id || null,
-      },
-    });
-  });
-
-  if (coupon) {
-    await recordCouponUsage(userId, coupon.id);
-  }
-
-  await prisma.coursePaymentSubmission.update({
-    where: { id: created.id },
-    data: { paymentReference: created.id },
-  });
-
-  if (screenshotFile && screenshotFile.size > 0 && !isFree) {
-    const { savePaymentScreenshot } = await import("@/services/payment-upload");
-    const paymentScreenshotPath = await savePaymentScreenshot(created.id, screenshotFile);
-    await prisma.coursePaymentSubmission.update({
-      where: { id: created.id },
-      data: { paymentScreenshotPath },
-    });
-  }
-
-  if (isFree) {
-    // Auto-create PaymentRecord for 100% waiver
-    await prisma.paymentRecord.create({
-      data: {
-        userId,
-        courseId,
-        amountInrPaise: 0,
-        paidAt: new Date(),
-        paymentType: PAYMENT_TYPE_ENROLLMENT,
-        description: label + " (100% Fee Waiver)",
-      },
-    });
-    
-    // Assign roll number if active
-    const { getRosterEnrollmentStatusForCourse } = await import("@/services/enrollments");
-    if (getRosterEnrollmentStatusForCourse(course.status) === "active") {
-      const activeEnrollment = await prisma.enrollment.findUnique({
+      const upserted = await tx.enrollment.upsert({
         where: { userId_courseId: { userId, courseId } },
-        select: { id: true },
+        create: { userId, courseId, ...enrollmentStatusData(newStatus) },
+        update: enrollmentStatusData(newStatus),
       });
-      if (activeEnrollment) {
-        const { assignRollNumber } = await import("@/services/roll-numbers");
-        await assignRollNumber(activeEnrollment.id, courseId);
+
+      const submission = await tx.coursePaymentSubmission.create({
+        data: {
+          userId,
+          courseId,
+          ...paymentTypeData("ENROLLMENT"),
+          label: finalLabel,
+          amountInrPaise: enrollmentFeePaise,
+          ...submissionStatusData(autoApprove ? "APPROVED" : "PENDING_VERIFICATION"),
+          ...paymentMethodWrite(isFree ? WAIVER_PAYMENT_METHOD : paymentMethod),
+          upiTransactionId: isFree ? WAIVER_TRANSACTION_REF : upiTransactionId,
+          paymentScreenshotPath: screenshotPath,
+          couponId: coupon?.id ?? null,
+        },
+      });
+      await tx.coursePaymentSubmission.update({
+        where: { id: submission.id },
+        data: { paymentReference: submission.id },
+      });
+
+      if (coupon) {
+        await recordCouponUsageTx(tx, userId, coupon.id);
       }
-    }
+
+      if (autoApprove) {
+        const record = await tx.paymentRecord.create({
+          data: {
+            userId,
+            courseId,
+            amountInrPaise: 0,
+            paidAt: new Date(),
+            ...paymentTypeData("ENROLLMENT"),
+            description: `${label} (100% Fee Waiver)`,
+          },
+        });
+        await tx.coursePaymentSubmission.update({
+          where: { id: submission.id },
+          data: { paymentRecordId: record.id },
+        });
+        if (rosterStatus === "ACTIVE") {
+          await assignRollNumberTx(tx, upserted.id, courseId);
+        }
+      }
+    });
+  } catch (error) {
+    if (screenshotPath) await deletePaymentScreenshot(screenshotPath);
+    const mapped = mapSubmissionError(error);
+    if (mapped) return mapped;
+    throw error;
   }
 
   return { success: true };

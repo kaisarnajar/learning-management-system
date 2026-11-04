@@ -8,6 +8,8 @@ import { getAllContactInquiriesPaginated } from "@/services/contact-inquiries";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { TabPills } from "@/components/shared/TabPills";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 function filterHref(filter: "pending" | "replied" | undefined, q?: string) {
@@ -31,6 +33,7 @@ export default async function AdminContactInquiriesPage({
 }: {
   searchParams: Promise<{ filter?: string; saved?: string; deleted?: string; error?: string; email?: string; page?: string; q?: string }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
   const filter =
@@ -51,29 +54,21 @@ export default async function AdminContactInquiriesPage({
           <h1 className="font-serif text-2xl font-bold text-primary">Contact inquiries</h1>
           <p className="mt-1 text-sm text-muted">{totalCount} messages</p>
         </div>
-        <nav className="flex flex-wrap gap-2" aria-label="Filter inquiries">
-          {(
+        <TabPills
+          ariaLabel="Filter inquiries"
+          items={(
             [
               { label: "All", value: undefined },
               { label: "Pending", value: "pending" as const },
               { label: "Replied", value: "replied" as const },
             ] as const
-          ).map((item) => {
-            const active = filter === item.value;
-            const href = filterHref(item.value, q);
-            return (
-              <Link
-                key={item.label}
-                href={href}
-                className={`rounded-full px-4 py-2 text-sm font-medium ${
-                  active ? "bg-primary text-white" : "border border-border text-foreground hover:bg-accent-muted/50"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+          ).map((item) => ({
+            key: item.label,
+            label: item.label,
+            href: filterHref(item.value, q),
+            active: filter === item.value,
+          }))}
+        />
       </div>
 
       <ActionToast trigger={params.saved === "1"} paramName="saved" message={`Reply saved.${params.email === "failed" ? " The notification email could not be sent — check SMTP settings in your environment." : params.email === "skipped" ? " SMTP is not configured, so no email was sent." : " The visitor has been notified by email. If they don't see it, ask them to check their Spam/Junk folder."}`} variant="info" />

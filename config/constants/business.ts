@@ -10,30 +10,23 @@ import {
 } from "@prisma/client";
 
 /**
- * Standard Roles across the application
+ * The academy's timezone. Finance date filters, "paid on" dates and
+ * calendar presets are interpreted in this zone, never in the server's.
  */
-export const ROLES = {
-  ADMIN: "admin",
-  TEACHER: "teacher",
-  STUDENT: "student",
-} as const;
+export const BUSINESS_TIMEZONE = "Asia/Kolkata";
 
 /**
- * Common enrollment statuses (stored as strings in the DB for now)
+ * Legacy text values of Enrollment.status. The typed twin is the
+ * EnrollmentStatus enum (Enrollment.statusEnum); services/status-compat.ts
+ * maps between the two while both columns exist.
  */
 export const ENROLLMENT_STATUS = {
   PENDING: "pending_approval",
   AWAITING_FEE: "awaiting_enrollment_fee",
-  APPROVED: "approved",
+  ACTIVE: "active",
+  COMPLETED: "completed",
   REJECTED: "rejected",
 } as const;
-
-export const ENROLLMENT_STATUS_UI: Record<string, { label: string; variant: "default" | "success" | "warning" | "destructive" | "outline" }> = {
-  [ENROLLMENT_STATUS.PENDING]: { label: "Pending", variant: "warning" },
-  [ENROLLMENT_STATUS.AWAITING_FEE]: { label: "Awaiting Fee", variant: "outline" },
-  [ENROLLMENT_STATUS.APPROVED]: { label: "Approved", variant: "success" },
-  [ENROLLMENT_STATUS.REJECTED]: { label: "Rejected", variant: "destructive" },
-};
 
 export const COURSE_STATUS_UI: Record<CourseStatus, { label: string; variant: "default" | "success" | "warning" | "destructive" | "outline" }> = {
   [CourseStatus.DRAFT]: { label: "Draft", variant: "outline" },
@@ -98,6 +91,16 @@ export const PAGINATION = {
   DEFAULT_PAGE_SIZE: 15,
   MAX_PAGE_SIZE: 50,
 } as const;
+
+/**
+ * Maximum quantity of a single book in one order or cart line.
+ */
+export const MAX_ORDER_QTY = 20;
+
+/**
+ * Number of student reviews the homepage shows at a time.
+ */
+export const HOMEPAGE_FEATURED_REVIEWS_MAX = 4;
 
 export const DOCUMENT_TYPES = {
   CERTIFICATE: "certificate",

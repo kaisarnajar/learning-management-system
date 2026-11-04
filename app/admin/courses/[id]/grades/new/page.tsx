@@ -1,28 +1,10 @@
-import { requireAdmin } from "@/services/auth-actions";
-import { getEnrolledStudentsForGrades } from "@/app/actions/grades";
-import { GradeForm } from "@/components/grades/GradeForm";
+import { NewGradePage } from "@/components/teaching/GradePages";
 
 export default async function AdminNewGradePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
   const { id } = await params;
-  const students = await getEnrolledStudentsForGrades(id);
-
-  return (
-    <div className="py-6 space-y-6">
-      <div>
-        <h2 className="text-xl font-semibold">Add Test Report</h2>
-        <p className="text-sm text-muted">Record exam performance for enrolled students.</p>
-      </div>
-
-      <GradeForm
-        courseId={id}
-        baseUrl="/admin/courses"
-        students={students}
-      />
-    </div>
-  );
+  return <NewGradePage role="admin" basePath="/admin/courses" courseId={id} />;
 }

@@ -5,6 +5,7 @@ import { RecordExpenseForm } from "@/components/admin/RecordExpenseForm";
 import { getAllCourses } from "@/services/courses";
 import { getAllTeachers } from "@/services/teachers";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 type TabType = "payments" | "expenses";
 
@@ -20,6 +21,7 @@ export default async function AdminTransactionsPage({
 }: {
   searchParams: Promise<{ tab?: string; saved?: string; error?: string }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const tab: TabType = params.tab === "expenses" ? "expenses" : "payments";
 
@@ -43,7 +45,7 @@ export default async function AdminTransactionsPage({
       <ActionToast trigger={params.saved === "1"} paramName="saved" message="Transaction recorded successfully." variant="info" />
       {params.error && (
         <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
-          {decodeURIComponent(params.error)}
+          {params.error}
         </p>
       )}
 

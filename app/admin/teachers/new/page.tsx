@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { TeacherForm } from "@/components/admin/TeacherForm";
 import { createTeacher } from "@/app/admin/teachers/actions";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function NewTeacherPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdmin();
   const query = await searchParams;
 
   return (

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { formatPrice } from "@/utils/money";
 import { BRAND_CONFIG } from "@/config/brand";
 import Link from "next/link";
 import Image from "next/image";
@@ -19,10 +20,6 @@ export const metadata: Metadata = {
   description: `Manage the physical book catalog for the ${BRAND_CONFIG.name} bookstore.`,
 };
 
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
-
 import { Suspense } from "react";
 
 type PageParams = {
@@ -36,6 +33,7 @@ type PageParams = {
 };
 
 import { adminActionButtonClassName } from "@/utils/form";
+import { requireAdmin } from "@/services/auth-actions";
 
 async function AdminBookstoreList({ params, q }: { params: PageParams; q?: string }) {
   const { page: requestedPage, pageSize } = parsePaginationParams(params);
@@ -98,7 +96,7 @@ async function AdminBookstoreList({ params, q }: { params: PageParams; q?: strin
                       </div>
                     </div>
                   </td>
-                  <td className="px-4 py-3 font-medium text-foreground">{formatPrice(book.priceInrPaise)}</td>
+                  <td className="px-4 py-3 font-medium text-foreground">{formatPrice(book.priceInrPaise, { exact: true })}</td>
                   <td className="px-4 py-3">
                     <BookStatusBadge status={book.status} />
                   </td>
@@ -151,6 +149,7 @@ export default async function AdminBookstorePage({
 }: {
   searchParams: Promise<PageParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
 

@@ -23,6 +23,8 @@ import {
   sendBookOrderShippedEmail,
   sendBookOrderRefundedEmail
 } from "@/services/email";
+import { buildUnsubscribeUrl } from "@/services/email-unsubscribe";
+import { sendPushToUsers } from "@/services/push";
 
 /**
  * Runs an asynchronous task in the background safely.
@@ -77,12 +79,12 @@ async function processEmailBatch<T>(
   return { successCount, failureCount };
 }
 
-async function getUserEmailData(userId: string): Promise<{ email: string; name: string } | null> {
+async function getUserEmailData(userId: string): Promise<{ email: string; name: string; announcementEmailsOptOut: boolean } | null> {
   const user = await withDbErrorHandling(() => prisma.user.findUnique({
-    where: { id: userId },
-    select: { email: true, name: true }
+    where: { id: userId, deletedAt: null },
+    select: { email: true, name: true, announcementEmailsOptOut: true }
   }), "Database operation failed");
-  return user ? { email: user.email, name: user.name || "" } : null;
+  return user ? { email: user.email, name: user.name || "", announcementEmailsOptOut: user.announcementEmailsOptOut } : null;
 }
 
 function toAbsoluteUrl(href: string): string {
@@ -126,6 +128,12 @@ export function notificationTypeLabel(type: StudentNotificationType): string {
       return "Book order approved";
     case "BOOK_ORDER_DECLINED":
       return "Book order declined";
+    case "BOOK_ORDER_SHIPPED":
+      return "Book order shipped";
+    case "BOOK_ORDER_REFUNDED":
+      return "Book order refunded";
+    case "BLOG_COMMENT_ADDED":
+      return "New blog comment";
     default:
       return "Notification";
   }
@@ -141,7 +149,12 @@ export function notificationTypeClass(type: StudentNotificationType): string {
     case "BOOK_ORDER_DECLINED":
       return "bg-destructive-bg text-destructive-text";
     case "PERSONAL_MESSAGE":
+    case "BOOK_ORDER_SHIPPED":
       return "bg-info-bg text-info-text";
+    case "BOOK_ORDER_REFUNDED":
+      return "bg-warning-bg text-warning-text";
+    case "BLOG_COMMENT_ADDED":
+      return "bg-sky-100 dark:bg-sky-950/30 text-sky-800 dark:text-sky-300";
     case "COURSE_ANNOUNCEMENT":
       return "bg-sky-100 dark:bg-sky-950/30 text-sky-800 dark:text-sky-300";
     case "SITE_ANNOUNCEMENT":
@@ -151,8 +164,14 @@ export function notificationTypeClass(type: StudentNotificationType): string {
   }
 }
 
+/** Mirrors an in-app notification to the student's devices once the response is sent. */
+function pushAfterResponse(userIds: string[], payload: { title: string; body?: string | null; href: string }) {
+  runInBackground(() => sendPushToUsers(userIds, payload));
+}
+
 export async function createStudentNotification(input: CreateStudentNotificationInput) {
   const { userId, type, title, body, href, sourceType, sourceId } = input;
+  pushAfterResponse([userId], { title, body, href });
 
   if (sourceId) {
     return withDbErrorHandling(() => prisma.studentNotification.upsert({
@@ -199,6 +218,7 @@ export async function createStudentNotificationsForUsers(
 
   const uniqueUserIds = [...new Set(userIds)];
   const { type, title, body, href, sourceType, sourceId } = payload;
+  pushAfterResponse(uniqueUserIds, { title, body, href });
 
   if (!sourceId) {
     await withDbErrorHandling(() => prisma.studentNotification.createMany({
@@ -215,19 +235,25 @@ export async function createStudentNotificationsForUsers(
     return;
   }
 
-  await Promise.all(
-    uniqueUserIds.map((userId) =>
-      createStudentNotification({
-        userId,
-        type,
-        title,
-        body,
-        href,
-        sourceType,
-        sourceId,
-      }),
-    ),
-  );
+  // Two statements for any number of recipients: insert the rows that do not
+  // exist yet (the (userId, type, sourceId) unique index dedupes), then
+  // refresh text and mark unread for everyone, including the ones just added.
+  await withDbErrorHandling(() => prisma.studentNotification.createMany({
+        data: uniqueUserIds.map((userId) => ({
+          userId,
+          type,
+          title,
+          body: body ?? null,
+          href,
+          sourceType: sourceType ?? null,
+          sourceId,
+        })),
+        skipDuplicates: true,
+      }), "Database operation failed");
+  await withDbErrorHandling(() => prisma.studentNotification.updateMany({
+        where: { userId: { in: uniqueUserIds }, type, sourceId },
+        data: { title, body: body ?? null, href, sourceType: sourceType ?? null, readAt: null },
+      }), "Database operation failed");
 }
 
 async function getEnrolledStudentUserIdsForCourse(courseId: string): Promise<string[]> {
@@ -248,7 +274,7 @@ async function getNonTeacherUserIds(): Promise<string[]> {
   );
 
   const users = await withDbErrorHandling(() => prisma.user.findMany({
-      where: teacherEmails.length > 0 ? { email: { notIn: teacherEmails } } : {},
+      where: { deletedAt: null, ...(teacherEmails.length > 0 ? { email: { notIn: teacherEmails } } : {}) },
       select: { id: true },
     }), "Database operation failed");
 
@@ -372,9 +398,10 @@ export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
     sourceId: params.announcementId,
   });
 
-  for (const userId of userIds) {
-    revalidateNotificationPaths(userId);
-  }
+  // One revalidation for the batch; the per-student admin pages are refreshed
+  // as a layout rather than one call per recipient.
+  revalidateNotificationPaths();
+  revalidatePath("/admin/students", "layout");
 
   runInBackground(async () => {
     const announcementUrl = toAbsoluteUrl(`/profile/courses/${params.courseId}/announcements`);
@@ -385,7 +412,7 @@ export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
       100,
       async (userId) => {
         const user = await getUserEmailData(userId);
-        if (user && user.email) {
+        if (user && user.email && !user.announcementEmailsOptOut) {
           await sendCourseAnnouncementEmail({
             to: user.email,
             studentName: user.name,
@@ -393,6 +420,7 @@ export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
             announcementTitle: params.title,
             announcementBody: params.body,
             announcementUrl,
+            unsubscribeUrl: buildUnsubscribeUrl(userId),
           });
         }
       },
@@ -468,13 +496,14 @@ export async function notifyAllStudentsOfSiteAnnouncement(params: {
       100,
       async (userId) => {
         const user = await getUserEmailData(userId);
-        if (user && user.email) {
+        if (user && user.email && !user.announcementEmailsOptOut) {
           await sendSiteAnnouncementEmail({
             to: user.email,
             studentName: user.name,
             announcementTitle: params.title,
             announcementBody: params.body,
             announcementUrl,
+            unsubscribeUrl: buildUnsubscribeUrl(userId),
           });
         }
       },

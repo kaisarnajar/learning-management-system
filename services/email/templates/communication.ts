@@ -1,3 +1,4 @@
+import { escapeHtml } from "../layout";
 import { deliverMail, EmailSendResult, NotificationEmailBaseParams } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailButton, EmailFallbackLink, EmailAlert, EmailHeading } from "../components";
@@ -30,7 +31,7 @@ export async function sendFatwaAnswerEmail(params: FatwaAnswerEmailParams): Prom
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>Your question <strong>&ldquo;${questionTitle}&rdquo;</strong> has been answered by our scholars.</p>
+    <p>Your question <strong>&ldquo;${escapeHtml(questionTitle)}&rdquo;</strong> has been answered by our scholars.</p>
     ${EmailButton({ href: fatwaUrl, label: "Read the Answer", color: "#3730a3" })}
     ${EmailFallbackLink({ href: fatwaUrl })}
   `;
@@ -67,7 +68,7 @@ export async function sendFatwaSubmissionAdminEmail(params: FatwaSubmissionAdmin
 
   const bodyHtml = `
     ${EmailGreeting({ name: "Admin" })}
-    <p>Teacher <strong>${teacherName}</strong> has submitted a draft reply to the fatwa question: <strong>&ldquo;${questionTitle}&rdquo;</strong>.</p>
+    <p>Teacher <strong>${escapeHtml(teacherName)}</strong> has submitted a draft reply to the fatwa question: <strong>&ldquo;${escapeHtml(questionTitle)}&rdquo;</strong>.</p>
     <p>It is currently pending your review and approval.</p>
     ${EmailButton({ href: adminReviewUrl, label: "Review Answer", color: "#3730a3" })}
     ${EmailFallbackLink({ href: adminReviewUrl })}
@@ -109,7 +110,7 @@ export async function sendFatwaStatusTeacherEmail(params: FatwaStatusTeacherEmai
 
   const bodyHtml = `
     ${EmailGreeting({ name: teacherName })}
-    <p>Your draft reply to the fatwa question <strong>&ldquo;${questionTitle}&rdquo;</strong> has been <strong style="color:${status === "approved" ? "#166534" : "#b91c1c"};">${status}</strong> by the admin.</p>
+    <p>Your draft reply to the fatwa question <strong>&ldquo;${escapeHtml(questionTitle)}&rdquo;</strong> has been <strong style="color:${status === "approved" ? "#166534" : "#b91c1c"};">${escapeHtml(status)}</strong> by the admin.</p>
     <p>${status === "approved" ? "It has been published on the site." : "You can view the details and resubmit your answer if needed."}</p>
     ${EmailButton({ href: fatwaUrl, label: "View Question", color: "#3730a3" })}
     ${EmailFallbackLink({ href: fatwaUrl })}
@@ -154,7 +155,7 @@ export async function sendContactInquiryReplyEmail(
     <p>Thank you for contacting ${BRAND_CONFIG.name}. Here is our reply to your message:</p>
     ${EmailAlert({ message: reply, type: "warning" })}
     <p style="font-size:13px;color:#6b7280;margin-top:24px;">Your original message:</p>
-    <div style="font-size:13px;color:#6b7280;white-space:pre-wrap;padding:12px 16px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;">${originalMessage}</div>
+    <div style="font-size:13px;color:#6b7280;white-space:pre-wrap;padding:12px 16px;background:#f9fafb;border-radius:6px;border:1px solid #e5e7eb;">${escapeHtml(originalMessage)}</div>
   `;
 
   const html = buildHtmlEmail({ previewText: preview, bodyHtml });
@@ -168,9 +169,11 @@ export async function sendCourseAnnouncementEmail(
     announcementTitle: string;
     announcementBody: string;
     announcementUrl: string;
+    /** Per-recipient opt-out link (services/email-unsubscribe.ts). */
+    unsubscribeUrl: string;
   },
 ) {
-  const { to, studentName, courseTitle, announcementTitle, announcementBody, announcementUrl } = params;
+  const { to, studentName, courseTitle, announcementTitle, announcementBody, announcementUrl, unsubscribeUrl } = params;
   const displayName = studentName || "Student";
   const subject = `${courseTitle} — ${announcementTitle}`;
   const preview = announcementBody.slice(0, 120);
@@ -190,12 +193,12 @@ export async function sendCourseAnnouncementEmail(
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>A new announcement has been posted for <strong>${courseTitle}</strong>:</p>
-    <div style="margin:20px 0;padding:16px 20px;border-left:4px solid #3730a3;background:#eef2ff;white-space:pre-wrap;border-radius:0 6px 6px 0;font-size:14px;line-height:1.6;">${announcementBody}</div>
+    <p>A new announcement has been posted for <strong>${escapeHtml(courseTitle)}</strong>:</p>
+    <div style="margin:20px 0;padding:16px 20px;border-left:4px solid #3730a3;background:#eef2ff;white-space:pre-wrap;border-radius:0 6px 6px 0;font-size:14px;line-height:1.6;">${escapeHtml(announcementBody)}</div>
     ${EmailButton({ href: announcementUrl, label: "View Full Announcement", color: "#3730a3" })}
   `;
 
-  const html = buildHtmlEmail({ previewText: preview, bodyHtml, unsubscribeUrl: announcementUrl });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml, unsubscribeUrl });
 
   return deliverMail({
     to,
@@ -203,7 +206,7 @@ export async function sendCourseAnnouncementEmail(
     text,
     html,
     preview: announcementBody.slice(0, 100),
-    listUnsubscribeUrl: announcementUrl,
+    listUnsubscribeUrl: unsubscribeUrl,
   });
 }
 
@@ -237,8 +240,8 @@ export async function sendPersonalMessageEmail(
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>You have received a new message from <strong>${teacherName}</strong> for the course <strong>${courseTitle}</strong>:</p>
-    ${messageTitle ? `<h3 style="margin-top:16px;margin-bottom:8px;font-size:16px;color:#1c1917;">${messageTitle}</h3>` : ""}
+    <p>You have received a new message from <strong>${escapeHtml(teacherName)}</strong> for the course <strong>${escapeHtml(courseTitle)}</strong>:</p>
+    ${messageTitle ? `<h3 style="margin-top:16px;margin-bottom:8px;font-size:16px;color:#1c1917;">${escapeHtml(messageTitle)}</h3>` : ""}
     ${EmailAlert({ message: messageBody, type: "info" })}
     ${EmailButton({ href: messageUrl, label: "View Message", color: "#0284c7" })}
   `;
@@ -253,9 +256,11 @@ export async function sendSiteAnnouncementEmail(
     announcementTitle: string;
     announcementBody: string;
     announcementUrl: string;
+    /** Per-recipient opt-out link (services/email-unsubscribe.ts). */
+    unsubscribeUrl: string;
   },
 ) {
-  const { to, studentName, announcementTitle, announcementBody, announcementUrl } = params;
+  const { to, studentName, announcementTitle, announcementBody, announcementUrl, unsubscribeUrl } = params;
   const displayName = studentName || "Student";
   const subject = `Announcement: ${announcementTitle}`;
   const preview = announcementBody.slice(0, 120);
@@ -274,11 +279,11 @@ export async function sendSiteAnnouncementEmail(
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
     ${EmailHeading({ text: announcementTitle })}
-    <div style="margin:0 0 20px 0;white-space:pre-wrap;line-height:1.7;">${announcementBody}</div>
+    <div style="margin:0 0 20px 0;white-space:pre-wrap;line-height:1.7;">${escapeHtml(announcementBody)}</div>
     ${EmailButton({ href: announcementUrl, label: "View Announcement", color: "#3730a3" })}
   `;
 
-  const html = buildHtmlEmail({ previewText: preview, bodyHtml, unsubscribeUrl: announcementUrl });
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml, unsubscribeUrl });
 
   return deliverMail({
     to,
@@ -286,6 +291,6 @@ export async function sendSiteAnnouncementEmail(
     text,
     html,
     preview: announcementBody.slice(0, 100),
-    listUnsubscribeUrl: announcementUrl,
+    listUnsubscribeUrl: unsubscribeUrl,
   });
 }

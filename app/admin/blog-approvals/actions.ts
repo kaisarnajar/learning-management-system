@@ -1,33 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { adminReturnUrl } from "@/utils/admin-redirects";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
-
-function revalidateBlogPaths(postId?: string) {
-  revalidatePath("/");
-  revalidatePath("/blog");
-  revalidatePath("/admin");
-  revalidatePath("/admin/blogs");
-  revalidatePath("/admin/blog-approvals");
-  if (postId) {
-    revalidatePath(`/admin/blog-approvals/${postId}`);
-  }
-  revalidatePath("/teacher/blogs");
-}
-
-function returnUrl(returnTo: string | undefined, event: "approved" | "rejected"): string {
-  const param = event === "approved" ? "approved" : "rejected";
-  const fallback = `/admin/blog-approvals?${param}=1`;
-  if (!returnTo?.startsWith("/admin")) return fallback;
-  const [pathname, query = ""] = returnTo.split("?");
-  const params = new URLSearchParams(query);
-  params.set(param, "1");
-  const qs = params.toString();
-  return qs ? `${pathname}?${qs}` : `${pathname}?${param}=1`;
-}
+import { revalidateBlogPaths } from "@/services/blog-mutations";
 
 export async function approveBlogPost(
   postId: string,
@@ -47,8 +25,7 @@ export async function approveBlogPost(
     }), "Database operation failed");
 
   revalidateBlogPaths(postId);
-  revalidatePath(`/blog/${postId}`);
-  redirect(returnUrl(returnTo, "approved"));
+  redirect(adminReturnUrl(returnTo, "/admin/blog-approvals", "approved"));
 }
 
 export async function rejectBlogPost(
@@ -69,5 +46,5 @@ export async function rejectBlogPost(
     }), "Database operation failed");
 
   revalidateBlogPaths(postId);
-  redirect(returnUrl(returnTo, "rejected"));
+  redirect(adminReturnUrl(returnTo, "/admin/blog-approvals", "rejected"));
 }

@@ -4,13 +4,15 @@ import { MonthlyPaymentForm } from "@/components/payment/MonthlyPaymentForm";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { requireUser } from "@/services/auth-actions";
 import { getMonthlyFeePaise } from "@/services/course-pricing";
-import { formatPrice, getCourseById } from "@/services/courses";
+import { getCourseById } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import { prisma } from "@/utils/prisma";
 import { isUpiConfigured } from "@/services/upi";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getFeeFrequencyLabel, getFeeFrequencySuffix } from "@/services/fee-frequency";
 import { getApplicableCoupons, calculateDiscountedAmount } from "@/services/coupons";
 import { getPaymentSettings } from "@/services/payment-settings";
+import { isApprovedEnrollment } from "@/services/status-compat";
 
 export default async function PayFeePage({
   params,
@@ -29,7 +31,7 @@ export default async function PayFeePage({
       where: { userId_courseId: { userId: session.user.id, courseId } },
     }), "Database operation failed");
 
-  if (!enrollment || (enrollment.status !== "active" && enrollment.status !== "completed")) {
+  if (!enrollment || !isApprovedEnrollment(enrollment)) {
     redirect("/profile/courses");
   }
 

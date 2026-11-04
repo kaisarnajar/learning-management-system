@@ -11,6 +11,7 @@ import {
 import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 export const metadata: Metadata = {
@@ -38,6 +39,7 @@ export default async function AdminBookOrdersPage({
     q?: string;
   }>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
   const status =
@@ -52,9 +54,10 @@ export default async function AdminBookOrdersPage({
   // We only fetch the active tab's items to optimize performance,
   // but we should fetch counts for all three if we want to show badges on tabs.
   const [pendingResult, approvedResult, completedResult] = await Promise.all([
-    getPendingBookOrdersPaginated(status === "pending" ? requestedPage : 1, pageSize, q),
-    getApprovedBookOrdersPaginated(status === "approved" ? requestedPage : 1, pageSize, q),
-    getCompletedBookOrdersPaginated(status === "completed" ? requestedPage : 1, pageSize, q),
+    // Inactive tabs only need their count for the badge: ask for one row.
+    getPendingBookOrdersPaginated(status === "pending" ? requestedPage : 1, status === "pending" ? pageSize : 1, q),
+    getApprovedBookOrdersPaginated(status === "approved" ? requestedPage : 1, status === "approved" ? pageSize : 1, q),
+    getCompletedBookOrdersPaginated(status === "completed" ? requestedPage : 1, status === "completed" ? pageSize : 1, q),
   ]);
 
   const pendingCount = pendingResult.totalCount;

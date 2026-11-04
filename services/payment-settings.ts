@@ -1,6 +1,7 @@
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { BRAND_CONFIG } from "@/config/brand";
+import { cache } from "react";
 
 export type BankDetails = {
   accountName: string;
@@ -23,6 +24,7 @@ export type PaymentSettingsData = {
   bankBranch: string;
   includeGstByDefault: boolean;
   feeWaiverEnabled: boolean;
+  autoApproveFullWaivers: boolean;
 };
 
 function defaultSettings(): PaymentSettingsData {
@@ -37,6 +39,7 @@ function defaultSettings(): PaymentSettingsData {
     bankBranch: "",
     includeGstByDefault: false,
     feeWaiverEnabled: false,
+    autoApproveFullWaivers: false,
   };
 }
 
@@ -51,6 +54,7 @@ function rowToSettings(row: {
   bankBranch: string;
   includeGstByDefault: boolean;
   feeWaiverEnabled: boolean;
+  autoApproveFullWaivers: boolean;
 }): PaymentSettingsData {
   const defaults = defaultSettings();
   return {
@@ -64,10 +68,12 @@ function rowToSettings(row: {
     bankBranch: row.bankBranch.trim(),
     includeGstByDefault: row.includeGstByDefault,
     feeWaiverEnabled: row.feeWaiverEnabled,
+    autoApproveFullWaivers: row.autoApproveFullWaivers,
   };
 }
 
-export async function getPaymentSettings(): Promise<PaymentSettingsData> {
+/** Memoised per request: several components on one page read the settings. */
+export const getPaymentSettings = cache(async (): Promise<PaymentSettingsData> => {
   const row = await withDbErrorHandling(
     () =>
       prisma.paymentSettings.findUnique({
@@ -81,7 +87,7 @@ export async function getPaymentSettings(): Promise<PaymentSettingsData> {
   }
 
   return rowToSettings(row);
-}
+});
 
 export function toBankDetails(settings: PaymentSettingsData): BankDetails {
   return {

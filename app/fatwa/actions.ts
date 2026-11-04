@@ -1,6 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
+import { getClientIp, rateLimit, RATE_LIMIT_MESSAGE, RATE_LIMITS } from "@/services/rate-limit";
 
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
@@ -17,6 +19,11 @@ export async function submitFatwaQuestion(
   formData: FormData,
 ): Promise<SubmitFatwaState> {
   const session = await auth();
+
+  const limit = await rateLimit(RATE_LIMITS.FATWA_ASK_IP, getClientIp(await headers()));
+  if (!limit.ok) {
+    return { error: RATE_LIMIT_MESSAGE };
+  }
 
   const isAnonymous = formData.get("isAnonymous") === "on";
 

@@ -1,7 +1,8 @@
 import Link from "next/link";
 
 import { Pagination } from "@/components/shared/Pagination";
-import { formatPrice, getAllCourses } from "@/services/courses";
+import { getAllCourses } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import { requireUser } from "@/services/auth-actions";
 import {
   monthlyPaymentStatusClass,
@@ -10,6 +11,7 @@ import {
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { getPaymentRecordsForUserPaginated, getPaymentSubmissionsForUser } from "@/services/payments";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { submissionStatusOf } from "@/services/status-compat";
 import { Suspense } from "react";
 
 type TabType = "pending" | "history";
@@ -43,7 +45,7 @@ async function PaymentsContent({ params, userId }: { params: PageParams; userId:
   const page = clampPage(requestedPage, paymentTotalCount, pageSize);
 
   const titleById = new Map(courses.map((c) => [c.id, c.title]));
-  const pendingSubmissions = submissions.filter((s) => s.status !== "approved");
+  const pendingSubmissions = submissions.filter((s) => submissionStatusOf(s) !== "APPROVED");
   
   const tabs = [
     { label: "Awaiting Approval", value: "pending" as TabType, count: pendingSubmissions.length, showBadge: true },

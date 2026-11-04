@@ -9,6 +9,7 @@ import { submitCheckout } from "@/app/actions/checkout";
 import { getCourseEnrollmentClosedMessage } from "@/services/course-status";
 import {
   AWAITING_ENROLLMENT_FEE,
+  canReapplyForEnrollment,
   PENDING_ENROLLMENT_APPROVAL,
 } from "@/services/enrollment-status";
 import { PROFILE_COMPLETE_REDIRECT } from "@/services/profile";
@@ -27,11 +28,14 @@ export function CourseEnrollButton({
   courseId,
   courseStatus,
   isEnrolled = false,
-  enrollmentStatus = null,
+  enrollmentStatus: enrollmentStatusProp = null,
   enrollmentId = null,
   profileComplete = true,
   hasPendingEnrollmentPayment = false,
 }: CourseEnrollButtonProps) {
+  // A rejected request behaves like no enrollment: the student may apply again.
+  const enrollmentStatus =
+    enrollmentStatusProp && canReapplyForEnrollment(enrollmentStatusProp) ? null : enrollmentStatusProp;
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");

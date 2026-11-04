@@ -1,11 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { adminReturnUrl, revalidateAdminPaths } from "@/utils/admin-redirects";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 
 import { getCourseById } from "@/services/courses";
 import { canApproveEnrollment, canRejectEnrollment } from "@/services/enrollment-status";
+import { assignRollNumberTx } from "@/services/roll-numbers";
+import { enrollmentStatusData, enrollmentStatusOf } from "@/services/status-compat";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
 import {
   notifyEnrollmentApproved,
@@ -31,21 +34,7 @@ function revalidateEnrollmentPaths(courseId: string) {
     "/courses",
   ];
 
-  for (const path of paths) {
-    revalidatePath(path, "layout");
-    revalidatePath(path, "page");
-  }
-}
-
-function enrollmentReturnUrl(returnTo: string | undefined, event?: "approved" | "rejected"): string {
-  if (!returnTo?.startsWith("/admin")) return "/admin/enrollments";
-  const [pathname, query = ""] = returnTo.split("?");
-  const params = new URLSearchParams(query);
-  if (event) {
-    params.set(event, "1");
-  }
-  const qs = params.toString();
-  return qs ? `${pathname}?${qs}` : pathname;
+  revalidateAdminPaths(paths);
 }
 
 /** Approve a free-course enrollment request. */
@@ -64,11 +53,13 @@ export async function approveEnrollmentRequest(
     return { error: "Enrollment not found." };
   }
 
-  if (enrollment.status === "active") {
-    redirect(enrollmentReturnUrl(returnTo));
+  const currentStatus = enrollmentStatusOf(enrollment);
+
+  if (currentStatus === "ACTIVE") {
+    redirect(adminReturnUrl(returnTo, "/admin/enrollments"));
   }
 
-  if (enrollment.status === "completed") {
+  if (currentStatus === "COMPLETED") {
     return { error: "This enrollment is already completed." };
   }
 
@@ -81,10 +72,25 @@ export async function approveEnrollmentRequest(
     return { error: "Course not found." };
   }
 
-  await withDbErrorHandling(() => prisma.enrollment.update({
-      where: { id: enrollmentId },
-      data: { status: getRosterEnrollmentStatusForCourse(course.status) },
-    }), "Database operation failed");
+  const rosterStatus = getRosterEnrollmentStatusForCourse(course.status);
+
+  // Status change and roll number commit together; the status guard makes a
+  // second concurrent approval a no-op instead of a double update.
+  const approved = await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
+    const updated = await tx.enrollment.updateMany({
+      where: { id: enrollmentId, status: enrollment.status },
+      data: { ...enrollmentStatusData(rosterStatus), rejectedAt: null },
+    });
+    if (updated.count === 0) return false;
+    if (rosterStatus === "ACTIVE") {
+      await assignRollNumberTx(tx, enrollmentId, courseId);
+    }
+    return true;
+  }), "Database operation failed");
+
+  if (!approved) {
+    return { error: "This enrollment was already processed by someone else. Refresh the page." };
+  }
 
   await notifyEnrollmentApproved({
     userId: enrollment.userId,
@@ -92,15 +98,10 @@ export async function approveEnrollmentRequest(
     enrollmentId,
   });
 
-  if (getRosterEnrollmentStatusForCourse(course.status) === "active") {
-    const { assignRollNumber } = await import("@/services/roll-numbers");
-    await assignRollNumber(enrollmentId, courseId);
-  }
-
   revalidateEnrollmentPaths(courseId);
   revalidatePath(`/admin/students/${enrollment.userId}`, "page");
 
-  redirect(enrollmentReturnUrl(returnTo, "approved"));
+  redirect(adminReturnUrl(returnTo, "/admin/enrollments", "approved"));
 }
 
 /** Reject a student's pending enrollment request. */
@@ -126,18 +127,28 @@ export async function rejectEnrollmentRequest(
   const course = await getCourseById(courseId);
   const courseTitle = course?.title ?? "the course";
 
+  // Rejection is a status, not a deletion: the request stays visible in the
+  // student's history and the student can apply again later.
+  const rejected = await withDbErrorHandling(() => prisma.enrollment.updateMany({
+      where: { id: enrollmentId, status: enrollment.status },
+      data: { ...enrollmentStatusData("REJECTED"), rejectedAt: new Date() },
+    }), "Database operation failed");
+
+  if (rejected.count === 0) {
+    return { error: "This enrollment was already processed by someone else. Refresh the page." };
+  }
+
+  // Notify only once the rejection is committed.
   await notifyEnrollmentRejected({
     userId: enrollment.userId,
     courseTitle,
     enrollmentId,
   });
 
-  await withDbErrorHandling(() => prisma.enrollment.delete({ where: { id: enrollmentId } }), "Database operation failed");
-
   revalidateEnrollmentPaths(courseId);
   revalidatePath(`/admin/students/${enrollment.userId}`, "page");
 
-  redirect(enrollmentReturnUrl(returnTo, "rejected"));
+  redirect(adminReturnUrl(returnTo, "/admin/enrollments", "rejected"));
 }
 
 export type AdminEnrollUserState = {
@@ -179,12 +190,12 @@ export async function adminEnrollUser(
       create: {
         userId: account.userId,
         courseId: course.id,
-        status,
+        ...enrollmentStatusData(status),
       },
-      update: { status },
+      update: { ...enrollmentStatusData(status), rejectedAt: null },
     }), "Database operation failed");
 
-  if (status === "active") {
+  if (status === "ACTIVE") {
     const { assignRollNumber } = await import("@/services/roll-numbers");
     await assignRollNumber(upserted.id, course.id);
   }

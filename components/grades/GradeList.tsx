@@ -4,6 +4,7 @@ import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteCourseGrade } from "@/app/actions/grades";
 import { adminActionButtonClassName } from "@/utils/form";
+import { formatCalendarDate } from "@/utils/calendar-date";
 
 export type GradeListProps = {
   courseId: string;
@@ -42,14 +43,14 @@ export function GradeList({ courseId, baseUrl, grades }: GradeListProps) {
                 <th className="px-4 py-3 font-medium">Exam Title</th>
                 <th className="px-4 py-3 font-medium">Date</th>
                 <th className="px-4 py-3 font-medium">Max Marks</th>
-                <th className="px-4 py-3 font-medium">Enrolled Students</th>
+                <th className="px-4 py-3 font-medium">Students Graded</th>
                 <th className="px-4 py-3 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {grades.map((grade) => {
                 const total = grade._count.records;
-                const formattedDate = new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(grade.date));
+                const formattedDate = formatCalendarDate(grade.date);
                 
                 return (
                   <tr key={grade.id} className="hover:bg-background/30">

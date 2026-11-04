@@ -31,6 +31,52 @@ enum Occupation {
   UNEMPLOYED
 }
 
+/// Typed twins of the legacy free-text status/type columns. Each model keeps
+/// its text column until the contract step; code writes both and reads the
+/// enum with a fallback to the text (services/status-compat.ts).
+enum EnrollmentStatus {
+  PENDING_APPROVAL
+  AWAITING_ENROLLMENT_FEE
+  ACTIVE
+  COMPLETED
+  REJECTED
+}
+
+enum PaymentSubmissionStatus {
+  PENDING_VERIFICATION
+  APPROVED
+  DECLINED
+}
+
+enum PaymentType {
+  MONTHLY
+  QUARTERLY
+  HALF_YEARLY
+  YEARLY
+  ONE_TIME
+  ENROLLMENT
+  MANUAL
+  BOOK_PURCHASE
+}
+
+enum PaymentMethod {
+  UPI
+  BANK
+  WAIVER
+  CASH
+}
+
+enum CertificateType {
+  APPRECIATION
+  COMPLETION
+}
+
+enum DevicePlatform {
+  ANDROID
+  IOS
+  WEB
+}
+
 enum CourseStatus {
   DRAFT
   PUBLISHED
@@ -148,12 +194,20 @@ model User {
   blogComments             BlogComment[]
   policiesAcceptedAt       DateTime?
   policiesAcceptedVersion  String?
+  /// Soft delete; the account can no longer sign in and is hidden from lists.
+  deletedAt                DateTime?
+  /// Set through the signed List-Unsubscribe link; stops announcement emails only.
+  announcementEmailsOptOut Boolean                   @default(false)
   coupons                  Coupon[]
   couponRequests           CouponRequest[]
   couponUsages             CouponUsage[]
   deviceTokens             DeviceToken[]
+  teacherProfile           Teacher?
+  apiRefreshTokens         ApiRefreshToken[]
   createdAt                DateTime                  @default(now())
   updatedAt                DateTime                  @updatedAt
+
+  @@index([deletedAt])
 }
 
 model Account {
@@ -189,6 +243,7 @@ model VerificationToken {
   expires    DateTime
 
   @@id([identifier, token])
+  @@index([expires])
 }
 
 /**
@@ -202,10 +257,11 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@index([email])
+  @@index([expiresAt])
 }
 
 model Course {
-  id                 String               @id
+  id                 String                    @id
   title              String
   description        String
   startDate          String
@@ -216,13 +272,15 @@ model Course {
   monthlyFeeInrPaise Int
   feeFrequency       FeeFrequency?
   teacherId          String?
-  status             CourseStatus         @default(PUBLISHED)
-  featuredOnHomepage Boolean              @default(false)
+  status             CourseStatus              @default(PUBLISHED)
+  featuredOnHomepage Boolean                   @default(false)
   featuredAt         DateTime?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  teacher            Teacher?             @relation(fields: [teacherId], references: [id], onDelete: SetNull)
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  teacher            Teacher?                  @relation(fields: [teacherId], references: [id], onDelete: SetNull)
   paymentRecords     PaymentRecord[]
+  enrollments        Enrollment[]
+  paymentSubmissions CoursePaymentSubmission[]
   announcements      CourseAnnouncement[]
   attendances        CourseAttendance[]
   grades             CourseGrade[]
@@ -242,8 +300,11 @@ model Teacher {
   initials       String
   imageUrl       String?
   published      Boolean              @default(true)
+  /// The sign-in account of this teacher; null until linked (by backfill or at sign-in).
+  userId         String?              @unique
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
+  user           User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
   courses        Course[]
   announcements  CourseAnnouncement[]
   expenses       Expense[]
@@ -271,6 +332,7 @@ model CourseAnnouncement {
   @@index([courseId, createdAt])
   @@index([enrollmentId])
   @@index([courseId, enrollmentId])
+  @@index([teacherId])
 }
 
 model SiteAnnouncement {
@@ -323,6 +385,7 @@ model BlogPost {
   @@index([published, approvalStatus, createdAt])
   @@index([approvalStatus, createdAt])
   @@index([featuredOnHomepage, featuredAt])
+  @@index([createdById])
 }
 
 model BlogLike {
@@ -422,16 +485,25 @@ model Enrollment {
   userId                 String
   courseId               String
   status                 String                   @default("pending_approval")
+  /// Typed twin of `status`; null until backfilled.
+  statusEnum             EnrollmentStatus?
   rollNumber             Int?
   certificateNumber      String?                  @unique
   certificateGeneratedAt DateTime?
   certificateType        String?
+  /// Typed twin of `certificateType`; null until backfilled.
+  certificateTypeEnum    CertificateType?
   certificateGrade       Int?
   completedAt            DateTime?
   certificateEmailSentAt DateTime?
+  /// Private storage key of the rendered certificate PDF; null = render on demand.
+  certificatePdfKey      String?
+  /// Set when an admin rejects the enrollment request (kept for history instead of deleting).
+  rejectedAt             DateTime?
   createdAt              DateTime                 @default(now())
   updatedAt              DateTime                 @updatedAt
   user                   User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course                 Course                   @relation(fields: [courseId], references: [id], onDelete: Restrict)
   announcements          CourseAnnouncement[]
   attendanceRecords      CourseAttendanceRecord[]
   gradeRecords           CourseGradeRecord[]
@@ -439,6 +511,12 @@ model Enrollment {
   @@unique([userId, courseId])
   @@unique([courseId, rollNumber])
   @@index([courseId])
+  @@index([status])
+  @@index([userId, status])
+  @@index([courseId, status])
+  @@index([statusEnum])
+  @@index([userId, statusEnum])
+  @@index([courseId, statusEnum])
 }
 
 model FatwaQuestion {
@@ -463,6 +541,7 @@ model FatwaQuestion {
   @@index([category])
   @@index([answeredAt])
   @@index([featuredOnHomepage, featuredAt])
+  @@index([approvalStatus])
 }
 
 model ContactInquiry {
@@ -485,29 +564,43 @@ model ContactInquiry {
 }
 
 model PaymentRecord {
-  id                    String                   @id @default(cuid())
-  userId                String
-  courseId              String?
-  amountInrPaise        Int
-  paidAt                DateTime
-  paymentType           String?
-  invoiceNumber         String?                  @unique
-  description           String?
-  receiptEmailSentAt    DateTime?
-  receiptGeneratedAt    DateTime?
-  receiptIncludesGst    Boolean?
-  receiptFeeAmountPaise Int?
-  receiptGstAmountPaise Int?
-  createdAt             DateTime                 @default(now())
-  updatedAt             DateTime                 @updatedAt
-  user                  User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course                Course?                  @relation(fields: [courseId], references: [id], onDelete: SetNull)
-  submission            CoursePaymentSubmission?
+  id                         String                   @id @default(cuid())
+  userId                     String
+  courseId                   String?
+  amountInrPaise             Int
+  paidAt                     DateTime
+  paymentType                String?
+  /// Typed twin of `paymentType`; null until backfilled.
+  paymentTypeEnum            PaymentType?
+  invoiceNumber              String?                  @unique
+  description                String?
+  receiptEmailSentAt         DateTime?
+  receiptGeneratedAt         DateTime?
+  receiptIncludesGst         Boolean?
+  receiptFeeAmountPaise      Int?
+  receiptGstAmountPaise      Int?
+  /// Set when an admin voids the record; voided records are excluded from finance and receipts.
+  voidedAt                   DateTime?
+  voidReason                 String?
+  voidedById                 String?
+  /// The book order this record paid for (book_purchase records only).
+  bookOrderId                String?                  @unique
+  /// Shipping component captured when the receipt was generated.
+  receiptShippingAmountPaise Int?
+  /// Private storage key of the rendered receipt PDF; null = render on demand.
+  receiptPdfKey              String?
+  createdAt                  DateTime                 @default(now())
+  updatedAt                  DateTime                 @updatedAt
+  user                       User                     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  course                     Course?                  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  bookOrder                  BookOrder?               @relation(fields: [bookOrderId], references: [id], onDelete: SetNull)
+  submission                 CoursePaymentSubmission?
 
   @@index([userId])
   @@index([paidAt])
   @@index([courseId])
   @@index([paymentType])
+  @@index([voidedAt])
 }
 
 /**
@@ -519,6 +612,8 @@ model Expense {
   amountInrPaise Int
   paidAt         DateTime
   description    String?
+  /// Names the category when `category` is "other".
+  note           String?
   teacherId      String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -527,54 +622,67 @@ model Expense {
   @@index([category])
   @@index([paidAt])
   @@index([teacherId])
+  @@index([paidAt, category])
 }
 
 /**
  * Academy UPI and bank details (single row, id = "default"). Editable in admin.
  */
 model PaymentSettings {
-  id                  String   @id @default("default")
-  upiId               String   @default("")
-  upiNumber           String   @default("")
-  upiPayeeName        String   @default("Darse Quran Academy")
-  bankAccountName     String   @default("Darse Quran Academy")
-  bankName            String   @default("")
-  bankAccountNumber   String   @default("")
-  bankIfsc            String   @default("")
-  bankBranch          String   @default("")
-  includeGstByDefault Boolean  @default(false)
-  feeWaiverEnabled    Boolean  @default(false)
-  updatedAt           DateTime @updatedAt
+  id                     String   @id @default("default")
+  upiId                  String   @default("")
+  upiNumber              String   @default("")
+  upiPayeeName           String   @default("")
+  bankAccountName        String   @default("")
+  bankName               String   @default("")
+  bankAccountNumber      String   @default("")
+  bankIfsc               String   @default("")
+  bankBranch             String   @default("")
+  includeGstByDefault    Boolean  @default(false)
+  feeWaiverEnabled       Boolean  @default(false)
+  /// When false (default) a 100% fee waiver still needs admin confirmation like any other payment.
+  autoApproveFullWaivers Boolean  @default(false)
+  updatedAt              DateTime @updatedAt
 }
 
 /**
  * Student-submitted monthly or enrollment course fees awaiting admin approval.
  */
 model CoursePaymentSubmission {
-  id                    String         @id @default(cuid())
+  id                    String                   @id @default(cuid())
   userId                String
   courseId              String
-  paymentType           String         @default("monthly")
+  paymentType           String                   @default("monthly")
+  /// Typed twin of `paymentType`; null until backfilled.
+  paymentTypeEnum       PaymentType?
   label                 String
   amountInrPaise        Int
-  status                String         @default("pending_verification")
+  status                String                   @default("pending_verification")
+  /// Typed twin of `status`; null until backfilled.
+  statusEnum            PaymentSubmissionStatus?
   paymentMethod         String?
+  /// Typed twin of `paymentMethod`; null until backfilled.
+  paymentMethodEnum     PaymentMethod?
   upiTransactionId      String?
   paymentScreenshotPath String?
-  paymentReference      String?        @unique
-  paymentRecordId       String?        @unique
+  paymentReference      String?                  @unique
+  paymentRecordId       String?                  @unique
   couponId              String?
-  createdAt             DateTime       @default(now())
-  updatedAt             DateTime       @updatedAt
-  user                  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  paymentRecord         PaymentRecord? @relation(fields: [paymentRecordId], references: [id], onDelete: SetNull)
-  coupon                Coupon?        @relation(fields: [couponId], references: [id], onDelete: SetNull)
+  /// Soft delete; rows with deletedAt set are hidden from every list.
+  deletedAt             DateTime?
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  user                  User                     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  course                Course                   @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  paymentRecord         PaymentRecord?           @relation(fields: [paymentRecordId], references: [id], onDelete: SetNull)
+  coupon                Coupon?                  @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([courseId])
   @@index([status])
   @@index([paymentType])
   @@index([couponId])
+  @@index([userId, courseId, label, status])
 }
 
 model StudentNotification {
@@ -599,24 +707,25 @@ model StudentNotification {
  * Physical books available for purchase in the bookstore.
  */
 model Book {
-  id                    String          @id @default(cuid())
+  id                    String              @id @default(cuid())
   title                 String
   author                String
   description           String
   priceInrPaise         Int
-  mrpInrPaise           Int             @default(0)
-  purchasePriceInrPaise Int             @default(0)
-  weightInGrams         Int             @default(0)
-  inventoryPurchased    Int             @default(0)
-  status                BookStatus      @default(AVAILABLE)
+  mrpInrPaise           Int                 @default(0)
+  purchasePriceInrPaise Int                 @default(0)
+  weightInGrams         Int                 @default(0)
+  inventoryPurchased    Int                 @default(0)
+  status                BookStatus          @default(AVAILABLE)
   imagePath             String?
-  published             Boolean         @default(true)
-  featuredOnHomepage    Boolean         @default(false)
+  published             Boolean             @default(true)
+  featuredOnHomepage    Boolean             @default(false)
   featuredAt            DateTime?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
   orderItems            BookOrderItem[]
   userCartItems         UserCartItem[]
+  stockMovements        BookStockMovement[]
 
   @@index([status])
   @@index([published, status])
@@ -626,24 +735,28 @@ model Book {
  * A user's book purchase order submitted for admin approval.
  */
 model BookOrder {
-  id                     String          @id @default(cuid())
+  id                     String              @id @default(cuid())
   userId                 String
   totalAmountInrPaise    Int
-  shippingChargeInrPaise Int             @default(0)
-  status                 BookOrderStatus @default(PENDING_VERIFICATION)
+  shippingChargeInrPaise Int                 @default(0)
+  status                 BookOrderStatus     @default(PENDING_VERIFICATION)
   paymentMethod          String?
   upiTransactionId       String?
   paymentScreenshotPath  String?
   notes                  String?
-  deliveryAddress        String          @default("No address provided")
+  deliveryAddress        String              @default("No address provided")
   deliveryPinCode        String?
   deliveryPhoneNumber    String?
   courierServiceName     String?
   trackingId             String?
-  createdAt              DateTime        @default(now())
-  updatedAt              DateTime        @updatedAt
-  user                   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// Soft delete; rows with deletedAt set are hidden from every list.
+  deletedAt              DateTime?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  user                   User                @relation(fields: [userId], references: [id], onDelete: Restrict)
   items                  BookOrderItem[]
+  paymentRecords         PaymentRecord[]
+  stockMovements         BookStockMovement[]
 
   @@index([userId])
   @@index([status])
@@ -688,7 +801,7 @@ model CourseAttendance {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  course  Course                   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course  Course                   @relation(fields: [courseId], references: [id], onDelete: Restrict)
   records CourseAttendanceRecord[]
 
   @@unique([courseId, date])
@@ -720,20 +833,23 @@ model CourseGrade {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  course  Course              @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course  Course              @relation(fields: [courseId], references: [id], onDelete: Restrict)
   records CourseGradeRecord[]
 
   @@index([courseId])
   @@index([date])
+  @@index([courseId, date])
 }
 
 model CourseGradeRecord {
-  id            String   @id @default(cuid())
-  gradeId       String
-  enrollmentId  String
-  marksObtained Float
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  gradeId              String
+  enrollmentId         String
+  marksObtained        Float
+  /// Exact twin of `marksObtained`; null until backfilled. Read through services/grades.ts.
+  marksObtainedDecimal Decimal? @db.Decimal(6, 2)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   grade      CourseGrade @relation(fields: [gradeId], references: [id], onDelete: Cascade)
   enrollment Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
@@ -745,6 +861,13 @@ model CourseGradeRecord {
 enum CouponType {
   DEFAULT
   SPECIAL
+}
+
+/// Which fee a waiver request is about. Null only on rows created before the column existed.
+enum WaiverFeeType {
+  ENROLLMENT
+  COURSE
+  BOTH
 }
 
 enum CouponRequestStatus {
@@ -762,6 +885,8 @@ model Coupon {
   validUntil        DateTime
   courseId          String?
   gender            String?
+  /// Typed twin of `gender`; null until backfilled.
+  genderEnum        Gender?
   userId            String?
   isActive          Boolean    @default(true)
   applyToEnrollment Boolean    @default(true)
@@ -769,15 +894,14 @@ model Coupon {
   createdAt         DateTime   @default(now())
   updatedAt         DateTime   @updatedAt
 
-  course      Course?                   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  user        User?                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course      Course?                   @relation(fields: [courseId], references: [id], onDelete: Restrict)
+  user        User?                     @relation(fields: [userId], references: [id], onDelete: Restrict)
   requests    CouponRequest[]
   usages      CouponUsage[]
   submissions CoursePaymentSubmission[]
 
   @@index([courseId])
   @@index([userId])
-  @@index([code])
 }
 
 model CouponRequest {
@@ -785,6 +909,7 @@ model CouponRequest {
   userId    String
   courseId  String
   reason    String
+  feeType   WaiverFeeType?
   status    CouponRequestStatus @default(PENDING)
   couponId  String?
   createdAt DateTime            @default(now())
@@ -800,31 +925,51 @@ model CouponRequest {
 }
 
 model CouponUsage {
-  id        String   @id @default(cuid())
-  couponId  String
-  userId    String
-  usedAt    DateTime @default(now())
+  id       String   @id @default(cuid())
+  couponId String
+  userId   String
+  usedAt   DateTime @default(now())
 
-  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Cascade)
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  coupon Coupon @relation(fields: [couponId], references: [id], onDelete: Restrict)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
 
   @@unique([couponId, userId])
   @@index([userId])
   @@index([couponId])
 }
 
-model DeviceToken {
-  id        String   @id @default(cuid())
+/**
+ * A mobile API session. The refresh token is stored as a SHA-256 hash and
+ * rotated on every use; the access token carries this row's id and is
+ * refused once the row is revoked or expired. See services/api-auth.ts.
+ */
+model ApiRefreshToken {
+  id        String    @id @default(cuid())
   userId    String
-  token     String   @unique
-  platform  String   @default("android")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  tokenHash String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([token])
+  @@index([expiresAt])
+}
+
+model DeviceToken {
+  id           String          @id @default(cuid())
+  userId       String
+  token        String          @unique
+  platform     String          @default("android")
+  /// Typed twin of `platform`; null until backfilled.
+  platformEnum DevicePlatform?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model UserCartItem {
@@ -841,4 +986,78 @@ model UserCartItem {
   @@unique([userId, bookId])
   @@index([userId])
   @@index([bookId])
+}
+
+/**
+ * Fixed-window counters for the Postgres-backed rate limiter (services/rate-limit.ts).
+ * Rows are tiny and overwritten in place; stale rows may be pruned at any time.
+ */
+model RateLimitBucket {
+  key         String   @id
+  count       Int      @default(0)
+  windowStart DateTime @default(now())
+
+  @@index([windowStart])
+}
+
+/**
+ * Per-financial-year counters for sequential invoice/certificate numbers
+ * (services/document-numbers.ts). Allocated with an atomic upsert.
+ */
+/// Per-year counter behind student registration numbers (services/registration.ts).
+model RegistrationSequence {
+  year      Int      @id
+  next      Int      @default(0)
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model DocumentSequence {
+  kind      String
+  period    String
+  next      Int      @default(0)
+  updatedAt DateTime @default(now()) @updatedAt
+
+  @@id([kind, period])
+}
+
+/**
+ * Append-only audit trail of admin mutations (void, delete, approve, …).
+ * Written by services/audit.ts inside the same transaction as the change.
+ */
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  actorEmail String?
+  action     String
+  entity     String
+  entityId   String
+  reason     String?
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entity, entityId])
+  @@index([actorId, createdAt])
+  @@index([createdAt])
+}
+
+/**
+ * Manual stock adjustments (damaged copies, recounts). Available stock is
+ * inventoryPurchased + sum(delta) - quantities in approved/shipped orders;
+ * see services/inventory.ts.
+ */
+model BookStockMovement {
+  id          String   @id @default(cuid())
+  bookId      String
+  orderId     String?
+  delta       Int
+  reason      String
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  book  Book       @relation(fields: [bookId], references: [id], onDelete: Restrict)
+  order BookOrder? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([bookId])
+  @@index([orderId])
 }

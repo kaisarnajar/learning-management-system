@@ -5,7 +5,8 @@ import { FinanceIncomeFilters } from "@/components/admin/FinanceIncomeFilters";
 import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { Pagination } from "@/components/shared/Pagination";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
-import { getAllCourses, formatPrice } from "@/services/courses";
+import { getAllCourses } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import {
   buildFinanceSearchPreserveParams,
   parseFinanceFilters,
@@ -14,6 +15,7 @@ import {
 import { getFeeWaiverFinanceData } from "@/services/waiver-finance";
 import { getStudentUsers } from "@/services/students";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
+import { requireAdmin } from "@/services/auth-actions";
 
 export const metadata = {
   title: "Fee Waiver Finance | Admin",
@@ -25,6 +27,7 @@ export default async function FeeWaiverFinancePage({
 }: {
   searchParams: Promise<FinanceSearchParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const filters = parseFinanceFilters(params);
   const { page: requestedPage, pageSize } = parsePaginationParams(params);

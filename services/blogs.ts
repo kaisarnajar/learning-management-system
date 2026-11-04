@@ -7,6 +7,7 @@ import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { paginateQuery } from "@/utils/prisma-utils";
+import { cache } from "react";
 
 function adminBlogPostsWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -92,27 +93,52 @@ export async function getPublishedBlogPostsPaginated(
 ): Promise<PaginatedResult<BlogPostWithImages>> {
   const searchWhere = searchQuery ? buildSearchOr(["title", "excerpt", "body"], [{ relation: "createdBy", fields: ["name"] }], searchQuery) : undefined;
   const where = andWhere(BLOG_PUBLIC_WHERE, searchWhere) || BLOG_PUBLIC_WHERE;
-  return paginateQuery(prisma.blogPost, {
+  return paginateQuery<BlogPostWithImages>(prisma.blogPost, {
     where,
     orderBy: { createdAt: "desc" },
     include: blogPostPublicInclude,
-  }, page, pageSize) as unknown as Promise<PaginatedResult<BlogPostWithImages>>;
+  }, page, pageSize);
 }
 
-export async function getPublishedBlogPostById(id: string) {
+export const BLOG_COMMENTS_PAGE_SIZE = 20;
+
+const blogCommentInclude = {
+  user: { select: { id: true, name: true, image: true } },
+} as const;
+
+/**
+ * A published post for the public detail page: like/comment counts via
+ * _count, only the viewer's own like row (to know whether they liked it)
+ * and the first page of comments. Memoised per request so generateMetadata
+ * and the page share one query.
+ */
+export const getPublishedBlogPostById = cache(async (id: string, viewerUserId?: string) => {
   return withDbErrorHandling(() => prisma.blogPost.findFirst({
       where: { id, ...BLOG_PUBLIC_WHERE },
       include: {
         images: { orderBy: { sortOrder: "asc" } },
-        createdBy: { select: { name: true, image: true, email: true } },
-        likes: true,
+        // Never select e-mail addresses here: this payload is rendered on a
+        // public page and serialised to the client.
+        createdBy: { select: { name: true, image: true } },
+        _count: { select: { likes: true, comments: true } },
+        likes: viewerUserId ? { where: { userId: viewerUserId }, select: { userId: true } } : false,
         comments: {
           orderBy: { createdAt: "desc" },
-          include: {
-            user: { select: { name: true, image: true, email: true } },
-          },
+          take: BLOG_COMMENTS_PAGE_SIZE,
+          include: blogCommentInclude,
         },
       },
+    }), "Database operation failed");
+});
+
+/** The next page of comments for a public post (newest first), offset by `skip`. */
+export async function getBlogCommentsPage(blogPostId: string, skip: number) {
+  return withDbErrorHandling(() => prisma.blogComment.findMany({
+      where: { blogPostId, blogPost: BLOG_PUBLIC_WHERE },
+      orderBy: { createdAt: "desc" },
+      skip: Math.max(0, skip),
+      take: BLOG_COMMENTS_PAGE_SIZE,
+      include: blogCommentInclude,
     }), "Database operation failed");
 }
 
@@ -127,11 +153,11 @@ export async function getAllBlogPostsForAdminPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<BlogPostWithImages>> {
   const where = adminBlogPostsWhere(searchQuery);
-  return paginateQuery(prisma.blogPost, {
+  return paginateQuery<BlogPostWithImages>(prisma.blogPost, {
     where,
     orderBy: { createdAt: "desc" },
     include: blogPostAdminInclude,
-  }, page, pageSize) as unknown as Promise<PaginatedResult<BlogPostWithImages>>;
+  }, page, pageSize);
 }
 
 export async function getBlogPostForAdmin(id: string) {
@@ -150,14 +176,14 @@ export async function getTeacherBlogPostsPaginated(
   pageSize: number,
 ): Promise<PaginatedResult<BlogPostWithImages>> {
   const where = { createdById: userId };
-  return paginateQuery(prisma.blogPost, {
+  return paginateQuery<BlogPostWithImages>(prisma.blogPost, {
     where,
     orderBy: { createdAt: "desc" },
     include: {
       images: { orderBy: { sortOrder: "asc" } },
       createdBy: { select: { name: true, email: true } },
     },
-  }, page, pageSize) as unknown as Promise<PaginatedResult<BlogPostWithImages>>;
+  }, page, pageSize);
 }
 
 export async function getBlogPostForTeacher(id: string, userId: string) {

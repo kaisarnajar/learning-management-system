@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { MAX_BLOG_IMAGE_BYTES, MAX_BLOG_IMAGES } from "./services/blog-limits";
+import { STATIC_SECURITY_HEADERS } from "./services/security-headers";
 
 const r2Domain = process.env.R2_PUBLIC_URL 
   ? new URL(process.env.R2_PUBLIC_URL).hostname 
@@ -9,7 +10,12 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
-  serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core"],
+  serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core", "sharp", "firebase-admin"],
+  // The PDF generators read these from disk at runtime; make sure the
+  // serverless bundles carry them.
+  outputFileTracingIncludes: {
+    "/**/*": ["./public/assets/**/*", "./public/fonts/**/*", "./generated/**/*"],
+  },
   experimental: {
     serverActions: {
       // Default is 1 MB; blog images allow up to 5 MB each (max 10 per post).
@@ -23,6 +29,14 @@ const nextConfig: NextConfig = {
         hostname: r2Domain,
       },
     ],
+  },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: STATIC_SECURITY_HEADERS,
+      },
+    ];
   },
 };
 

@@ -6,6 +6,7 @@ import {
   getFeaturedHomepageAnnouncementCount,
   getSiteAnnouncementForAdmin,
 } from "@/services/site-announcements";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function EditSiteAnnouncementPage({
   params,
@@ -14,6 +15,7 @@ export default async function EditSiteAnnouncementPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const { error } = await searchParams;
   const [announcement, featuredCount] = await Promise.all([

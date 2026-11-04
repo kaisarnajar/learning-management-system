@@ -14,6 +14,7 @@ import { APPROVAL_PAGE_SIZE, clampPage, paginationArgs, type PaginatedResult } f
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr, type TextSearchWhere } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { paymentTypeFromText } from "@/services/status-compat";
 
 async function paymentSubmissionSearchWhere(
   searchQuery?: string,
@@ -66,6 +67,7 @@ export async function getPendingMonthlyPaymentsPaginated(
   noStore();
   const base = {
     status: MONTHLY_PAYMENT_PENDING,
+    deletedAt: null,
     paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY, PAYMENT_TYPE_ONE_TIME] }
   };
   const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
@@ -88,7 +90,7 @@ export async function getPendingEnrollmentFeePaymentsPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
-  const base = { status: MONTHLY_PAYMENT_PENDING, paymentType: PAYMENT_TYPE_ENROLLMENT };
+  const base = { status: MONTHLY_PAYMENT_PENDING, paymentType: PAYMENT_TYPE_ENROLLMENT, deletedAt: null };
   const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
   const totalCount = await withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
@@ -106,7 +108,7 @@ export async function getPendingEnrollmentFeePaymentsPaginated(
 export async function getPendingPaymentCount(): Promise<number> {
   noStore();
   return withDbErrorHandling(() => prisma.coursePaymentSubmission.count({
-      where: { status: MONTHLY_PAYMENT_PENDING },
+      where: { status: MONTHLY_PAYMENT_PENDING, deletedAt: null },
     }), "Database operation failed");
 }
 
@@ -158,16 +160,17 @@ export function buildMonthlyFeeLabel(month: string, year: string, paymentType: s
   const index = Number.parseInt(month, 10) - 1;
   const monthName = monthNames[index] ?? month;
 
-  if (paymentType === "quarterly") {
+  const type = paymentTypeFromText(paymentType);
+  if (type === "QUARTERLY") {
     return `Quarterly fee — starting ${monthName} ${year}`;
   }
-  if (paymentType === "half_yearly") {
+  if (type === "HALF_YEARLY") {
     return `Half Yearly fee — starting ${monthName} ${year}`;
   }
-  if (paymentType === "yearly") {
+  if (type === "YEARLY") {
     return `Yearly fee — starting ${monthName} ${year}`;
   }
-  if (paymentType === "one_time") {
+  if (type === "ONE_TIME") {
     return `One-Time fee — ${year}`;
   }
   return `Monthly fee — ${monthName} ${year}`;
@@ -187,6 +190,7 @@ export async function hasPendingEnrollmentFeeSubmission(
         courseId,
         paymentType: PAYMENT_TYPE_ENROLLMENT,
         status: MONTHLY_PAYMENT_PENDING,
+        deletedAt: null,
       },
       select: { id: true },
     }), "Database operation failed");
@@ -199,40 +203,11 @@ export async function getPendingEnrollmentFeeSubmissionMap(userId: string) {
         userId,
         paymentType: PAYMENT_TYPE_ENROLLMENT,
         status: MONTHLY_PAYMENT_PENDING,
+        deletedAt: null,
       },
       select: { courseId: true },
     }), "Database operation failed");
   return new Set(rows.map((row) => row.courseId));
-}
-
-async function ensurePaymentRecordsForItems(items: CoursePaymentSubmissionWithUser[]) {
-  return Promise.all(
-    items.map(async (item) => {
-      if (item.paymentRecordId) return item;
-
-      const record = await prisma.paymentRecord.create({
-        data: {
-          userId: item.userId,
-          courseId: item.courseId,
-          amountInrPaise: item.amountInrPaise,
-          paidAt: item.updatedAt || new Date(),
-          paymentType: item.paymentType,
-          description: item.amountInrPaise === 0 ? `${item.label} (100% Fee Waiver)` : item.label,
-        },
-      });
-
-      await prisma.coursePaymentSubmission.update({
-        where: { id: item.id },
-        data: { paymentRecordId: record.id },
-      });
-
-      return {
-        ...item,
-        paymentRecordId: record.id,
-        paymentRecord: { receiptGeneratedAt: null },
-      };
-    })
-  );
 }
 
 export async function getApprovedMonthlyPaymentsPaginated(
@@ -244,6 +219,7 @@ export async function getApprovedMonthlyPaymentsPaginated(
   noStore();
   const base: Record<string, unknown> = {
     status: MONTHLY_PAYMENT_APPROVED,
+    deletedAt: null,
     paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY, PAYMENT_TYPE_ONE_TIME] }
   };
   if (filterType === "paid") {
@@ -264,8 +240,9 @@ export async function getApprovedMonthlyPaymentsPaginated(
       },
       ...paginationArgs(safePage, pageSize),
     }), "Database operation failed");
-  const itemsWithRecords = await ensurePaymentRecordsForItems(items);
-  return { items: itemsWithRecords, totalCount };
+  // Read-only: submissions without a PaymentRecord are shown as such; the
+  // one-off scripts/backfill-payment-records.ts creates missing records.
+  return { items, totalCount };
 }
 
 export async function getApprovedEnrollmentFeePaymentsPaginated(
@@ -275,7 +252,7 @@ export async function getApprovedEnrollmentFeePaymentsPaginated(
   filterType: "all" | "paid" | "waiver" = "all",
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
-  const base: Record<string, unknown> = { status: MONTHLY_PAYMENT_APPROVED, paymentType: PAYMENT_TYPE_ENROLLMENT };
+  const base: Record<string, unknown> = { status: MONTHLY_PAYMENT_APPROVED, paymentType: PAYMENT_TYPE_ENROLLMENT, deletedAt: null };
   if (filterType === "paid") {
     base.amountInrPaise = { gt: 0 };
   } else if (filterType === "waiver") {
@@ -294,6 +271,5 @@ export async function getApprovedEnrollmentFeePaymentsPaginated(
       },
       ...paginationArgs(safePage, pageSize),
     }), "Database operation failed");
-  const itemsWithRecords = await ensurePaymentRecordsForItems(items);
-  return { items: itemsWithRecords, totalCount };
+  return { items, totalCount };
 }

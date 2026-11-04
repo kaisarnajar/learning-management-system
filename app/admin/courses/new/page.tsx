@@ -3,12 +3,15 @@ import { CourseForm } from "@/components/admin/CourseForm";
 import { createCourse } from "@/app/admin/courses/actions";
 import { getFeaturedHomepageCourseCount } from "@/services/courses";
 import { getAllTeachers } from "@/services/teachers";
+import { requireAdmin } from "@/services/auth-actions";
+import { readFlash, type FlashParams } from "@/utils/flash";
 
 export default async function NewCoursePage({
   searchParams,
 }: {
-  searchParams: Promise<{ saveError?: string }>;
+  searchParams: Promise<FlashParams>;
 }) {
+  await requireAdmin();
   const [teachers, featuredCount, params] = await Promise.all([
     getAllTeachers(),
     getFeaturedHomepageCourseCount(),
@@ -21,8 +24,8 @@ export default async function NewCoursePage({
         ← Back to courses
       </Link>
       <h1 className="mt-4 font-serif text-2xl font-bold text-primary">Add course</h1>
-      {params.saveError && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{params.saveError}</p>
+      {readFlash(params) && (
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{readFlash(params)}</p>
       )}
       {teachers.length === 0 ? (
         <p className="mt-4 rounded-md bg-warning-bg px-4 py-3 text-sm text-warning-text">

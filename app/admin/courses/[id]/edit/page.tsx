@@ -5,6 +5,8 @@ import { updateCourse } from "@/app/admin/courses/actions";
 import { getCourseById, getFeaturedHomepageCourseCount } from "@/services/courses";
 import { getAllTeachers } from "@/services/teachers";
 import { ActionToast } from "@/components/shared/ToastProvider";
+import { requireAdmin } from "@/services/auth-actions";
+import { readFlash, type FlashParams } from "@/utils/flash";
 
 
 export default async function EditCoursePage({
@@ -12,8 +14,9 @@ export default async function EditCoursePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ saved?: string; created?: string; saveError?: string }>;
+  searchParams: Promise<{ saved?: string; created?: string } & FlashParams>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const [course, teachers, featuredCount] = await Promise.all([
@@ -36,8 +39,8 @@ export default async function EditCoursePage({
       <ActionToast trigger={query.saved === "1"} paramName="saved" message="Changes saved." variant="info" />
       <ActionToast trigger={query.created === "1"} paramName="created" message="Course created." variant="info" />
 
-      {query.saveError && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{query.saveError}</p>
+      {readFlash(query) && (
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">{readFlash(query)}</p>
       )}
 
       <div className="mt-8">

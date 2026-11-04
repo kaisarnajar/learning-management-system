@@ -5,6 +5,7 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteDailyInspiration } from "@/app/admin/daily-inspiration/actions";
 import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
 import { Source_Serif_4 } from "next/font/google";
+import { requireAdmin } from "@/services/auth-actions";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["400", "600"] });
 
@@ -13,6 +14,7 @@ export default async function ViewDailyInspirationPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const item = await getDailyInspirationForAdmin(id);
 

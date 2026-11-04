@@ -377,6 +377,14 @@ export function CourseForm({ course, teachers, featuredCount, action, submitLabe
             </option>
           ))}
         </select>
+        {course?.status === "COMPLETED" && values.status !== "COMPLETED" && (
+          <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-lg border border-warning-text/30 bg-warning-bg px-4 py-3 text-sm text-warning-text">
+            <input type="checkbox" name="confirmReopen" className="mt-1 rounded border-border" />
+            <span>
+              Reopen this course anyway. Completed enrollments become active again; certificates already issued stay as they are.
+            </span>
+          </label>
+        )}
       </div>
 
       <div className="space-y-3 rounded-lg border border-border bg-background/40 px-4 py-4">

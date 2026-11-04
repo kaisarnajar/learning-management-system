@@ -96,8 +96,8 @@ export default async function AdminDashboardPage() {
     getPendingStudentReviewCount(),
     getPendingPaymentCount(),
     withDbErrorHandling(() => prisma.enrollment.count({ where: { certificateGeneratedAt: { not: null } } }), "Database operation failed"),
-    withDbErrorHandling(() => prisma.paymentRecord.count({ where: { receiptGeneratedAt: { not: null } } }), "Database operation failed"),
-    withDbErrorHandling(() => prisma.paymentRecord.count(), "Database operation failed"),
+    withDbErrorHandling(() => prisma.paymentRecord.count({ where: { receiptGeneratedAt: { not: null }, voidedAt: null } }), "Database operation failed"),
+    withDbErrorHandling(() => prisma.paymentRecord.count({ where: { voidedAt: null } }), "Database operation failed"),
     withDbErrorHandling(() => prisma.expense.count(), "Database operation failed"),
     withDbErrorHandling(() => prisma.couponRequest.count({ where: { status: "PENDING" } }), "Database operation failed"),
   ]);

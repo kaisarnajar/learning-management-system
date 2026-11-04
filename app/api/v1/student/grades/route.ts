@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
-import { getStudentGradeRecordsFromDb } from "@/services/grades";
+import { withMarks } from "@/services/grades";
 import { prisma } from "@/utils/prisma";
 
 export async function GET(request: NextRequest) {
@@ -16,16 +16,21 @@ export async function GET(request: NextRequest) {
         userId: user.id,
         courseId: courseId ? courseId : undefined,
       },
+      // One query: grade records come with their enrollment instead of one
+      // round trip per course.
       select: {
         id: true,
         courseId: true,
         rollNumber: true,
+        gradeRecords: {
+          include: { grade: { select: { title: true, date: true, maxMarks: true } } },
+          orderBy: { grade: { date: "desc" } },
+        },
       },
     });
 
-    const results = await Promise.all(
-      enrollments.map(async (e) => {
-        const records = await getStudentGradeRecordsFromDb(e.id);
+    const results = enrollments.map((e) => {
+        const records = e.gradeRecords.map(withMarks);
         const totalMaxMarks = records.reduce((sum, r) => sum + r.grade.maxMarks, 0);
         const totalMarksObtained = records.reduce((sum, r) => sum + r.marksObtained, 0);
 
@@ -45,8 +50,7 @@ export async function GET(request: NextRequest) {
             percentage: r.grade.maxMarks > 0 ? Math.round((r.marksObtained / r.grade.maxMarks) * 100) : 0,
           })),
         };
-      })
-    );
+    });
 
     return NextResponse.json({
       success: true,

@@ -11,6 +11,7 @@ import { APPROVAL_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pa
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import type { FinanceSearchParams } from "@/services/finance-filters";
+import { requireAdmin } from "@/services/auth-actions";
 
 
 type TabType = "enrollment_pending" | "monthly_pending";
@@ -73,6 +74,7 @@ export default async function AdminPaymentApprovalsPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
+  await requireAdmin();
   const params = await searchParams;
   const q = parseSearchQuery(params.q);
 
@@ -91,8 +93,9 @@ export default async function AdminPaymentApprovalsPage({
     monthlyResult,
   ] = await Promise.all([
     getAllCourses(),
-    getPendingEnrollmentFeePaymentsPaginated(type === "enrollment_pending" ? requestedPage : 1, pageSize, q),
-    getPendingMonthlyPaymentsPaginated(type === "monthly_pending" ? requestedPage : 1, pageSize, q),
+    // The inactive tab only needs its count for the badge: ask for one row.
+    getPendingEnrollmentFeePaymentsPaginated(type === "enrollment_pending" ? requestedPage : 1, type === "enrollment_pending" ? pageSize : 1, q),
+    getPendingMonthlyPaymentsPaginated(type === "monthly_pending" ? requestedPage : 1, type === "monthly_pending" ? pageSize : 1, q),
   ]);
 
   const pendingEnrollmentCount = enrollmentResult.totalCount;

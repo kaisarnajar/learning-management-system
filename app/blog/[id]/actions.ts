@@ -4,6 +4,33 @@ import { revalidatePath } from "next/cache";
 import { ensureAuth } from "@/utils/auth-utils";
 import { prisma } from "@/utils/prisma";
 import { isAdminSession } from "@/services/admin";
+import { rateLimit, RATE_LIMIT_MESSAGE, RATE_LIMITS } from "@/services/rate-limit";
+import { BLOG_PUBLIC_WHERE } from "@/services/blog-approval";
+import { getBlogCommentsPage } from "@/services/blogs";
+
+/** Next page of comments for the "Load more" button; no sign-in needed. */
+export async function loadMoreComments(blogPostId: string, skip: number) {
+  try {
+    const comments = await getBlogCommentsPage(blogPostId, Number.isFinite(skip) ? Math.floor(skip) : 0);
+    return { success: true, comments };
+  } catch (err: unknown) {
+    console.error("Failed to load comments:", err);
+    return { error: "Failed to load comments" };
+  }
+}
+import { blogCommentSchema } from "@/utils/validations";
+
+/** Only published, approved posts take likes and comments. */
+async function findPublicPost(blogPostId: string) {
+  return prisma.blogPost.findFirst({
+    where: { id: blogPostId, ...BLOG_PUBLIC_WHERE },
+    select: { id: true, createdById: true, title: true },
+  });
+}
+
+function isUniqueViolation(error: unknown): boolean {
+  return typeof error === "object" && error !== null && (error as { code?: string }).code === "P2002";
+}
 
 export async function toggleLike(blogPostId: string) {
   const { session, error } = await ensureAuth();
@@ -12,26 +39,20 @@ export async function toggleLike(blogPostId: string) {
   const userId = session.user.id;
 
   try {
-    const existingLike = await prisma.blogLike.findUnique({
-      where: {
-        userId_blogPostId: {
-          userId,
-          blogPostId,
-        },
-      },
-    });
+    if (!(await findPublicPost(blogPostId))) {
+      return { error: "Blog post not found" };
+    }
 
-    if (existingLike) {
-      await prisma.blogLike.delete({
-        where: { id: existingLike.id },
-      });
-    } else {
-      await prisma.blogLike.create({
-        data: {
-          userId,
-          blogPostId,
-        },
-      });
+    // Remove-then-create keeps a double click from creating two likes: the
+    // second request finds nothing to delete and its create hits the unique
+    // index, which counts as "already liked".
+    const removed = await prisma.blogLike.deleteMany({ where: { userId, blogPostId } });
+    if (removed.count === 0) {
+      try {
+        await prisma.blogLike.create({ data: { userId, blogPostId } });
+      } catch (error) {
+        if (!isUniqueViolation(error)) throw error;
+      }
     }
 
     revalidatePath(`/blog/${blogPostId}`);
@@ -47,17 +68,19 @@ export async function addComment(blogPostId: string, content: string) {
   const { session, error } = await ensureAuth();
   if (error || !session) return { error };
 
-  if (!content || content.trim().length === 0) {
-    return { error: "Comment content cannot be empty" };
+  const limit = await rateLimit(RATE_LIMITS.COMMENT_USER, session.user.id);
+  if (!limit.ok) return { error: RATE_LIMIT_MESSAGE };
+
+  const parsedContent = blogCommentSchema.safeParse(content);
+  if (!parsedContent.success) {
+    return { error: parsedContent.error.issues[0]?.message ?? "Comment content cannot be empty" };
   }
+  content = parsedContent.data;
 
   const userId = session.user.id;
 
   try {
-    const blogPost = await prisma.blogPost.findUnique({
-      where: { id: blogPostId },
-      select: { createdById: true, title: true },
-    });
+    const blogPost = await findPublicPost(blogPostId);
 
     if (!blogPost) {
       return { error: "Blog post not found" };
@@ -67,10 +90,10 @@ export async function addComment(blogPostId: string, content: string) {
       data: {
         userId,
         blogPostId,
-        content: content.trim(),
+        content,
       },
       include: {
-        user: { select: { name: true, image: true, email: true } },
+        user: { select: { id: true, name: true, image: true } },
       },
     });
 
@@ -129,9 +152,11 @@ export async function editComment(commentId: string, content: string) {
   const { session, error } = await ensureAuth();
   if (error || !session) return { error };
 
-  if (!content || content.trim().length === 0) {
-    return { error: "Comment content cannot be empty" };
+  const parsedContent = blogCommentSchema.safeParse(content);
+  if (!parsedContent.success) {
+    return { error: parsedContent.error.issues[0]?.message ?? "Comment content cannot be empty" };
   }
+  content = parsedContent.data;
 
   const userId = session.user.id;
 

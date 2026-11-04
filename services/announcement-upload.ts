@@ -1,98 +1,30 @@
-import { isAnnouncementAttachmentTooLarge } from "@/services/announcements";
-import { r2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from "@/utils/s3";
-import { PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { ANNOUNCEMENT_MAX_UPLOAD_BYTES } from "@/services/announcements";
+import { ATTACHMENT_MIMES, deleteFromR2, uploadPrivateToR2, validateUpload, type UploadRules } from "@/services/storage";
 
-const ALLOWED_TYPES = new Set([
-  "application/pdf",
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "application/msword",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-]);
-
-const EXT_BY_TYPE: Record<string, string> = {
-  "application/pdf": "pdf",
-  "image/jpeg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-  "image/gif": "gif",
-  "application/msword": "doc",
-  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
-};
+const RULES: UploadRules = { allowed: ATTACHMENT_MIMES, maxBytes: ANNOUNCEMENT_MAX_UPLOAD_BYTES, label: "Attachment" };
 
 export function validateAnnouncementAttachment(file: File | null): { error?: string } {
-  if (!file || file.size === 0) {
-    return {};
-  }
-
-  if (!ALLOWED_TYPES.has(file.type)) {
-    return {
-      error: "Attachment must be a PDF, Word document, or image (JPEG, PNG, WebP, GIF).",
-    };
-  }
-
-  if (isAnnouncementAttachmentTooLarge(file.size)) {
-    return { error: "Attachment must be 10 MB or smaller." };
-  }
-
-  return {};
+  return validateUpload(file, RULES);
 }
 
 function sanitizeFilename(name: string): string {
-  const base = name.replace(/[/\\?%*:|"<>]/g, "_").trim();
+  const base = name.replace(/[/\?%*:|"<>]/g, "_").trim();
   return base.slice(0, 120) || "attachment";
 }
 
+/**
+ * Stores a course-announcement attachment privately (bytes are sniffed);
+ * the returned path is served through /api/files after an ownership check.
+ * Throws UploadError when refused.
+ */
 export async function saveAnnouncementAttachment(
   announcementId: string,
   file: File,
 ): Promise<{ attachmentPath: string; attachmentName: string }> {
-  const ext = EXT_BY_TYPE[file.type] ?? "bin";
-  const storedName = `${announcementId}-${Date.now()}.${ext}`;
-  const key = `uploads/announcements/${storedName}`;
-
-  const buffer = Buffer.from(await file.arrayBuffer());
-
-  await r2Client.send(
-    new PutObjectCommand({
-      Bucket: R2_BUCKET_NAME,
-      Key: key,
-      Body: buffer,
-      ContentType: file.type,
-    })
-  );
-
-  return {
-    attachmentPath: `${R2_PUBLIC_URL}/${key}`,
-    attachmentName: sanitizeFilename(file.name),
-  };
+  const attachmentPath = await uploadPrivateToR2("announcements", announcementId, file, RULES);
+  return { attachmentPath, attachmentName: sanitizeFilename(file.name) };
 }
 
-export async function deleteAnnouncementAttachment(attachmentPath: string | null | undefined) {
-  if (!attachmentPath) return;
-
-  let key = attachmentPath;
-  if (key.startsWith(R2_PUBLIC_URL)) {
-    key = key.slice(R2_PUBLIC_URL.length);
-  }
-  if (key.startsWith('/')) {
-    key = key.slice(1);
-  }
-
-  if (!key.startsWith("uploads/announcements/")) {
-    return;
-  }
-
-  try {
-    await r2Client.send(
-      new DeleteObjectCommand({
-        Bucket: R2_BUCKET_NAME,
-        Key: key,
-      })
-    );
-  } catch (error) {
-    console.error("Failed to delete announcement attachment from R2:", error);
-  }
+export function deleteAnnouncementAttachment(attachmentPath: string | null | undefined): Promise<void> {
+  return deleteFromR2("announcements", attachmentPath);
 }

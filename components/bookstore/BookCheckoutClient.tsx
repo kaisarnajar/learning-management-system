@@ -1,12 +1,14 @@
 "use client";
 import { SubmitButton } from "@/components/shared/SubmitButton";
+import { formatPrice } from "@/utils/money";
 
 import Image from "next/image";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
 import { useRouter } from "next/navigation";
 import { submitBookOrder } from "@/app/actions/bookstore";
 import { useToast } from "@/components/shared/ToastProvider";
+import { PaymentProofFields, type PaymentMethod } from "@/components/payment/PaymentProofFields";
 
 type CheckoutItem = {
   bookId: string;
@@ -17,12 +19,6 @@ type CheckoutItem = {
   imagePath: string | null;
   quantity: number;
 };
-
-type PaymentMethod = "upi" | "bank";
-
-function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
 
 export function BookCheckoutClient({
   items,
@@ -40,17 +36,9 @@ export function BookCheckoutClient({
   const [deliveryPhoneNumber, setDeliveryPhoneNumber] = useState("");
   const [screenshot, setScreenshot] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
   const { removeItem } = useCart();
   const router = useRouter();
   const { addToast } = useToast();
-
-  function handleClearScreenshot() {
-    setScreenshot(null);
-    if (fileRef.current) {
-      fileRef.current.value = "";
-    }
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -136,9 +124,9 @@ export function BookCheckoutClient({
                     <p className="mt-0.5 text-xs text-muted">Qty: {item.quantity}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-semibold text-foreground">{formatPrice(item.priceInrPaise * item.quantity)}</p>
+                    <p className="font-semibold text-foreground">{formatPrice(item.priceInrPaise * item.quantity, { exact: true })}</p>
                     {item.mrpInrPaise && item.mrpInrPaise > item.priceInrPaise && (
-                      <p className="text-xs text-muted line-through">{formatPrice(item.mrpInrPaise * item.quantity)}</p>
+                      <p className="text-xs text-muted line-through">{formatPrice(item.mrpInrPaise * item.quantity, { exact: true })}</p>
                     )}
                   </div>
                 </div>
@@ -146,17 +134,17 @@ export function BookCheckoutClient({
               <div className="p-4 bg-background/50 space-y-3">
                 <div className="flex items-center justify-between text-sm">
                   <p className="text-muted">Subtotal</p>
-                  <p className="font-medium text-foreground">{formatPrice(totalAmountInrPaise - shippingChargeInrPaise)}</p>
+                  <p className="font-medium text-foreground">{formatPrice(totalAmountInrPaise - shippingChargeInrPaise, { exact: true })}</p>
                 </div>
                 {shippingChargeInrPaise > 0 && (
                   <div className="flex items-center justify-between text-sm">
                     <p className="text-muted">Shipping</p>
-                    <p className="font-medium text-foreground">{formatPrice(shippingChargeInrPaise)}</p>
+                    <p className="font-medium text-foreground">{formatPrice(shippingChargeInrPaise, { exact: true })}</p>
                   </div>
                 )}
                 <div className="flex items-center justify-between pt-3 border-t border-border">
                   <p className="font-semibold text-foreground">Total</p>
-                  <p className="text-lg font-bold text-primary">{formatPrice(totalAmountInrPaise)}</p>
+                  <p className="text-lg font-bold text-primary">{formatPrice(totalAmountInrPaise, { exact: true })}</p>
                 </div>
               </div>
             </div>
@@ -171,76 +159,15 @@ export function BookCheckoutClient({
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-5">
-            {/* Payment Method */}
-            <fieldset>
-              <legend className="text-sm font-medium text-foreground">How did you pay?</legend>
-              <div className="mt-3 flex flex-wrap gap-4">
-                <label className="flex cursor-pointer items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="upi"
-                    checked={paymentMethod === "upi"}
-                    onChange={() => setPaymentMethod("upi")}
-                    className="text-primary"
-                  />
-                  UPI
-                </label>
-                <label className="flex cursor-pointer items-center gap-2 text-sm">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="bank"
-                    checked={paymentMethod === "bank"}
-                    onChange={() => setPaymentMethod("bank")}
-                    className="text-primary"
-                  />
-                  Bank transfer
-                </label>
-              </div>
-            </fieldset>
-
-            {/* Transaction ID */}
-            <div>
-              <label htmlFor="checkout-utr" className="block text-sm font-medium text-foreground">
-                Transaction / UTR reference
-              </label>
-              <input
-                id="checkout-utr"
-                type="text"
-                required
-                autoComplete="off"
-                value={transactionId}
-                onChange={(e) => setTransactionId(e.target.value)}
-                className="mt-2 w-full rounded-lg border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
-              />
-            </div>
-
-            {/* Screenshot */}
-            <div>
-              <div className="flex items-center justify-between">
-                <label htmlFor="checkout-screenshot" className="block text-sm font-medium text-foreground">
-                  Payment screenshot <span className="font-normal text-muted">(optional)</span>
-                </label>
-                {screenshot && (
-                  <button
-                    type="button"
-                    onClick={handleClearScreenshot}
-                    className="text-xs font-medium text-destructive-text hover:underline"
-                  >
-                    Clear selection
-                  </button>
-                )}
-              </div>
-              <input
-                ref={fileRef}
-                id="checkout-screenshot"
-                type="file"
-                accept="image/jpeg,image/png,image/webp,image/gif"
-                onChange={(e) => setScreenshot(e.target.files?.[0] ?? null)}
-                className="mt-2 w-full text-sm text-muted file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white"
-              />
-            </div>
+            <PaymentProofFields
+              idPrefix="checkout-"
+              paymentMethod={paymentMethod}
+              onPaymentMethodChange={setPaymentMethod}
+              transactionId={transactionId}
+              onTransactionIdChange={setTransactionId}
+              screenshot={screenshot}
+              onScreenshotChange={setScreenshot}
+            />
 
             {/* Delivery Address */}
             <div>

@@ -1,10 +1,8 @@
 import Link from "next/link";
+import { AdminListPage } from "@/components/shared/AdminListPage";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteSiteAnnouncement } from "@/app/admin/announcements/actions";
 import { ToggleHomepageAnnouncementButton } from "@/components/admin/ToggleHomepageAnnouncementButton";
-import { ListSearchForm } from "@/components/shared/ListSearchForm";
-import { Pagination } from "@/components/shared/Pagination";
-import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import {
   getAllSiteAnnouncementsForAdminPaginated,
   HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX,
@@ -13,7 +11,6 @@ import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
-import { Suspense } from "react";
 
 type PageParams = {
 
@@ -33,33 +30,59 @@ function statusBadge(published: boolean, showOnHomepage: boolean) {
 }
 
 import { adminActionButtonClassName } from "@/utils/form";
+import { requireAdmin } from "@/services/auth-actions";
 
-async function AdminAnnouncementsList({ params, q }: { params: PageParams; q?: string }) {
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
-  const { items: announcements, totalCount } = await getAllSiteAnnouncementsForAdminPaginated(
-    requestedPage,
-    pageSize,
-    q,
-  );
-  const page = clampPage(requestedPage, totalCount, pageSize);
+export default async function AdminAnnouncementsPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  await requireAdmin();
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
 
   return (
-    <>
-      <div className="mt-6">
-        <ListSearchForm
-          action="/admin/announcements"
-          query={q}
-          placeholder="Search by title, location, or body"
-          totalCount={q ? totalCount : undefined}
-        />
+    <div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-serif text-2xl font-bold text-primary">Announcements</h1>
+          <p className="mt-1 text-sm text-muted">
+            Academy-wide news — events, scholar visits, masjid programs, and more. Up to{" "}
+            {HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX} published items can be featured on the homepage; all
+            published items appear on the public Announcements page.
+          </p>
+        </div>
+        <Link
+          href="/admin/announcements/new"
+          className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-light"
+        >
+          New announcement
+        </Link>
       </div>
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-        {totalCount === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-muted">
-            {q ? "No announcements match your search." : "No announcements yet."}
-          </p>
-        ) : (
+      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Announcement created." variant="info" />
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Announcement updated." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Announcement deleted." variant="info" />
+      {params.error === "notfound" && (
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Announcement not found.</p>
+      )}
+      {params.error && params.error !== "notfound" && (
+        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
+          {decodeURIComponent(params.error)}
+        </p>
+      )}
+
+      <AdminListPage
+        basePath="/admin/announcements"
+        params={params}
+        q={q}
+        searchPlaceholder="Search by title, location, or body"
+        emptyText="No announcements yet."
+        noMatchText="No announcements match your search."
+        emptyPaddingClassName="py-10"
+        load={(page, pageSize) => getAllSiteAnnouncementsForAdminPaginated(page, pageSize, q)}
+      >
+        {({ items: announcements }) => (
           <table className="w-full min-w-ui-800 text-left text-sm">
             <thead className="border-b border-border bg-background/50 text-muted">
               <tr>
@@ -128,70 +151,7 @@ async function AdminAnnouncementsList({ params, q }: { params: PageParams; q?: s
             </tbody>
           </table>
         )}
-      </div>
-
-      <Pagination
-        basePath="/admin/announcements"
-        params={params}
-        page={page}
-        totalCount={totalCount}
-        pageSize={pageSize}
-      />
-    </>
-  );
-}
-
-function TableSkeleton() {
-  return (
-    <>
-      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
-      <div className="mt-4 h-ui-400 w-full rounded-lg bg-border/40 animate-pulse" />
-    </>
-  );
-}
-
-export default async function AdminAnnouncementsPage({
-  searchParams,
-}: {
-  searchParams: Promise<PageParams>;
-}) {
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
-
-  return (
-    <div>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Announcements</h1>
-          <p className="mt-1 text-sm text-muted">
-            Academy-wide news — events, scholar visits, masjid programs, and more. Up to{" "}
-            {HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX} published items can be featured on the homepage; all
-            published items appear on the public Announcements page.
-          </p>
-        </div>
-        <Link
-          href="/admin/announcements/new"
-          className="inline-flex min-h-11 items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-primary-light"
-        >
-          New announcement
-        </Link>
-      </div>
-
-      <ActionToast trigger={params.posted === "1"} paramName="posted" message="Announcement created." variant="info" />
-      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Announcement updated." variant="info" />
-      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Announcement deleted." variant="info" />
-      {params.error === "notfound" && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">Announcement not found.</p>
-      )}
-      {params.error && params.error !== "notfound" && (
-        <p className="mt-4 rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text">
-          {decodeURIComponent(params.error)}
-        </p>
-      )}
-
-      <Suspense fallback={<TableSkeleton />}>
-        <AdminAnnouncementsList params={params} q={q} />
-      </Suspense>
+      </AdminListPage>
     </div>
   );
 }

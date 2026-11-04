@@ -1,12 +1,14 @@
 import type { NextAuthConfig } from "next-auth";
 import Google from "next-auth/providers/google";
+import { getAuthSecret } from "@/services/auth-secret";
 
 const googleConfigured =
   Boolean(process.env.AUTH_GOOGLE_ID) && Boolean(process.env.AUTH_GOOGLE_SECRET);
 
 /**
- * Edge-safe Auth.js config (no Prisma/bcrypt). Used by proxy.ts.
- * Database-backed logic lives in lib/auth.ts.
+ * Edge-safe Auth.js config (no Prisma/bcrypt). Used by middleware.ts, whose
+ * `authorized` callback below runs for every matched request.
+ * Database-backed logic lives in services/auth.ts.
  */
 export const authConfig = {
   providers: [
@@ -15,16 +17,29 @@ export const authConfig = {
           Google({
             clientId: process.env.AUTH_GOOGLE_ID!,
             clientSecret: process.env.AUTH_GOOGLE_SECRET!,
+            // Linking by email stays on so a student who registered with a
+            // password can later use Google. The pre-verification takeover it
+            // allows (attacker registers the victim's address, victim links
+            // Google, attacker's password still works) is closed in the signIn
+            // callback of services/auth.ts, which scrubs the password of an
+            // unverified row before the link, and by the credentials provider
+            // refusing unverified accounts.
             allowDangerousEmailAccountLinking: true,
           }),
         ]
       : []),
   ],
-  session: { strategy: "jwt" },
+  session: {
+    strategy: "jwt",
+    // A session lives a week; the token (and with it role/verification state)
+    // is re-issued at most hourly while it is in use.
+    maxAge: 7 * 24 * 60 * 60,
+    updateAge: 60 * 60,
+  },
   pages: {
     signIn: "/login",
   },
-  secret: process.env.AUTH_SECRET,
+  secret: getAuthSecret(),
   trustHost: true,
   callbacks: {
     session({ session, token }) {

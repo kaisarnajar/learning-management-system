@@ -1,5 +1,6 @@
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { ENROLLMENT_STATUS } from "@/config/constants/business";
 
 export type AttendanceRecordInput = {
   enrollmentId: string;
@@ -33,7 +34,7 @@ export async function getEnrolledStudentsForAttendanceFromDb(courseId: string) {
     return prisma.enrollment.findMany({
       where: {
         courseId,
-        status: "active", // Only active students
+        status: ENROLLMENT_STATUS.ACTIVE, // Only active students
       },
       select: {
         id: true,
@@ -85,6 +86,18 @@ export async function getAttendanceRecordsForDateFromDb(courseId: string, target
 export async function saveCourseAttendanceToDb(courseId: string, targetDate: Date, records: AttendanceRecordInput[]) {
   return withDbErrorHandling(async () => {
     await prisma.$transaction(async (tx) => {
+      // Every enrollment must belong to the authorised course.
+      const enrollmentIds = [...new Set(records.map((r) => r.enrollmentId))];
+      if (enrollmentIds.length > 0) {
+        const found = await tx.enrollment.findMany({
+          where: { courseId, id: { in: enrollmentIds } },
+          select: { id: true },
+        });
+        if (found.length !== enrollmentIds.length) {
+          throw new Error("One or more students do not belong to this course.");
+        }
+      }
+
       // Upsert the main attendance record
       const attendance = await tx.courseAttendance.upsert({
         where: {

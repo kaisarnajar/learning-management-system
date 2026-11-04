@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import type { ApplicableCoupon } from "@/services/coupons";
-import { formatPrice } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 
 type CouponSelectorProps = {
   coupons: ApplicableCoupon[];

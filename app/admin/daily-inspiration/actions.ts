@@ -1,101 +1,64 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { requireAdmin } from "@/services/auth-actions";
+import type { Prisma } from "@prisma/client";
+import { createAdminCrudActions, parseFormWith } from "@/services/admin-crud";
 import { prisma } from "@/utils/prisma";
 import { dailyInspirationSchema } from "@/utils/validations";
-import { withDbErrorHandling } from "@/utils/db-error";
+import { revalidatePublicContent } from "@/services/public-cache";
 
-function adminListPath(suffix = "") {
-  return `/admin/daily-inspiration${suffix}`;
-}
-
-function parseDailyInspirationForm(formData: FormData) {
-  return dailyInspirationSchema.safeParse({
-    kind: formData.get("kind"),
-    arabicText: formData.get("arabicText"),
-    englishTranslation: formData.get("englishTranslation"),
-    reference: formData.get("reference") ?? "",
-    published: formData.get("published") === "on",
-  });
-}
+const LIST_PATH = "/admin/daily-inspiration";
 
 function revalidateDailyInspirationPaths() {
   revalidatePath("/");
+
+  revalidatePublicContent();
   revalidatePath("/admin");
-  revalidatePath("/admin/daily-inspiration");
+  revalidatePath(LIST_PATH);
 }
 
+const parseDailyInspirationForm = parseFormWith(dailyInspirationSchema, (formData: FormData) => ({
+  kind: formData.get("kind"),
+  arabicText: formData.get("arabicText"),
+  englishTranslation: formData.get("englishTranslation"),
+  reference: formData.get("reference") ?? "",
+  published: formData.get("published") === "on",
+}));
+
+const crud = createAdminCrudActions({
+  label: "daily inspiration",
+  model: {
+    find: (id) => prisma.dailyInspiration.findUnique({ where: { id } }),
+    create: (data) => prisma.dailyInspiration.create({ data: data as Prisma.DailyInspirationUncheckedCreateInput }),
+    update: (id, data) => prisma.dailyInspiration.update({ where: { id }, data: data as Prisma.DailyInspirationUncheckedUpdateInput }),
+    remove: (id) => prisma.dailyInspiration.delete({ where: { id } }),
+  },
+  parse: parseDailyInspirationForm,
+  paths: {
+    list: LIST_PATH,
+    afterUpdate: (id) => `${LIST_PATH}/${id}/edit?saved=1`,
+    revalidate: revalidateDailyInspirationPaths,
+  },
+  hooks: {
+    toColumns: (data) => ({
+      kind: data.kind,
+      arabicText: data.arabicText,
+      englishTranslation: data.englishTranslation,
+      reference: data.reference || null,
+      published: data.published,
+    }),
+    prepareCreate: async ({ session }) => ({ columns: { createdById: session.user.id } }),
+  },
+});
+
 export async function createDailyInspiration(formData: FormData) {
-  const session = await requireAdmin();
-  const parsed = parseDailyInspirationForm(formData);
-
-  if (!parsed.success) {
-    redirect(
-      adminListPath(
-        `/new?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid input")}`,
-      ),
-    );
-  }
-
-  await withDbErrorHandling(() => prisma.dailyInspiration.create({
-      data: {
-        kind: parsed.data.kind,
-        arabicText: parsed.data.arabicText,
-        englishTranslation: parsed.data.englishTranslation,
-        reference: parsed.data.reference || null,
-        published: parsed.data.published,
-        createdById: session.user.id,
-      },
-    }), "Database operation failed");
-
-  revalidateDailyInspirationPaths();
-  redirect(`${adminListPath()}?posted=1`);
+  return crud.create(formData);
 }
 
 export async function updateDailyInspiration(id: string, formData: FormData) {
-  await requireAdmin();
-  const parsed = parseDailyInspirationForm(formData);
-
-  if (!parsed.success) {
-    redirect(
-      adminListPath(
-        `/${id}/edit?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid input")}`,
-      ),
-    );
-  }
-
-  const existing = await withDbErrorHandling(() => prisma.dailyInspiration.findUnique({ where: { id } }), "Database operation failed");
-  if (!existing) {
-    redirect(`${adminListPath()}?error=notfound`);
-  }
-
-  await withDbErrorHandling(() => prisma.dailyInspiration.update({
-      where: { id },
-      data: {
-        kind: parsed.data.kind,
-        arabicText: parsed.data.arabicText,
-        englishTranslation: parsed.data.englishTranslation,
-        reference: parsed.data.reference || null,
-        published: parsed.data.published,
-      },
-    }), "Database operation failed");
-
-  revalidateDailyInspirationPaths();
-  redirect(`${adminListPath()}/${id}/edit?saved=1`);
+  return crud.update(id, formData);
 }
 
 export async function deleteDailyInspiration(id: string) {
-  await requireAdmin();
-
-  const existing = await withDbErrorHandling(() => prisma.dailyInspiration.findUnique({ where: { id } }), "Database operation failed");
-  if (!existing) {
-    redirect(`${adminListPath()}?error=notfound`);
-  }
-
-  await withDbErrorHandling(() => prisma.dailyInspiration.delete({ where: { id } }), "Database operation failed");
-
-  revalidateDailyInspirationPaths();
-  redirect(`${adminListPath()}?deleted=1`);
+  return crud.remove(id);
 }

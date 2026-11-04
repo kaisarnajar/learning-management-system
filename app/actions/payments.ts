@@ -20,6 +20,7 @@ export async function submitMonthlyPayment(formData: FormData) {
       paymentMethod: formData.get("paymentMethod"),
       upiTransactionId: formData.get("upiTransactionId"),
       couponId: formData.get("couponId"),
+      expectedAmountPaise: formData.get("expectedAmountPaise"),
     });
 
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid payment details.", status: 400 };
@@ -37,7 +38,8 @@ export async function submitMonthlyPayment(formData: FormData) {
       parsed.data.paymentMethod ?? null,
       parsed.data.upiTransactionId ?? null,
       screenshotFile,
-      parsed.data.couponId ?? null
+      parsed.data.couponId ?? null,
+      parsed.data.expectedAmountPaise ?? null,
     );
 
     if (result.error) return { error: result.error, status: result.status ?? 400 };
@@ -61,6 +63,7 @@ export async function submitEnrollmentPayment(formData: FormData) {
       paymentMethod: formData.get("paymentMethod"),
       upiTransactionId: formData.get("upiTransactionId"),
       couponId: formData.get("couponId"),
+      expectedAmountPaise: formData.get("expectedAmountPaise"),
     });
 
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid payment details.", status: 400 };
@@ -76,7 +79,8 @@ export async function submitEnrollmentPayment(formData: FormData) {
       parsed.data.paymentMethod ?? null,
       parsed.data.upiTransactionId ?? null,
       screenshotFile,
-      parsed.data.couponId ?? null
+      parsed.data.couponId ?? null,
+      parsed.data.expectedAmountPaise ?? null,
     );
 
     if (result.error) return { error: result.error, status: result.status ?? 400 };

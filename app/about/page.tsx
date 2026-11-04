@@ -5,12 +5,13 @@ import { ACADEMY_LOCATION, getAcademyLocationEmbedUrl } from "@/services/academy
 import { formatWhatsAppForDisplay, getSocialLinksSettings } from "@/services/social-links";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
 import { Source_Serif_4 } from "next/font/google";
+import { PageHero } from "@/components/shared/PageHero";
 import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
 
 const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
 import { BRAND_CONFIG } from "@/config/brand";
-import { CREDITS_CONFIG } from "@/config/credits";
+import { CREDITS_CONFIG, shouldShowDeveloperCredits } from "@/config/credits";
 
 const supervisors = [
   {
@@ -40,7 +41,7 @@ const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
 export const metadata: Metadata = {
   title: "About Us | Authentic Online Islamic Education",
   description:
-    "Learn about Darse Quran Academy, our mission, qualified scholars, Sunni Islamic education values, and online learning infrastructure.",
+    `Learn about ${BRAND_CONFIG.name}, our mission, qualified scholars, Sunni Islamic education values, and online learning infrastructure.`,
   alternates: {
     canonical: `${baseUrl}/about`,
   },
@@ -102,21 +103,7 @@ export default async function AboutPage() {
   return (
     <>
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#003527] via-teal-900 to-[#002117] px-4 py-24 sm:px-6 lg:px-8">
-        <div className="pattern-islamic absolute inset-0 opacity-10 mix-blend-overlay pointer-events-none" />
-        <div className="absolute left-0 right-0 top-0 h-1 bg-gradient-to-r from-[#cca72f]/0 via-[#cca72f] to-[#cca72f]/0 opacity-50"></div>
-        <div className="mx-auto max-w-4xl text-center">
-          <div className="motion-safe:animate-fade-up">
-            <h1 className={`${sourceSerif.className} text-4xl font-bold tracking-tight text-white sm:text-5xl md:text-6xl`}>
-              Our Story
-            </h1>
-            <div className="mx-auto mt-6 h-1 w-24 rounded-full bg-brand-gold-alt"></div>
-            <p className="mt-8 text-lg leading-relaxed text-white/90 sm:text-xl">
-              Darse-Quran is a non-profit Sunni Islamic media and educational organization based in Jammu & Kashmir, South Asia. Established with the objective of spreading the authentic teachings of Islam, Darse-Quran strives to convey the message of the Holy Qur&apos;an and Sunnah to people across the globe through education, media, publications, and community engagement.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero tall title="Our Story" description={<>{BRAND_CONFIG.organizationName} is a non-profit Sunni Islamic media and educational organization based in Jammu & Kashmir, South Asia. Established with the objective of spreading the authentic teachings of Islam, {BRAND_CONFIG.organizationName} strives to convey the message of the Holy Qur&apos;an and Sunnah to people across the globe through education, media, publications, and community engagement.</>} />
 
       {/* Vision & Mission */}
       <section className="bg-surface py-20 sm:py-24">
@@ -174,7 +161,7 @@ export default async function AboutPage() {
           <div className="text-center motion-safe:animate-fade-up">
             <SplitSectionTitle muted="Our" accent="Initiatives" />
             <p className="mx-auto mt-6 max-w-3xl text-lg text-muted">
-              Darse-Quran actively utilizes both digital and print media, alongside educational programs, to reach a diverse audience worldwide.
+              {BRAND_CONFIG.organizationName} actively utilizes both digital and print media, alongside educational programs, to reach a diverse audience worldwide.
             </p>
           </div>
 
@@ -197,7 +184,7 @@ export default async function AboutPage() {
                 <li>Question & Answer sessions</li>
                 <li>Awareness campaigns on contemporary issues</li>
               </ul>
-              <p className="mt-4 text-sm font-medium text-primary">Today, Darse-Quran reaches thousands of followers across various social media platforms.</p>
+              <p className="mt-4 text-sm font-medium text-primary">Today, {BRAND_CONFIG.organizationName} reaches thousands of followers across various social media platforms.</p>
             </div>
 
             {/* Print Publications */}
@@ -232,7 +219,7 @@ export default async function AboutPage() {
                 </div>
                 <h3 className={`${sourceSerif.className} text-xl font-semibold text-primary`}>Educational Academy</h3>
               </div>
-              <p className="text-muted mb-4">Darse-Quran Academy is our dedicated institution for providing quality Islamic learning online and offline. Courses include:</p>
+              <p className="text-muted mb-4">{BRAND_CONFIG.organizationName} Academy is our dedicated institution for providing quality Islamic learning online and offline. Courses include:</p>
               <ul className="list-disc pl-5 space-y-1 text-sm text-muted">
                 <li>Qur&apos;an Reading & Tajweed</li>
                 <li>Hifz-ul-Qur&apos;an</li>
@@ -293,7 +280,7 @@ export default async function AboutPage() {
                     Talib Ul Islam
                   </h3>
                   <p className="text-xs sm:text-sm text-muted mt-0.5">
-                    Darse-Quran
+                    {BRAND_CONFIG.organizationName}
                   </p>
                 </div>
               </div>
@@ -334,7 +321,7 @@ export default async function AboutPage() {
 
             <div className="card-elevated p-8 motion-safe:animate-fade-up" style={{ animationDelay: '300ms', animationFillMode: 'both' }}>
               <h3 className={`${sourceSerif.className} text-xl font-semibold text-primary mb-4`}>Executive Committee</h3>
-              <p className="text-sm text-muted mb-4">The growth of Darse-Quran is supported by dedicated individuals and volunteers:</p>
+              <p className="text-sm text-muted mb-4">The growth of {BRAND_CONFIG.organizationName} is supported by dedicated individuals and volunteers:</p>
               <ul className="grid grid-cols-2 gap-2 text-sm text-muted">
                 <li>• Rayees Ah Magray</li>
                 <li>• Huzaif-ul-Riyaz</li>
@@ -348,6 +335,7 @@ export default async function AboutPage() {
             </div>
           </div>
 
+          {shouldShowDeveloperCredits() && (
           <div className="mt-16 flex justify-center motion-safe:animate-fade-up" style={{ animationDelay: '450ms', animationFillMode: 'both' }}>
             <div className="card-elevated flex flex-col sm:flex-row items-center gap-4 sm:gap-5 px-6 sm:px-8 py-5 rounded-2xl border border-gold/25 shadow-lg bg-surface max-w-md w-full text-center sm:text-left transition-all hover:border-gold/40">
               <div className="relative h-16 w-16 sm:h-20 sm:w-20 shrink-0 overflow-hidden rounded-full ring-2 ring-gold/40 shadow-md bg-accent-muted/20">
@@ -386,7 +374,7 @@ export default async function AboutPage() {
               </div>
             </div>
           </div>
-
+          )}
 
         </div>
       </section>

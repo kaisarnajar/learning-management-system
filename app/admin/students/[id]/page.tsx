@@ -8,7 +8,8 @@ import { RemoveStudentEnrollmentAction } from "@/components/admin/RemoveStudentE
 
 import { Pagination } from "@/components/shared/Pagination";
 import { deleteStudentUserForm } from "@/app/admin/students/actions";
-import { formatPrice, getAllCourses } from "@/services/courses";
+import { getAllCourses } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import { enrollmentStatusClass, enrollmentStatusLabel } from "@/services/enrollments";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { getPaymentRecordsForUserPaginated } from "@/services/payments";
@@ -21,6 +22,7 @@ import { formatRollNumber } from "@/services/roll-numbers";
 import { getStudentUserById } from "@/services/students";
 import { getInitialsFromName } from "@/services/student-reviews";
 import { ExternalLink } from "lucide-react";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function AdminStudentDetailPage({
   params,
@@ -29,6 +31,7 @@ export default async function AdminStudentDetailPage({
   params: Promise<{ id: string }>;
   searchParams: Promise<{ error?: string; page?: string; saved?: string }>;
 }) {
+  await requireAdmin();
   const { id } = await params;
   const query = await searchParams;
   const { page: requestedPage, pageSize } = parsePaginationParams(query);

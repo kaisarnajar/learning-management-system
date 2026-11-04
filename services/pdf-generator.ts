@@ -1,11 +1,12 @@
 import puppeteer from "puppeteer";
 import puppeteerCore from "puppeteer-core";
 import chromium from "@sparticuz/chromium-min";
+import sharp from "sharp";
 import { getChromiumExecutablePath } from "@/utils/chromium";
 import fs from "fs/promises";
 import path from "path";
 import { ASSET_LOCAL_PATHS } from "@/config/assets";
-import { PROCESS_IMAGE_SCRIPT } from "@/utils/html-scripts";
+import { getPdfFontFaceCss } from "@/services/pdf-fonts";
 
 export type PdfOptions = {
   format?: "A4" | "A3" | "Letter";
@@ -71,8 +72,9 @@ async function launchBrowserWithRetry(maxRetries = 4) {
  * Generates a PDF from an HTML string using Puppeteer.
  * Returns the raw PDF as a Buffer that can be streamed or attached to an email.
  *
- * Automatically uses the lightweight chromium-min build on Vercel and the
- * locally installed Puppeteer binary in development.
+ * The document is fully self-contained (stylesheet, fonts and images are
+ * inlined by wrapHtmlForPdf), so the page runs with JavaScript disabled and
+ * may not load anything over the network at all.
  */
 export async function generatePdfFromHtml(
   html: string,
@@ -90,13 +92,23 @@ export async function generatePdfFromHtml(
     const viewportHeight = height ? parseInt(height.toString().replace('px', '')) : 800;
     await page.setViewport({ width: viewportWidth, height: viewportHeight, deviceScaleFactor: 3 });
 
+    // The rendered HTML contains user-supplied text. It is escaped, and the
+    // document needs no scripts, so JavaScript is off and every request that
+    // is not an inline data: URL is refused: an injected <img>/<iframe> can
+    // reach neither internal services nor the internet from the PDF worker.
+    await page.setJavaScriptEnabled(false);
+    await page.setRequestInterception(true);
+    page.on("request", (request) => {
+      if (isAllowedPdfResource(request.url())) {
+        void request.continue();
+      } else {
+        console.warn("[pdf-generator] Blocked request to non-allow-listed URL:", request.url().slice(0, 120));
+        void request.abort("blockedbyclient");
+      }
+    });
+
     await page.setContent(html, { waitUntil: "load" });
-
-    // Wait for the Tailwind CDN script + any Google Fonts to fetch and apply
-    await page.waitForNetworkIdle({ idleTime: 500, timeout: 5000 }).catch(() => {});
-
-    // Wait for the image processing script to finish
-    await page.waitForFunction('window.__imagesProcessed === true', { timeout: 2000 }).catch(() => {});
+    await page.evaluateHandle("document.fonts.ready").catch(() => {});
 
     const pdfOptions: {
       landscape: boolean;
@@ -127,38 +139,121 @@ export async function generatePdfFromHtml(
 }
 
 // ---------------------------------------------------------------------------
+// Resource allow-list: inline data only
+// ---------------------------------------------------------------------------
+
+function isAllowedPdfResource(url: string): boolean {
+  return url.startsWith("data:") || url === "about:blank";
+}
+
+function getR2PublicHost(): string | null {
+  const raw = process.env.R2_PUBLIC_URL;
+  if (!raw) return null;
+  try {
+    return new URL(raw).hostname.toLowerCase();
+  } catch {
+    return null;
+  }
+}
+
+/** Remote hosts a stored profile image may be fetched from (server side, before rendering). */
+function isAllowedProfileImageUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:") return false;
+    const host = parsed.hostname.toLowerCase();
+    if (host.endsWith(".googleusercontent.com")) return true;
+    const r2Host = getR2PublicHost();
+    return r2Host !== null && host === r2Host;
+  } catch {
+    return false;
+  }
+}
+
+const MAX_PROFILE_IMAGE_BYTES = 5 * 1024 * 1024;
+const PROFILE_IMAGE_FETCH_TIMEOUT_MS = 5_000;
+
+/** Detects the image type from magic bytes; returns null for anything that is not a raster image. */
+function sniffImageMime(buffer: Buffer): "image/png" | "image/jpeg" | "image/gif" | "image/webp" | null {
+  if (buffer.length < 12) return null;
+  if (buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47) return "image/png";
+  if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return "image/jpeg";
+  if (buffer.toString("ascii", 0, 6) === "GIF87a" || buffer.toString("ascii", 0, 6) === "GIF89a") return "image/gif";
+  if (buffer.toString("ascii", 0, 4) === "RIFF" && buffer.toString("ascii", 8, 12) === "WEBP") return "image/webp";
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Centralized Asset & HTML Framework
 // ---------------------------------------------------------------------------
 
 /**
- * Loads the standard logo, signature, stamp, and custom font as base64 strings.
- * Centralizes the boilerplate used across all 5 PDF generators.
+ * Makes near-white pixels of a logo/stamp/signature transparent so the image
+ * sits on coloured backgrounds. This used to be done by a script inside the
+ * headless page; it now happens once per process, server side.
  */
-export async function loadStandardPdfAssets() {
+async function whiteToTransparentPng(bytes: Buffer): Promise<Buffer> {
+  const { data, info } = await sharp(bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  for (let i = 0; i < data.length; i += info.channels) {
+    if (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240) {
+      data[i + 3] = 0;
+    }
+  }
+  return sharp(data, { raw: { width: info.width, height: info.height, channels: info.channels as 4 } })
+    .png()
+    .toBuffer();
+}
+
+type StandardAssets = { base64Logo: string; base64Signature: string; base64Stamp: string; base64Font: string };
+
+let standardAssetsPromise: Promise<StandardAssets> | null = null;
+
+async function readStandardAssets(): Promise<StandardAssets> {
   let base64Logo = "";
   let base64Signature = "";
   let base64Stamp = "";
   let base64Font = "";
-  
+
   try {
     const fontPath = path.join(process.cwd(), "public", "fonts", "indopak-nastaleeq.woff2");
-    
-    const [logoBytes, sigBytes, stampBytes, fontBytes] = await Promise.all([
-      fs.readFile(ASSET_LOCAL_PATHS.logo).catch(() => null),
-      fs.readFile(ASSET_LOCAL_PATHS.signature).catch(() => null),
-      fs.readFile(ASSET_LOCAL_PATHS.stamp).catch(() => null),
+
+    const toTransparent = async (file: string) => {
+      const bytes = await fs.readFile(file).catch(() => null);
+      if (!bytes) return "";
+      const png = await whiteToTransparentPng(bytes).catch(() => bytes);
+      return `data:image/png;base64,${png.toString("base64")}`;
+    };
+
+    const [logo, signature, stamp, fontBytes] = await Promise.all([
+      toTransparent(ASSET_LOCAL_PATHS.logo),
+      toTransparent(ASSET_LOCAL_PATHS.signature),
+      toTransparent(ASSET_LOCAL_PATHS.stamp),
       fs.readFile(fontPath).catch(() => null),
     ]);
-    
-    if (logoBytes) base64Logo = `data:image/png;base64,${logoBytes.toString('base64')}`;
-    if (sigBytes) base64Signature = `data:image/png;base64,${sigBytes.toString('base64')}`;
-    if (stampBytes) base64Stamp = `data:image/png;base64,${stampBytes.toString('base64')}`;
+
+    base64Logo = logo;
+    base64Signature = signature;
+    base64Stamp = stamp;
     if (fontBytes) base64Font = `data:font/woff2;charset=utf-8;base64,${fontBytes.toString('base64')}`;
   } catch (e) {
     console.error("[pdf-generator] Could not load local standard assets:", e);
   }
 
   return { base64Logo, base64Signature, base64Stamp, base64Font };
+}
+
+/**
+ * Loads the standard logo, signature, stamp (white backgrounds made
+ * transparent) and the IndoPak font as base64 strings, once per process.
+ */
+export function loadStandardPdfAssets(): Promise<StandardAssets> {
+  if (!standardAssetsPromise) {
+    standardAssetsPromise = readStandardAssets().catch((error) => {
+      standardAssetsPromise = null;
+      throw error;
+    });
+  }
+  return standardAssetsPromise;
 }
 
 /**
@@ -177,29 +272,45 @@ export async function loadProfilePictureAsBase64(
 
   try {
     if (effectiveUrl.startsWith("http")) {
+      // Only fetch from hosts we store images on; user.image is user-controlled.
+      if (!isAllowedProfileImageUrl(effectiveUrl)) {
+        throw new Error("Profile image host is not allow-listed");
+      }
+
       let upgradedUrl = effectiveUrl;
       if (upgradedUrl.includes("googleusercontent.com")) {
         upgradedUrl = upgradedUrl.replace(/=s\d+-c/g, "=s1000-c");
       }
-      
-      const res = await fetch(upgradedUrl, { cache: "no-store" });
+
+      const res = await fetch(upgradedUrl, {
+        cache: "no-store",
+        redirect: "error",
+        signal: AbortSignal.timeout(PROFILE_IMAGE_FETCH_TIMEOUT_MS),
+      });
       if (res.ok) {
-        const buffer = await res.arrayBuffer();
-        const mimeType = res.headers.get("content-type") || "image/jpeg";
-        return `data:${mimeType};base64,${Buffer.from(buffer).toString('base64')}`;
+        const declaredLength = Number(res.headers.get("content-length") || 0);
+        if (declaredLength > MAX_PROFILE_IMAGE_BYTES) throw new Error("Profile image too large");
+        const buffer = Buffer.from(await res.arrayBuffer());
+        if (buffer.length > MAX_PROFILE_IMAGE_BYTES) throw new Error("Profile image too large");
+        const mimeType = sniffImageMime(buffer);
+        if (!mimeType) throw new Error("Profile image is not a supported raster image");
+        return `data:${mimeType};base64,${buffer.toString('base64')}`;
       }
     } else if (effectiveUrl.startsWith("/")) {
-      let imgPath = "";
+      // Only the two bundled avatar icons may be read from disk; never resolve
+      // arbitrary paths (user.image could contain "../").
+      let imgPath: string | null = null;
       if (effectiveUrl === "/assets/male_icon.png") {
         imgPath = ASSET_LOCAL_PATHS.maleIcon;
       } else if (effectiveUrl === "/assets/female_icon.png") {
         imgPath = ASSET_LOCAL_PATHS.femaleIcon;
-      } else {
-        imgPath = path.join(process.cwd(), "public", effectiveUrl);
       }
-      const bytes = await fs.readFile(imgPath);
-      const ext = path.extname(imgPath).substring(1) || "png";
-      return `data:image/${ext};base64,${bytes.toString('base64')}`;
+      if (!imgPath) {
+        throw new Error("Local profile image path is not allow-listed");
+      }
+      const bytes = await fs.readFile(/* turbopackIgnore: true */ imgPath);
+      const mimeType = sniffImageMime(bytes) ?? "image/png";
+      return `data:${mimeType};base64,${bytes.toString('base64')}`;
     }
   } catch (e) {
     console.error("[pdf-generator] Could not load profile picture:", e);
@@ -212,87 +323,43 @@ export async function loadProfilePictureAsBase64(
   return "";
 }
 
+// ---------------------------------------------------------------------------
+// Stylesheet (compiled at build time by scripts/build-pdf-css.sh)
+// ---------------------------------------------------------------------------
+
+const PDF_CSS_PATH = path.join(process.cwd(), "generated", "pdf.css");
+let pdfCssPromise: Promise<string> | null = null;
+
+function getPdfStylesheet(): Promise<string> {
+  if (!pdfCssPromise) {
+    pdfCssPromise = fs.readFile(PDF_CSS_PATH, "utf8").catch((error) => {
+      pdfCssPromise = null;
+      throw new Error(
+        `[pdf-generator] generated/pdf.css is missing (${(error as Error).message}). Run "npm run build:pdf-css"; the build scripts do this automatically.`,
+      );
+    });
+  }
+  return pdfCssPromise;
+}
+
 /**
- * Standardized HTML wrapper that injects Tailwind, fonts, and base styling.
+ * Standardized HTML wrapper: inlines the compiled Tailwind stylesheet, the
+ * self-hosted fonts and the base styling, so the document renders with no
+ * network access and no scripts.
  */
-export function wrapHtmlForPdf(
-  bodyContent: string, 
+export async function wrapHtmlForPdf(
+  bodyContent: string,
   options?: { base64Font?: string; landscape?: boolean }
 ) {
+  const [stylesheet, fontFaces] = await Promise.all([getPdfStylesheet(), getPdfFontFaceCss()]);
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              primary: '#0f3d2e',
-              'primary-light': '#1a4d2e',
-              gold: '#d4af37',
-            },
-            surface: {
-              cream: '#fdfaf3',
-            },
-            gold: {
-              DEFAULT: '#d4a017',
-              light: '#f0c14a',
-              dark: '#b8860b'
-            },
-            teal: {
-              DEFAULT: '#0d4a4a',
-              dark: '#083333'
-            }
-          },
-          spacing: {
-            'pdf-id-width': '1011px',
-            'pdf-id-height': '638px',
-            'pdf-cert-width': '1123px',
-            'pdf-cert-height': '794px',
-            'pdf-label-w': '180px',
-            'pdf-photo-w': '230px',
-            'pdf-photo-h': '270px',
-          },
-          borderWidth: {
-            'pdf-hairline': '1.5px',
-            'pdf-xs': '3px',
-            'pdf-sm': '4px',
-            'pdf-md': '6px',
-            'pdf-lg': '8px',
-            'pdf-xl': '12px',
-            'pdf-thick': '10px',
-          },
-          borderRadius: {
-            'pdf-lg': '36px',
-          },
-          fontSize: {
-            'pdf-7': '7px',
-            'pdf-9': '9px',
-            'pdf-10': '10px',
-            'pdf-11': '11px',
-            'pdf-16': '16px',
-            'pdf-17': '17px',
-            'pdf-20': '20px',
-            'pdf-22': '22px',
-            'pdf-26': '26px',
-            'pdf-28': '28px',
-            'pdf-34': '34px',
-            'pdf-38': '38px',
-            'pdf-44': '44px',
-            'pdf-46': '46px',
-            'pdf-56': '56px',
-            'pdf-72': '72px',
-          }
-        }
-      }
-    }
-  </script>
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:wght@400;600;700&family=Scheherazade+New:wght@400;700&family=Amiri:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>${stylesheet}</style>
   <style>
+    ${fontFaces}
     ${options?.base64Font ? `
     @font-face {
       font-family: 'IndoPak';
@@ -301,8 +368,8 @@ export function wrapHtmlForPdf(
       font-style: normal;
     }
     ` : ""}
-    @media print { 
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; } 
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; }
     }
     @page { margin: 0; ${options?.landscape ? "size: A4 landscape;" : ""} }
     body {
@@ -316,9 +383,6 @@ export function wrapHtmlForPdf(
 </head>
 <body>
   ${bodyContent}
-  <script>
-    ${PROCESS_IMAGE_SCRIPT}
-  </script>
 </body>
 </html>
   `;

@@ -1,72 +1,26 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
-/** Bump when the Prisma schema changes so dev HMR does not keep an outdated client. */
-const PRISMA_CLIENT_CACHE_KEY = "20260723_coupon_usage";
+/**
+ * One Prisma client per process. In development the instance is kept on
+ * globalThis so hot reloads do not open a new connection pool each time; in
+ * production (serverless) each function instance creates its own.
+ *
+ * Connection settings belong on the DATABASE_URL (the Neon pooler URL with
+ * `?connection_limit=1&pool_timeout=10`, see docs/OPERATIONS.md), not here.
+ * Query logging: PRISMA_LOG_QUERIES=true (development only).
+ */
 
-const globalForPrisma = globalThis as unknown as {
-  prisma?: PrismaClient;
-  prismaCacheKey?: string;
-};
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
 
-function prismaSchemaIsCurrent(): boolean {
-  const couponUsage = Prisma.dmmf.datamodel.models.find(
-    (model) => model.name === "CouponUsage",
-  );
-  return couponUsage !== undefined;
+function createPrismaClient(): PrismaClient {
+  const logQueries = process.env.PRISMA_LOG_QUERIES === "true" && process.env.NODE_ENV !== "production";
+  return new PrismaClient({
+    log: logQueries ? ["query", "warn", "error"] : ["warn", "error"],
+  });
 }
 
-function createPrismaClient() {
-  const logQueries = process.env.PRISMA_LOG_QUERIES === "true";
+export const prisma: PrismaClient = globalForPrisma.prisma ?? createPrismaClient();
 
-  if (logQueries) {
-    const client = new PrismaClient({
-      log: [
-        { level: "query", emit: "event" },
-        { level: "info", emit: "stdout" },
-        { level: "warn", emit: "stdout" },
-        { level: "error", emit: "stdout" },
-      ],
-    });
-
-    type QueryClient = typeof client & {
-      $on(event: "query", callback: (event: Prisma.QueryEvent) => void): void;
-    };
-
-    (client as unknown as QueryClient).$on("query", (e) => {
-      console.log(`[Prisma Query] [${e.duration}ms] ${e.query}`);
-      if (e.params && e.params !== "[]") {
-        console.log(`  Params: ${e.params}`);
-      }
-    });
-
-    return client;
-  }
-
-  return new PrismaClient();
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
 }
-
-/** Avoid reusing a stale Prisma client cached before schema changes. */
-function getPrismaClient(): PrismaClient {
-  const cached = globalForPrisma.prisma;
-  const cacheKeyMatches = globalForPrisma.prismaCacheKey === PRISMA_CLIENT_CACHE_KEY;
-
-  if (
-    cached &&
-    cacheKeyMatches &&
-    typeof cached.course?.findMany === "function" &&
-    prismaSchemaIsCurrent()
-  ) {
-    return cached;
-  }
-
-  const client = createPrismaClient();
-
-  if (process.env.NODE_ENV !== "production") {
-    globalForPrisma.prisma = client;
-    globalForPrisma.prismaCacheKey = PRISMA_CLIENT_CACHE_KEY;
-  }
-
-  return client;
-}
-
-export const prisma = getPrismaClient();

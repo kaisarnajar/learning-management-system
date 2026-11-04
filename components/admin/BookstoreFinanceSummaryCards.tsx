@@ -1,4 +1,4 @@
-import { formatPrice } from "@/services/courses";
+import { formatPrice } from "@/utils/money";
 import type { BookstoreFinanceSummary } from "@/services/finance-bookstore";
 
 export function BookstoreFinanceSummaryCards({ summary }: { summary: BookstoreFinanceSummary }) {
@@ -28,8 +28,14 @@ export function BookstoreFinanceSummaryCards({ summary }: { summary: BookstoreFi
         <p className="mt-1 text-2xl font-bold text-destructive-text">{formatPrice(summary.totalPurchaseCostPaise)}</p>
       </div>
       <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
-        <p className="text-sm text-muted">Total Sales Revenue</p>
+        <p className="text-sm text-muted">Book Sales Revenue</p>
         <p className="mt-1 text-2xl font-bold text-success-text">{formatPrice(summary.totalSalesRevenuePaise)}</p>
+        <p className="mt-1 text-xs text-muted">Excludes shipping</p>
+      </div>
+      <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
+        <p className="text-sm text-muted">Shipping Collected</p>
+        <p className="mt-1 text-2xl font-bold text-foreground">{formatPrice(summary.totalShippingCollectedPaise)}</p>
+        <p className="mt-1 text-xs text-muted">Passed on to the courier</p>
       </div>
       <div className="rounded-lg border border-border bg-surface p-5 shadow-sm">
         <p className="text-sm text-muted">Total Profit / Loss</p>

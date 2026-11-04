@@ -1,10 +1,10 @@
 import Link from "next/link";
+import { AdminListPage } from "@/components/shared/AdminListPage";
+import { TableSkeleton } from "@/components/shared/TableSkeleton";
+import { TabPills } from "@/components/shared/TabPills";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteFatwaQuestion as deleteFatwa } from "@/app/admin/fatwa/actions";
-import { ListSearchForm } from "@/components/shared/ListSearchForm";
-import { Pagination } from "@/components/shared/Pagination";
 import { getAllFatwaQuestionsPaginated, type FatwaAdminFilter } from "@/services/fatwa";
-import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
@@ -31,7 +31,6 @@ function statusClass(q: { answer: string | null; approvalStatus: string }) {
   return "bg-surface-alt text-muted";
 }
 
-import { Suspense } from "react";
 
 type PageParams = {
 
@@ -45,68 +44,81 @@ type PageParams = {
 
 import { adminActionButtonClassName } from "@/utils/form";
 import { BRAND_CONFIG } from "@/config/brand";
+import { requireAdmin } from "@/services/auth-actions";
 
-async function AdminFatwaList({ params, q }: { params: PageParams; q?: string }) {
-  const filter = (params.filter as FatwaAdminFilter) || undefined;
-  const { page: requestedPage, pageSize } = parsePaginationParams(params);
-  const { items: questions, totalCount } = await getAllFatwaQuestionsPaginated(
-    requestedPage,
-    pageSize,
-    filter,
-    q,
-  );
-  const page = clampPage(requestedPage, totalCount, pageSize);
-
+function FatwaSkeleton() {
   return (
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="font-serif text-2xl font-bold text-primary">Fatwa Q&A</h1>
-          <p className="mt-1 text-sm text-muted">{totalCount} questions</p>
+          <div className="mt-1 h-4 w-24 rounded bg-border/40 animate-pulse" />
         </div>
-        <nav className="flex flex-wrap gap-2" aria-label="Filter questions">
-          {(
-            [
-              { label: "All", value: undefined },
-              { label: "Unanswered", value: "unanswered" as const },
-              { label: "Pending Review", value: "pending" as const },
-              { label: "Answered", value: "answered" as const },
-              { label: "Rejected", value: "rejected" as const },
-            ] as const
-          ).map((item) => {
-            const active = filter === item.value;
-            const href = filterHref(item.value, q);
-            return (
-              <Link
-                key={item.label}
-                href={href}
-                className={`rounded-full px-4 py-2 text-sm font-medium ${
-                  active ? "bg-primary text-white" : "border border-border text-foreground hover:bg-accent-muted/50"
-                }`}
-              >
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+        <div className="flex gap-2">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="h-10 w-20 rounded-full bg-border/40 animate-pulse" />
+          ))}
+        </div>
       </div>
+      <TableSkeleton />
+    </>
+  );
+}
 
-      <div className="mt-6">
-        <ListSearchForm
-          action="/admin/fatwa"
-          query={q}
-          placeholder="Search by subject, asker, email, or category"
-          preserveParams={{ filter: params.filter }}
-          totalCount={q ? totalCount : undefined}
-        />
-      </div>
+export default async function AdminFatwaPage({
+  searchParams,
+}: {
+  searchParams: Promise<PageParams>;
+}) {
+  await requireAdmin();
+  const params = await searchParams;
+  const q = parseSearchQuery(params.q);
+  const filter = (params.filter as FatwaAdminFilter) || undefined;
 
-      <div className="mt-4 overflow-x-auto rounded-lg border border-border bg-surface">
-        {totalCount === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-muted">
-            {q ? "No questions match your search." : "No questions yet."}
-          </p>
-        ) : (
+  return (
+    <div>
+      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Answer saved and notification sent (or logged if SMTP is not configured)." variant="info" />
+      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Question deleted." variant="info" />
+
+      <AdminListPage
+        basePath="/admin/fatwa"
+        params={params}
+        q={q}
+        searchPlaceholder="Search by subject, asker, email, or category"
+        emptyText="No questions yet."
+        noMatchText="No questions match your search."
+        preserveParams={{ filter: params.filter }}
+        skeleton={<FatwaSkeleton />}
+        load={(page, pageSize) => getAllFatwaQuestionsPaginated(page, pageSize, filter, q)}
+        header={({ totalCount }) => (
+          <>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h1 className="font-serif text-2xl font-bold text-primary">Fatwa Q&A</h1>
+                <p className="mt-1 text-sm text-muted">{totalCount} questions</p>
+              </div>
+              <TabPills
+                ariaLabel="Filter questions"
+                items={(
+                  [
+                    { label: "All", value: undefined },
+                    { label: "Unanswered", value: "unanswered" as const },
+                    { label: "Pending Review", value: "pending" as const },
+                    { label: "Answered", value: "answered" as const },
+                    { label: "Rejected", value: "rejected" as const },
+                  ] as const
+                ).map((item) => ({
+                  key: item.label,
+                  label: item.label,
+                  href: filterHref(item.value, q),
+                  active: filter === item.value,
+                }))}
+              />
+            </div>
+          </>
+        )}
+      >
+        {({ items: questions }) => (
           <table className="w-full min-w-ui-840 text-left text-sm">
             <thead className="border-b border-border bg-background/50 text-muted">
               <tr>
@@ -174,55 +186,7 @@ async function AdminFatwaList({ params, q }: { params: PageParams; q?: string })
             </tbody>
           </table>
         )}
-      </div>
-
-      <Pagination
-        basePath="/admin/fatwa"
-        params={params}
-        page={page}
-        totalCount={totalCount}
-        pageSize={pageSize}
-      />
-    </>
-  );
-}
-
-function TableSkeleton() {
-  return (
-    <>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="font-serif text-2xl font-bold text-primary">Fatwa Q&A</h1>
-          <div className="mt-1 h-4 w-24 rounded bg-border/40 animate-pulse" />
-        </div>
-        <div className="flex gap-2">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="h-10 w-20 rounded-full bg-border/40 animate-pulse" />
-          ))}
-        </div>
-      </div>
-      <div className="mt-6 h-10 w-full max-w-sm rounded-md bg-border/40 animate-pulse" />
-      <div className="mt-4 h-ui-400 w-full rounded-lg bg-border/40 animate-pulse" />
-    </>
-  );
-}
-
-export default async function AdminFatwaPage({
-  searchParams,
-}: {
-  searchParams: Promise<PageParams>;
-}) {
-  const params = await searchParams;
-  const q = parseSearchQuery(params.q);
-
-  return (
-    <div>
-      <ActionToast trigger={params.saved === "1"} paramName="saved" message="Answer saved and notification sent (or logged if SMTP is not configured)." variant="info" />
-      <ActionToast trigger={params.deleted === "1"} paramName="deleted" message="Question deleted." variant="info" />
-
-      <Suspense fallback={<TableSkeleton />}>
-        <AdminFatwaList params={params} q={q} />
-      </Suspense>
+      </AdminListPage>
     </div>
   );
 }

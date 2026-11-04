@@ -4,6 +4,7 @@ import { buildSearchOr } from "@/utils/text-search";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { resolveHomepageFeaturedUpdate } from "@/services/homepage-featured";
+import { PAYMENTS } from "@/config/constants/payments";
 
 export { BookStatus };
 
@@ -172,6 +173,7 @@ async function fetchBookOrdersPaginated(
 ): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
   const where: Prisma.BookOrderWhereInput = {
     status: statusCondition,
+    deletedAt: null,
     ...(search
       ? {
           OR: [
@@ -204,14 +206,21 @@ async function fetchBookOrdersPaginated(
   if (items.length > 0) {
     const paymentRecords = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
       where: {
-        paymentType: "book_purchase",
-        userId: { in: items.map((o) => o.userId) },
+        paymentType: PAYMENTS.TYPES.BOOK_ORDER,
+        voidedAt: null,
+        OR: [
+          { bookOrderId: { in: items.map((o) => o.id) } },
+          { bookOrderId: null, userId: { in: items.map((o) => o.userId) } },
+        ],
       },
     }), "Database operation failed");
 
     itemsWithPaymentRecord = items.map((order) => {
       const shortId = order.id.slice(-6).toUpperCase();
-      const pr = paymentRecords?.find((p) => p.description === `Book order #${shortId}` && p.userId === order.userId);
+      // Prefer the real link; fall back to the legacy description match for records not yet backfilled.
+      const pr =
+        paymentRecords?.find((p) => p.bookOrderId === order.id) ??
+        paymentRecords?.find((p) => !p.bookOrderId && p.description === `Book order #${shortId}` && p.userId === order.userId);
       return {
         ...order,
         paymentRecordId: pr?.id ?? null,
@@ -252,18 +261,26 @@ export async function getApprovedBookPaymentsPaginated(
   pageSize: number,
   search?: string
 ): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
-  // Any order that progressed to APPROVED or beyond has a payment record associated with it.
-  // We exclude PENDING_VERIFICATION and DECLINED because they don't have approved payments.
-  return fetchBookOrdersPaginated({ in: ["APPROVED", "SHIPPED", "REFUNDED"] }, page, pageSize, search, { createdAt: "desc" });
+  // Orders whose payment is still income: approved or shipped. Refunded
+  // orders have their payment record voided and are listed separately.
+  return fetchBookOrdersPaginated({ in: ["APPROVED", "SHIPPED"] }, page, pageSize, search, { createdAt: "desc" });
+}
+
+export async function getRefundedBookOrdersPaginated(
+  page: number,
+  pageSize: number,
+  search?: string
+): Promise<{ items: BookOrderWithItems[]; totalCount: number }> {
+  return fetchBookOrdersPaginated("REFUNDED", page, pageSize, search, { updatedAt: "desc" });
 }
 
 export async function getPendingBookOrderCount(): Promise<number> {
-  return withDbErrorHandling(() => prisma.bookOrder.count({ where: { status: "PENDING_VERIFICATION" } }), "Database operation failed");
+  return withDbErrorHandling(() => prisma.bookOrder.count({ where: { status: "PENDING_VERIFICATION", deletedAt: null } }), "Database operation failed");
 }
 
 export async function getBookOrdersForUser(userId: string): Promise<BookOrderWithItems[]> {
   const items = await withDbErrorHandling(() => prisma.bookOrder.findMany({
-      where: { userId },
+      where: { userId, deletedAt: null },
       include: {
         user: { select: { name: true, email: true } },
         items: {
@@ -277,14 +294,17 @@ export async function getBookOrdersForUser(userId: string): Promise<BookOrderWit
   
   const paymentRecords = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
     where: {
-      paymentType: "book_purchase",
+      paymentType: PAYMENTS.TYPES.BOOK_ORDER,
+      voidedAt: null,
       userId,
     },
   }), "Database operation failed");
   
   return items.map((order) => {
     const shortId = order.id.slice(-6).toUpperCase();
-    const pr = paymentRecords?.find((p) => p.description === `Book order #${shortId}`);
+    const pr =
+      paymentRecords?.find((p) => p.bookOrderId === order.id) ??
+      paymentRecords?.find((p) => !p.bookOrderId && p.description === `Book order #${shortId}`);
     return {
       ...order,
       paymentRecordId: pr?.id ?? null,

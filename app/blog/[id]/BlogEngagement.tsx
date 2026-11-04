@@ -3,12 +3,13 @@
 import { useState, useTransition } from "react";
 import { Heart, MessageCircle, Share2, MoreVertical, Edit2, Trash2, User as UserIcon } from "lucide-react";
 import Image from "next/image";
-import { toggleLike, addComment, deleteComment, editComment } from "./actions";
+import { toggleLike, addComment, deleteComment, editComment, loadMoreComments } from "./actions";
+import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
+import { useToast } from "@/components/shared/ToastProvider";
 
 type User = {
   name: string | null;
   image: string | null;
-  email: string | null;
 };
 
 type Comment = {
@@ -24,6 +25,8 @@ type BlogEngagementProps = {
   initialLikeCount: number;
   initialHasLiked: boolean;
   initialComments: Comment[];
+  /** Total comment count on the post; more than initialComments.length means more pages. */
+  totalComments: number;
   currentUserId?: string;
   isAdmin: boolean;
 };
@@ -33,14 +36,36 @@ export function BlogEngagement({
   initialLikeCount,
   initialHasLiked,
   initialComments,
+  totalComments,
   currentUserId,
   isAdmin,
 }: BlogEngagementProps) {
+  const { addToast } = useToast();
   const [likeCount, setLikeCount] = useState(initialLikeCount);
   const [hasLiked, setHasLiked] = useState(initialHasLiked);
   const [isPendingLike, startTransitionLike] = useTransition();
 
   const [comments, setComments] = useState<Comment[]>(initialComments);
+  const [commentTotal, setCommentTotal] = useState(totalComments);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  async function handleLoadMore() {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+    try {
+      const res = await loadMoreComments(blogPostId, comments.length);
+      if (res.error || !res.comments) {
+        addToast(res.error ?? "Failed to load comments", "error");
+        return;
+      }
+      const known = new Set(comments.map((c) => c.id));
+      const fresh = res.comments.filter((c) => !known.has(c.id));
+      setComments((prev) => [...prev, ...fresh]);
+      if (fresh.length === 0) setCommentTotal(comments.length);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
   const [newComment, setNewComment] = useState("");
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [commentError, setCommentError] = useState("");
@@ -64,7 +89,7 @@ export function BlogEngagement({
       if (res?.error) {
         setHasLiked(hasLiked);
         setLikeCount(hasLiked ? likeCount : likeCount - 1);
-        alert(res.error);
+        addToast(res.error, "error");
       }
     });
   };
@@ -81,8 +106,12 @@ export function BlogEngagement({
         console.error("Error sharing:", err);
       }
     } else {
-      navigator.clipboard.writeText(url);
-      alert("Link copied to clipboard!");
+      try {
+        await navigator.clipboard.writeText(url);
+        addToast("Link copied to clipboard.", "success");
+      } catch {
+        addToast("Could not copy the link.", "error");
+      }
     }
   };
 
@@ -105,21 +134,21 @@ export function BlogEngagement({
       setCommentError(res.error);
     } else if (res?.comment) {
       setComments([res.comment as unknown as Comment, ...comments]);
+      setCommentTotal((total) => total + 1);
       setNewComment("");
     }
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    if (!confirm("Are you sure you want to delete this comment?")) return;
-    
     setOpenMenuId(null);
     const originalComments = [...comments];
     setComments(comments.filter((c) => c.id !== commentId));
+    setCommentTotal((total) => Math.max(0, total - 1));
 
     const res = await deleteComment(commentId);
     if (res?.error) {
       setComments(originalComments);
-      alert(res.error);
+      addToast(res.error, "error");
     }
   };
 
@@ -143,7 +172,7 @@ export function BlogEngagement({
     const res = await editComment(commentId, editContent);
     if (res?.error) {
       setComments(originalComments);
-      alert(res.error);
+      addToast(res.error, "error");
     }
   };
 
@@ -168,7 +197,7 @@ export function BlogEngagement({
 
         <div className="flex items-center space-x-2 text-sm font-medium text-muted">
           <MessageCircle className="h-5 w-5" />
-          <span>{comments.length} {comments.length === 1 ? "Comment" : "Comments"}</span>
+          <span>{commentTotal} {commentTotal === 1 ? "Comment" : "Comments"}</span>
         </div>
 
         <button
@@ -192,7 +221,8 @@ export function BlogEngagement({
             </div>
           </div>
           <form onSubmit={handleAddComment} className="flex-1">
-            <textarea
+            <textarea maxLength={2000}
+              aria-label="Add a comment"
               value={newComment}
               onChange={(e) => setNewComment(e.target.value)}
               placeholder={currentUserId ? "Add a comment..." : "Sign in to add a comment..."}
@@ -215,7 +245,7 @@ export function BlogEngagement({
         {/* Comment List */}
         <div className="space-y-6">
           {comments.map((comment) => (
-            <div key={comment.id} className="flex items-start space-x-4">
+            <div key={comment.id} id={`comment-${comment.id}`} className="flex items-start space-x-4 scroll-mt-24">
               <div className="flex-shrink-0">
                 {comment.user.image ? (
                   <Image
@@ -228,7 +258,7 @@ export function BlogEngagement({
                 ) : (
                   <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
                     <span className="text-sm font-medium text-foreground uppercase">
-                      {comment.user.name?.charAt(0) || comment.user.email?.charAt(0) || "?"}
+                      {comment.user.name?.charAt(0) || "?"}
                     </span>
                   </div>
                 )}
@@ -253,7 +283,11 @@ export function BlogEngagement({
                   {(comment.userId === currentUserId || isAdmin) && (
                     <div className="relative">
                       <button
+                        type="button"
                         onClick={() => toggleMenu(comment.id)}
+                        aria-label="Comment actions"
+                        aria-haspopup="menu"
+                        aria-expanded={openMenuId === comment.id}
                         className="p-1 text-muted hover:text-foreground rounded-full hover:bg-muted/50"
                       >
                         <MoreVertical className="h-4 w-4" />
@@ -268,12 +302,20 @@ export function BlogEngagement({
                               <Edit2 className="mr-2 h-4 w-4" /> Edit
                             </button>
                           )}
-                          <button
-                            onClick={() => handleDeleteComment(comment.id)}
-                            className="flex w-full items-center px-4 py-2 text-sm text-red-500 hover:bg-red-500/10"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" /> Delete
-                          </button>
+                          <ConfirmationModal
+                            title="Delete comment"
+                            description="Are you sure you want to delete this comment? This cannot be undone."
+                            actionLabel="Delete"
+                            onConfirm={() => handleDeleteComment(comment.id)}
+                            trigger={
+                              <button
+                                type="button"
+                                className="flex w-full items-center px-4 py-2 text-sm text-red-500 hover:bg-red-500/10"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                              </button>
+                            }
+                          />
                         </div>
                       )}
                     </div>
@@ -282,7 +324,8 @@ export function BlogEngagement({
 
                 {editingCommentId === comment.id ? (
                   <div className="mt-2">
-                    <textarea
+                    <textarea maxLength={2000}
+                      aria-label="Edit comment"
                       value={editContent}
                       onChange={(e) => setEditContent(e.target.value)}
                       className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-gold min-h-[60px]"
@@ -311,6 +354,18 @@ export function BlogEngagement({
           ))}
           {comments.length === 0 && (
             <p className="text-sm text-muted text-center py-4">No comments yet. Be the first to share your thoughts!</p>
+          )}
+          {comments.length < commentTotal && (
+            <div className="flex justify-center pt-2">
+              <button
+                type="button"
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+                className="rounded-full border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent-muted/40 disabled:opacity-60"
+              >
+                {isLoadingMore ? "Loading…" : `Load more comments (${commentTotal - comments.length} more)`}
+              </button>
+            </div>
           )}
         </div>
       </div>

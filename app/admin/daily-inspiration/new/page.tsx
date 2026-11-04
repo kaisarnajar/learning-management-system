@@ -1,12 +1,14 @@
 import Link from "next/link";
 import { createDailyInspiration } from "@/app/admin/daily-inspiration/actions";
 import { DailyInspirationForm } from "@/components/admin/DailyInspirationForm";
+import { requireAdmin } from "@/services/auth-actions";
 
 export default async function NewDailyInspirationPage({
   searchParams,
 }: {
   searchParams: Promise<{ error?: string }>;
 }) {
+  await requireAdmin();
   const query = await searchParams;
 
   return (

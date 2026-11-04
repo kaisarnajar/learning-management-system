@@ -3,6 +3,7 @@ import {
   incomePaymentTypeLabel,
 } from "@/services/monthly-payment-status";
 import type { FinanceFilters } from "@/services/finance-filters";
+import { formatBusinessDate } from "@/services/business-time";
 
 type FinanceIncomeFiltersProps = {
   filters: FinanceFilters;
@@ -17,10 +18,10 @@ function preserveFields(filters: FinanceFilters) {
     fields.push({ name: "preset", value: filters.preset });
   }
   if (filters.from) {
-    fields.push({ name: "from", value: filters.from.toISOString().slice(0, 10) });
+    fields.push({ name: "from", value: formatBusinessDate(filters.from) });
   }
   if (filters.to) {
-    fields.push({ name: "to", value: filters.to.toISOString().slice(0, 10) });
+    fields.push({ name: "to", value: formatBusinessDate(filters.to) });
   }
   if (filters.category) fields.push({ name: "category", value: filters.category });
   if (filters.teacherId) fields.push({ name: "teacherId", value: filters.teacherId });

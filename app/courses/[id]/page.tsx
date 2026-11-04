@@ -13,6 +13,7 @@ import { CourseShareButton } from "@/components/courses/CourseShareButton";
 import { getCourseLevelClass } from "@/services/course-display";
 import { getPublicCourseById } from "@/services/courses";
 import { getUserCourseEnrollmentMap } from "@/services/enrollments";
+import { isApprovedEnrollment } from "@/services/status-compat";
 import { hasPendingEnrollmentFeeSubmission } from "@/services/monthly-payments";
 import { isUserProfileComplete } from "@/services/profile";
 
@@ -142,7 +143,7 @@ export default async function CourseDetailPage({ params }: CoursePageProps) {
           <CourseEnrollButton
             courseId={course.id}
             courseStatus={course.status}
-            isEnrolled={enrollment?.status === "active" || enrollment?.status === "completed"}
+            isEnrolled={enrollment ? isApprovedEnrollment(enrollment) : false}
             enrollmentStatus={enrollment?.status ?? null}
             enrollmentId={enrollment?.id ?? null}
             profileComplete={profileComplete}

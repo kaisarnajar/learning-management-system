@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import { formatPrice } from "@/utils/money";
 import { useState } from "react";
 import type { BookOrderWithItems } from "@/services/bookstore";
-import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrderRefunded, deleteBookOrder } from "@/app/admin/bookstore/orders/actions";
+import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrderRefunded, voidBookOrder } from "@/app/admin/bookstore/orders/actions";
 import { bookOrderStatusLabel, bookOrderStatusClass } from "@/services/bookstore";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { useToast } from "@/components/shared/ToastProvider";
@@ -11,10 +12,6 @@ import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons"
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 
 import { adminActionButtonClassName, adminDestructiveButtonClassName } from "@/utils/form";
-
-export function formatPrice(paise: number): string {
-  return `₹${(paise / 100).toFixed(2)}`;
-}
 
 export function ScreenshotPreview({ path }: { path: string }) {
   const [open, setOpen] = useState(false);
@@ -41,6 +38,9 @@ export function ScreenshotPreview({ path }: { path: string }) {
               alt="Payment screenshot"
               width={600}
               height={800}
+              // Private screenshots are served through /api/files with the viewer's
+              // session; the image optimizer has no session, so it must not proxy them.
+              unoptimized={path.startsWith("/api/files/")}
               className="rounded-lg object-contain"
             />
           </div>
@@ -204,13 +204,17 @@ function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "defau
           ) : (
              <span className="text-xs italic text-muted">No Payment Record</span>
           )}
-          <DeleteActionButton
-            action={async () => {
-              const result = await deleteBookOrder(order.id);
-              if (result?.error) addToast(result.error, "error");
-            }}
-            itemName="payment"
-          />
+          {(order.status === "DECLINED" || order.status === "REFUNDED") && (
+            <DeleteActionButton
+              verb="Void"
+              reasonLabel="Reason for voiding"
+              action={async (reason) => {
+                const result = await voidBookOrder(order.id, reason);
+                if (result?.error) addToast(result.error, "error");
+              }}
+              itemName="order"
+            />
+          )}
         </div>
       </td>
     );
@@ -244,21 +248,38 @@ function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "defau
         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${bookOrderStatusClass(order.status)}`}>
           {bookOrderStatusLabel(order.status)}
         </span>
-        <ConfirmationModal
-           title="Delete Order"
-           description="Are you sure you want to permanently delete this transaction? This action cannot be undone."
-           actionLabel="Delete"
-           variant="destructive"
-           onConfirm={async () => {
-             const result = await deleteBookOrder(order.id);
-             if (result?.error) addToast(result.error, "error");
-           }}
-           trigger={
-              <button type="button" className={adminDestructiveButtonClassName}>
-                 Delete
-              </button>
-           }
-        />
+        {order.status === "SHIPPED" && (
+          <ConfirmationModal
+             title="Refund Order"
+             description="Refund this shipped order? The recorded payment will be voided and the student notified."
+             actionLabel="Refund"
+             onConfirm={async () => {
+               const result = await markBookOrderRefunded(order.id, window.location.pathname + window.location.search);
+               if (result?.error) addToast(result.error, "error");
+             }}
+             trigger={
+                <button type="button" className={adminDestructiveButtonClassName}>Refund</button>
+             }
+          />
+        )}
+        {(order.status === "DECLINED" || order.status === "REFUNDED") && (
+          <ConfirmationModal
+             title="Void Order"
+             description="Void this order? It stays on record for auditing but disappears from order lists and finance."
+             actionLabel="Void"
+             variant="destructive"
+             reasonLabel="Reason for voiding"
+             onConfirm={async (reason) => {
+               const result = await voidBookOrder(order.id, reason);
+               if (result?.error) addToast(result.error, "error");
+             }}
+             trigger={
+                <button type="button" className={adminDestructiveButtonClassName}>
+                   Void
+                </button>
+             }
+          />
+        )}
       </div>
     </td>
   );
@@ -305,14 +326,14 @@ export function BaseOrderRow({
             <li key={item.id} className="text-sm text-foreground">
               {item.book.title}{" "}
               <span className="text-muted">
-                × {item.quantity} — {formatPrice(item.priceAtPurchaseInrPaise * item.quantity)}
+                × {item.quantity} — {formatPrice(item.priceAtPurchaseInrPaise * item.quantity, { exact: true })}
               </span>
             </li>
           ))}
         </ul>
       </td>
       <td className="px-4 py-4 align-top">
-        <p className="font-semibold text-foreground">{formatPrice(order.totalAmountInrPaise)}</p>
+        <p className="font-semibold text-foreground">{formatPrice(order.totalAmountInrPaise, { exact: true })}</p>
       </td>
       <td className="px-4 py-4 align-top text-sm">
         <p className="text-muted capitalize">{order.paymentMethod ?? "—"}</p>

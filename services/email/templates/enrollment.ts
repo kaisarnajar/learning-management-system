@@ -1,3 +1,4 @@
+import { escapeHtml } from "../layout";
 import { deliverMail, NotificationEmailBaseParams } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailButton, EmailFallbackLink } from "../components";
@@ -26,7 +27,7 @@ export async function sendEnrollmentApprovedEmail(
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>Congratulations! Your enrollment request for <strong>${courseTitle}</strong> has been <strong style="color:#166534;">approved</strong>.</p>
+    <p>Congratulations! Your enrollment request for <strong>${escapeHtml(courseTitle)}</strong> has been <strong style="color:#166534;">approved</strong>.</p>
     <p>You can now access your course directly from your dashboard.</p>
     ${EmailButton({ href: courseUrl, label: "Access Course", color: "#166534" })}
     ${EmailFallbackLink({ href: courseUrl })}
@@ -58,7 +59,7 @@ export async function sendEnrollmentRejectedEmail(
 
   const bodyHtml = `
     ${EmailGreeting({ name: displayName })}
-    <p>Your enrollment request for <strong>${courseTitle}</strong> was not approved by the academy at this time.</p>
+    <p>Your enrollment request for <strong>${escapeHtml(courseTitle)}</strong> was not approved by the academy at this time.</p>
     <p>If you believe this was a mistake or need clarification, please reply to this email or contact our support team.</p>
     ${courseUrl ? EmailButton({ href: courseUrl, label: "Contact Us", color: "#3730a3" }) : ""}
   `;

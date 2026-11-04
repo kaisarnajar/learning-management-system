@@ -23,10 +23,10 @@ export async function generateNextRegistrationNumberTx(tx: Prisma.TransactionCli
     VALUES (
       ${year},
       COALESCE((
-        SELECT MAX(CAST(SUBSTRING("registrationNumber" FROM ${prefix.length + 1}) AS INTEGER))
+        SELECT MAX(CAST(SUBSTRING("registrationNumber" FROM ${prefix.length + 1}::int) AS INTEGER))
         FROM "User"
         WHERE "registrationNumber" LIKE ${`${prefix}%`}
-          AND SUBSTRING("registrationNumber" FROM ${prefix.length + 1}) ~ '^[0-9]+$'
+          AND SUBSTRING("registrationNumber" FROM ${prefix.length + 1}::int) ~ '^[0-9]+$'
       ), 0) + 1
     )
     ON CONFLICT ("year") DO UPDATE

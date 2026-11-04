@@ -1,0 +1,162 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [dev, master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 22
+
+jobs:
+  verify:
+    name: Static checks and test suites
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lms_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Disposable database for the DB-backed suites (they TRUNCATE every table).
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/lms_test
+      # Scratch database for the authoritative migration drift check.
+      SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/lms_shadow
+      # Prisma needs the variables to exist; nothing here touches a real database.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/lms_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/lms_test
+      AUTH_SECRET: ci-secret-ci-secret-ci-secret-0123456789
+      CSP_ENFORCE: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the PDF stylesheet
+        run: npm run build:pdf-css
+
+      - name: Generate the Prisma client
+        run: npx prisma generate
+
+      - name: Type-check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        # New violations fail; the pre-existing ones are recorded in eslint-suppressions.json.
+        run: npx eslint . --ignore-pattern ".claude/**"
+
+      - name: Create the shadow database
+        run: PGPASSWORD=postgres psql -h localhost -U postgres -c 'CREATE DATABASE lms_shadow'
+
+      - name: Migration drift
+        run: npm run db:drift
+
+      - name: Migration safety (no destructive SQL)
+        run: npm run db:safety
+
+      - name: Protected pages call an explicit auth check
+        run: bash scripts/check-page-auth.sh
+
+      - name: Dependency audit
+        # Reports advisories without failing the build: at the time this was added
+        # npm audit lists high advisories (e.g. xlsx, which has no fixed release)
+        # that need dependency upgrades of their own. Remove continue-on-error
+        # once `npm audit --audit-level=high` is clean.
+        continue-on-error: true
+        run: npm audit --audit-level=high
+
+      - name: Unit tests
+        run: npm run test:unit
+
+      - name: Integration tests
+        run: npm run test:integration
+
+      - name: API tests
+        run: npm run test:api
+
+      - name: Security tests
+        run: npm run test:security
+
+  e2e:
+    name: End-to-end journeys
+    needs: verify
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lms_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/lms_test
+      # The build only needs the variables to exist; the server started by
+      # Playwright is given DATABASE_URL_TEST (see playwright.config.ts).
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/lms_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/lms_test
+      AUTH_SECRET: ci-secret-ci-secret-ci-secret-0123456789
+      CSP_ENFORCE: "true"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the PDF stylesheet
+        run: npm run build:pdf-css
+
+      - name: Build the application
+        run: npx next build
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run the journeys
+        run: npm run test:e2e
+
+      - name: Keep the report when a journey fails
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

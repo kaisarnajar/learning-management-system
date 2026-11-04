@@ -1,0 +1,37 @@
+{
+  "components/admin/AdminCouponRequestsTable.tsx": {
+    "react-hooks/purity": {
+      "count": 1
+    }
+  },
+  "components/admin/CreateCouponDialog.tsx": {
+    "react-hooks/purity": {
+      "count": 1
+    }
+  },
+  "components/auth/LoginForm.tsx": {
+    "react-hooks/immutability": {
+      "count": 1
+    }
+  },
+  "components/bookstore/CartProvider.tsx": {
+    "react-hooks/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "prisma/seed-demo.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "services/auth.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "services/courses.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  }
+}

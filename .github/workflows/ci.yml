@@ -80,6 +80,9 @@ jobs:
       - name: Protected pages call an explicit auth check
         run: bash scripts/check-page-auth.sh
 
+      - name: .env.example lists every variable the code reads
+        run: bash scripts/check-env-example.sh
+
       - name: Dependency audit
         # Reports advisories without failing the build: at the time this was added
         # npm audit lists high advisories (e.g. xlsx, which has no fixed release)

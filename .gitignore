@@ -35,6 +35,11 @@ yarn-error.log*
 !.env.example
 
 
+# playwright
+/test-results/
+/playwright-report/
+/tests/e2e/.auth/
+
 # local demo uploads
 /public/uploads/
 

@@ -25,7 +25,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("enrollment lifecycle", () => {
     expect(enrollment).toMatchObject({ status: "pending_approval", statusEnum: "PENDING_APPROVAL", rollNumber: null });
 
     const result = await runAction(() => approveEnrollmentRequest(enrollment.id, course.id));
-    expect(result.redirectedTo).toBe("/admin/enrollments");
+    expect(result.redirectedTo).toBe("/admin/enrollments?approved=1");
 
     const row = await prisma.enrollment.findUniqueOrThrow({ where: { id: enrollment.id } });
     expect(row).toMatchObject({ status: "active", statusEnum: "ACTIVE", rollNumber: 1, rejectedAt: null });
@@ -51,7 +51,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("enrollment lifecycle", () => {
     const enrollment = await startEnrollment(student.id, course.id, "PENDING_APPROVAL");
 
     const result = await runAction(() => rejectEnrollmentRequest(enrollment.id, course.id));
-    expect(result.redirectedTo).toBe("/admin/enrollments");
+    expect(result.redirectedTo).toBe("/admin/enrollments?rejected=1");
 
     const row = await prisma.enrollment.findUniqueOrThrow({ where: { id: enrollment.id } });
     expect(row).toMatchObject({ status: "rejected", statusEnum: "REJECTED" });

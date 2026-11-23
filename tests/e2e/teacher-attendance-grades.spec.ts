@@ -2,6 +2,10 @@ import { expect, test } from "@playwright/test";
 import { AUTH_STATE, db, FIXTURES, hasDatabase } from "./support/db";
 import { rowWith, signIn } from "./support/ui";
 
+// browser.newContext() inherits the file's `storageState` (here: the teacher's
+// sign-in), so a second user's browser must start from an empty state.
+const SIGNED_OUT = { storageState: { cookies: [], origins: [] } };
+
 test.skip(!hasDatabase, "DATABASE_URL_TEST is not set");
 test.use({ storageState: AUTH_STATE.teacher });
 
@@ -23,7 +27,7 @@ test.describe("teacher portal", () => {
     expect(classmate?.isPresent).toBe(false);
     expect(records.every((r) => r.attendanceId === records[0].attendanceId)).toBe(true);
 
-    const student = await browser.newContext();
+    const student = await browser.newContext(SIGNED_OUT);
     const studentPage = await student.newPage();
     await signIn(studentPage, FIXTURES.classmate.email);
     await studentPage.goto(`/profile/courses/${FIXTURES.course.id}/attendance`);
@@ -49,7 +53,7 @@ test.describe("teacher portal", () => {
     // students left blank are "not graded", not zero
     expect(await db().courseGradeRecord.count({ where: { gradeId: record.gradeId } })).toBe(1);
 
-    const student = await browser.newContext();
+    const student = await browser.newContext(SIGNED_OUT);
     const studentPage = await student.newPage();
     await signIn(studentPage, FIXTURES.classmate.email);
     await studentPage.goto(`/profile/courses/${FIXTURES.course.id}/grades`);

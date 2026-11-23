@@ -46,7 +46,8 @@ const CartContext = createContext<CartContextValue | null>(null);
 // Same value as before the key was derived from the brand, so carts already stored in browsers survive.
 const STORAGE_KEY = `${BRAND_CONFIG.shortName.toLowerCase()}-bookstore-cart`;
 const SYNC_DEBOUNCE_MS = 500;
-const CART_API = "/api/v1/bookstore/cart";
+// Session-authenticated twin of /api/v1/bookstore/cart (which is Bearer-only for the app).
+const CART_API = "/api/cart";
 
 /** Stable fingerprint of a cart, used to skip POSTs that would change nothing. */
 function cartSignature(items: CartItem[]): string {

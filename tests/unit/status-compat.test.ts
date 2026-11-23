@@ -61,6 +61,8 @@ describe("enrollment status mapping", () => {
 describe("submission status mapping", () => {
   it("maps the legacy 'rejected' text to DECLINED", () => {
     expect(submissionStatusFromText("rejected")).toBe("DECLINED");
+    // Older releases wrote "declined"; production still has such rows.
+    expect(submissionStatusFromText("declined")).toBe("DECLINED");
     expect(SUBMISSION_STATUS_TEXT.DECLINED).toBe("rejected");
   });
 

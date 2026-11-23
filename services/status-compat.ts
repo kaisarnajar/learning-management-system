@@ -70,6 +70,9 @@ export const SUBMISSION_STATUS_TEXT: Record<PaymentSubmissionStatus, string> = {
   DECLINED: PAYMENTS.SUBMISSION_STATUS.REJECTED,
 };
 const SUBMISSION_STATUS_FROM_TEXT = invert(SUBMISSION_STATUS_TEXT);
+// Older releases stored a declined fee submission as "declined"; production
+// still holds such rows next to the current "rejected" ones.
+SUBMISSION_STATUS_FROM_TEXT.set("declined", "DECLINED");
 
 export function submissionStatusFromText(text: string | null | undefined): PaymentSubmissionStatus | null {
   return text ? SUBMISSION_STATUS_FROM_TEXT.get(text.toLowerCase()) ?? null : null;

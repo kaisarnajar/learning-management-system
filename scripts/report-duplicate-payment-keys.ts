@@ -13,7 +13,7 @@
  * academy resolves them (decline/void the duplicate) and re-creates the index
  * with the statement printed at the end of this report.
  */
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -24,10 +24,17 @@ async function main() {
     WHERE "upiTransactionId" IS NOT NULL AND "upiTransactionId" <> '' AND "upiTransactionId" <> 'FEE-WAIVER'
     GROUP BY "upiTransactionId" HAVING COUNT(*) > 1`;
 
+  // The report runs before the release (no "deletedAt" column yet) and after
+  // it; soft-deleted rows only exist, and only count as free, once it exists.
+  const [{ hasDeletedAt }] = await prisma.$queryRaw<Array<{ hasDeletedAt: boolean }>>`
+    SELECT EXISTS (
+      SELECT 1 FROM information_schema.columns
+      WHERE table_name = 'CoursePaymentSubmission' AND column_name = 'deletedAt'
+    ) AS "hasDeletedAt"`;
   const labelDupes = await prisma.$queryRaw<Array<{ userId: string; courseId: string; label: string; count: number; ids: string[] }>>`
     SELECT "userId", "courseId", "label", COUNT(*)::int AS count, array_agg("id") AS ids
     FROM "CoursePaymentSubmission"
-    WHERE "status" <> 'rejected' AND "deletedAt" IS NULL
+    WHERE "status" NOT IN ('rejected', 'declined') ${hasDeletedAt ? Prisma.sql`AND "deletedAt" IS NULL` : Prisma.empty}
     GROUP BY "userId", "courseId", "label" HAVING COUNT(*) > 1`;
 
   const orderDupes = await prisma.$queryRaw<Array<{ upiTransactionId: string; count: number; ids: string[] }>>`

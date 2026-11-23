@@ -75,7 +75,7 @@ const JOBS: Job[] = [
     textColumn: "status",
     enumColumn: "statusEnum",
     enumType: "PaymentSubmissionStatus",
-    mapping: { pending_verification: "PENDING_VERIFICATION", approved: "APPROVED", rejected: "DECLINED" },
+    mapping: { pending_verification: "PENDING_VERIFICATION", approved: "APPROVED", rejected: "DECLINED", declined: "DECLINED" },
   },
   {
     table: "CoursePaymentSubmission",

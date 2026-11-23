@@ -8,13 +8,18 @@
 -- duplicate check (which skips deleted rows) let the submission through and
 -- the database then refused it as a duplicate. The index is rebuilt with the
 -- same predicate the application uses. Index-only change; no row is touched.
+--
+-- Declined submissions are excluded under both spellings: the current code
+-- writes 'rejected', older releases wrote 'declined', and production holds
+-- both (the 'declined'-only predicate of 20261103000300 would otherwise count
+-- two declined attempts at the same month as duplicates and skip the index).
 
 DROP INDEX IF EXISTS "CoursePaymentSubmission_userId_courseId_label_partial_key";
 
 DO $$ BEGIN
     CREATE UNIQUE INDEX IF NOT EXISTS "CoursePaymentSubmission_userId_courseId_label_partial_key"
         ON "CoursePaymentSubmission"("userId", "courseId", "label")
-        WHERE "status" <> 'rejected' AND "deletedAt" IS NULL;
+        WHERE "status" NOT IN ('rejected', 'declined') AND "deletedAt" IS NULL;
 EXCEPTION WHEN unique_violation THEN
     RAISE WARNING 'Skipped CoursePaymentSubmission_userId_courseId_label_partial_key: duplicate fee submissions exist. Run scripts/report-duplicate-payment-keys.ts.';
 END $$;

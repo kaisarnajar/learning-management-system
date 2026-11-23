@@ -165,15 +165,20 @@ describe("response headers", () => {
 describe("page protection", () => {
   type Middleware = (request: NextRequest, event: unknown) => Promise<Response> | Response;
 
-  it("leaves public pages alone", async () => {
-    const middleware = (await import("@/middleware")).default as unknown as Middleware;
-    const response = await middleware(new NextRequest(new URL("/courses", "http://localhost:3000")), {});
-    expect(response.status).toBe(200);
-  });
+  // "/teachers" (public list) shares a prefix with the "/teacher" portal; a
+  // guest must reach it, and so must its detail pages.
+  it.each(["/courses", "/teachers", "/teachers/some-teacher", "/administration-notes", "/profiles"])(
+    "leaves the public page %s alone",
+    async (pathname) => {
+      const middleware = (await import("@/middleware")).default as unknown as Middleware;
+      const response = await middleware(new NextRequest(new URL(pathname, "http://localhost:3000")), {});
+      expect(response.status).toBe(200);
+    },
+  );
 
   // Auth.js's `auth(handler)` form runs the handler and does not act on a falsy `authorized` result by
   // itself; middleware.ts enforces the decision explicitly (redirect for pages, 401 for API paths).
-  it.each(["/admin/courses", "/developer", "/teacher/blogs", "/profile/payments"])(
+  it.each(["/admin/courses", "/admin", "/developer", "/teacher", "/teacher/blogs", "/profile/payments"])(
     "redirects anonymous visitors from %s to /login at the edge",
     async (pathname) => {
       const middleware = (await import("@/middleware")).default as unknown as Middleware;

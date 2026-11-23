@@ -10,6 +10,15 @@ const googleConfigured =
  * `authorized` callback below runs for every matched request.
  * Database-backed logic lives in services/auth.ts.
  */
+/**
+ * True when `pathname` is the section itself or a path below it. A plain
+ * `startsWith` would also match unrelated public routes that share the prefix
+ * (`/teacher` vs the public `/teachers` list).
+ */
+export function isUnderSection(pathname: string, section: string): boolean {
+  return pathname === section || pathname.startsWith(`${section}/`);
+}
+
 export const authConfig = {
   providers: [
     ...(googleConfigured
@@ -64,19 +73,20 @@ export const authConfig = {
     authorized({ auth, request }) {
       const { pathname } = request.nextUrl;
 
-      if (pathname.startsWith("/admin")) {
+      if (isUnderSection(pathname, "/admin")) {
         return auth?.user?.role === "ADMIN" || auth?.user?.role === "DEVELOPER";
       }
 
-      if (pathname.startsWith("/developer")) {
+      if (isUnderSection(pathname, "/developer")) {
         return auth?.user?.role === "DEVELOPER";
       }
 
-      if (pathname.startsWith("/teacher")) {
+      // "/teacher" is the teacher portal; the public "/teachers" list is not.
+      if (isUnderSection(pathname, "/teacher")) {
         return auth?.user?.role === "TEACHER";
       }
 
-      if (pathname.startsWith("/profile")) {
+      if (isUnderSection(pathname, "/profile")) {
         return !!auth?.user;
       }
 

@@ -103,17 +103,8 @@ export default async function BlogDetailPage({ params }: PageProps) {
           {post.createdBy?.name ? ` · ${post.createdBy.name}` : ""}
         </p>
 
-        {post.excerpt && (
-          <p className="mt-4 text-lg leading-relaxed text-muted" dir="auto">{stripHtml(post.excerpt)}</p>
-        )}
-
-        <div
-          dangerouslySetInnerHTML={{ __html: post.body }}
-          className="blog-content mt-8 text-base leading-relaxed text-foreground"
-        />
-
         {post.images.length > 0 && (
-          <div className="mt-10 space-y-6">
+          <div className="mt-6 space-y-6">
             <h2 className="text-sm font-semibold uppercase tracking-wide text-muted">Gallery</h2>
             {post.images.map((img) => (
               <figure
@@ -139,6 +130,15 @@ export default async function BlogDetailPage({ params }: PageProps) {
             ))}
           </div>
         )}
+
+        {post.excerpt && (
+          <p className="mt-6 text-lg leading-relaxed text-muted" dir="auto">{stripHtml(post.excerpt)}</p>
+        )}
+
+        <div
+          dangerouslySetInnerHTML={{ __html: post.body }}
+          className="blog-content mt-8 text-base leading-relaxed text-foreground"
+        />
 
         <BlogEngagement
           blogPostId={post.id}

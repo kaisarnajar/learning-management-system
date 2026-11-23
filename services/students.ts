@@ -1,6 +1,5 @@
 import type { Prisma } from "@prisma/client";
 import { getAdminEmails } from "@/services/admin";
-import { getDeveloperEmails } from "@/services/developer";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/pagination";
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
@@ -38,26 +37,18 @@ export function getStudentOrderBy(sort?: string): Prisma.UserOrderByWithRelation
   }
 }
 
-/** Accounts that are not students: admins, developers and teachers (matched by e-mail). */
-async function nonStudentEmails(): Promise<string[]> {
-  const teachers = await withDbErrorHandling(() => prisma.teacher.findMany({
-    where: { email: { not: null } },
-    select: { email: true },
-  }), "Database operation failed");
-  return [
-    ...new Set([
-      ...getAdminEmails(),
-      ...getDeveloperEmails(),
-      ...teachers.flatMap((t) => (t.email ? [t.email.toLowerCase()] : [])),
-    ]),
-  ];
-}
-
-async function studentUsersWhere(searchQuery?: string) {
-  const excluded = await nonStudentEmails();
+/**
+ * The student list hides admin accounts only, as it always has. Teacher and
+ * developer accounts stay listed: at this academy teachers also enrol and pay
+ * fees as students, and hiding them made real students disappear from the
+ * list and from the finance filters. Deleting a staff account from the
+ * student pages is refused separately (app/admin/students/actions.ts).
+ */
+function studentUsersWhere(searchQuery?: string) {
+  const adminEmails = getAdminEmails();
   const base = {
     deletedAt: null,
-    ...(excluded.length > 0 ? { email: { notIn: excluded } } : {}),
+    ...(adminEmails.length > 0 ? { email: { notIn: adminEmails } } : {}),
   };
   if (!searchQuery) return base;
   return andWhere(base, buildSearchOr(["name", "email", "registrationNumber"], [], searchQuery));
@@ -68,7 +59,7 @@ async function studentUsersWhere(searchQuery?: string) {
  * filters need, instead of every registered user.
  */
 export async function getStudentsWithPayments() {
-  const where = await studentUsersWhere();
+  const where = studentUsersWhere();
   return withDbErrorHandling(() => prisma.user.findMany({
       where: { ...where, paymentRecords: { some: {} } },
       select: { id: true, name: true, email: true },
@@ -77,7 +68,7 @@ export async function getStudentsWithPayments() {
 }
 
 export async function getStudentUsers() {
-  const where = await studentUsersWhere();
+  const where = studentUsersWhere();
   return withDbErrorHandling(() => prisma.user.findMany({
       where,
       orderBy: getStudentOrderBy(),
@@ -90,7 +81,7 @@ export async function getStudentUsersPaginated(
   searchQuery?: string,
   sort?: string,
 ): Promise<PaginatedResult<Awaited<ReturnType<typeof getStudentUsers>>[number]>> {
-  const where = await studentUsersWhere(searchQuery);
+  const where = studentUsersWhere(searchQuery);
   const totalCount = await withDbErrorHandling(() => prisma.user.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.user.findMany({
@@ -120,6 +111,6 @@ export async function getStudentUserById(id: string) {
 }
 
 export async function getStudentCount() {
-  const where = await studentUsersWhere();
+  const where = studentUsersWhere();
   return withDbErrorHandling(() => prisma.user.count({ where }), "Database operation failed");
 }

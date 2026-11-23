@@ -81,13 +81,17 @@ Perform these steps in order. Steps 1–4 are read-only.
    `prisma migrate resolve --applied <migration_name>` against the branch —
    this only writes a bookkeeping row and executes no SQL.
 5. **Rehearse** on the branch: `DATABASE_URL=$BRANCH_DATABASE_URL npx prisma migrate deploy`.
-   It must apply only `20261103000100_rate_limit_bucket` and
-   `20261103000200_sync_schema_baseline`. Re-run the drift diff from step 3;
+   Before it, run the read-only reports `npx tsx scripts/report-orphan-course-refs.ts`
+   (any row listed makes `20261103001000_course_relations` fail) and
+   `npx tsx scripts/report-duplicate-payment-keys.ts` against the branch.
+   It must apply exactly the twenty migrations `20261103000100_rate_limit_bucket`
+   through `20261103002000_payment_label_index_ignores_voided`, nothing older.
+   Re-run the drift diff from step 3;
    it must now be empty. Run the application against the branch and smoke
    test coupons, cart, blog likes/comments and payment settings.
 6. **Production:** repeat step 4 (resolve any missing historical rows), then
    deploy. The Vercel build runs `prisma migrate deploy`, which applies the
-   same two additive migrations.
+   same twenty migrations.
 7. Record the outcome (timestamp, migrations applied, row counts of
    `PaymentRecord`, `Enrollment`, `User` before and after) in the release
    ticket.

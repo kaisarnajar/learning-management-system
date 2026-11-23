@@ -7,6 +7,8 @@ import fs from "fs/promises";
 import path from "path";
 import { ASSET_LOCAL_PATHS } from "@/config/assets";
 import { getPdfFontFaceCss } from "@/services/pdf-fonts";
+// The same host rule the profile form enforces (own storage, Google avatars).
+import { isAllowedProfileImageUrl } from "@/utils/validations";
 
 export type PdfOptions = {
   format?: "A4" | "A3" | "Letter";
@@ -144,30 +146,6 @@ export async function generatePdfFromHtml(
 
 function isAllowedPdfResource(url: string): boolean {
   return url.startsWith("data:") || url === "about:blank";
-}
-
-function getR2PublicHost(): string | null {
-  const raw = process.env.R2_PUBLIC_URL;
-  if (!raw) return null;
-  try {
-    return new URL(raw).hostname.toLowerCase();
-  } catch {
-    return null;
-  }
-}
-
-/** Remote hosts a stored profile image may be fetched from (server side, before rendering). */
-function isAllowedProfileImageUrl(url: string): boolean {
-  try {
-    const parsed = new URL(url);
-    if (parsed.protocol !== "https:") return false;
-    const host = parsed.hostname.toLowerCase();
-    if (host.endsWith(".googleusercontent.com")) return true;
-    const r2Host = getR2PublicHost();
-    return r2Host !== null && host === r2Host;
-  } catch {
-    return false;
-  }
 }
 
 const MAX_PROFILE_IMAGE_BYTES = 5 * 1024 * 1024;

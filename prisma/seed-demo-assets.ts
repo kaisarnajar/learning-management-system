@@ -14,7 +14,7 @@ export async function writeDemoPngFile(publicPath: string) {
     const absolute = path.join(process.cwd(), "public", publicPath.replace(/^\//, ""));
     await mkdir(path.dirname(absolute), { recursive: true });
     await writeFile(absolute, MINI_PNG);
-  } catch (err) {
+  } catch {
     // Ignore filesystem write errors on serverless platforms (e.g. Vercel)
   }
 }
@@ -36,7 +36,7 @@ export async function writeDemoPdfFile(publicPath: string, lines: string[]) {
     const absolute = path.join(process.cwd(), "public", publicPath.replace(/^\//, ""));
     await mkdir(path.dirname(absolute), { recursive: true });
     await writeFile(absolute, bytes);
-  } catch (err) {
+  } catch {
     // Ignore filesystem write errors on serverless platforms (e.g. Vercel)
   }
 }

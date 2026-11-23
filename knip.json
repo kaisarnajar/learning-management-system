@@ -2,9 +2,16 @@
   "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
     "app/**/{page,layout,loading,error,not-found,route,default,global-error}.{js,jsx,ts,tsx}",
-    "prisma/seed*.ts"
+    "prisma/seed*.ts",
+    "scripts/**/*.ts"
   ],
-  "project": ["**/*.{ts,tsx,mjs}"],
+  "project": [
+    "**/*.{ts,tsx,mjs}"
+  ],
   "ignoreExportsUsedInFile": true,
-  "ignoreDependencies": ["tailwindcss", "@types/bcryptjs"]
+  "ignoreDependencies": [
+    "@types/bcryptjs",
+    "tailwindcss",
+    "tailwindcss-v3"
+  ]
 }

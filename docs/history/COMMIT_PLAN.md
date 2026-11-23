@@ -1,7 +1,7 @@
 # Incremental Commit Plan — remediation of `LMS_CODE_REVIEW_AND_IMPLEMENTATION_PLAN.md`
 
 **Branch:** all commits land directly on `dev` (currently identical to `master` @ `402ba9c`). No PR, no merge into `master` until the whole plan is reviewed.
-**Status:** EXECUTED in full on `dev` (C01–C92, 2026-11-03/04). See "Execution notes and deviations" below for where the landed code differs from an entry. Not yet done: the production rollout steps in `docs/OPERATIONS.md` (Neon-branch rehearsal, dry-run scripts, baseline cut-over) and the PR from `dev` to `master`.
+**Status:** Executed on `dev` (2026-11-03/04) except C85, which never landed as a commit; see "Execution notes and deviations" below for where the landed code differs from an entry. During the dev → master review (2026-11-23) every commit was reviewed and replayed onto `master` with fixes; C85's dead-code removal was done then (unused `components/ui` primitives, `services/soft-delete.ts`, `receipt.html`, `receipt.pdf`, `scratch/`, `@types/sanitize-html` moved to devDependencies). Still open from C85: the Google Analytics and PWA-registration components, `@vercel/analytics` / `@vercel/speed-insights` (installed, not wired) and the `xlsx` → `exceljs` swap. Not yet done: the production rollout steps in `docs/OPERATIONS.md` (Neon-branch rehearsal, dry-run scripts, baseline cut-over).
 
 ## How to read this plan
 

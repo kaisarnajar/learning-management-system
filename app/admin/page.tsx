@@ -4,7 +4,6 @@ import { getPendingBlogApprovalCount } from "@/services/blog-approval";
 import { getBookCount, getPendingBookOrderCount } from "@/services/bookstore";
 import { getPendingContactInquiryCount } from "@/services/contact-inquiries";
 import {
-  getAwaitingEnrollmentFeeCount,
   getPendingEnrollmentApprovalCount,
 } from "@/services/enrollments";
 import { getPendingStudentReviewCount } from "@/services/student-reviews";
@@ -62,7 +61,6 @@ export default async function AdminDashboardPage() {
     dailyInspirationCount,
     courseCount,
     pendingEnrollmentCount,
-    awaitingEnrollmentFeeCount,
     studentCount,
     teacherCount,
     libraryCount,
@@ -84,7 +82,6 @@ export default async function AdminDashboardPage() {
     withDbErrorHandling(() => prisma.dailyInspiration.count(), "Database operation failed"),
     withDbErrorHandling(() => prisma.course.count(), "Database operation failed"),
     getPendingEnrollmentApprovalCount(),
-    getAwaitingEnrollmentFeeCount(),
     getStudentCount(),
     withDbErrorHandling(() => prisma.teacher.count(), "Database operation failed"),
     withDbErrorHandling(() => prisma.libraryItem.count(), "Database operation failed"),

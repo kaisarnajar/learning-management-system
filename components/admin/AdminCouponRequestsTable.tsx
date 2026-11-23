@@ -20,7 +20,7 @@ export type CouponRequestItem = {
 };
 
 export function AdminCouponRequestsTable({ requests }: { requests: CouponRequestItem[] }) {
-  const [isPending, startTransition] = useTransition();
+  const [isPending] = useTransition();
   const [selectedRequest, setSelectedRequest] = useState<CouponRequestItem | null>(null);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const { addToast } = useToast();

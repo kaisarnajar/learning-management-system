@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { MonthlyPaymentForm } from "@/components/payment/MonthlyPaymentForm";
-import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { requireUser } from "@/services/auth-actions";
 import { getMonthlyFeePaise } from "@/services/course-pricing";
 import { getCourseById } from "@/services/courses";
@@ -10,7 +9,7 @@ import { prisma } from "@/utils/prisma";
 import { isUpiConfigured } from "@/services/upi";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getFeeFrequencyLabel, getFeeFrequencySuffix } from "@/services/fee-frequency";
-import { getApplicableCoupons, calculateDiscountedAmount } from "@/services/coupons";
+import { getApplicableCoupons } from "@/services/coupons";
 import { getPaymentSettings } from "@/services/payment-settings";
 import { isApprovedEnrollment } from "@/services/status-compat";
 
@@ -47,15 +46,10 @@ export default async function PayFeePage({
 
   const originalFeePaise = getMonthlyFeePaise(course);
   const availableCoupons = await getApplicableCoupons(session.user.id, courseId, "course");
-  const topCoupon = availableCoupons.length > 0 ? availableCoupons[0] : null;
-  const initialFeePaise = topCoupon
-    ? calculateDiscountedAmount(originalFeePaise, topCoupon.percentage)
-    : originalFeePaise;
 
   const feeFrequency = course.feeFrequency ?? "MONTHLY";
   const freqLabel = getFeeFrequencyLabel(feeFrequency);
   const freqSuffix = getFeeFrequencySuffix(feeFrequency);
-  const amountLabel = formatPrice(initialFeePaise);
 
   return (
     <div>

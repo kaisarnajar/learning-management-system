@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Rejects destructive SQL in migrations added after the production baseline.
 #
-# Production safety rules (see LMS_CODE_REVIEW_AND_IMPLEMENTATION_PLAN.md §7.0):
+# Production safety rules (see docs/history/LMS_CODE_REVIEW_AND_IMPLEMENTATION_PLAN.md §7.0):
 #   - no DROP TABLE / DROP COLUMN / TRUNCATE
 #   - no ALTER COLUMN ... TYPE on populated tables (use expand/contract)
 #   - no DELETE without a WHERE clause

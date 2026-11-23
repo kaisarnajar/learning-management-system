@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Share2, Link as LinkIcon, QrCode, Download, X } from "lucide-react";
+import { Share2, Link as LinkIcon, Download, X } from "lucide-react";
 import QRCode from "qrcode";
 import { useToast } from "@/components/shared/ToastProvider";
 import { useDialog } from "@/components/shared/useDialog";

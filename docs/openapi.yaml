@@ -1,0 +1,1030 @@
+openapi: 3.1.0
+info:
+  title: Academy LMS mobile API
+  version: "1.0.0"
+  description: |
+    The REST API the Android app uses (guest and student features). See
+    docs/API.md for the conventions, the token refresh rules and the typical
+    flows. Money is in paise; lists are paginated with page/pageSize.
+servers:
+  - url: https://darsequranacademy.com/api/v1
+    description: Production
+  - url: http://localhost:3000/api/v1
+    description: Local development
+
+tags:
+  - name: Auth
+  - name: Account
+  - name: Public
+  - name: Blog
+  - name: Courses
+  - name: Payments
+  - name: Bookstore
+  - name: Notifications
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 50, default: 20 }
+    Search:
+      name: search
+      in: query
+      schema: { type: string }
+
+  responses:
+    Error:
+      description: Error
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Unauthorized:
+      description: Not signed in, or the session has ended (refresh once, then sign in again)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Not found (also used for records that belong to someone else)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    TooManyRequests:
+      description: Rate-limited; see the Retry-After header
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Ok:
+      description: Done
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Ok" }
+
+  schemas:
+    Ok:
+      type: object
+      required: [success]
+      properties:
+        success: { type: boolean, const: true }
+    Error:
+      type: object
+      required: [success, error]
+      properties:
+        success: { type: boolean, const: false }
+        error: { type: string, description: Message to show to the user }
+        code:
+          type: string
+          description: Set for cases the app handles specially
+          enum: [email_not_verified]
+    Page:
+      type: object
+      required: [success, data, totalCount, page, pageSize]
+      properties:
+        success: { type: boolean }
+        data: { type: array, items: {} }
+        totalCount: { type: integer }
+        page: { type: integer }
+        pageSize: { type: integer }
+
+    Tokens:
+      type: object
+      required: [success, accessToken, expiresIn, refreshToken, refreshExpiresAt, user]
+      properties:
+        success: { type: boolean }
+        accessToken: { type: string }
+        expiresIn: { type: integer, description: Seconds }
+        refreshToken: { type: string, description: Single use }
+        refreshExpiresAt: { type: string, format: date-time }
+        token: { type: string, deprecated: true, description: Same as accessToken }
+        user: { $ref: "#/components/schemas/SessionUser" }
+    SessionUser:
+      type: object
+      properties:
+        id: { type: string }
+        email: { type: string }
+        name: { type: [string, "null"] }
+        role: { type: string, enum: [USER, TEACHER, ADMIN, DEVELOPER] }
+        image: { type: [string, "null"] }
+        registrationNumber: { type: [string, "null"] }
+        emailVerified: { type: [string, "null"], format: date-time }
+
+    Profile:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: [string, "null"] }
+        email: { type: string }
+        fatherName: { type: [string, "null"] }
+        dateOfBirth: { type: [string, "null"], format: date-time }
+        occupation: { type: [string, "null"], description: "Value from /app-config lookups.occupations" }
+        address: { type: [string, "null"] }
+        whatsapp: { type: [string, "null"], description: Stored digits with the dial code }
+        whatsappCountry: { type: [string, "null"], description: ISO country code }
+        whatsappLocal: { type: [string, "null"] }
+        gender: { type: [string, "null"], enum: [MALE, FEMALE, null] }
+        registrationNumber: { type: [string, "null"] }
+        emailVerified: { type: [string, "null"], format: date-time }
+        image: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        role: { type: string }
+        profileComplete: { type: boolean }
+        hasPassword: { type: boolean }
+    ProfileUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 2, maxLength: 100 }
+        fatherName: { type: string, minLength: 2, maxLength: 100 }
+        dateOfBirth: { type: string, format: date }
+        occupation: { type: string }
+        address: { type: string }
+        gender: { type: string, enum: [MALE, FEMALE] }
+        country: { type: string, description: "ISO code; makes whatsapp a local number" }
+        whatsapp: { type: string }
+        image: { type: [string, "null"], description: Only the bundled avatars or the academy's own storage }
+
+    Teacher:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        specialization: { type: string }
+        bio: { type: string }
+        initials: { type: string }
+        imageUrl: { type: [string, "null"] }
+    Course:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        startDate: { type: string }
+        duration: { type: string }
+        level: { type: string }
+        category: { type: string }
+        status: { type: string, enum: [DRAFT, PUBLISHED, ONGOING, COMPLETED, ON_HOLD, COMING_SOON] }
+        priceInrPaise: { type: integer, description: Enrollment fee }
+        monthlyFeeInrPaise: { type: integer, description: Course fee per period }
+        feeFrequency: { type: [string, "null"], enum: [MONTHLY, EVERY_3_MONTHS, EVERY_6_MONTHS, YEARLY, ONE_TIME, null] }
+        teacherId: { type: [string, "null"] }
+        teacher: { oneOf: [{ $ref: "#/components/schemas/Teacher" }, { type: "null" }] }
+    Book:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        author: { type: string }
+        description: { type: string }
+        priceInrPaise: { type: integer }
+        mrpInrPaise: { type: integer }
+        status: { type: string, enum: [AVAILABLE, OUT_OF_STOCK, COMING_SOON] }
+        imagePath: { type: [string, "null"] }
+    Fatwa:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        question: { type: string }
+        category: { type: string }
+        answer: { type: [string, "null"], description: Sanitised HTML }
+        askerName: { type: string, description: '"Anonymous" when the asker chose so' }
+        answeredAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    CartItem:
+      type: object
+      properties:
+        bookId: { type: string }
+        title: { type: string }
+        author: { type: string }
+        priceInrPaise: { type: integer }
+        mrpInrPaise: { type: integer }
+        imagePath: { type: [string, "null"] }
+        quantity: { type: integer }
+    Cart:
+      type: object
+      properties:
+        success: { type: boolean }
+        items: { type: array, items: { $ref: "#/components/schemas/CartItem" } }
+        data: { type: array, items: { $ref: "#/components/schemas/CartItem" }, deprecated: true }
+    CartLine:
+      type: object
+      required: [bookId, quantity]
+      properties:
+        bookId: { type: string }
+        quantity: { type: integer, minimum: 1, maximum: 20 }
+    Comment:
+      type: object
+      properties:
+        id: { type: string }
+        content: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        user:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: [string, "null"] }
+            image: { type: [string, "null"] }
+
+    PaymentSubmission:
+      type: object
+      required: [courseId, paymentType]
+      properties:
+        courseId: { type: string }
+        paymentType: { type: string, enum: [enrollment, monthly] }
+        paymentMonth: { type: string, pattern: "^(0[1-9]|1[0-2])$", description: 'Course fees only; "01" for one-time fees' }
+        paymentYear: { type: string, pattern: "^[0-9]{4}$", description: Course fees only; one of the quote's yearOptions }
+        paymentMethod: { type: string, enum: [upi, bank] }
+        upiTransactionId: { type: string, description: Letters and digits; required unless the amount is 0 }
+        couponId: { type: string, description: 'A coupon id from the quote, or "none"' }
+        expectedAmountPaise: { type: integer, description: The amount shown; a different server price answers 409 }
+        screenshot: { type: string, format: binary, description: Multipart only }
+    BookOrder:
+      type: object
+      required: [items, paymentMethod, upiTransactionId, deliveryAddress, deliveryPinCode, deliveryPhoneNumber]
+      properties:
+        items: { type: array, items: { $ref: "#/components/schemas/CartLine" }, description: In multipart, a JSON string }
+        paymentMethod: { type: string }
+        upiTransactionId: { type: string }
+        deliveryAddress: { type: string, minLength: 10 }
+        deliveryPinCode: { type: string, pattern: "^[0-9]{5,10}$" }
+        deliveryPhoneNumber: { type: string, pattern: "^[0-9]{10,15}$" }
+        notes: { type: string }
+        screenshot: { type: string, format: binary, description: Multipart only }
+
+security:
+  - bearer: []
+
+paths:
+  # ---------------------------------------------------------------- Auth
+  /auth/register:
+    post:
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, acceptPolicies]
+              properties:
+                name: { type: string, maxLength: 100 }
+                email: { type: string, format: email }
+                password: { type: string, minLength: 8, maxLength: 128 }
+                acceptPolicies: { type: boolean, const: true }
+      responses:
+        "200": { description: Signed in (unverified), content: { application/json: { schema: { $ref: "#/components/schemas/Tokens" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /auth/login:
+    post:
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string }
+                password: { type: string }
+      responses:
+        "200": { description: Signed in, content: { application/json: { schema: { $ref: "#/components/schemas/Tokens" } } } }
+        "401": { $ref: "#/components/responses/Error" }
+        "403": { description: "E-mail not verified (code email_not_verified)", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /auth/google:
+    post:
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [idToken]
+              properties:
+                idToken: { type: string, description: Requested with the web OAuth client ID as server client ID }
+      responses:
+        "200": { description: Signed in, content: { application/json: { schema: { $ref: "#/components/schemas/Tokens" } } } }
+        "401": { $ref: "#/components/responses/Error" }
+        "503": { $ref: "#/components/responses/Error" }
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [refreshToken], properties: { refreshToken: { type: string } } }
+      responses:
+        "200": { description: A new pair, content: { application/json: { schema: { $ref: "#/components/schemas/Tokens" } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { refreshToken: { type: string } } }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [email], properties: { email: { type: string, format: email } } }
+      responses:
+        "200": { description: Generic answer, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, message: { type: string } } } } } }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+        "503": { $ref: "#/components/responses/Error" }
+  /auth/resend-verification:
+    post:
+      tags: [Auth]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [email], properties: { email: { type: string, format: email } } }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ------------------------------------------------------------- Account
+  /auth/me:
+    get:
+      tags: [Account]
+      responses:
+        "200": { description: The profile, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, user: { $ref: "#/components/schemas/Profile" } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    put:
+      tags: [Account]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ProfileUpdate" }
+      responses:
+        "200": { description: The updated profile, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, user: { $ref: "#/components/schemas/Profile" } } } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    delete:
+      tags: [Account]
+      description: Deletes the account. Receipts and fee history are kept anonymised.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                password: { type: string, description: Password accounts }
+                confirm: { type: string, const: DELETE, description: Google-only accounts }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "409": { description: A fee payment or book order is still being processed, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /auth/me/photo:
+    post:
+      tags: [Account]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [image]
+              properties:
+                image: { type: string, format: binary }
+      responses:
+        "200": { description: Stored, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, image: { type: string } } } } } }
+        "400": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [Account]
+      responses:
+        "200": { description: Back to the avatar, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, image: { type: string } } } } } }
+  /auth/change-password:
+    post:
+      tags: [Account]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword: { type: string }
+                newPassword: { type: string, minLength: 8, maxLength: 128 }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # -------------------------------------------------------------- Public
+  /app-config:
+    get:
+      tags: [Public]
+      security: []
+      responses:
+        "200":
+          description: Branding, policies, lookups, features and limits
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  brand: { type: object }
+                  policies: { type: object, properties: { version: { type: string }, privacyPolicyUrl: { type: string }, termsUrl: { type: string } } }
+                  links: { type: object }
+                  lookups:
+                    type: object
+                    properties:
+                      countries: { type: array, items: { type: object, properties: { code: { type: string }, name: { type: string }, dialCode: { type: string }, flag: { type: string }, localNumberMinLength: { type: integer }, localNumberMaxLength: { type: integer } } } }
+                      defaultCountryCode: { type: string }
+                      occupations: { type: array, items: { type: object } }
+                      fatwaCategories: { type: array, items: { type: string } }
+                  features: { type: object, properties: { googleSignIn: { type: boolean }, onlinePayments: { type: boolean }, feeWaiverRequests: { type: boolean } } }
+                  limits: { type: object, properties: { maxBookQuantityPerOrder: { type: integer } } }
+  /home:
+    get:
+      tags: [Public]
+      security: []
+      responses:
+        "200":
+          description: Homepage sections
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  dailyInspiration: { type: [object, "null"] }
+                  announcements: { type: array, items: { type: object } }
+                  courses: { type: array, items: { $ref: "#/components/schemas/Course" } }
+                  blogPosts: { type: array, items: { type: object } }
+                  libraryItems: { type: array, items: { type: object } }
+                  books: { type: array, items: { $ref: "#/components/schemas/Book" } }
+                  fatwas: { type: array, items: { $ref: "#/components/schemas/Fatwa" } }
+                  reviews: { type: array, items: { type: object } }
+  /courses:
+    get:
+      tags: [Public]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Search" }, { name: category, in: query, schema: { type: string } }]
+      responses:
+        "200": { description: Courses, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/Course" } } } }] } } } }
+  /courses/{id}:
+    get:
+      tags: [Public]
+      security: [{}, { bearer: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: The course; with a token, the caller's enrollment
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  course: { $ref: "#/components/schemas/Course" }
+                  enrollmentOpen: { type: boolean }
+                  enrollment: { type: [object, "null"], properties: { id: { type: string }, status: { type: string, enum: [pending_approval, awaiting_enrollment_fee, active, completed, rejected] }, rollNumber: { type: [integer, "null"] }, enrollmentFeePending: { type: boolean } } }
+                  announcements: { type: array, items: { type: object } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teachers:
+    get:
+      tags: [Public]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Search" }]
+      responses:
+        "200": { description: Teachers, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/Teacher" } } } }] } } } }
+  /teachers/{id}:
+    get:
+      tags: [Public]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200": { description: The teacher and their courses, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, teacher: { $ref: "#/components/schemas/Teacher" }, courses: { type: array, items: { $ref: "#/components/schemas/Course" } }, totalCount: { type: integer }, page: { type: integer }, pageSize: { type: integer } } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /blog:
+    get:
+      tags: [Public]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Search" }]
+      responses:
+        "200": { description: Published posts, content: { application/json: { schema: { $ref: "#/components/schemas/Page" } } } }
+  /blog/{id}:
+    get:
+      tags: [Public]
+      security: [{}, { bearer: [] }]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200":
+          description: The post
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  post:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      title: { type: string }
+                      excerpt: { type: [string, "null"] }
+                      body: { type: string, description: Sanitised HTML }
+                      images: { type: array, items: { type: object } }
+                      createdBy: { type: [object, "null"] }
+                      comments: { type: array, items: { $ref: "#/components/schemas/Comment" } }
+                      likeCount: { type: integer }
+                      commentCount: { type: integer }
+                      likedByMe: { type: boolean }
+                  commentsPageSize: { type: integer }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /fatwa:
+    get:
+      tags: [Public]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Search" }, { name: category, in: query, schema: { type: string } }]
+      responses:
+        "200": { description: Answered fatwas, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/Fatwa" } } } }] } } } }
+    post:
+      tags: [Public]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, question, askerName, askerEmail]
+              properties:
+                title: { type: string }
+                question: { type: string }
+                category: { type: string }
+                askerName: { type: string }
+                askerEmail: { type: string, format: email }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /fatwa/{id}:
+    get:
+      tags: [Public]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: The fatwa, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, fatwa: { $ref: "#/components/schemas/Fatwa" } } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /library:
+    get:
+      tags: [Public]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Search" }, { name: topic, in: query, schema: { type: string } }]
+      responses:
+        "200": { description: Library items, content: { application/json: { schema: { $ref: "#/components/schemas/Page" } } } }
+  /library/{id}:
+    get:
+      tags: [Public]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: The item, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, item: { type: object } } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /bookstore:
+    get:
+      tags: [Public]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Search" }]
+      responses:
+        "200": { description: Books, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/Book" } } } }] } } } }
+  /bookstore/{id}:
+    get:
+      tags: [Public]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: The book, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, book: { $ref: "#/components/schemas/Book" } } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /announcements:
+    get:
+      tags: [Public]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Search" }]
+      responses:
+        "200": { description: Site announcements, content: { application/json: { schema: { $ref: "#/components/schemas/Page" } } } }
+  /announcements/{id}:
+    get:
+      tags: [Public]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: The announcement, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, announcement: { type: object } } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /daily-inspiration:
+    get:
+      tags: [Public]
+      security: []
+      responses:
+        "200": { description: The current verse or hadith, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, inspiration: { type: [object, "null"] } } } } } }
+  /occupations:
+    get:
+      tags: [Public]
+      security: []
+      responses:
+        "200": { description: Occupation options, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, data: { type: array, items: { type: object } } } } } } }
+  /payment-settings:
+    get:
+      tags: [Public]
+      security: []
+      responses:
+        "200": { description: UPI and bank details for the pay screen, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, settings: { type: object } } } } } }
+  /contact:
+    post:
+      tags: [Public]
+      security: [{}, { bearer: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                phone: { type: string }
+                message: { type: string }
+      responses:
+        "201": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/Error" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ---------------------------------------------------------------- Blog
+  /blog/{id}/comments:
+    get:
+      tags: [Blog]
+      security: []
+      parameters: [{ $ref: "#/components/parameters/Id" }, { name: skip, in: query, schema: { type: integer, minimum: 0 } }]
+      responses:
+        "200": { description: Comments, newest first, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, data: { type: array, items: { $ref: "#/components/schemas/Comment" } } } } } } }
+    post:
+      tags: [Blog]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [content], properties: { content: { type: string, maxLength: 2000 } } }
+      responses:
+        "201": { description: Added, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, comment: { $ref: "#/components/schemas/Comment" } } } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /blog/{id}/like:
+    post:
+      tags: [Blog]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: New state, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, liked: { type: boolean }, likeCount: { type: integer } } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /blog/comments/{commentId}:
+    parameters: [{ name: commentId, in: path, required: true, schema: { type: string } }]
+    patch:
+      tags: [Blog]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [content], properties: { content: { type: string, maxLength: 2000 } } }
+      responses:
+        "200": { description: Edited, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, comment: { $ref: "#/components/schemas/Comment" } } } } } }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Blog]
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "403": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ------------------------------------------------------------- Courses
+  /enrollments:
+    get:
+      tags: [Courses]
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200": { description: The caller's enrollments, content: { application/json: { schema: { $ref: "#/components/schemas/Page" } } } }
+    post:
+      tags: [Courses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [courseId], properties: { courseId: { type: string } } }
+      responses:
+        "200": { description: Applied (or already enrolled), content: { application/json: { schema: { type: object } } } }
+        "400": { description: Course closed, or profile incomplete (profileIncomplete true), content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "403": { description: E-mail not verified, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /courses/{id}/announcements:
+    get:
+      tags: [Courses]
+      parameters:
+        - { $ref: "#/components/parameters/Id" }
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+        - { name: coursePage, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Course-wide announcements and private messages
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  courseWide: { type: array, items: { type: object } }
+                  courseWideTotal: { type: integer }
+                  personal: { type: array, items: { type: object } }
+                  personalTotal: { type: integer }
+  /student/attendance:
+    get:
+      tags: [Courses]
+      parameters: [{ name: courseId, in: query, schema: { type: string } }]
+      responses:
+        "200": { description: Attendance per enrollment, content: { application/json: { schema: { type: object } } } }
+  /student/grades:
+    get:
+      tags: [Courses]
+      parameters: [{ name: courseId, in: query, schema: { type: string } }]
+      responses:
+        "200": { description: Grades per enrollment, content: { application/json: { schema: { type: object } } } }
+  /waiver-requests:
+    get:
+      tags: [Courses]
+      responses:
+        "200": { description: The caller's waiver requests, content: { application/json: { schema: { type: object } } } }
+    post:
+      tags: [Courses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [courseId, reason]
+              properties:
+                courseId: { type: string }
+                feeType: { type: string, enum: [enrollment, course, both], default: both }
+                reason: { type: string, minLength: 10, maxLength: 1000 }
+      responses:
+        "200": { description: Requested, content: { application/json: { schema: { type: object } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Error" }
+  /reviews:
+    get:
+      tags: [Courses]
+      responses:
+        "200": { description: The caller's reviews, content: { application/json: { schema: { type: object } } } }
+    post:
+      tags: [Courses]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quote, rating]
+              properties:
+                quote: { type: string }
+                rating: { type: integer, minimum: 1, maximum: 5 }
+                course: { type: string }
+                location: { type: string }
+      responses:
+        "200": { description: Submitted for approval, content: { application/json: { schema: { type: object } } } }
+        "400": { $ref: "#/components/responses/Error" }
+
+  # ------------------------------------------------------------ Payments
+  /payments/quote:
+    get:
+      tags: [Payments]
+      parameters:
+        - { name: courseId, in: query, required: true, schema: { type: string } }
+        - { name: type, in: query, required: true, schema: { type: string, enum: [enrollment, course] } }
+      responses:
+        "200":
+          description: What to show on the pay screen
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  canPay: { type: boolean }
+                  reason: { type: [string, "null"] }
+                  baseAmountPaise: { type: integer }
+                  coupons:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        code: { type: string }
+                        percentage: { type: integer }
+                        type: { type: string, enum: [DEFAULT, SPECIAL] }
+                        validUntil: { type: string, format: date-time }
+                        amountPaise: { type: integer }
+                  feeFrequency: { type: string }
+                  feeFrequencyLabel: { type: string }
+                  paymentType: { type: string }
+                  oneTimeFee: { type: boolean }
+                  yearOptions: { type: array, items: { type: string } }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /payments/submit:
+    post:
+      tags: [Payments]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/PaymentSubmission" }
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentSubmission" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { description: E-mail not verified, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "409": { description: Amount changed or already submitted, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /payments/history:
+    get:
+      tags: [Payments]
+      responses:
+        "200": { description: Submissions and payment records, content: { application/json: { schema: { type: object } } } }
+  /payments/{id}/receipt:
+    get:
+      tags: [Payments]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: The receipt, content: { application/pdf: { schema: { type: string, format: binary } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: Not issued yet, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+
+  # ----------------------------------------------------------- Bookstore
+  /bookstore/cart:
+    get:
+      tags: [Bookstore]
+      responses:
+        "200": { description: The cart, content: { application/json: { schema: { $ref: "#/components/schemas/Cart" } } } }
+    post:
+      tags: [Bookstore]
+      description: Replaces the cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { items: { type: array, items: { $ref: "#/components/schemas/CartLine" } } } }
+      responses:
+        "200": { description: The cart, content: { application/json: { schema: { $ref: "#/components/schemas/Cart" } } } }
+    patch:
+      tags: [Bookstore]
+      description: Sets one line; quantity 0 removes it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [bookId, quantity], properties: { bookId: { type: string }, quantity: { type: integer, minimum: 0 } } }
+      responses:
+        "200": { description: The cart, content: { application/json: { schema: { $ref: "#/components/schemas/Cart" } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /bookstore/checkout-quote:
+    post:
+      tags: [Bookstore]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [items], properties: { items: { type: array, items: { $ref: "#/components/schemas/CartLine" } } } }
+      responses:
+        "200":
+          description: Priced order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  lines: { type: array, items: { type: object, properties: { bookId: { type: string }, title: { type: string }, quantity: { type: integer }, unitPriceInrPaise: { type: integer }, lineTotalInrPaise: { type: integer } } } }
+                  subtotalAmountInrPaise: { type: integer }
+                  shippingChargeInrPaise: { type: integer }
+                  totalAmountInrPaise: { type: integer }
+        "400": { $ref: "#/components/responses/Error" }
+        "409": { description: Not enough stock, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /bookstore/orders:
+    get:
+      tags: [Bookstore]
+      responses:
+        "200": { description: The caller's orders, content: { application/json: { schema: { type: object } } } }
+    post:
+      tags: [Bookstore]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/BookOrder" }
+          application/json:
+            schema: { $ref: "#/components/schemas/BookOrder" }
+      responses:
+        "200": { description: Placed, content: { application/json: { schema: { type: object } } } }
+        "400": { $ref: "#/components/responses/Error" }
+        "403": { description: E-mail not verified, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "409": { $ref: "#/components/responses/Error" }
+  /bookstore/orders/{id}:
+    get:
+      tags: [Bookstore]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: The order, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, order: { type: object } } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ------------------------------------------------------- Notifications
+  /notifications:
+    get:
+      tags: [Notifications]
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { name: filter, in: query, schema: { type: string, enum: [all, unread] } }]
+      responses:
+        "200": { description: Notifications with unreadCount, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { unreadCount: { type: integer } } }] } } } }
+    patch:
+      tags: [Notifications]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { notificationId: { type: string }, markAllRead: { type: boolean } } }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+  /notifications/{id}:
+    get:
+      tags: [Notifications]
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: The notification (now read), content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, notification: { type: object } } } } } }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /notifications/device-token:
+    post:
+      tags: [Notifications]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [token], properties: { token: { type: string }, platform: { type: string, enum: [android, ios, web], default: android } } }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "409": { $ref: "#/components/responses/Error" }
+    delete:
+      tags: [Notifications]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [token], properties: { token: { type: string } } }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }

@@ -173,7 +173,7 @@ export async function seedDemoBulkNotifications(prisma: PrismaClient) {
 
 /** Additional fatwa questions (pending and answered). */
 export async function seedDemoBulkFatwa(prisma: PrismaClient) {
-  const answererId = "seed-demo-teacher-user-1";
+  const answererId = demoTeacherUserId(teachers[0].id);
 
   for (let index = 1; index <= 50; index += 1) {
     const id = `seed-demo-fatwa-bulk-${String(index).padStart(2, "0")}`;
@@ -292,7 +292,7 @@ export async function seedDemoBulkSiteAnnouncements(prisma: PrismaClient) {
 
 /** Additional daily inspirations (Quran and Hadith). */
 export async function seedDemoBulkDailyInspirations(prisma: PrismaClient) {
-  const authorId = "seed-demo-teacher-user-1";
+  const authorId = demoTeacherUserId(teachers[0].id);
 
   for (let index = 1; index <= 40; index += 1) {
     const id = `seed-demo-inspiration-bulk-${String(index).padStart(2, "0")}`;

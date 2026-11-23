@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublishedBlogPostsPaginated } from "@/services/blogs";
 import { parseApiPagination } from "@/utils/api-pagination";
+import { sanitizeRichText } from "@/services/rich-text";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.items,
+      data: result.items.map((post) => ({ ...post, body: sanitizeRichText(post.body) })),
       totalCount: result.totalCount,
       page,
       pageSize,

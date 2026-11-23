@@ -4,8 +4,7 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getClientIp, rateLimit, RATE_LIMIT_MESSAGE, RATE_LIMITS } from "@/services/rate-limit";
 import { auth } from "@/services/auth";
-import { normalizeContactPhone } from "@/services/contact-inquiries";
-import { prisma } from "@/utils/prisma";
+import { createContactInquiry } from "@/services/contact-inquiries";
 import { contactInquirySchema } from "@/utils/validations";
 
 export type SubmitContactInquiryState = {
@@ -34,29 +33,12 @@ export async function submitContactInquiry(
     return { error: RATE_LIMIT_MESSAGE };
   }
 
-  const name = session?.user?.name?.trim() || parsed.data.name;
-  const email = session?.user?.email?.toLowerCase().trim() || parsed.data.email;
-
-  // Verify the session user actually exists in the DB before linking via FK.
-  // A stale session cookie can reference a userId that no longer exists,
-  // which would cause a P2003 foreign key constraint violation.
-  let userId: string | null = null;
-  if (session?.user?.id) {
-    const userExists = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { id: true },
-    });
-    userId = userExists?.id ?? null;
-  }
-
-  await prisma.contactInquiry.create({
-    data: {
-      userId,
-      name,
-      email,
-      phone: normalizeContactPhone(parsed.data.phone ?? ""),
-      message: parsed.data.message,
-    },
+  await createContactInquiry({
+    sender: session?.user?.id ? { id: session.user.id, name: session.user.name, email: session.user.email } : null,
+    name: parsed.data.name,
+    email: parsed.data.email,
+    phone: parsed.data.phone,
+    message: parsed.data.message,
   });
 
   redirect("/contact?submitted=1");

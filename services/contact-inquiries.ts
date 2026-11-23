@@ -58,3 +58,30 @@ export async function getPendingContactInquiryCount() {
 export function normalizeContactPhone(phone: string) {
   return phone.replace(/\D/g, "");
 }
+
+/**
+ * Stores a contact-form message (website and mobile app). A signed-in
+ * sender's account name and e-mail take precedence over the typed ones, and
+ * the inquiry is linked to the account only when it still exists.
+ */
+export async function createContactInquiry(input: {
+  sender: { id: string; name?: string | null; email?: string | null } | null;
+  name: string;
+  email: string;
+  phone?: string | null;
+  message: string;
+}) {
+  const name = input.sender?.name?.trim() || input.name;
+  const email = input.sender?.email?.toLowerCase().trim() || input.email;
+
+  let userId: string | null = null;
+  if (input.sender?.id) {
+    const user = await prisma.user.findFirst({ where: { id: input.sender.id, deletedAt: null }, select: { id: true } });
+    userId = user?.id ?? null;
+  }
+
+  return withDbErrorHandling(() => prisma.contactInquiry.create({
+    data: { userId, name, email, phone: normalizeContactPhone(input.phone ?? ""), message: input.message },
+    select: { id: true, createdAt: true },
+  }), "Database operation failed");
+}

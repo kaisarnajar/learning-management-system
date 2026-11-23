@@ -4,6 +4,7 @@ import { prisma } from "@/utils/prisma";
 import { fatwaQuestionSchema } from "@/utils/validations";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 import { parseApiPagination } from "@/utils/api-pagination";
+import { toPublicFatwaDto } from "@/services/api-dto";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.items,
+      data: result.items.map(toPublicFatwaDto),
       totalCount: result.totalCount,
       page,
       pageSize,

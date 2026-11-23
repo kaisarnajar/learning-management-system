@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublishedTeachersPaginated } from "@/services/teachers";
 import { parseApiPagination } from "@/utils/api-pagination";
+import { toTeacherSummaryDto } from "@/services/api-dto";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.items,
+      data: result.items.map(toTeacherSummaryDto),
       totalCount: result.totalCount,
       page,
       pageSize,

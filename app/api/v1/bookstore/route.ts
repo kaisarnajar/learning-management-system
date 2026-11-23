@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublishedBooksPaginated } from "@/services/bookstore";
 import { parseApiPagination } from "@/utils/api-pagination";
+import { toPublicBookDto } from "@/services/api-dto";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: result.items,
+      data: result.items.map(toPublicBookDto),
       totalCount: result.totalCount,
       page,
       pageSize,

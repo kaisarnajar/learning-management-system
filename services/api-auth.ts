@@ -56,9 +56,20 @@ async function signAccessToken(identity: ApiIdentity, sessionId: string): Promis
   });
 }
 
+/** Revoked rows are kept this long so a replayed refresh token is still recognised as used. */
+const REVOKED_ROW_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
 async function createSessionRow(userId: string): Promise<{ id: string; refreshToken: string; expiresAt: Date }> {
   const refreshToken = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000);
+  // Every refresh rotates the row, so an active app adds one row an hour.
+  // Prune this user's expired rows and long-revoked ones as new ones are made.
+  await prisma.apiRefreshToken.deleteMany({
+    where: {
+      userId,
+      OR: [{ expiresAt: { lt: new Date() } }, { revokedAt: { lt: new Date(Date.now() - REVOKED_ROW_RETENTION_MS) } }],
+    },
+  });
   const row = await prisma.apiRefreshToken.create({
     data: { userId, tokenHash: hashRefreshToken(refreshToken), expiresAt },
     select: { id: true },

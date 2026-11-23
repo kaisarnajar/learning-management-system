@@ -198,6 +198,26 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
     const post = (handler: typeof refresh, path: string, json: unknown, headers: Record<string, string> = {}) =>
       handler(apiRequest(path, { method: "POST", json, headers }));
 
+    it("prunes the user's expired and long-revoked sessions when a new one starts", async () => {
+      const student = await signedInStudent();
+      const old = new Date(Date.now() - 30 * 86_400_000);
+      await prisma.apiRefreshToken.createMany({
+        data: [
+          { userId: student.user.id, tokenHash: "expired", expiresAt: old },
+          { userId: student.user.id, tokenHash: "revoked-long-ago", expiresAt: new Date(Date.now() + 86_400_000), revokedAt: old },
+          { userId: student.user.id, tokenHash: "revoked-recently", expiresAt: new Date(Date.now() + 86_400_000), revokedAt: new Date() },
+        ],
+      });
+
+      const response = await post(refresh, "/api/v1/auth/refresh", { refreshToken: student.tokens.refreshToken });
+      expect(response.status).toBe(200);
+
+      const hashes = (await prisma.apiRefreshToken.findMany({ where: { userId: student.user.id }, select: { tokenHash: true } })).map((r) => r.tokenHash);
+      expect(hashes).not.toContain("expired");
+      expect(hashes).not.toContain("revoked-long-ago");
+      expect(hashes).toContain("revoked-recently");
+    });
+
     it("rotates the pair, invalidating the old refresh token and old access token", async () => {
       const student = await signedInStudent();
 

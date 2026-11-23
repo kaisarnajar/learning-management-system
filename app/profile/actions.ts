@@ -4,13 +4,11 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/services/auth-actions";
 import { buildStoredProfileWhatsApp } from "@/services/countries";
-import { prisma } from "@/utils/prisma";
 import { Occupation, Gender } from "@prisma/client";
 import { profileUpdateSchema } from "@/utils/validations";
-import { withDbErrorHandling } from "@/utils/db-error";
 import { saveProfileImage, validateProfileImage, deleteProfileImage } from "@/services/profile-upload";
 import { isUploadError } from "@/services/storage";
-import { generateNextRegistrationNumberTx } from "@/services/registration";
+import { applyStudentProfileChanges } from "@/services/profile-update";
 import { getUserProfile } from "@/services/profile";
 
 export type ProfileUpdateState = {
@@ -77,58 +75,19 @@ export async function updateProfile(
     }
   }
 
-  const updateData: {
-    name: string;
-    fatherName: string;
-    dateOfBirth: Date;
-    occupation: Occupation;
-    address: string;
-    whatsapp: string;
-    gender: Gender;
-    image?: string;
-    registrationNumber?: string;
-  } = {
-    name: parsed.data.name,
-    fatherName: parsed.data.fatherName,
-    dateOfBirth: new Date(parsed.data.dateOfBirth),
-    occupation: parsed.data.occupation as Occupation,
-    address: parsed.data.address,
-    whatsapp: buildStoredProfileWhatsApp(parsed.data.country, parsed.data.whatsapp),
-    gender: parsed.data.gender as Gender,
-  };
-
-  if (newImageUrl) {
-    updateData.image = newImageUrl;
-  }
-
-  // Assign registration number if the profile is newly completed or already complete but missing the number
-  const isNowComplete = Boolean(
-    updateData.name?.trim() &&
-      updateData.fatherName?.trim() &&
-      updateData.dateOfBirth &&
-      updateData.occupation &&
-      updateData.address?.trim() &&
-      updateData.whatsapp?.trim() &&
-      updateData.gender &&
-      currentProfile?.email?.trim()
-  );
-
-  const needsRegistrationNumber = isNowComplete && !currentProfile?.registrationNumber;
-  // Registration year is when the user account was created
-  const registrationYear = currentProfile?.createdAt?.getFullYear() ?? new Date().getFullYear();
-
   try {
-    // The number is allocated and stored in one transaction, so a rolled-back
-    // update never burns a number and two concurrent completions cannot share one.
-    await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
-        if (needsRegistrationNumber) {
-          updateData.registrationNumber = await generateNextRegistrationNumberTx(tx, registrationYear);
-        }
-        await tx.user.update({
-          where: { id: session.user.id },
-          data: updateData,
-        });
-      }), "Database operation failed");
+    // Allocates the registration number in the same transaction when this
+    // save completes the profile (services/profile-update.ts).
+    await applyStudentProfileChanges(session.user.id, {
+      name: parsed.data.name,
+      fatherName: parsed.data.fatherName,
+      dateOfBirth: new Date(parsed.data.dateOfBirth),
+      occupation: parsed.data.occupation as Occupation,
+      address: parsed.data.address,
+      whatsapp: buildStoredProfileWhatsApp(parsed.data.country, parsed.data.whatsapp),
+      gender: parsed.data.gender as Gender,
+      ...(newImageUrl ? { image: newImageUrl } : {}),
+    });
   } catch (error) {
     // The row still points at the old photo; drop the one we just stored.
     if (newImageUrl && !newImageUrl.startsWith("/assets/")) await deleteProfileImage(newImageUrl);

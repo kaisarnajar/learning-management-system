@@ -186,8 +186,29 @@ const CASES: Record<string, Cases> = {
     invalid: ["http://files.example.org/a.png", "https://evil.example.com/a.png", "file:///etc/passwd", "/etc/passwd", "http://169.254.169.254/latest"],
   },
   apiProfileUpdateSchema: {
-    valid: [{}, { name: "New Name" }, { whatsapp: "+919876543210", image: null }, { image: "https://files.example.org/a.png" }],
-    invalid: [{ whatsapp: "123" }, { role: "ADMIN" }, { image: "https://evil.example.com/a.png" }],
+    valid: [
+      {},
+      { name: "New Name" },
+      { whatsapp: "+919876543210", image: null },
+      { image: "https://files.example.org/a.png" },
+      // With a country the number is local and follows that country's length.
+      { country: "IN", whatsapp: "9876543210" },
+    ],
+    invalid: [
+      { whatsapp: "123" },
+      { role: "ADMIN" },
+      { image: "https://evil.example.com/a.png" },
+      { country: "IN", whatsapp: "12345" },
+      { country: "XX", whatsapp: "9876543210" },
+    ],
+  },
+  changePasswordSchema: {
+    valid: [{ currentPassword: "old-password", newPassword: "new-password-1" }],
+    invalid: [
+      { currentPassword: "", newPassword: "new-password-1" },
+      { currentPassword: "old-password", newPassword: "short" },
+      { currentPassword: "same-password", newPassword: "same-password" },
+    ],
   },
   announcementCategoryEnum: { valid: ["GENERAL_NOTICE"], invalid: ["OTHER"] },
   blogPostSchema: {

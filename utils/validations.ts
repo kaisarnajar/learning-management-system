@@ -114,6 +114,20 @@ export const registerSchema = z.object({
   }),
 });
 
+/** Signed-in password change (mobile API). */
+export const changePasswordSchema = z
+  .object({
+    currentPassword: z.string("Enter your current password.").min(1, "Enter your current password."),
+    newPassword: z
+      .string("Enter a new password.")
+      .min(8, "Password must be at least 8 characters.")
+      .max(128, "Password must be at most 128 characters."),
+  })
+  .refine((v) => v.currentPassword !== v.newPassword, {
+    message: "The new password must be different from the current one.",
+    path: ["newPassword"],
+  });
+
 export const forgotPasswordSchema = z.object({
   email: z.string().trim().email("Enter a valid email address."),
 });
@@ -229,32 +243,35 @@ export const profileFieldsSchema = z
     gender: genderEnum,
   });
 
-export const profileUpdateSchema = profileFieldsSchema
-  .superRefine((data, ctx) => {
-    const country = getProfileCountryOrDefault(data.country);
-    const digits = data.whatsapp.replace(/\D/g, "");
+/** The WhatsApp number is a local number for the selected country (same rule on web and mobile). */
+function refineLocalWhatsApp(data: { country?: string; whatsapp?: string }, ctx: z.RefinementCtx) {
+  if (data.whatsapp === undefined) return;
+  const country = getProfileCountryOrDefault(data.country);
+  const digits = data.whatsapp.replace(/\D/g, "");
 
-    if (!/^\d+$/.test(digits)) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "WhatsApp number must contain only digits.",
-        path: ["whatsapp"],
-      });
-      return;
-    }
+  if (!/^\d+$/.test(digits)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "WhatsApp number must contain only digits.",
+      path: ["whatsapp"],
+    });
+    return;
+  }
 
-    if (!isValidProfileLocalNumber(country, digits)) {
-      const lengthMessage =
-        country.localNumberMinLength === country.localNumberMaxLength
-          ? `WhatsApp number must be exactly ${country.localNumberMinLength} digits.`
-          : `WhatsApp number must be ${country.localNumberMinLength} to ${country.localNumberMaxLength} digits.`;
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: lengthMessage,
-        path: ["whatsapp"],
-      });
-    }
-  });
+  if (!isValidProfileLocalNumber(country, digits)) {
+    const lengthMessage =
+      country.localNumberMinLength === country.localNumberMaxLength
+        ? `WhatsApp number must be exactly ${country.localNumberMinLength} digits.`
+        : `WhatsApp number must be ${country.localNumberMinLength} to ${country.localNumberMaxLength} digits.`;
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: lengthMessage,
+      path: ["whatsapp"],
+    });
+  }
+}
+
+export const profileUpdateSchema = profileFieldsSchema.superRefine(refineLocalWhatsApp);
 
 /**
  * Profile image URLs may only point at hosts the application itself stores
@@ -282,18 +299,29 @@ export const profileImageUrlSchema = z
   .max(2048)
   .refine(isAllowedProfileImageUrl, "Profile image must be hosted on the academy's storage.");
 
-/** Mobile API profile update: every field optional, no unknown keys, image host-restricted. */
+/**
+ * Mobile API profile update: every field optional, no unknown keys, image
+ * host-restricted. With `country` (ISO code, as on the web form) `whatsapp` is
+ * the local number and follows that country's length rule; without it,
+ * `whatsapp` is a full international number (7 to 15 digits, legacy clients).
+ */
 export const apiProfileUpdateSchema = profileFieldsSchema
-  .omit({ country: true })
   .extend({
     whatsapp: z
       .string()
       .trim()
-      .regex(/^\+?\d{7,15}$/, "WhatsApp number must be 7 to 15 digits."),
+      .regex(/^\+?\d{4,15}$/, "WhatsApp number must be 4 to 15 digits."),
     image: profileImageUrlSchema.nullable(),
   })
   .partial()
-  .strict();
+  .strict()
+  .superRefine((data, ctx) => {
+    if (data.country) {
+      refineLocalWhatsApp(data, ctx);
+    } else if (data.whatsapp !== undefined && !/^\+?\d{7,15}$/.test(data.whatsapp)) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "WhatsApp number must be 7 to 15 digits.", path: ["whatsapp"] });
+    }
+  });
 
 export const announcementCategoryEnum = z.enum([
   "EXAMS_TESTS",

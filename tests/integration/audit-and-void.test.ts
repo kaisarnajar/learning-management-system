@@ -2,13 +2,13 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import { voidApprovedPayment, voidManualPaymentRecord } from "@/app/admin/payments/actions";
-import { processEnrollmentPayment } from "@/services/payments";
+import { processEnrollmentPayment, processMonthlyPayment } from "@/services/payments";
 import { confirmMonthlyPayment } from "@/app/admin/payments/actions";
 import { getIncomeRecordsPaginated, getIncomeTotal } from "@/services/finance-income";
 import { parseFinanceFilters } from "@/services/finance-filters";
 import { getAuditLogPaginated } from "@/services/audit";
 import { getPaymentRecordsForUserPaginated, getPaymentSubmissionsForUser } from "@/services/payments";
-import { createCourse, createUser, resetDb, runAction, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB } from "../helpers/db";
+import { createCourse, createEnrollment, createUser, resetDb, runAction, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB } from "../helpers/db";
 
 const allTime = () => parseFinanceFilters({ preset: "all_time" });
 
@@ -107,6 +107,21 @@ describe.skipIf(SKIP_WITHOUT_DB)("voiding, finance totals and the audit trail", 
 
     const record = await prisma.paymentRecord.findUniqueOrThrow({ where: { id: fee.submission.paymentRecordId! } });
     expect(record.invoiceNumber).toBe(invoiceNumber);
+  });
+
+  it("lets the student pay a fee period again after its payment was voided", async () => {
+    const student = await createUser();
+    const course = await createCourse();
+    await createEnrollment(student.id, course.id);
+
+    expect(await processMonthlyPayment(student.id, course.id, "03", "2026", "upi", "UTR8100001", null)).toEqual({ success: true });
+    const first = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
+    await runAction(() => confirmMonthlyPayment(first.id));
+    await runAction(() => voidApprovedPayment(first.id, "recorded against the wrong month"));
+
+    // The voided submission is soft-deleted; it must not block a new one for the same period.
+    expect(await processMonthlyPayment(student.id, course.id, "03", "2026", "upi", "UTR8100002", null)).toEqual({ success: true });
+    expect(await prisma.coursePaymentSubmission.count({ where: { userId: student.id, deletedAt: null } })).toBe(1);
   });
 
   it("does not let a non-admin void anything", async () => {

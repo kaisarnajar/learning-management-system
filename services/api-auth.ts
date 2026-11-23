@@ -30,6 +30,7 @@ export interface ApiUserPayload {
   name?: string | null;
   role: string;
   registrationNumber?: string | null;
+  emailVerified: boolean;
 }
 
 export type ApiSessionTokens = {
@@ -162,7 +163,7 @@ export async function authenticateApiRequest(
 
     const dbUser = await prisma.user.findFirst({
       where: { id: payload.id, deletedAt: null },
-      select: { id: true, email: true, name: true, registrationNumber: true },
+      select: { id: true, email: true, name: true, registrationNumber: true, emailVerified: true },
     });
     if (!dbUser) {
       return { user: null, error: "User account not found" };
@@ -176,6 +177,7 @@ export async function authenticateApiRequest(
         name: dbUser.name,
         registrationNumber: dbUser.registrationNumber,
         role,
+        emailVerified: Boolean(dbUser.emailVerified),
       },
       sessionId: payload.sid,
     };
@@ -205,4 +207,16 @@ export async function requireStudentApiAuth(req: NextRequest): Promise<
   }
 
   return { user, sessionId, errorResponse: null };
+}
+
+/**
+ * Enrolling, paying and ordering need a verified e-mail address, as on the
+ * website. Returns the 403 to send, or null when the address is verified.
+ */
+export function requireVerifiedEmail(user: ApiUserPayload, action: string): NextResponse | null {
+  if (user.emailVerified) return null;
+  return NextResponse.json(
+    { success: false, code: "email_not_verified", error: `Please verify your email to ${action}.` },
+    { status: 403 },
+  );
 }

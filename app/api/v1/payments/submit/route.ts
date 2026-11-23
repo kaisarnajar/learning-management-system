@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireStudentApiAuth } from "@/services/api-auth";
+import { requireStudentApiAuth, requireVerifiedEmail } from "@/services/api-auth";
 import { processMonthlyPayment, processEnrollmentPayment } from "@/services/payments";
 import { isUpiConfigured } from "@/services/upi";
 import { paymentTypeFromText } from "@/services/status-compat";
@@ -9,6 +9,8 @@ import { enrollmentPaymentSubmitSchema, monthlyPaymentSubmitSchema } from "@/uti
 export async function POST(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
   if (errorResponse) return errorResponse;
+  const unverified = requireVerifiedEmail(user, "submit payments");
+  if (unverified) return unverified;
 
   if (!(await isUpiConfigured())) {
     return NextResponse.json(

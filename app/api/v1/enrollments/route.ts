@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireStudentApiAuth } from "@/services/api-auth";
+import { requireStudentApiAuth, requireVerifiedEmail } from "@/services/api-auth";
 import { toEnrollmentDto } from "@/services/api-dto";
 import { prisma } from "@/utils/prisma";
 import { getCourseById } from "@/services/courses";
@@ -44,6 +44,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
   if (errorResponse) return errorResponse;
+  const unverified = requireVerifiedEmail(user, "enroll in a course");
+  if (unverified) return unverified;
 
   try {
     const body = await request.json();

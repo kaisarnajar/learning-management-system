@@ -7,6 +7,9 @@ import { PATCH as cartPatch } from "@/app/api/v1/bookstore/cart/route";
 import { POST as checkoutQuote } from "@/app/api/v1/bookstore/checkout-quote/route";
 import { GET as orderById } from "@/app/api/v1/bookstore/orders/[id]/route";
 import { GET as notificationById } from "@/app/api/v1/notifications/[id]/route";
+import { POST as enroll } from "@/app/api/v1/enrollments/route";
+import { POST as submitPayment } from "@/app/api/v1/payments/submit/route";
+import { POST as placeOrder } from "@/app/api/v1/bookstore/orders/route";
 import { createBook, createCourse, createEnrollment, resetDb, setPaymentSettings, SKIP_WITHOUT_DB } from "../helpers/db";
 import { apiRequest, jsonOf, routeParams, signedInStudent } from "../helpers/api";
 
@@ -134,6 +137,25 @@ describe.skipIf(SKIP_WITHOUT_DB)("mobile API: student screens", () => {
       expect(mine.order).toMatchObject({ id: order.id, status: "PENDING_VERIFICATION", paymentRecordId: null });
       expect(mine.order.items).toHaveLength(1);
       expect((await orderById(apiRequest("/x", { headers: other.headers }), routeParams({ id: order.id }))).status).toBe(404);
+    });
+  });
+
+  describe("e-mail verification", () => {
+    it("is required to enrol, pay and order, as on the website", async () => {
+      const course = await createCourse();
+      const unverified = await signedInStudent({ emailVerified: null });
+      const post = (handler: typeof enroll, json: unknown) =>
+        handler(apiRequest("/x", { method: "POST", headers: unverified.headers, json }));
+
+      for (const response of [
+        await post(enroll, { courseId: course.id }),
+        await post(submitPayment, { courseId: course.id, paymentType: "monthly" }),
+        await post(placeOrder, { items: [] }),
+      ]) {
+        expect(response.status).toBe(403);
+        expect(await jsonOf(response)).toMatchObject({ success: false, code: "email_not_verified" });
+      }
+      expect(await prisma.enrollment.count()).toBe(0);
     });
   });
 

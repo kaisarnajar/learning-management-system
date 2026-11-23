@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireStudentApiAuth } from "@/services/api-auth";
+import { requireStudentApiAuth, requireVerifiedEmail } from "@/services/api-auth";
 import { getBookOrdersForUser } from "@/services/bookstore";
 import { validatePaymentScreenshot } from "@/services/payment-upload";
 import { bookstoreCheckoutSchema } from "@/utils/validations";
@@ -27,6 +27,8 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
   if (errorResponse) return errorResponse;
+  const unverified = requireVerifiedEmail(user, "place a book order");
+  if (unverified) return unverified;
 
   try {
     let rawItems: string | null = null;

@@ -24,9 +24,9 @@ test("buy a book, then the admin approves, ships and refunds the order", async (
     await page.waitForURL(/\/profile\/cart\/checkout/);
 
     await page.getByLabel(/transaction \/ utr reference/i).fill("BOOKUTR0001");
-    await page.locator("#checkout-address").fill("12 Example Street, Srinagar, J&K");
-    await page.locator("#checkout-pincode").fill("190001");
-    await page.locator("#checkout-phone").fill("9876543210");
+    await page.locator("#checkout-address:visible").fill("12 Example Street, Srinagar, J&K");
+    await page.locator("#checkout-pincode:visible").fill("190001");
+    await page.locator("#checkout-phone:visible").fill("9876543210");
     await page.getByRole("button", { name: /submit order for approval/i }).click();
     await page.waitForURL(/\/profile\/cart\?submitted=1/);
 

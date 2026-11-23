@@ -10,10 +10,10 @@ test("register, verify, complete the profile, enrol, pay, get approved and downl
   test.setTimeout(240_000);
   await test.step("register with e-mail and password", async () => {
     await page.goto("/register");
-    await page.locator("#name").fill(STUDENT.name);
-    await page.locator("#email").fill(STUDENT.email);
-    await page.locator("#password").fill(STUDENT.password);
-    await page.locator("#acceptPolicies").check();
+    await page.locator("#name:visible").fill(STUDENT.name);
+    await page.locator("#email:visible").fill(STUDENT.email);
+    await page.locator("#password:visible").fill(STUDENT.password);
+    await page.locator("#acceptPolicies:visible").check();
     await page.getByRole("button", { name: /register with email/i }).click();
     // An unverified address cannot sign in yet, so the form sends the student to the login page.
     await page.waitForURL(/\/login\?registered=1/);
@@ -23,8 +23,8 @@ test("register, verify, complete the profile, enrol, pay, get approved and downl
   });
 
   await test.step("an unverified account cannot sign in", async () => {
-    await page.locator("#email").fill(STUDENT.email);
-    await page.locator("#password").fill(STUDENT.password);
+    await page.locator("#email:visible").fill(STUDENT.email);
+    await page.locator("#password:visible").fill(STUDENT.password);
     await page.getByRole("button", { name: /sign in with email/i }).click();
     await expect(page.getByText(/please verify your email/i)).toBeVisible();
   });
@@ -43,12 +43,12 @@ test("register, verify, complete the profile, enrol, pay, get approved and downl
   await test.step("complete the profile", async () => {
     await page.goto("/profile");
     await page.getByRole("button", { name: /edit details/i }).click();
-    await page.locator("#fatherName").fill(COMPLETE_PROFILE.fatherName);
-    await page.locator("#gender").selectOption({ label: "Male" });
-    await page.locator("#dateOfBirth").fill("1995-04-12");
-    await page.locator("#occupation").selectOption({ label: "Student" });
-    await page.locator("#address").fill(COMPLETE_PROFILE.address);
-    await page.locator("#whatsapp").fill("9876543210");
+    await page.locator("#fatherName:visible").fill(COMPLETE_PROFILE.fatherName);
+    await page.locator("#gender:visible").selectOption({ label: "Male" });
+    await page.locator("#dateOfBirth:visible").fill("1995-04-12");
+    await page.locator("#occupation:visible").selectOption({ label: "Student" });
+    await page.locator("#address:visible").fill(COMPLETE_PROFILE.address);
+    await page.locator("#whatsapp:visible").fill("9876543210");
     await page.getByRole("button", { name: /save profile/i }).click();
     await expect.poll(async () => (await db().user.findUniqueOrThrow({ where: { email: STUDENT.email } })).fatherName).toBe(COMPLETE_PROFILE.fatherName);
   });

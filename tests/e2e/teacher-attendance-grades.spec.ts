@@ -10,7 +10,7 @@ const COURSE = `/teacher/courses/${FIXTURES.course.id}`;
 test.describe("teacher portal", () => {
   test("takes attendance and the student sees it", async ({ page, browser }) => {
     await page.goto(`${COURSE}/attendance/new`);
-    await page.locator("#attendance-date").fill("2026-03-10");
+    await page.locator("#attendance-date:visible").fill("2026-03-10");
     await rowWith(page, FIXTURES.classmate.name).getByRole("button", { name: "Absent" }).click();
     await page.getByRole("button", { name: /save attendance/i }).click();
     await page.waitForURL(`**${COURSE}/attendance`);
@@ -33,9 +33,9 @@ test.describe("teacher portal", () => {
 
   test("records marks on a grade card and the student sees them", async ({ page, browser }) => {
     await page.goto(`${COURSE}/grades/new`);
-    await page.locator("#exam-title").fill("Mid-Term");
-    await page.locator("#exam-date").fill("2026-03-12");
-    await page.locator("#max-marks").fill("50");
+    await page.locator("#exam-title:visible").fill("Mid-Term");
+    await page.locator("#exam-date:visible").fill("2026-03-12");
+    await page.locator("#max-marks:visible").fill("50");
     await page.getByLabel(`Marks for ${FIXTURES.classmate.name}`).fill("42");
     await page.getByRole("button", { name: /save grades/i }).click();
     await page.waitForURL(`**${COURSE}/grades`);

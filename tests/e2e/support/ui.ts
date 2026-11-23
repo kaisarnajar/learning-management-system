@@ -5,8 +5,8 @@ import { db, FIXTURES } from "./db";
 /** Signs in through the real login form. */
 export async function signIn(page: Page, email: string, password: string = FIXTURES.password): Promise<void> {
   await page.goto("/login");
-  await page.locator("#email").fill(email);
-  await page.locator("#password").fill(password);
+  await page.locator("#email:visible").fill(email);
+  await page.locator("#password:visible").fill(password);
   await page.getByRole("button", { name: /sign in with email/i }).click();
   await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 30_000 });
 }

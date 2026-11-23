@@ -151,6 +151,12 @@ jobs:
       - name: Install the browser
         run: npx playwright install --with-deps chromium
 
+      # Playwright starts the web server before its global setup runs, and the
+      # server's readiness check renders a page that reads the database, so the
+      # schema has to exist first (global setup re-runs this as a no-op).
+      - name: Apply the migrations to the e2e database
+        run: npx prisma migrate deploy
+
       - name: Run the journeys
         run: npm run test:e2e
 

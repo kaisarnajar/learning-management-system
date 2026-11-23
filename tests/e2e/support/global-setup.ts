@@ -38,8 +38,11 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
       const context = await browser.newContext({ baseURL });
       const page = await context.newPage();
       await page.goto("/login");
-      await page.locator("#email").fill(email);
-      await page.locator("#password").fill(FIXTURES.password);
+      // ":visible": React 19.2 reveals a Suspense boundary on a short throttle,
+      // so right after "load" the streamed form can briefly exist twice (the
+      // shown copy and the hidden one still waiting to be swapped in).
+      await page.locator("#email:visible").fill(email);
+      await page.locator("#password:visible").fill(FIXTURES.password);
       await page.getByRole("button", { name: /sign in with email/i }).click();
       await page.waitForURL((u) => u.pathname.startsWith(landing === "/" ? "/" : landing) && u.pathname !== "/login", { timeout: 30_000 });
       mkdirSync(path.dirname(AUTH_STATE[role]), { recursive: true });

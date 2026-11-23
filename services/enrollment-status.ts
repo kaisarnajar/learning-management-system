@@ -14,6 +14,14 @@ export function canReapplyForEnrollment(status: string): boolean {
   return status === REJECTED_ENROLLMENT;
 }
 
+/**
+ * True only for enrollments the academy has approved (active or completed).
+ * Pending, awaiting-fee and rejected requests never unlock course content.
+ */
+export function hasCourseContentAccess(status: string): boolean {
+  return status === "active" || status === "completed";
+}
+
 export function canApproveEnrollment(status: string): boolean {
   return status === PENDING_ENROLLMENT_APPROVAL;
 }

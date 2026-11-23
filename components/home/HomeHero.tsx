@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
-import { Source_Serif_4 } from "next/font/google";
+import { sourceSerif } from "@/utils/fonts/source-serif-4";
 import { BRAND_CONFIG } from "@/config/brand";
-
-const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["400", "600", "700"] });
 
 export function HomeHero() {
   return (

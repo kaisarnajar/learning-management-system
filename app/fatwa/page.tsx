@@ -8,9 +8,7 @@ import { ListSearchForm } from "@/components/shared/ListSearchForm";
 import { getAnsweredFatwasPaginated } from "@/services/fatwa";
 import { GRID_PAGE_SIZE, clampPage, parsePaginationParams } from "@/utils/pagination";
 import { parseSearchQuery } from "@/utils/text-search";
-import { Source_Serif_4 } from "next/font/google";
-
-const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
+import { sourceSerif } from "@/utils/fonts/source-serif-4";
 
 const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
 

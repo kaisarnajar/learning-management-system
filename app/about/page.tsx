@@ -4,10 +4,8 @@ import Image from "next/image";
 import { ACADEMY_LOCATION, getAcademyLocationEmbedUrl } from "@/services/academy-location";
 import { formatWhatsAppForDisplay, getSocialLinksSettings } from "@/services/social-links";
 import { SplitSectionTitle } from "@/components/site/SplitSectionTitle";
-import { Source_Serif_4 } from "next/font/google";
+import { sourceSerif } from "@/utils/fonts/source-serif-4";
 import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
-
-const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
 import { BRAND_CONFIG } from "@/config/brand";
 import { CREDITS_CONFIG } from "@/config/credits";

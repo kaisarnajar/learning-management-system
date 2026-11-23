@@ -2,9 +2,7 @@ import type { Metadata } from "next";
 import { BRAND_CONFIG } from "@/config/brand";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { auth } from "@/services/auth";
-import { Source_Serif_4 } from "next/font/google";
-
-const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
+import { sourceSerif } from "@/utils/fonts/source-serif-4";
 
 const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
 

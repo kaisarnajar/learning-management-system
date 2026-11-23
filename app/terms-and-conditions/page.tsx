@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Source_Serif_4 } from "next/font/google";
+import { sourceSerif } from "@/utils/fonts/source-serif-4";
 import { BRAND_CONFIG } from "@/config/brand";
-
-const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["600", "700"] });
 
 export const metadata: Metadata = {
   title: "Terms & Conditions",

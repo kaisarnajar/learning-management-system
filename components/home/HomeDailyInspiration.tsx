@@ -1,10 +1,8 @@
 import {
   type DailyInspirationRecord,
 } from "@/services/daily-inspiration";
-import { Source_Serif_4 } from "next/font/google";
+import { sourceSerif } from "@/utils/fonts/source-serif-4";
 import { indoPakArabic } from "@/utils/fonts/indo-pak-arabic";
-
-const sourceSerif = Source_Serif_4({ subsets: ["latin"], weight: ["400", "600"] });
 
 type HomeDailyInspirationProps = {
   inspiration: DailyInspirationRecord | null;

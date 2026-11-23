@@ -3,7 +3,7 @@ import { clampPage, paginationArgs } from "@/utils/pagination";
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { PENDING_ENROLLMENT_APPROVAL } from "@/services/enrollment-status";
+import { hasCourseContentAccess } from "@/services/enrollment-status";
 
 function courseAnnouncementWhere(
   courseId: string,
@@ -123,8 +123,8 @@ export async function getAnnouncementsVisibleToStudentPaginated(
       where: { userId_courseId: { userId, courseId } },
       select: { id: true, status: true },
     }), "Database operation failed");
-  // No enrollment, or still pending admin approval — deny content access.
-  if (!enrollment || enrollment.status === PENDING_ENROLLMENT_APPROVAL) {
+  // Only approved (active or completed) enrollments see course content.
+  if (!enrollment || !hasCourseContentAccess(enrollment.status)) {
     return {
       courseWide: [],
       personal: [] as Awaited<

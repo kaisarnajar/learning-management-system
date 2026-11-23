@@ -1,4 +1,4 @@
-import type { Prisma, ShippingChargeSlab } from "@prisma/client";
+import type { Book, Prisma, ShippingChargeSlab } from "@prisma/client";
 import type { z } from "zod";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
@@ -82,20 +82,25 @@ function isUniqueViolation(error: unknown): boolean {
   return typeof error === "object" && error !== null && (error as { code?: string }).code === "P2002";
 }
 
-/**
- * Validates availability and stock, computes totals server-side from the
- * current prices, creates the order (and clears the cart) in one
- * transaction, then stores the payment screenshot against the order id.
- */
-export async function createBookOrder(params: {
-  userId: string;
-  input: BookstoreCheckoutInput;
-  screenshotFile: File | null;
-  clearCart?: boolean;
-}): Promise<CreateBookOrderResult> {
-  const { userId, input, screenshotFile, clearCart = true } = params;
+export type BookOrderQuote = {
+  ok: true;
+  books: Map<string, Book>;
+  lines: Array<{ bookId: string; title: string; quantity: number; unitPriceInrPaise: number; lineTotalInrPaise: number }>;
+  subtotalAmountInrPaise: number;
+  shippingChargeInrPaise: number;
+  totalAmountInrPaise: number;
+  totalWeightGrams: number;
+};
 
-  const bookIds = [...new Set(input.items.map((i) => i.bookId))];
+/**
+ * Prices an order from the current catalogue: every book must be published
+ * and in stock with enough copies; shipping comes from the weight slabs. Used
+ * to place an order and for the app's checkout preview, so both always agree.
+ */
+export async function quoteBookOrder(
+  items: Array<{ bookId: string; quantity: number }>,
+): Promise<BookOrderQuote | { ok: false; error: string; status: number }> {
+  const bookIds = [...new Set(items.map((i) => i.bookId))];
   const books = await withDbErrorHandling(() => prisma.book.findMany({
     where: { id: { in: bookIds }, published: true },
   }), "Database operation failed");
@@ -113,7 +118,7 @@ export async function createBookOrder(params: {
     };
   }
 
-  const shortages = await findStockShortages(prisma, input.items);
+  const shortages = await findStockShortages(prisma, items);
   if (shortages.length > 0) {
     return { ok: false, error: `Not enough stock: ${formatShortages(shortages)}.`, status: 409 };
   }
@@ -121,15 +126,48 @@ export async function createBookOrder(params: {
   const bookMap = new Map(books.map((b) => [b.id, b]));
   let subtotalAmountInrPaise = 0;
   let totalWeightGrams = 0;
-  for (const item of input.items) {
+  const lines = items.map((item) => {
     const book = bookMap.get(item.bookId)!;
     subtotalAmountInrPaise += book.priceInrPaise * item.quantity;
     totalWeightGrams += book.weightInGrams * item.quantity;
-  }
+    return {
+      bookId: book.id,
+      title: book.title,
+      quantity: item.quantity,
+      unitPriceInrPaise: book.priceInrPaise,
+      lineTotalInrPaise: book.priceInrPaise * item.quantity,
+    };
+  });
 
   const slabs = await getShippingSlabs();
   const shippingChargeInrPaise = computeShippingCharge(totalWeightGrams, slabs);
-  const totalAmountInrPaise = subtotalAmountInrPaise + shippingChargeInrPaise;
+  return {
+    ok: true,
+    books: bookMap,
+    lines,
+    subtotalAmountInrPaise,
+    shippingChargeInrPaise,
+    totalAmountInrPaise: subtotalAmountInrPaise + shippingChargeInrPaise,
+    totalWeightGrams,
+  };
+}
+
+/**
+ * Validates availability and stock, computes totals server-side from the
+ * current prices, creates the order (and clears the cart) in one
+ * transaction, then stores the payment screenshot against the order id.
+ */
+export async function createBookOrder(params: {
+  userId: string;
+  input: BookstoreCheckoutInput;
+  screenshotFile: File | null;
+  clearCart?: boolean;
+}): Promise<CreateBookOrderResult> {
+  const { userId, input, screenshotFile, clearCart = true } = params;
+
+  const quote = await quoteBookOrder(input.items);
+  if (!quote.ok) return quote;
+  const { books: bookMap, shippingChargeInrPaise, totalAmountInrPaise } = quote;
 
   let order: CreatedBookOrder;
   try {

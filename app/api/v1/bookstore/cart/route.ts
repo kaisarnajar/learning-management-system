@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
-import { getCart, normalizeCartItems, replaceCart } from "@/services/cart";
+import { getCart, normalizeCartItems, replaceCart, setCartItem } from "@/services/cart";
+import { apiError, readJson } from "@/utils/api-response";
 
 /** The signed-in student's cart (published, in-stock books only). */
 export async function GET(request: NextRequest) {
@@ -26,5 +27,29 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[api/v1/bookstore/cart] POST Error:", error);
     return NextResponse.json({ success: false, error: "Failed to sync bookstore cart." }, { status: 500 });
+  }
+}
+
+/**
+ * Sets one line: `{ bookId, quantity }` (capped at the order maximum);
+ * quantity 0 removes the book. 404 when the book cannot be bought.
+ */
+export async function PATCH(request: NextRequest) {
+  const { user, errorResponse } = await requireStudentApiAuth(request);
+  if (errorResponse) return errorResponse;
+
+  try {
+    const body = await readJson(request);
+    const bookId = body?.bookId;
+    const quantity = body?.quantity;
+    if (typeof bookId !== "string" || !bookId || !Number.isInteger(quantity) || (quantity as number) < 0) {
+      return apiError("Send { bookId, quantity } with a whole quantity of 0 or more.", 400);
+    }
+    const cart = await setCartItem(user.id, bookId, quantity as number);
+    if (!cart) return apiError("This book is not available.", 404);
+    return NextResponse.json(cart);
+  } catch (error) {
+    console.error("[api/v1/bookstore/cart] PATCH Error:", error);
+    return NextResponse.json({ success: false, error: "Failed to update the cart." }, { status: 500 });
   }
 }

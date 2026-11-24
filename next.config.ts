@@ -10,7 +10,8 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
-  serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core", "puppeteer", "sharp", "firebase-admin"],
+  // exceljs (finance export) is loaded from node_modules as in the tests rather than bundled.
+  serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core", "puppeteer", "sharp", "firebase-admin", "exceljs"],
   // The PDF generators read these from disk at runtime; make sure the
   // serverless bundles carry them.
   outputFileTracingIncludes: {

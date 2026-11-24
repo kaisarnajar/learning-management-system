@@ -9,7 +9,7 @@ import { incomePaymentTypeLabel } from "@/services/monthly-payment-status";
 import { expenseCategoryLabel } from "@/services/expense-categories";
 import { bookOrderStatusLabel } from "@/services/bookstore";
 import { formatBusinessDisplayDate } from "@/services/business-time";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 
 export const dynamic = "force-dynamic";
 
@@ -23,6 +23,21 @@ class TooManyRows extends Error {}
 function capped<T>(rows: T[]): T[] {
   if (rows.length > FINANCE_EXPORT_MAX_ROWS) throw new TooManyRows();
   return rows;
+}
+
+/**
+ * One "Report" sheet: a header row from the first row's keys, then one row
+ * per record (numbers stay numeric cells). An empty export is an empty sheet.
+ */
+async function buildWorkbook(rows: Record<string, unknown>[]): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Report");
+  const headers = Object.keys(rows[0] ?? {});
+  if (headers.length > 0) {
+    sheet.addRow(headers);
+    for (const row of rows) sheet.addRow(headers.map((h) => row[h] as ExcelJS.CellValue));
+  }
+  return Buffer.from(await workbook.xlsx.writeBuffer());
 }
 
 export async function GET(request: Request) {
@@ -109,15 +124,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Invalid or missing export type." }, { status: 400 });
     }
 
-    // Generate Excel Workbook
-    const worksheet = XLSX.utils.json_to_sheet(sheetData);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
+    const buffer = await buildWorkbook(sheetData);
 
-    // Write workbook to buffer
-    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-
-    return new Response(buffer, {
+    return new Response(new Uint8Array(buffer), {
       headers: {
         "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         "Content-Disposition": `attachment; filename="${filename}"`,

@@ -1,3 +1,4 @@
+import ExcelJS from "exceljs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/utils/prisma";
 import { GET as financeExport } from "@/app/api/v1/admin/finance/export/route";
@@ -58,5 +59,35 @@ describe.skipIf(SKIP_WITHOUT_DB)("finance export", () => {
     const overCap = await financeExport(apiRequest("/api/v1/admin/finance/export?type=income&from=2026-02-01&to=2026-02-28", { headers }));
     expect(overCap.status).toBe(400);
     expect((await jsonOf(overCap)).error).toMatch(/more than 2 rows/i);
+  });
+
+  it("returns a valid workbook with one Report sheet, the header row and numeric amounts (M26)", async () => {
+    const { headers } = await signedInAdmin();
+    await manualPayments(1, new Date("2026-01-10T06:00:00Z"));
+
+    const response = await financeExport(apiRequest("/api/v1/admin/finance/export?type=income&from=2026-01-01&to=2026-01-31", { headers }));
+    expect(response.status).toBe(200);
+    expect(response.headers.get("content-disposition")).toMatch(/^attachment; filename="Course_Income_\d{4}-\d{2}-\d{2}\.xlsx"$/);
+    const bytes = Buffer.from(await response.arrayBuffer());
+    expect(bytes.subarray(0, 4)).toEqual(Buffer.from([0x50, 0x4b, 0x03, 0x04])); // zip magic
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(bytes as unknown as ArrayBuffer);
+    expect(workbook.worksheets.map((w) => w.name)).toEqual(["Report"]);
+    const sheet = workbook.getWorksheet("Report")!;
+    expect(sheet.rowCount).toBe(2);
+    expect((sheet.getRow(1).values as unknown[]).slice(1)).toEqual([
+      "Date",
+      "Student Name",
+      "Student Email",
+      "Course Title",
+      "Payment Type",
+      "Amount (INR)",
+      "Description",
+    ]);
+    const row = (sheet.getRow(2).values as unknown[]).slice(1);
+    expect(row[0]).toBe("10 Jan 2026");
+    expect(row[3]).toBe("—");
+    expect(row[5]).toBe(100);
   });
 });

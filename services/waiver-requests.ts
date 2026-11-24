@@ -36,6 +36,39 @@ export function waiverFeeTypeLabel(feeType: WaiverFeeType): string {
   }
 }
 
+/**
+ * Code suffix of the course-fee coupon issued with a "both fees" waiver. The
+ * request links only the enrollment-fee coupon; its sibling is found by code.
+ */
+export const BOTH_FEES_COURSE_SUFFIX = "-C";
+
+type RequestWithCoupon = { userId: string; courseId: string; feeType: WaiverFeeType | null; reason: string; coupon: { code: string } | null };
+
+/**
+ * Adds `couponCodes`: every code the request issued, the linked coupon first
+ * and, for an approved "both fees" waiver, its course-fee coupon. One query
+ * for the whole list.
+ */
+export async function withIssuedCouponCodes<T extends RequestWithCoupon>(requests: T[]): Promise<(T & { couponCodes: string[] })[]> {
+  const siblingCodes = requests
+    .filter((request) => request.coupon && resolveWaiverFeeType(request) === "BOTH")
+    .map((request) => `${request.coupon!.code}${BOTH_FEES_COURSE_SUFFIX}`);
+  const siblings = siblingCodes.length
+    ? await prisma.coupon.findMany({
+        where: { code: { in: siblingCodes }, type: "SPECIAL" },
+        select: { code: true, userId: true, courseId: true },
+      })
+    : [];
+
+  return requests.map((request) => {
+    if (!request.coupon) return { ...request, couponCodes: [] };
+    const siblingCode = `${request.coupon.code}${BOTH_FEES_COURSE_SUFFIX}`;
+    const sibling = resolveWaiverFeeType(request) === "BOTH"
+      && siblings.some((c) => c.code === siblingCode && c.userId === request.userId && c.courseId === request.courseId);
+    return { ...request, couponCodes: sibling ? [request.coupon.code, siblingCode] : [request.coupon.code] };
+  });
+}
+
 const FORM_FEE_TYPE_TO_ENUM: Record<WaiverRequestInput["feeType"], WaiverFeeType> = {
   enrollment: "ENROLLMENT",
   course: "COURSE",

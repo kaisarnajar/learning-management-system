@@ -10,7 +10,7 @@ import { BRAND_CONFIG } from "@/config/brand";
 import { sendFeeWaiverApprovedEmail, sendFeeWaiverRejectedEmail } from "@/services/email";
 import { createStudentNotification } from "@/services/notifications";
 import { recordAudit } from "@/services/audit";
-import { resolveWaiverFeeType } from "@/services/waiver-requests";
+import { BOTH_FEES_COURSE_SUFFIX, resolveWaiverFeeType } from "@/services/waiver-requests";
 import { genderWrite } from "@/services/status-compat";
 import {
   couponRequestApprovalSchema,
@@ -19,8 +19,6 @@ import {
 } from "@/utils/validations";
 
 const COUPON_CODE_ATTEMPTS = 3;
-/** Code suffix of the course-fee coupon issued with a "both fees" waiver. */
-const BOTH_FEES_COURSE_SUFFIX = "-C";
 
 function isUniqueViolation(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";

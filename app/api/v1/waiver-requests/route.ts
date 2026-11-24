@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
-import { createWaiverRequest, resolveWaiverFeeType } from "@/services/waiver-requests";
+import { createWaiverRequest, resolveWaiverFeeType, withIssuedCouponCodes } from "@/services/waiver-requests";
 import { waiverRequestSchema } from "@/utils/validations";
 
 export async function GET(request: NextRequest) {
@@ -21,7 +21,8 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       // feeType is filled from the legacy reason prefix for rows that predate the column.
-      data: requests.map((request) => ({ ...request, feeType: resolveWaiverFeeType(request) })),
+      // couponCodes lists every issued code (two for a "both fees" waiver); coupon is the first.
+      data: (await withIssuedCouponCodes(requests)).map((request) => ({ ...request, feeType: resolveWaiverFeeType(request) })),
     });
   } catch (error) {
     console.error("[api/v1/waiver-requests] GET Error:", error);

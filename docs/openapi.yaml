@@ -1721,7 +1721,33 @@ paths:
     get:
       tags: [Courses]
       responses:
-        "200": { description: The caller's waiver requests, content: { application/json: { schema: { type: object } } } }
+        "200":
+          description: The caller's waiver requests, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        courseId: { type: string }
+                        feeType: { type: string, enum: [ENROLLMENT, COURSE, BOTH] }
+                        status: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+                        reason: { type: string }
+                        course: { type: object, properties: { id: { type: string }, title: { type: string } } }
+                        coupon:
+                          type: [object, "null"]
+                          description: The linked coupon; for a "both fees" waiver, the enrollment-fee one
+                          properties: { id: { type: string }, code: { type: string }, percentage: { type: integer } }
+                        couponCodes:
+                          type: array
+                          items: { type: string }
+                          description: Every code the approval issued. A "both fees" waiver has two, the enrollment-fee code and then the course-fee code (the first plus "-C"); empty until approved.
     post:
       tags: [Courses]
       requestBody:

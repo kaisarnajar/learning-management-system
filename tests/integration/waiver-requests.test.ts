@@ -5,6 +5,7 @@ import { approveCouponRequest, deleteCouponRequest, rejectCouponRequest } from "
 import { confirmMonthlyPayment } from "@/app/admin/payments/actions";
 import { processEnrollmentPayment } from "@/services/payments";
 import { getApplicableCoupons } from "@/services/coupons";
+import { withIssuedCouponCodes } from "@/services/waiver-requests";
 import { sendFeeWaiverApprovedEmail, sendFeeWaiverRejectedEmail } from "@/services/email";
 import { createCourse, createUser, resetDb, runAction, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB, startedEnrollment } from "../helpers/db";
 
@@ -91,6 +92,16 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee waiver requests: approve and reject", () =
     expect(await getApplicableCoupons(student.id, course.id, "course")).toEqual([
       expect.objectContaining({ id: courseCoupon!.id, isUsed: false }),
     ]);
+  });
+
+  it("the student's request list shows both codes of a both-fees waiver", async () => {
+    const { student, request } = await pendingRequest("BOTH");
+    await approveCouponRequest(request.id, 100, validUntil());
+    const [enrollmentCoupon, courseCoupon] = await prisma.coupon.findMany({ orderBy: { code: "asc" } });
+
+    const [listed] = await withIssuedCouponCodes(await prisma.couponRequest.findMany({ where: { userId: student.id }, include: { coupon: true } }));
+
+    expect(listed!.couponCodes).toEqual([enrollmentCoupon!.code, courseCoupon!.code]);
   });
 
   it("deleting an unused both-fees request removes both of its coupons", async () => {

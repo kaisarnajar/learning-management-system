@@ -13,6 +13,8 @@ type CouponRequestItem = {
   status: "PENDING" | "APPROVED" | "REJECTED";
   course: { title: string };
   coupon: { code: string; percentage: number } | null;
+  /** Every issued code; a "both fees" waiver has one per fee. */
+  couponCodes: string[];
 };
 
 type WaiverRequestsViewProps = {
@@ -107,9 +109,11 @@ export function WaiverRequestsView({
                     <td className="px-5 py-4 whitespace-nowrap">
                       {r.coupon ? (
                         <div className="flex items-center gap-2">
-                          <span className="font-mono bg-background px-2.5 py-1 rounded border border-border text-xs font-bold text-foreground select-all">
-                            {r.coupon.code}
-                          </span>
+                          {r.couponCodes.map((code) => (
+                            <span key={code} className="font-mono bg-background px-2.5 py-1 rounded border border-border text-xs font-bold text-foreground select-all">
+                              {code}
+                            </span>
+                          ))}
                           <span className="text-emerald-600 font-bold text-xs">
                             ({r.coupon.percentage}% OFF)
                           </span>

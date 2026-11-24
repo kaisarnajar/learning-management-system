@@ -455,7 +455,33 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
 
       const data = await jsonOf(await waiversGet(apiRequest("/api/v1/waiver-requests", { headers: me.headers })));
       expect(data.data).toHaveLength(1);
-      expect(data.data[0]).toMatchObject({ userId: me.user.id, feeType: "BOTH", status: "PENDING" });
+      expect(data.data[0]).toMatchObject({ userId: me.user.id, feeType: "BOTH", status: "PENDING", coupon: null, couponCodes: [] });
+    });
+
+    it("lists both codes of an approved both-fees waiver, and one for a single-fee waiver", async () => {
+      const me = await signedInStudent();
+      const both = await createCourse();
+      const single = await createCourse();
+      const coupon = (code: string, courseId: string) => prisma.coupon.create({
+        data: { code, type: "SPECIAL", percentage: 100, validFrom: new Date(), validUntil: new Date(Date.now() + 86_400_000), userId: me.user.id, courseId },
+      });
+      const enrollmentCoupon = await coupon("WAIVER-AISHA-1234", both.id);
+      await coupon("WAIVER-AISHA-1234-C", both.id);
+      const singleCoupon = await coupon("WAIVER-AISHA-5678", single.id);
+      // A same-named code that belongs to someone else's course is not this waiver's.
+      await coupon("WAIVER-AISHA-5678-C", both.id);
+      await prisma.couponRequest.createMany({
+        data: [
+          { userId: me.user.id, courseId: both.id, feeType: "BOTH", reason: "Family circumstances", status: "APPROVED", couponId: enrollmentCoupon.id },
+          { userId: me.user.id, courseId: single.id, feeType: "COURSE", reason: "Family circumstances", status: "APPROVED", couponId: singleCoupon.id },
+        ],
+      });
+
+      const data = await jsonOf(await waiversGet(apiRequest("/api/v1/waiver-requests", { headers: me.headers })));
+      const byCourse = Object.fromEntries(data.data.map((r: { courseId: string }) => [r.courseId, r]));
+
+      expect(byCourse[both.id]).toMatchObject({ coupon: { code: "WAIVER-AISHA-1234" }, couponCodes: ["WAIVER-AISHA-1234", "WAIVER-AISHA-1234-C"] });
+      expect(byCourse[single.id]).toMatchObject({ coupon: { code: "WAIVER-AISHA-5678" }, couponCodes: ["WAIVER-AISHA-5678"] });
     });
 
     it("validates the request and the course", async () => {

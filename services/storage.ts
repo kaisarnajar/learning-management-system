@@ -1,6 +1,6 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getR2Client, R2_BUCKET_NAME, R2_PRIVATE_BUCKET_NAME, R2_PUBLIC_URL } from "@/utils/s3";
+import { getPrivateBucketName, getR2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from "@/utils/s3";
 
 /**
  * The one place that talks to R2 for uploads.
@@ -136,9 +136,9 @@ export async function uploadToR2(prefix: StoragePrefix, idPrefix: string, file: 
 // ---------------------------------------------------------------------------
 // Private objects: served through /api/files/<key>, which checks ownership
 // and redirects to a short-lived presigned URL. They live in
-// R2_PRIVATE_BUCKET_NAME when set (a bucket without public access), else
-// under the private/ prefix of the main bucket, where the random object
-// names are the only protection, so set the private bucket in production.
+// R2_PRIVATE_BUCKET_NAME, a bucket without public access, which production
+// requires (getPrivateBucketName). Outside production they fall back to the
+// private/ prefix of the main bucket.
 // ---------------------------------------------------------------------------
 
 export const PRIVATE_FILE_ROUTE = "/api/files/";
@@ -161,20 +161,20 @@ export async function uploadPrivateToR2(prefix: StoragePrefix, idPrefix: string,
   const { buffer, mime } = await readVerified(file, rules);
   const key = `private/${prefix}/${idPrefix}-${randomSuffix()}.${EXT_BY_MIME[mime]}`;
   await getR2Client().send(
-    new PutObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key, Body: buffer, ContentType: mime }),
+    new PutObjectCommand({ Bucket: getPrivateBucketName(), Key: key, Body: buffer, ContentType: mime }),
   );
   return `${PRIVATE_FILE_ROUTE}${key}`;
 }
 
 /** Stores a server-generated file (a rendered PDF) privately under an explicit key. */
 export async function putPrivateObject(key: string, body: Buffer, contentType: string): Promise<void> {
-  await getR2Client().send(new PutObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key, Body: body, ContentType: contentType }));
+  await getR2Client().send(new PutObjectCommand({ Bucket: getPrivateBucketName(), Key: key, Body: body, ContentType: contentType }));
 }
 
 /** Reads a private object into memory; null when it does not exist (or cannot be read). */
 export async function getPrivateObject(key: string): Promise<Buffer | null> {
   try {
-    const result = await getR2Client().send(new GetObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key }));
+    const result = await getR2Client().send(new GetObjectCommand({ Bucket: getPrivateBucketName(), Key: key }));
     if (!result.Body) return null;
     return Buffer.from(await result.Body.transformToByteArray());
   } catch (error) {
@@ -190,7 +190,7 @@ export async function getPrivateObject(key: string): Promise<Buffer | null> {
 export async function deletePrivateObject(key: string | null | undefined): Promise<void> {
   if (!key) return;
   try {
-    await getR2Client().send(new DeleteObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key }));
+    await getR2Client().send(new DeleteObjectCommand({ Bucket: getPrivateBucketName(), Key: key }));
   } catch (error) {
     console.error(`[storage] Failed to delete ${key} from R2:`, error);
   }
@@ -202,7 +202,7 @@ export function presignPrivateObject(key: string, downloadName?: string): Promis
   return getSignedUrl(
     getR2Client(),
     new GetObjectCommand({
-      Bucket: R2_PRIVATE_BUCKET_NAME,
+      Bucket: getPrivateBucketName(),
       Key: key,
       ...(safeName ? { ResponseContentDisposition: `inline; filename="${safeName}"` } : {}),
     }),
@@ -215,7 +215,7 @@ export function r2KeyFromUrl(prefix: StoragePrefix, urlOrPath: string | null | u
   if (!urlOrPath) return null;
   const privateKey = privateKeyFromPath(urlOrPath);
   if (privateKey) {
-    return privateKey.startsWith(`private/${prefix}/`) ? { bucket: R2_PRIVATE_BUCKET_NAME, key: privateKey } : null;
+    return privateKey.startsWith(`private/${prefix}/`) ? { bucket: getPrivateBucketName(), key: privateKey } : null;
   }
   let key = urlOrPath;
   if (R2_PUBLIC_URL && key.startsWith(R2_PUBLIC_URL)) key = key.slice(R2_PUBLIC_URL.length);

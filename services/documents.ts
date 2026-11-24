@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import type { Enrollment } from "@prisma/client";
 import { BRAND_CONFIG } from "@/config/brand";
 import { getCourseById } from "@/services/courses";
@@ -21,12 +22,36 @@ import { prisma } from "@/utils/prisma";
 export const RECEIPT_PDF_PREFIX = "private/documents/receipts/";
 export const CERTIFICATE_PDF_PREFIX = "private/documents/certificates/";
 
-export function receiptPdfKey(paymentRecordId: string): string {
-  return `${RECEIPT_PDF_PREFIX}${paymentRecordId}.pdf`;
+const KEY_SUFFIX_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+/** 16 random characters (about 82 bits), so a document's key cannot be guessed from its record id. */
+function unguessableSuffix(): string {
+  let suffix = "";
+  for (let i = 0; i < 16; i++) suffix += KEY_SUFFIX_ALPHABET[randomInt(KEY_SUFFIX_ALPHABET.length)];
+  return suffix;
 }
 
+/**
+ * A new storage key for a receipt PDF. Each call returns a different key; the
+ * one in use is whatever `receiptPdfKey` on the record says, so keys stored
+ * before the suffix was added (`<id>.pdf`) keep working.
+ */
+export function receiptPdfKey(paymentRecordId: string): string {
+  return `${RECEIPT_PDF_PREFIX}${paymentRecordId}-${unguessableSuffix()}.pdf`;
+}
+
+/** A new storage key for a certificate PDF; see receiptPdfKey. */
 export function certificatePdfKey(enrollmentId: string): string {
-  return `${CERTIFICATE_PDF_PREFIX}${enrollmentId}.pdf`;
+  return `${CERTIFICATE_PDF_PREFIX}${enrollmentId}-${unguessableSuffix()}.pdf`;
+}
+
+/** Where documents were stored before keys had a random suffix; only used to clean up a record without a stored key. */
+const legacyReceiptPdfKey = (paymentRecordId: string) => `${RECEIPT_PDF_PREFIX}${paymentRecordId}.pdf`;
+const legacyCertificatePdfKey = (enrollmentId: string) => `${CERTIFICATE_PDF_PREFIX}${enrollmentId}.pdf`;
+
+/** Removes the file a document used to be stored under, once the record points at its replacement. */
+async function dropReplacedPdf(previousKey: string | null | undefined, currentKey: string): Promise<void> {
+  if (previousKey && previousKey !== currentKey) await deletePrivateObject(previousKey);
 }
 
 // ---------------------------------------------------------------------------
@@ -66,6 +91,8 @@ export async function storeReceiptPdf(record: ReceiptRecord): Promise<boolean> {
     const key = receiptPdfKey(record.id);
     await putPrivateObject(key, pdf, "application/pdf");
     await prisma.paymentRecord.update({ where: { id: record.id }, data: { receiptPdfKey: key } });
+    // A reissued receipt replaces the file rendered before.
+    await dropReplacedPdf(record.receiptPdfKey, key);
     return true;
   } catch (error) {
     console.error("[documents] Could not store receipt PDF for", record.id, error);
@@ -102,7 +129,7 @@ export async function getReceiptPdf(record: ReceiptRecord): Promise<{ pdf: Buffe
 }
 
 export async function deleteStoredReceiptPdf(record: { id: string; receiptPdfKey?: string | null }): Promise<void> {
-  await deletePrivateObject(record.receiptPdfKey ?? receiptPdfKey(record.id));
+  await deletePrivateObject(record.receiptPdfKey ?? legacyReceiptPdfKey(record.id));
 }
 
 // ---------------------------------------------------------------------------
@@ -146,6 +173,7 @@ export async function storeCertificatePdf(enrollment: CertificateEnrollment, cou
     const key = certificatePdfKey(enrollment.id);
     await putPrivateObject(key, pdf, "application/pdf");
     await prisma.enrollment.update({ where: { id: enrollment.id }, data: { certificatePdfKey: key } });
+    await dropReplacedPdf(enrollment.certificatePdfKey, key);
     return true;
   } catch (error) {
     console.error("[documents] Could not store certificate PDF for", enrollment.id, error);
@@ -176,5 +204,5 @@ export async function getCertificatePdf(
 }
 
 export async function deleteStoredCertificatePdf(enrollment: { id: string; certificatePdfKey?: string | null }): Promise<void> {
-  await deletePrivateObject(enrollment.certificatePdfKey ?? certificatePdfKey(enrollment.id));
+  await deletePrivateObject(enrollment.certificatePdfKey ?? legacyCertificatePdfKey(enrollment.id));
 }

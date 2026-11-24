@@ -64,13 +64,26 @@ describe.skipIf(SKIP_WITHOUT_DB)("receipt PDFs", () => {
   it("serves the stored file when there is one, without rendering", async () => {
     const { record } = await issuedReceipt();
     const stored = Buffer.from("%PDF-1.7 stored at issue time");
-    bucket.set(receiptPdfKey(record.id), stored);
-    await prisma.paymentRecord.update({ where: { id: record.id }, data: { receiptPdfKey: receiptPdfKey(record.id) } });
+    const key = receiptPdfKey(record.id);
+    bucket.set(key, stored);
+    await prisma.paymentRecord.update({ where: { id: record.id }, data: { receiptPdfKey: key } });
 
     const result = await getReceiptPdf((await getPaymentRecordById(record.id))!);
     expect(result.fromStore).toBe(true);
     expect(result.pdf.equals(stored)).toBe(true);
     expect(result.filename).toMatch(/\.pdf$/);
+  });
+
+  it("still serves a file stored under the key used before keys had a random suffix", async () => {
+    const { record } = await issuedReceipt();
+    const stored = Buffer.from("%PDF-1.7 stored under the old key");
+    const legacyKey = `private/documents/receipts/${record.id}.pdf`;
+    bucket.set(legacyKey, stored);
+    await prisma.paymentRecord.update({ where: { id: record.id }, data: { receiptPdfKey: legacyKey } });
+
+    const result = await getReceiptPdf((await getPaymentRecordById(record.id))!);
+    expect(result.fromStore).toBe(true);
+    expect(result.pdf.equals(stored)).toBe(true);
   });
 
   describe.skipIf(!PDF_SMOKE)("rendering with Chromium (PDF_SMOKE=1)", () => {
@@ -88,9 +101,9 @@ describe.skipIf(SKIP_WITHOUT_DB)("receipt PDFs", () => {
       expect(rendered.length).toBeGreaterThan(5_000);
 
       // The render was stored, and the next download is served from storage.
-      const key = receiptPdfKey(record.id);
+      const key = (await prisma.paymentRecord.findUniqueOrThrow({ where: { id: record.id } })).receiptPdfKey!;
+      expect(key).toMatch(new RegExp(`^private/documents/receipts/${record.id}-[a-z0-9]{16}\\.pdf$`));
       expect(bucket.get(key)?.equals(rendered)).toBe(true);
-      expect((await prisma.paymentRecord.findUniqueOrThrow({ where: { id: record.id } })).receiptPdfKey).toBe(key);
       const again = await getReceiptPdf((await getPaymentRecordById(record.id))!);
       expect(again.fromStore).toBe(true);
       expect(again.pdf.equals(rendered)).toBe(true);
@@ -103,7 +116,8 @@ describe.skipIf(SKIP_WITHOUT_DB)("receipt PDFs", () => {
       const result = await getReceiptPdf((await getPaymentRecordById(record.id))!);
       expect(result.fromStore).toBe(false);
       expect(isPdf(result.pdf)).toBe(true);
-      expect(bucket.has(receiptPdfKey(record.id))).toBe(true);
+      const restored = (await prisma.paymentRecord.findUniqueOrThrow({ where: { id: record.id } })).receiptPdfKey!;
+      expect(bucket.has(restored)).toBe(true);
     });
   });
 });

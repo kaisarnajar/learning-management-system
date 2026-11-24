@@ -3556,7 +3556,7 @@ paths:
     get:
       tags: ["Admin: Finance"]
       summary: Choices for the finance filters and the record-payment and record-expense forms
-      parameters: [{ name: students, in: query, description: "all: every student (default: students with payments)", schema: { type: string, enum: [all] } }]
+      parameters: [{ name: students, in: query, description: "all: search every student, returning the first 50 by registration number (default: students with payments, unlimited)", schema: { type: string, enum: [all] } }, { name: q, in: query, description: "With students=all: only students whose name, e-mail or registration number contains this text", schema: { type: string, maxLength: 100 } }]
       responses:
         "200":
           description: Choices

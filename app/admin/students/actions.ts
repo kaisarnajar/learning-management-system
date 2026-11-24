@@ -6,6 +6,7 @@ import { isAdminEmail } from "@/services/admin";
 import { isDeveloperEmail } from "@/services/developer";
 import { recordAudit } from "@/services/audit";
 import { requireAdmin } from "@/services/auth-actions";
+import { searchStudentOptions } from "@/services/students";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 
@@ -181,4 +182,10 @@ export async function updateStudentUserForm(id: string, formData: FormData) {
   revalidatePath(`/admin/students/${id}`);
   
   redirect(`/admin/students/${id}?saved=1`);
+}
+
+/** The student picker's search (StudentSearchCombobox): at most 20 matches. */
+export async function searchStudentOptionsAction(query: string) {
+  await requireAdmin();
+  return searchStudentOptions(typeof query === "string" ? query.slice(0, 100) : "");
 }

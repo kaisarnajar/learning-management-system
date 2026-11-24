@@ -67,11 +67,32 @@ export async function getStudentsWithPayments() {
     }), "Database operation failed");
 }
 
-export async function getStudentUsers() {
-  const where = studentUsersWhere();
+export type StudentOption = { id: string; name: string | null; email: string };
+
+/** How many matches a student picker shows. */
+export const STUDENT_OPTION_LIMIT = 20;
+
+/**
+ * Students for a picker: the first `take` matching name, e-mail or
+ * registration number (all students when `query` is empty), with only the
+ * fields a picker shows.
+ */
+export async function searchStudentOptions(query: string | undefined, take = STUDENT_OPTION_LIMIT): Promise<StudentOption[]> {
+  const where = studentUsersWhere(query?.trim() || undefined);
   return withDbErrorHandling(() => prisma.user.findMany({
       where,
+      select: { id: true, name: true, email: true },
       orderBy: getStudentOrderBy(),
+      take,
+    }), "Database operation failed");
+}
+
+/** The currently selected student of a picker, if it still exists. */
+export async function getStudentOption(id: string | undefined): Promise<StudentOption | null> {
+  if (!id) return null;
+  return withDbErrorHandling(() => prisma.user.findFirst({
+      where: { ...studentUsersWhere(), id },
+      select: { id: true, name: true, email: true },
     }), "Database operation failed");
 }
 
@@ -80,7 +101,7 @@ export async function getStudentUsersPaginated(
   pageSize: number,
   searchQuery?: string,
   sort?: string,
-): Promise<PaginatedResult<Awaited<ReturnType<typeof getStudentUsers>>[number]>> {
+): Promise<PaginatedResult<Prisma.UserGetPayload<object>>> {
   const where = studentUsersWhere(searchQuery);
   const totalCount = await withDbErrorHandling(() => prisma.user.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);

@@ -114,7 +114,12 @@ jobs:
   e2e:
     name: End-to-end journeys
     needs: verify
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master')
+    # After every push to dev/master, and before merge on pull requests into
+    # master: master is production (docs/CONTRIBUTING.md), so the journeys
+    # must pass before the merge, not only after it.
+    if: >-
+      (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master'))
+      || (github.event_name == 'pull_request' && github.base_ref == 'master')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:

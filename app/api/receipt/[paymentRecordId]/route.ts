@@ -27,8 +27,9 @@ export async function GET(
   const isOwner = record !== null && session.user.id === record.userId;
   const isAdmin = isAdminSession(session);
 
-  // Same response for "missing" and "not yours": no existence oracle.
-  if (!record || (!isOwner && !isAdmin)) {
+  // Same response for "missing", "not yours" and "voided" (a voided payment
+  // has no receipt; the mobile route answers the same): no existence oracle.
+  if (!record || record.voidedAt || (!isOwner && !isAdmin)) {
     return NextResponse.json({ error: "Receipt not found." }, { status: 404 });
   }
 

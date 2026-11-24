@@ -14,6 +14,8 @@ import { getCourseById } from "@/services/courses";
 import { getPaymentSettings } from "@/services/payment-settings";
 import { allocateDocumentNumber } from "@/services/document-numbers";
 
+const VOIDED_RECEIPT_ERROR = "This payment was voided, so it has no receipt.";
+
 export async function generateReceipt(paymentRecordId: string) {
   const session = await auth();
   const isAdmin = isAdminSession(session);
@@ -35,6 +37,12 @@ export async function generateReceipt(paymentRecordId: string) {
 
   if (!record) {
     throw new Error("Payment record not found.");
+  }
+
+  // A voided payment is not income: issuing it an invoice number would put a
+  // receipt for money the academy did not keep into the GST series.
+  if (record.voidedAt) {
+    throw new Error(VOIDED_RECEIPT_ERROR);
   }
 
   if (record.receiptGeneratedAt) {
@@ -69,7 +77,7 @@ export async function generateReceipt(paymentRecordId: string) {
   const invoiceNumber = await prisma.$transaction(async (tx) => {
     const number = await allocateDocumentNumber(tx, "invoice");
     const updated = await tx.paymentRecord.updateMany({
-      where: { id: paymentRecordId, receiptGeneratedAt: null },
+      where: { id: paymentRecordId, receiptGeneratedAt: null, voidedAt: null },
       data: {
         receiptGeneratedAt: new Date(),
         invoiceNumber: number,
@@ -154,6 +162,9 @@ export async function sendReceiptToEmailAction(paymentRecordId: string): Promise
 
   if (!record || !record.receiptGeneratedAt || !record.invoiceNumber) {
     return { error: "Receipt has not been generated yet or payment record not found." };
+  }
+  if (record.voidedAt) {
+    return { error: VOIDED_RECEIPT_ERROR };
   }
 
   try {

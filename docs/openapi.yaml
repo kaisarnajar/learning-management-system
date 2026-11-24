@@ -3773,7 +3773,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
     post:
       tags: ["Admin: Receipts"]
-      summary: Generates the receipt (allocates the invoice number, stores the PDF)
+      summary: Generates the receipt (allocates the invoice number, stores the PDF); a voided payment is refused with 400
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }

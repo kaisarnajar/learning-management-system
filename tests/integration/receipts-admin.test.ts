@@ -1,7 +1,11 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import { getGeneratedReceiptsPaginated } from "@/services/receipts-admin";
-import { createUser, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
+import { generateReceipt, sendReceiptToEmailAction } from "@/app/actions/receipts";
+import { sendReceiptEmail } from "@/services/email";
+import { GET as downloadReceipt } from "@/app/api/receipt/[paymentRecordId]/route";
+import { createUser, resetDb, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB } from "../helpers/db";
 
 /** `count` payment records with a generated receipt, invoice numbers 00001.. in issue order. */
 async function seedReceipts(count: number) {
@@ -41,5 +45,56 @@ describe.skipIf(SKIP_WITHOUT_DB)("admin receipt list", () => {
 
     const beyond = await getGeneratedReceiptsPaginated(9, 20);
     expect(beyond.items).toHaveLength(5);
+  });
+});
+
+describe.skipIf(SKIP_WITHOUT_DB)("voided payments have no receipt", () => {
+  beforeEach(async () => {
+    await resetDb();
+    await setPaymentSettings();
+    vi.mocked(sendReceiptEmail).mockClear();
+  });
+
+  const voidedRecord = (userId: string, receipt: boolean) =>
+    prisma.paymentRecord.create({
+      data: {
+        userId,
+        amountInrPaise: 10000,
+        paidAt: new Date(),
+        paymentType: "manual",
+        paymentTypeEnum: "MANUAL",
+        voidedAt: new Date(),
+        voidReason: "entered twice",
+        ...(receipt ? { invoiceNumber: "DQA-INV/2026-27/00001", receiptGeneratedAt: new Date() } : {}),
+      },
+    });
+
+  const download = (id: string) =>
+    downloadReceipt(new Request(`http://localhost:3000/api/receipt/${id}`), { params: Promise.resolve({ paymentRecordId: id }) });
+
+  it("the receipt route answers 404 to the owner and to an admin", async () => {
+    const student = await createUser();
+    const admin = await createUser({ email: "admin@example.test" });
+    const record = await voidedRecord(student.id, true);
+
+    vi.mocked(auth).mockResolvedValue(sessionFor(student, "STUDENT") as never);
+    expect((await download(record.id)).status).toBe(404);
+    vi.mocked(auth).mockResolvedValue(sessionFor(admin, "ADMIN") as never);
+    expect((await download(record.id)).status).toBe(404);
+  });
+
+  it("refuses to generate or e-mail one, and allocates no invoice number", async () => {
+    const student = await createUser();
+    const admin = await createUser({ email: "admin@example.test" });
+    vi.mocked(auth).mockResolvedValue(sessionFor(admin, "ADMIN") as never);
+    const withoutReceipt = await voidedRecord(student.id, false);
+    const withReceipt = await voidedRecord(student.id, true);
+
+    await expect(generateReceipt(withoutReceipt.id)).rejects.toThrow("voided");
+    expect(await prisma.documentSequence.count()).toBe(0);
+    expect((await prisma.paymentRecord.findUniqueOrThrow({ where: { id: withoutReceipt.id } })).invoiceNumber).toBeNull();
+
+    expect(await sendReceiptToEmailAction(withReceipt.id)).toEqual({ error: expect.stringContaining("voided") });
+    expect(sendReceiptEmail).not.toHaveBeenCalled();
   });
 });

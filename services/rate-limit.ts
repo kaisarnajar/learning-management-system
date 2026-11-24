@@ -8,9 +8,10 @@ import { prisma } from "@/utils/prisma";
  *  - Upstash Redis (REST) when UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN are set.
  *  - Otherwise a Postgres table (RateLimitBucket) updated with a single atomic upsert.
  *
- * The limiter fails open: if the backend is unreachable the request is
- * allowed and the error is logged, so an outage of the limiter never takes
- * the application down.
+ * If Upstash fails, the Postgres table takes over for that hit. If both
+ * fail, sign-in and account rules (names starting with "auth:") fail closed,
+ * so an outage cannot be used to brute-force passwords; every other rule
+ * fails open, so a limiter outage never takes the rest of the site down.
  */
 
 export type RateLimitRule = {
@@ -49,14 +50,42 @@ function normalizeKey(value: string): string {
   return value.trim().toLowerCase().slice(0, 200);
 }
 
-/** Best-effort client IP from proxy headers (Vercel sets x-forwarded-for). */
+function firstEntry(value: string | null): string | null {
+  return value?.split(",")[0]?.trim() || null;
+}
+
+/**
+ * Best-effort client IP from proxy headers. Vercel sets
+ * x-vercel-forwarded-for itself and a client cannot forge it; x-real-ip is set
+ * by Vercel and most reverse proxies. The first x-forwarded-for entry is only
+ * a last resort: behind a proxy that appends rather than overwrites, a client
+ * controls it.
+ */
 export function getClientIp(headers: Headers): string {
-  const forwarded = headers.get("x-forwarded-for");
-  if (forwarded) {
-    const first = forwarded.split(",")[0]?.trim();
-    if (first) return first;
+  return (
+    firstEntry(headers.get("x-vercel-forwarded-for")) ??
+    firstEntry(headers.get("x-real-ip")) ??
+    firstEntry(headers.get("x-forwarded-for")) ??
+    "unknown"
+  );
+}
+
+/** Rules that guard sign-in and account recovery; they deny when no backend can count. */
+function failsClosed(rule: RateLimitRule): boolean {
+  return rule.name.startsWith("auth:");
+}
+
+/** Seconds a fail-closed denial asks the client to wait. */
+const FAIL_CLOSED_RETRY_SECONDS = 60;
+
+async function countHit(key: string, rule: RateLimitRule): Promise<number> {
+  try {
+    const count = await hitUpstash(key, rule);
+    if (count !== null) return count;
+  } catch (error) {
+    console.error("[rate-limit] Upstash error; counting in Postgres instead:", error);
   }
-  return headers.get("x-real-ip")?.trim() || "unknown";
+  return hitPostgres(key, rule);
 }
 
 async function hitUpstash(key: string, rule: RateLimitRule): Promise<number | null> {
@@ -113,7 +142,7 @@ export async function rateLimit(rule: RateLimitRule, identifier: string): Promis
 
   const key = `rl:${rule.name}:${normalizeKey(identifier)}`;
   try {
-    const count = (await hitUpstash(key, rule)) ?? (await hitPostgres(key, rule));
+    const count = await countHit(key, rule);
     const ok = count <= rule.limit;
     return {
       ok,
@@ -121,7 +150,11 @@ export async function rateLimit(rule: RateLimitRule, identifier: string): Promis
       retryAfterSeconds: ok ? 0 : rule.windowSeconds,
     };
   } catch (error) {
-    console.error("[rate-limit] backend error; allowing request:", error);
+    if (failsClosed(rule)) {
+      console.error(`[rate-limit] no backend available; denying ${rule.name}:`, error);
+      return { ok: false, remaining: 0, retryAfterSeconds: FAIL_CLOSED_RETRY_SECONDS };
+    }
+    console.error(`[rate-limit] no backend available; allowing ${rule.name}:`, error);
     return { ok: true, remaining: rule.limit, retryAfterSeconds: 0 };
   }
 }

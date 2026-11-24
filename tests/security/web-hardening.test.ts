@@ -238,6 +238,42 @@ describe.skipIf(SKIP_WITHOUT_DB)("rate limiting", () => {
     expect(results.filter((r) => r.ok)).toHaveLength(3);
   });
 
+  describe("when a backend fails", () => {
+    beforeEach(() => {
+      // A mock endpoint: fetch is stubbed, nothing leaves the machine.
+      vi.stubEnv("UPSTASH_REDIS_REST_URL", "http://upstash.invalid");
+      vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "test-token");
+      vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("upstash unreachable"));
+      vi.spyOn(console, "error").mockImplementation(() => {});
+    });
+    afterEach(() => {
+      vi.unstubAllEnvs();
+      vi.restoreAllMocks();
+    });
+
+    it("an Upstash error falls back to the Postgres counter, which still limits", async () => {
+      const results = [];
+      for (let i = 0; i < 4; i++) results.push(await rateLimit(RULE, "10.5.5.5"));
+
+      expect(globalThis.fetch).toHaveBeenCalled();
+      expect(results.map((r) => r.ok)).toEqual([true, true, true, false]);
+      const bucket = await prisma.rateLimitBucket.findUniqueOrThrow({ where: { key: "rl:test:rule:10.5.5.5" } });
+      expect(bucket.count).toBe(4);
+    });
+
+    it("with both down, sign-in is refused with 429 and other rules let the request through", async () => {
+      vi.spyOn(prisma, "$queryRaw").mockRejectedValue(new Error("postgres unreachable"));
+
+      const login = await enforceRateLimit(RATE_LIMITS.LOGIN, "someone@example.com");
+      expect(login?.status).toBe(429);
+      expect(Number(login?.headers.get("retry-after"))).toBeGreaterThan(0);
+      expect((await rateLimit(RATE_LIMITS.LOGIN_IP, "10.6.6.6")).ok).toBe(false);
+
+      expect(await enforceRateLimit(RATE_LIMITS.CONTACT_IP, "10.6.6.6")).toBeNull();
+      expect((await rateLimit(RULE, "10.6.6.6")).ok).toBe(true);
+    });
+  });
+
   it("protects the login, registration and password-reset flows with real limits", () => {
     expect(RATE_LIMITS.LOGIN.limit).toBeLessThanOrEqual(10);
     expect(RATE_LIMITS.REGISTER_IP.limit).toBeLessThanOrEqual(10);

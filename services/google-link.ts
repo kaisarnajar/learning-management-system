@@ -1,0 +1,47 @@
+import { prisma } from "@/utils/prisma";
+import { withDbErrorHandling } from "@/utils/db-error";
+import { revokeAllApiSessions } from "@/services/api-auth";
+
+/**
+ * What to do when Google signs in an address that exists as an unverified
+ * password account: "scrub" (default) nulls that password and marks the
+ * address verified before linking; "refuse" sends the user back to /login.
+ */
+const UNVERIFIED_LINK_POLICY = process.env.AUTH_GOOGLE_LINK_UNVERIFIED === "refuse" ? "refuse" : "scrub";
+
+/**
+ * The web Google sign-in check (Auth.js `signIn` callback), before Auth.js
+ * links the Google account to an existing row with the same address. Returns
+ * what the callback returns: true to continue, false to deny, or a redirect.
+ */
+export async function prepareGoogleLink(rawEmail: string): Promise<boolean | string> {
+  const email = rawEmail.toLowerCase().trim();
+  const existing = await withDbErrorHandling(
+    () => prisma.user.findUnique({
+      where: { email },
+      select: { id: true, emailVerified: true, password: true, deletedAt: true },
+    }),
+    "Database operation failed",
+  );
+  if (!existing) return true;
+  if (existing.deletedAt) return false;
+  if (existing.emailVerified) return true;
+
+  if (existing.password) {
+    // The row was created with a password nobody has proven ownership of.
+    // Google has just proven ownership of the address, so the password
+    // (possibly set by someone else) must not survive the link.
+    if (UNVERIFIED_LINK_POLICY === "refuse") return "/login?error=unverified-link";
+    await withDbErrorHandling(
+      () => prisma.user.update({
+        where: { id: existing.id },
+        data: { password: null, emailVerified: new Date() },
+      }),
+      "Database operation failed",
+    );
+  }
+  // Whoever registered the unverified row may hold a mobile API session;
+  // it must not carry over to the account the real owner is taking back.
+  await revokeAllApiSessions(existing.id);
+  return true;
+}

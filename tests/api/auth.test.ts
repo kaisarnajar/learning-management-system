@@ -9,7 +9,11 @@ import { POST as google } from "@/app/api/v1/auth/google/route";
 import { GET as me, PUT as updateMe } from "@/app/api/v1/auth/me/route";
 import { GET as teacherCourses } from "@/app/api/v1/teacher/courses/route";
 import { GET as adminDashboard } from "@/app/api/v1/admin/dashboard/route";
-import { createTeacher, createUser, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
+import { POST as resetPassword } from "@/app/api/auth/reset-password/route";
+import { confirmEmailVerification } from "@/app/verify-email/actions";
+import { createPasswordResetToken } from "@/services/password-reset";
+import { generateVerificationToken } from "@/services/tokens";
+import { createTeacher, createUser, resetDb, runAction, SKIP_WITHOUT_DB } from "../helpers/db";
 import { apiRequest, bearer, createPasswordUser, jsonOf, signedInStudent } from "../helpers/api";
 
 const verifyIdToken = vi.fn();
@@ -107,6 +111,53 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
 
       await verify(process.env.ADMIN_EMAIL!);
       expect((await adminDashboard(apiRequest("/api/v1/admin/dashboard", { headers: bearer(accessToken) }))).status).toBe(200);
+    });
+  });
+
+  describe("sessions end when the account is taken back", () => {
+    const registerSquatter = async (email: string) => {
+      const response = await register(
+        apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "Squatter", email, password: "long-enough-1", acceptPolicies: true } }),
+      );
+      return jsonOf(response);
+    };
+    const refreshWith = (refreshToken: string) => refresh(apiRequest("/api/v1/auth/refresh", { method: "POST", json: { refreshToken } }));
+
+    it("a password reset revokes every API session", async () => {
+      const { refreshToken, accessToken } = await registerSquatter("reset.me@example.test");
+      const token = await createPasswordResetToken("reset.me@example.test");
+
+      const reset = await resetPassword(apiRequest("/api/auth/reset-password", { method: "POST", json: { token, password: "brand-new-pass-1", confirmPassword: "brand-new-pass-1" } }));
+      expect(reset.status).toBe(200);
+
+      expect((await refreshWith(refreshToken)).status).toBe(401);
+      expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(accessToken) }))).status).toBe(401);
+    });
+
+    it("verifying the address revokes the sessions opened before it", async () => {
+      const { refreshToken } = await registerSquatter("verify.me@example.test");
+      const { token } = await generateVerificationToken("verify.me@example.test");
+      const form = new FormData();
+      form.set("token", token);
+
+      expect((await runAction(() => confirmEmailVerification(form))).redirectedTo).toBe("/verify-email?verified=1");
+      expect((await refreshWith(refreshToken)).status).toBe(401);
+    });
+
+    it("mobile Google sign-in on an unverified row revokes the squatter's sessions", async () => {
+      process.env.AUTH_GOOGLE_ID = "client-id";
+      verifyIdToken.mockResolvedValue({
+        getPayload: () => ({ iss: "https://accounts.google.com", aud: "client-id", email: "taken@example.test", email_verified: true, name: "Owner" }),
+      });
+      const { refreshToken } = await registerSquatter("taken@example.test");
+
+      const owner = await google(apiRequest("/api/v1/auth/google", { method: "POST", json: { idToken: "id-token" } }));
+      expect(owner.status).toBe(200);
+      const ownerTokens = await jsonOf(owner);
+
+      expect((await refreshWith(refreshToken)).status).toBe(401);
+      // The owner's own new session is unaffected.
+      expect((await refreshWith(ownerTokens.refreshToken)).status).toBe(200);
     });
   });
 

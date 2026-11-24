@@ -9,18 +9,12 @@ import { withDbErrorHandling } from "@/utils/db-error";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { getClientIp, rateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { getApiActorSession } from "@/services/api-actor";
+import { prepareGoogleLink } from "@/services/google-link";
 
 /** Surfaced to the login form as result.code so it can offer to resend the verification email. */
 class EmailNotVerifiedError extends CredentialsSignin {
   code = "email_not_verified";
 }
-
-/**
- * What to do when Google signs in an address that exists as an unverified
- * password account: "scrub" (default) nulls that password and marks the
- * address verified before linking; "refuse" sends the user back to /login.
- */
-const UNVERIFIED_LINK_POLICY = process.env.AUTH_GOOGLE_LINK_UNVERIFIED === "refuse" ? "refuse" : "scrub";
 
 /** How long role, teacher link and verification state may be served from the token before being re-read. */
 const TOKEN_REFRESH_INTERVAL_MS = 60 * 1000;
@@ -87,32 +81,7 @@ const nextAuth = NextAuth({
     ...authConfig.callbacks,
     async signIn({ user, account }) {
       if (account?.provider !== "google" || !user.email) return true;
-
-      const email = user.email.toLowerCase().trim();
-      const existing = await withDbErrorHandling(
-        () => prisma.user.findUnique({
-          where: { email },
-          select: { id: true, emailVerified: true, password: true, deletedAt: true },
-        }),
-        "Database operation failed",
-      );
-      if (!existing) return true;
-      if (existing.deletedAt) return false;
-
-      if (!existing.emailVerified && existing.password) {
-        // The row was created with a password nobody has proven ownership of.
-        // Google has just proven ownership of the address, so the password
-        // (possibly set by someone else) must not survive the link.
-        if (UNVERIFIED_LINK_POLICY === "refuse") return "/login?error=unverified-link";
-        await withDbErrorHandling(
-          () => prisma.user.update({
-            where: { id: existing.id },
-            data: { password: null, emailVerified: new Date() },
-          }),
-          "Database operation failed",
-        );
-      }
-      return true;
+      return prepareGoogleLink(user.email);
     },
     async jwt({ token, user, account, trigger }) {
       if (user?.id) {

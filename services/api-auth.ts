@@ -129,7 +129,7 @@ export async function revokeApiSessionById(sessionId: string, userId: string): P
   });
 }
 
-/** Revokes every API session of a user (password change, account deletion). */
+/** Revokes every API session of a user (password change or reset, e-mail verification, take-over of an unverified row, account deletion). */
 export async function revokeAllApiSessions(userId: string): Promise<void> {
   await prisma.apiRefreshToken.updateMany({
     where: { userId, revokedAt: null },

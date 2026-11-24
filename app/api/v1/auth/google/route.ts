@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OAuth2Client } from "google-auth-library";
 import { prisma } from "@/utils/prisma";
-import { issueApiSession } from "@/services/api-auth";
+import { issueApiSession, revokeAllApiSessions } from "@/services/api-auth";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
@@ -109,6 +109,8 @@ export async function POST(request: NextRequest) {
         data: { emailVerified: new Date(), password: null },
         select: userSelect,
       });
+      // Whoever registered the unverified row may still hold an API session.
+      await revokeAllApiSessions(user.id);
     }
 
     const role = await resolveUserRole(user.email);

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/utils/prisma";
 import { findVerificationToken } from "@/services/tokens";
+import { revokeAllApiSessions } from "@/services/api-auth";
 
 /**
  * Consumes a verification token. This is a POST (server action) so link
@@ -34,6 +35,9 @@ export async function confirmEmailVerification(formData: FormData) {
       },
     }),
   ]);
+  // The account may have been registered by someone else before the owner
+  // proved the mailbox; no API session from before verification survives.
+  await revokeAllApiSessions(user.id);
 
   redirect("/verify-email?verified=1");
 }

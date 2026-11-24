@@ -959,11 +959,15 @@ model ApiRefreshToken {
   expiresAt DateTime
   revokedAt DateTime?
   createdAt DateTime  @default(now())
+  /// Shared by every token rotated from one sign-in; null for tokens issued
+  /// before families existed. Reuse of a rotated token revokes the family.
+  familyId  String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([familyId])
 }
 
 model DeviceToken {

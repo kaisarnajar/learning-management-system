@@ -399,7 +399,8 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
       },
     });
 
-  it("charges the discounted amount only for a coupon the student selected, and burns it once", async () => {
+  it("charges the discounted amount only for a coupon the student selected, and spends it once on approval", async () => {
+    await loginAsAdmin();
     const student = await createUser();
     const course = await createCourse();
     const coupon = await createCoupon(50);
@@ -410,6 +411,9 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
 
     const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
     expect(submission).toMatchObject({ amountInrPaise: 25000, couponId: coupon.id });
+    // Pending: the submission holds the coupon; it is spent when approved.
+    expect(await prisma.couponUsage.count({ where: { userId: student.id, couponId: coupon.id } })).toBe(0);
+    await runAction(() => confirmMonthlyPayment(submission.id));
     expect(await prisma.couponUsage.count({ where: { userId: student.id, couponId: coupon.id } })).toBe(1);
 
     // The same coupon cannot be selected again, so the full price is now expected.
@@ -467,8 +471,62 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
 
     expect(results.filter((r) => r.success)).toHaveLength(1);
     expect(results.filter((r) => !r.success)).toEqual([expect.objectContaining({ status: 409 })]);
-    expect(await prisma.couponUsage.count({ where: { couponId: coupon.id } })).toBe(1);
+    // One pending submission holds the coupon; nothing is spent before approval.
     expect(await prisma.coursePaymentSubmission.count({ where: { couponId: coupon.id } })).toBe(1);
+    expect(await prisma.couponUsage.count({ where: { couponId: coupon.id } })).toBe(0);
+  });
+
+  it.each(["DEFAULT", "SPECIAL"] as const)("a declined submission gives its %s coupon back", async (type) => {
+    await loginAsAdmin();
+    const student = await createUser();
+    const course = await createCourse();
+    await createEnrollment(student.id, course.id);
+    const coupon = await createCoupon(50, type === "SPECIAL" ? { type, userId: student.id, code: "WAIVER-AK-2468" } : {});
+
+    expect(await processMonthlyPayment(student.id, course.id, "01", "2026", "upi", "UTR8500001", null, coupon.id, 17450)).toEqual({ success: true });
+    const first = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
+    await runAction(() => declineMonthlyPayment(first.id));
+    expect(await prisma.couponUsage.count()).toBe(0);
+    expect((await prisma.coupon.findUniqueOrThrow({ where: { id: coupon.id } })).isActive).toBe(true);
+
+    expect(await processMonthlyPayment(student.id, course.id, "01", "2026", "upi", "UTR8500002", null, coupon.id, 17450)).toEqual({ success: true });
+    const second = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id, statusEnum: "PENDING_VERIFICATION" } });
+    expect(second.couponId).toBe(coupon.id);
+
+    await runAction(() => confirmMonthlyPayment(second.id));
+    expect(await prisma.couponUsage.count({ where: { userId: student.id, couponId: coupon.id } })).toBe(1);
+    expect((await prisma.coupon.findUniqueOrThrow({ where: { id: coupon.id } })).isActive).toBe(type === "DEFAULT");
+  });
+
+  it("two pending submissions cannot hold the same coupon", async () => {
+    const student = await createUser();
+    const course = await createCourse();
+    await createEnrollment(student.id, course.id);
+    const coupon = await createCoupon(50);
+
+    expect(await processMonthlyPayment(student.id, course.id, "01", "2026", "upi", "UTR8600001", null, coupon.id, 17450)).toEqual({ success: true });
+    const february = await processMonthlyPayment(student.id, course.id, "02", "2026", "upi", "UTR8600002", null, coupon.id, 17450);
+    expect(february).toMatchObject({ status: 409 });
+    expect(await prisma.coursePaymentSubmission.count({ where: { couponId: coupon.id } })).toBe(1);
+  });
+
+  it("approves a pending submission whose coupon was spent at submission before the change", async () => {
+    await loginAsAdmin();
+    const student = await createUser();
+    const course = await createCourse();
+    await createEnrollment(student.id, course.id);
+    const coupon = await createCoupon(100, { type: "SPECIAL", userId: student.id, code: "WAIVER-AK-1357" });
+    await processMonthlyPayment(student.id, course.id, "01", "2026", null, null, null, coupon.id, 0);
+    const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
+    // What the old submit path left behind: a usage row and a deactivated SPECIAL coupon.
+    await prisma.couponUsage.create({ data: { couponId: coupon.id, userId: student.id } });
+    await prisma.coupon.update({ where: { id: coupon.id }, data: { isActive: false } });
+
+    const approval = await runAction(() => confirmMonthlyPayment(submission.id));
+
+    expect(approval.redirectedTo).toContain("confirmed=1");
+    expect((await prisma.coursePaymentSubmission.findUniqueOrThrow({ where: { id: submission.id } })).statusEnum).toBe("APPROVED");
+    expect(await prisma.couponUsage.count({ where: { couponId: coupon.id } })).toBe(1);
   });
 
   it("redeeming a coupon a second time fails instead of passing silently", async () => {
@@ -522,6 +580,8 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
     expect(record.amountInrPaise).toBe(0);
     const enrollment = await prisma.enrollment.findFirstOrThrow({ where: { userId: student.id } });
     expect(enrollment).toMatchObject({ statusEnum: "ACTIVE", rollNumber: 1 });
+    // Auto-approved: the coupon is spent at once.
+    expect(await prisma.couponUsage.count({ where: { userId: student.id, couponId: coupon.id } })).toBe(1);
   });
   it.each(["DRAFT", "ON_HOLD", "COMPLETED"] as const)(
     "refuses an auto-approved full waiver once the course is %s, leaving the enrollment as it was",

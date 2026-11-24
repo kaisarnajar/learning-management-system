@@ -20,7 +20,13 @@ import {
   submissionStatusData,
   submissionStatusOf,
 } from "@/services/status-compat";
-import { calculateDiscountedAmount, CouponAlreadyUsedError, getSelectedCoupon, recordCouponUsageTx } from "@/services/coupons";
+import {
+  calculateDiscountedAmount,
+  CouponAlreadyUsedError,
+  getSelectedCoupon,
+  recordCouponUsageTx,
+  reserveCouponTx,
+} from "@/services/coupons";
 import { deletePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
 import { isUploadError } from "@/services/storage";
 import { assignRollNumberTx } from "@/services/roll-numbers";
@@ -203,6 +209,8 @@ export async function processMonthlyPayment(
   try {
     await prisma.$transaction(async (tx) => {
       await assertUtrNotReused(tx, upiTransactionId, isFree);
+      // The pending submission holds the coupon; it is spent on approval.
+      if (coupon) await reserveCouponTx(tx, userId, coupon.id);
 
       const submission = await tx.coursePaymentSubmission.create({
         data: {
@@ -224,11 +232,8 @@ export async function processMonthlyPayment(
         data: { paymentReference: submission.id },
       });
 
-      if (coupon) {
-        await recordCouponUsageTx(tx, userId, coupon.id);
-      }
-
       if (autoApprove) {
+        if (coupon) await recordCouponUsageTx(tx, userId, coupon.id);
         // 100 % waiver with auto-approval enabled: nothing to verify, record it immediately.
         const record = await tx.paymentRecord.create({
           data: {
@@ -335,6 +340,8 @@ export async function processEnrollmentPayment(
   try {
     await prisma.$transaction(async (tx) => {
       await assertUtrNotReused(tx, upiTransactionId, isFree);
+      // The pending submission holds the coupon; it is spent on approval.
+      if (coupon) await reserveCouponTx(tx, userId, coupon.id);
 
       // Auto-approved waivers activate the enrollment immediately; everything
       // else (paid, or waived without auto-approval) waits for the admin.
@@ -371,11 +378,8 @@ export async function processEnrollmentPayment(
         data: { paymentReference: submission.id },
       });
 
-      if (coupon) {
-        await recordCouponUsageTx(tx, userId, coupon.id);
-      }
-
       if (autoApprove) {
+        if (coupon) await recordCouponUsageTx(tx, userId, coupon.id);
         const record = await tx.paymentRecord.create({
           data: {
             userId,

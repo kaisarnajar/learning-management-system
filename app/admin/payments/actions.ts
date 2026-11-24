@@ -24,6 +24,7 @@ import { getAppBaseUrl } from "@/services/password-reset";
 import { normalizeReason, softDeleteSubmissionTx, voidPaymentRecordTx, VoidError } from "@/services/payment-voiding";
 import { assignRollNumberTx } from "@/services/roll-numbers";
 import { deletePaymentScreenshot } from "@/services/payment-upload";
+import { CouponAlreadyUsedError, spendReservedCouponTx } from "@/services/coupons";
 
 /** Rolls an approval back when the enrollment stopped awaiting its fee mid-way. */
 class EnrollmentNotAwaitingFeeError extends Error {}
@@ -113,6 +114,12 @@ export async function confirmMonthlyPayment(
       if (moved.count === 0) throw new EnrollmentNotAwaitingFeeError();
     }
 
+    // The coupon was only reserved at submission; it is spent now, so a
+    // declined submission never burns it.
+    if (submission.couponId) {
+      await spendReservedCouponTx(tx, submission.userId, submission.couponId, submissionId);
+    }
+
     const record = await tx.paymentRecord.create({
       data: {
         userId: submission.userId,
@@ -142,6 +149,7 @@ export async function confirmMonthlyPayment(
   const outcome = await withDbErrorHandling(
     () => approve().catch((error: unknown) => {
       if (error instanceof EnrollmentNotAwaitingFeeError) return "not-awaiting-fee" as const;
+      if (error instanceof CouponAlreadyUsedError) return "coupon-used" as const;
       throw error;
     }),
     "Database operation failed",
@@ -149,6 +157,10 @@ export async function confirmMonthlyPayment(
 
   if (outcome === "not-awaiting-fee") {
     return { error: "Enrollment is not awaiting an enrollment fee payment." };
+  }
+
+  if (outcome === "coupon-used") {
+    return { error: "The coupon on this payment was already spent on another approved payment. Decline it and ask the student to pay without the coupon." };
   }
 
   if (outcome === "already-processed") {

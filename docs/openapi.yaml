@@ -3243,7 +3243,7 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     post:
       tags: ["Admin: Payments"]
-      summary: Approves a pending fee submission (records the payment, notifies the student)
+      summary: Approves a pending fee submission (records the payment, spends its coupon, notifies the student)
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }
@@ -3253,7 +3253,7 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     post:
       tags: ["Admin: Payments"]
-      summary: Declines a pending fee submission; the student can resubmit
+      summary: Declines a pending fee submission; the student can resubmit, with the same coupon
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }

@@ -30,7 +30,9 @@ export async function getApplicableCoupons(
   // Account for timezones ahead of UTC (e.g. IST +5:30) where local date is today but UTC is previous day
   const timezoneBuffer = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
-  // Find all coupons already used by this student
+  // A coupon is used once a usage row exists (written when its payment is
+  // approved) or while a live submission holds it (pending verification, or
+  // approved before usage was recorded at approval).
   const [usedUsages, usedSubmissions] = await Promise.all([
     prisma.couponUsage.findMany({
       where: { userId },
@@ -131,17 +133,44 @@ export class CouponAlreadyUsedError extends Error {
   }
 }
 
+const LIVE_SUBMISSION_STATUSES = [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED];
+
+/**
+ * Reserves `couponId` for a submission `userId` is about to create in the
+ * caller's transaction. Call it before creating the submission.
+ *
+ * A coupon is spent when its payment is approved, not when it is submitted,
+ * so a declined submission gives the coupon back. Until then the pending
+ * submission's couponId holds it. Availability is checked before the
+ * transaction (getSelectedCoupon), so two submissions at once can both get
+ * here: the coupon row is locked first, which serialises them, and the
+ * second one then sees the first one's submission and is refused.
+ */
+export async function reserveCouponTx(tx: Prisma.TransactionClient, userId: string, couponId: string) {
+  const locked = await tx.$queryRaw<{ isActive: boolean }[]>`
+    SELECT "isActive" FROM "Coupon" WHERE "id" = ${couponId} FOR UPDATE`;
+  if (!locked[0]?.isActive) throw new CouponAlreadyUsedError();
+
+  const [usage, holder] = await Promise.all([
+    tx.couponUsage.findUnique({ where: { couponId_userId: { couponId, userId } }, select: { id: true } }),
+    tx.coursePaymentSubmission.findFirst({
+      where: { userId, couponId, deletedAt: null, status: { in: LIVE_SUBMISSION_STATUSES } },
+      select: { id: true },
+    }),
+  ]);
+  if (usage || holder) throw new CouponAlreadyUsedError();
+}
+
 /**
  * Records that `userId` consumed `couponId` as part of the caller's
  * transaction, so a failed submission never burns the coupon.
  * SPECIAL (single-use, per-student) coupons are deactivated on use.
  *
- * Availability is checked before the transaction (getSelectedCoupon), so two
- * submissions at once (January and February with one coupon) can both get
- * here. The redemption itself is the guard: the usage row is created, never
- * upserted, so the second insert hits the (couponId, userId) unique key, and
- * a SPECIAL coupon is deactivated only if it is still active. Either loss
- * throws CouponAlreadyUsedError and rolls the caller's transaction back.
+ * Used where a payment is approved at submission (auto-approved waivers),
+ * after reserveCouponTx. The usage row is created, never upserted, so a
+ * second redemption hits the (couponId, userId) unique key, and a SPECIAL
+ * coupon is deactivated only if it is still active. Either loss throws
+ * CouponAlreadyUsedError and rolls the caller's transaction back.
  */
 export async function recordCouponUsageTx(tx: Prisma.TransactionClient, userId: string, couponId: string) {
   try {
@@ -161,6 +190,45 @@ export async function recordCouponUsageTx(tx: Prisma.TransactionClient, userId: 
     });
     if (deactivated.count === 0) throw new CouponAlreadyUsedError();
   }
+}
+
+/**
+ * Spends the coupon a pending submission reserved, as part of the approval
+ * transaction: writes the usage row and deactivates a SPECIAL coupon.
+ *
+ * Submissions made before usage moved to approval already wrote their usage
+ * row (and deactivated their SPECIAL coupon) at submission, so an existing
+ * row is accepted, unless another approved submission of the student's holds
+ * the same coupon; then the coupon really was spent twice and the approval
+ * is refused with CouponAlreadyUsedError. The insert skips a conflict instead
+ * of raising it, because a failed statement would abort the transaction.
+ */
+export async function spendReservedCouponTx(
+  tx: Prisma.TransactionClient,
+  userId: string,
+  couponId: string,
+  submissionId: string,
+) {
+  const created = await tx.couponUsage.createMany({ data: [{ couponId, userId }], skipDuplicates: true });
+  if (created.count === 0) {
+    const otherHolder = await tx.coursePaymentSubmission.findFirst({
+      where: {
+        userId,
+        couponId,
+        id: { not: submissionId },
+        deletedAt: null,
+        status: PAYMENTS.SUBMISSION_STATUS.APPROVED,
+      },
+      select: { id: true },
+    });
+    if (otherHolder) throw new CouponAlreadyUsedError();
+  }
+  // The reservation held the coupon: an admin deactivating it since does not
+  // take back the price the student was quoted, so no count check here.
+  await tx.coupon.updateMany({
+    where: { id: couponId, type: "SPECIAL", isActive: true },
+    data: { isActive: false },
+  });
 }
 
 export async function recordCouponUsage(userId: string, couponId: string) {

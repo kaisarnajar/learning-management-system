@@ -11,6 +11,7 @@ import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { PaymentProofFields, type PaymentMethod } from "@/components/payment/PaymentProofFields";
 import { calculateDiscountedAmount, type ApplicableCoupon } from "@/services/coupons";
 import { formatPrice } from "@/utils/money";
+import { PAYMENT_PROOF_REQUIRED_MESSAGE } from "@/config/constants/payments";
 import type { PaymentSettingsData } from "@/services/payment-settings";
 
 const MONTHS = [
@@ -82,6 +83,10 @@ export function MonthlyPaymentForm({
     e.preventDefault();
     if (loading) return;
     setError("");
+    if (!isFree && !transactionId.trim() && !(screenshot && screenshot.size > 0)) {
+      setError(PAYMENT_PROOF_REQUIRED_MESSAGE);
+      return;
+    }
     setLoading(true);
 
     try {

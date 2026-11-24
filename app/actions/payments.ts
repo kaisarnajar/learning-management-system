@@ -6,6 +6,8 @@ import { isUpiConfigured } from "@/services/upi";
 import { monthlyPaymentSubmitSchema, enrollmentPaymentSubmitSchema } from "@/utils/validations";
 import { validatePaymentScreenshot } from "@/services/payment-upload";
 
+const hasFile = (value: FormDataEntryValue | null) => value instanceof File && value.size > 0;
+
 export async function submitMonthlyPayment(formData: FormData) {
   const { session, error: authError } = await ensureAuth();
   if (authError || !session) return { error: authError || "Please sign in.", status: 401 };
@@ -21,6 +23,7 @@ export async function submitMonthlyPayment(formData: FormData) {
       upiTransactionId: formData.get("upiTransactionId"),
       couponId: formData.get("couponId"),
       expectedAmountPaise: formData.get("expectedAmountPaise"),
+      hasScreenshot: hasFile(formData.get("screenshot")),
     });
 
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid payment details.", status: 400 };
@@ -64,6 +67,7 @@ export async function submitEnrollmentPayment(formData: FormData) {
       upiTransactionId: formData.get("upiTransactionId"),
       couponId: formData.get("couponId"),
       expectedAmountPaise: formData.get("expectedAmountPaise"),
+      hasScreenshot: hasFile(formData.get("screenshot")),
     });
 
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid payment details.", status: 400 };

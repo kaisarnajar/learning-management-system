@@ -563,10 +563,10 @@ components:
         paymentMonth: { type: string, pattern: "^(0[1-9]|1[0-2])$", description: 'Course fees only; "01" for one-time fees' }
         paymentYear: { type: string, pattern: "^[0-9]{4}$", description: "Course fees only; one of the quote's yearOptions. Ignored for one-time fees, which are paid once per course whatever the year" }
         paymentMethod: { type: string, enum: [upi, bank] }
-        upiTransactionId: { type: string, description: Letters and digits; required unless the amount is 0 }
+        upiTransactionId: { type: string, description: "Letters and digits. When the amount is above 0, this or a screenshot is required (400 otherwise); ignored for a 100% waiver" }
         couponId: { type: string, description: 'A coupon id from the quote, or "none"' }
         expectedAmountPaise: { type: integer, description: The amount shown; a different server price answers 409 }
-        screenshot: { type: string, format: binary, description: Multipart only }
+        screenshot: { type: string, format: binary, description: "Multipart only. When the amount is above 0, this or upiTransactionId is required" }
     BookOrder:
       type: object
       required: [items, paymentMethod, upiTransactionId, deliveryAddress, deliveryPinCode, deliveryPhoneNumber]
@@ -1840,8 +1840,9 @@ paths:
         "200": { $ref: "#/components/responses/Ok" }
         "400":
           description: >-
-            Invalid details, or (enrollment fee) no enrollment awaiting the fee: start it with POST /enrollments
-            first. Also refused when the course has closed for enrollment or the profile is incomplete.
+            Invalid details, including a fee above 0 with neither a UTR nor a screenshot, or (enrollment fee) no
+            enrollment awaiting the fee: start it with POST /enrollments first. Also refused when the course has closed
+            for enrollment or the profile is incomplete.
           content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
         "403": { description: E-mail not verified, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "409":

@@ -8,7 +8,7 @@ import { buildMonthlyFeeLabel, buildEnrollmentFeeLabel } from "@/services/monthl
 import { getFeeFrequencyPaymentType } from "@/services/fee-frequency";
 import { buildPeriodKey } from "@/services/payment-period";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
-import { PAYMENTS } from "@/config/constants/payments";
+import { PAYMENT_PROOF_REQUIRED_MESSAGE, PAYMENTS } from "@/config/constants/payments";
 import {
   enrollmentStatusData,
   enrollmentStatusOf,
@@ -114,6 +114,11 @@ async function uploadScreenshot(prefix: string, file: File | null): Promise<stri
   }
 }
 
+/** A fee that costs money is only verifiable with a UTR or a screenshot. */
+function missingPaymentProof(isFree: boolean, upiTransactionId: string | null, screenshotFile: File | null): boolean {
+  return !isFree && !upiTransactionId?.trim() && !(screenshotFile && screenshotFile.size > 0);
+}
+
 async function assertUtrNotReused(tx: SubmissionTx, upiTransactionId: string | null, isFree: boolean) {
   if (!upiTransactionId || isFree || upiTransactionId === WAIVER_TRANSACTION_REF) return;
   const duplicate = await tx.coursePaymentSubmission.findFirst({
@@ -168,6 +173,7 @@ export async function processMonthlyPayment(
     return { error: AMOUNT_MISMATCH_MESSAGE, status: 409 };
   }
   const isFree = amountInrPaise === 0;
+  if (missingPaymentProof(isFree, upiTransactionId, screenshotFile)) return { error: PAYMENT_PROOF_REQUIRED_MESSAGE, status: 400 };
   // A fully waived fee is auto-approved only when the academy opted in;
   // otherwise it queues for admin confirmation like any other payment.
   const autoApprove = isFree && (await getPaymentSettings()).autoApproveFullWaivers;
@@ -325,6 +331,7 @@ export async function processEnrollmentPayment(
     return { error: AMOUNT_MISMATCH_MESSAGE, status: 409 };
   }
   const isFree = enrollmentFeePaise === 0;
+  if (missingPaymentProof(isFree, upiTransactionId, screenshotFile)) return { error: PAYMENT_PROOF_REQUIRED_MESSAGE, status: 400 };
   const autoApprove = isFree && (await getPaymentSettings()).autoApproveFullWaivers;
   const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
 

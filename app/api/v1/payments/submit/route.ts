@@ -61,6 +61,7 @@ export async function POST(request: NextRequest) {
       upiTransactionId: raw.upiTransactionId ?? "",
       couponId: raw.couponId ?? null,
       expectedAmountPaise: raw.expectedAmountPaise,
+      hasScreenshot: Boolean(screenshotFile && screenshotFile.size > 0),
     };
 
     const screenshotValidation = validatePaymentScreenshot(screenshotFile);

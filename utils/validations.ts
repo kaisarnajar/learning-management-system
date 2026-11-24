@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MAX_ORDER_QTY } from "@/config/constants/business";
+import { PAYMENT_PROOF_REQUIRED_MESSAGE } from "@/config/constants/payments";
 import {
   PROFILE_COUNTRY_CODES,
   getProfileCountryOrDefault,
@@ -174,6 +175,20 @@ export const expectedAmountPaiseSchema = z.preprocess(
   z.coerce.number().int().nonnegative().optional(),
 );
 
+/**
+ * A fee the client says costs money needs a UTR or a screenshot. The server
+ * repeats the check once it has computed the amount (services/payments.ts),
+ * which also covers clients that send no expected amount.
+ */
+function requirePaymentProof(
+  data: { expectedAmountPaise?: number; upiTransactionId?: string | null; hasScreenshot?: boolean },
+  ctx: z.RefinementCtx,
+) {
+  if ((data.expectedAmountPaise ?? 0) > 0 && !data.upiTransactionId && !data.hasScreenshot) {
+    ctx.addIssue({ code: "custom", path: ["upiTransactionId"], message: PAYMENT_PROOF_REQUIRED_MESSAGE });
+  }
+}
+
 export const monthlyPaymentSubmitSchema = z.object({
   courseId: z.string().min(1),
   paymentMonth: z.string().regex(/^(0[1-9]|1[0-2])$/, "Select a valid month."),
@@ -191,7 +206,8 @@ export const monthlyPaymentSubmitSchema = z.object({
     .or(z.null()),
   couponId: z.string().optional().or(z.literal("")).or(z.null()),
   expectedAmountPaise: expectedAmountPaiseSchema,
-});
+  hasScreenshot: z.boolean().optional(),
+}).superRefine(requirePaymentProof);
 
 export const enrollmentPaymentSubmitSchema = z.object({
   courseId: z.string().min(1),
@@ -205,7 +221,8 @@ export const enrollmentPaymentSubmitSchema = z.object({
     .or(z.null()),
   couponId: z.string().optional().or(z.literal("")).or(z.null()),
   expectedAmountPaise: expectedAmountPaiseSchema,
-});
+  hasScreenshot: z.boolean().optional(),
+}).superRefine(requirePaymentProof);
 
 export const occupationEnum = z.enum(OCCUPATION_VALUES);
 

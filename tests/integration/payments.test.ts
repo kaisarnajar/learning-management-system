@@ -6,6 +6,7 @@ import { processEnrollmentPayment, processMonthlyPayment } from "@/services/paym
 import { CouponAlreadyUsedError, recordCouponUsageTx } from "@/services/coupons";
 import { confirmMonthlyPayment, declineMonthlyPayment } from "@/app/admin/payments/actions";
 import { generateReceipt } from "@/app/actions/receipts";
+import { PAYMENT_PROOF_REQUIRED_MESSAGE } from "@/config/constants/payments";
 import {
   createCourse,
   createEnrollment,
@@ -274,6 +275,25 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     const stale = await processEnrollmentPayment(second.id, course.id, "upi", "UTR5000002", null, null, 12345);
     expect(stale).toMatchObject({ status: 409 });
     expect(await prisma.coursePaymentSubmission.count({ where: { userId: second.id } })).toBe(0);
+  });
+
+  it("a paid fee needs a UTR or a screenshot", async () => {
+    const student = await createUser();
+    const course = await createCourse();
+    await createEnrollment(student.id, course.id);
+    const png = new File([Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64")], "paid.png", { type: "image/png" });
+
+    expect(await processMonthlyPayment(student.id, course.id, "03", "2026", "upi", null, null)).toEqual({ status: 400, error: PAYMENT_PROOF_REQUIRED_MESSAGE });
+    expect(await processMonthlyPayment(student.id, course.id, "03", "2026", "upi", "  ", new File([], "empty.png"))).toEqual({ status: 400, error: PAYMENT_PROOF_REQUIRED_MESSAGE });
+    expect(await prisma.coursePaymentSubmission.count()).toBe(0);
+
+    expect(await processMonthlyPayment(student.id, course.id, "03", "2026", "upi", null, png)).toEqual({ success: true });
+    expect(await processMonthlyPayment(student.id, course.id, "04", "2026", "upi", "UTR7500001", null)).toEqual({ success: true });
+
+    const other = await createUser();
+    await startedEnrollment(other.id, course.id);
+    expect(await processEnrollmentPayment(other.id, course.id, "upi", "", null)).toEqual({ status: 400, error: PAYMENT_PROOF_REQUIRED_MESSAGE });
+    expect((await prisma.enrollment.findFirstOrThrow({ where: { userId: other.id } })).statusEnum).toBe("AWAITING_ENROLLMENT_FEE");
   });
 
   it("blocks a duplicate pending enrollment fee", async () => {

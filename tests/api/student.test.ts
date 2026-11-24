@@ -230,6 +230,28 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
       expect((await submit(body)).status).toBe(200);
     });
 
+    it("refuses a paid fee with no UTR and no screenshot, and accepts a 100% waiver without either", async () => {
+      await setPaymentSettings({ feeWaiverEnabled: true });
+      const me = await signedInStudent();
+      const course = await createCourse({ priceInrPaise: 50000 });
+      await startedEnrollment(me.user.id, course.id);
+      const submit = (json: Record<string, unknown>) =>
+        submitPost(apiRequest("/api/v1/payments/submit", { method: "POST", headers: me.headers, json: { courseId: course.id, paymentType: "enrollment", ...json } }));
+
+      // Refused by the schema (the client sent the amount) and by the service (it did not).
+      const withAmount = await submit({ expectedAmountPaise: 50000 });
+      expect(withAmount.status).toBe(400);
+      expect((await jsonOf(withAmount)).error).toMatch(/UTR/);
+      expect((await submit({ upiTransactionId: "" })).status).toBe(400);
+      expect(await prisma.coursePaymentSubmission.count()).toBe(0);
+
+      const waiver = await prisma.coupon.create({
+        data: { code: "FULL100", type: "SPECIAL", percentage: 100, validFrom: new Date(Date.now() - 86_400_000), validUntil: new Date(Date.now() + 86_400_000), userId: me.user.id, courseId: course.id, applyToEnrollment: true },
+      });
+      expect((await submit({ couponId: waiver.id, expectedAmountPaise: 0 })).status).toBe(200);
+      expect(await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: me.user.id } })).toMatchObject({ amountInrPaise: 0, upiTransactionId: "FEE-WAIVER" });
+    });
+
     it("refuses a one-time fee for another year once it is submitted", async () => {
       await setPaymentSettings();
       const me = await signedInStudent();

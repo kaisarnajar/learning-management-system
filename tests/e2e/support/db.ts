@@ -1,5 +1,6 @@
 import { hash } from "bcryptjs";
-import { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../../../utils/prisma-client";
 
 /** Credentials and ids of the fixtures the journeys rely on. */
 export const FIXTURES = {
@@ -24,7 +25,7 @@ let client: PrismaClient | null = null;
 export function db(): PrismaClient {
   const url = process.env.DATABASE_URL_TEST;
   if (!url) throw new Error("DATABASE_URL_TEST is not set.");
-  client ??= new PrismaClient({ datasourceUrl: url });
+  client ??= createPrismaClient({ url });
   return client;
 }
 

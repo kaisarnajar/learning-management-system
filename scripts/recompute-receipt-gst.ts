@@ -17,11 +17,11 @@
  *
  * Filter to specific receipts with --ids=id1,id2 (comma separated).
  */
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 import { isApplyMode, printMode, writeSnapshot } from "./lib/dry-run";
 import { applyReceiptGstCorrections, findReceiptGstCorrections } from "./lib/receipt-gst";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 function parseIds(argv: string[]): string[] | null {
   const arg = argv.find((a) => a.startsWith("--ids="));

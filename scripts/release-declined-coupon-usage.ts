@@ -14,12 +14,12 @@
  *
  * Idempotent: a released row no longer exists, so a second run finds nothing.
  */
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 import { isApplyMode, printMode, writeSnapshot } from "./lib/dry-run";
 import { submissionStatusOf } from "../services/status-compat";
 import { PAYMENTS } from "../config/constants/payments";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main() {
   const apply = isApplyMode();

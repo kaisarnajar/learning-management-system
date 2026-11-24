@@ -13,9 +13,9 @@
  * re-point it at a placeholder course kept for history. This script changes
  * nothing.
  */
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 type OrphanRow = { id: string; courseId: string; userId: string; status: string; createdAt: Date };
 

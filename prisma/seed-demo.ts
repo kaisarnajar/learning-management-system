@@ -1,4 +1,5 @@
-import { PrismaClient } from "@prisma/client";
+import type { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 import { seedBootstrap } from "./seed-bootstrap";
 import { logDemoTableCounts, seedDemoBulk } from "./seed-demo-bulk";
 import { demoContentLoginHint, seedDemoContent } from "./seed-demo-content";
@@ -51,7 +52,7 @@ function assertDemoSeedAllowed() {
   }
 }
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function assertDatabaseMigrated() {
   const checks = [

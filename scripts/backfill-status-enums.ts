@@ -21,10 +21,11 @@
  * (with its row count) and left NULL rather than guessed; the exit code is 1
  * in that case so a release checklist notices.
  */
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 import { isApplyMode, printMode, writeSnapshot } from "./lib/dry-run";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const BATCH = 1000;
 
 type Job = {

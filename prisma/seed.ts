@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 import { seedBootstrap } from "./seed-bootstrap";
 
 /**
@@ -10,7 +10,7 @@ import { seedBootstrap } from "./seed-bootstrap";
  * database. The destructive demo seed (which also adds coupons and homepage
  * testimonials) lives in seed-demo.ts and must be invoked explicitly.
  */
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main() {
   await seedBootstrap(prisma);

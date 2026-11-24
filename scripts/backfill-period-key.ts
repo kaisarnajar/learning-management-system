@@ -15,12 +15,12 @@
  * (or, once it exists, is not violated); resolve them (decline or void the
  * extra payment) and run the script again.
  */
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 import { isApplyMode, printMode, writeSnapshot } from "./lib/dry-run";
 import { periodKeyFromLabel } from "../services/payment-period";
 import { paymentTypeOf, submissionStatusOf } from "../services/status-compat";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 /** The partial unique index (and the application) ignore these. */
 const isLive = (row: { status: string; statusEnum: Parameters<typeof submissionStatusOf>[0]["statusEnum"]; deletedAt: Date | null }) =>

@@ -10,10 +10,10 @@
  * column is never modified. Rows where the float is not a finite number are
  * reported and left NULL.
  */
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 import { isApplyMode, printMode, writeSnapshot } from "./lib/dry-run";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 const BATCH = 1000;
 
 async function main() {

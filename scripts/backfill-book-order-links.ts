@@ -12,10 +12,10 @@
  * Ambiguous or unmatched records are listed for manual resolution and never
  * guessed.
  */
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 import { isApplyMode, printMode, writeSnapshot } from "./lib/dry-run";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main() {
   const apply = isApplyMode();

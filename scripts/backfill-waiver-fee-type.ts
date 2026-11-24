@@ -12,10 +12,11 @@
  * recognisable marker become BOTH, which is exactly what the readers assumed
  * for them before this column existed.
  */
-import { PrismaClient, type WaiverFeeType } from "@prisma/client";
+import { type WaiverFeeType } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 import { isApplyMode, printMode, writeSnapshot } from "./lib/dry-run";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 function parseLegacyFeeType(reason: string): WaiverFeeType {
   if (reason.includes("[Fee Type: Enrollment Fee]")) return "ENROLLMENT";

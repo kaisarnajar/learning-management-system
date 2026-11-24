@@ -13,11 +13,11 @@
  * run finds nothing. A waiver coupon's validFrom (the approval instant) is
  * not a day bound and is left alone.
  */
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 import { isApplyMode, printMode, writeSnapshot } from "./lib/dry-run";
 import { fromLegacyCouponBound } from "../services/coupon-dates";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main() {
   const apply = isApplyMode();

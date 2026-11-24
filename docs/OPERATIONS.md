@@ -48,8 +48,13 @@ deploy:
    dry run.
 8. **Connection settings live on the URL.** `DATABASE_URL` is the Neon pooler
    URL with `connection_limit=1&pool_timeout=10` (one connection per function
-   instance); `DIRECT_URL` is the direct URL used only by `prisma migrate`.
-   The Prisma client itself has no pool configuration.
+   instance); `DIRECT_URL` is the direct URL used only by `prisma migrate`
+   (`prisma.config.ts`: `DIRECT_URL`, else `DATABASE_URL`). The app connects
+   through the `pg` driver adapter; `utils/prisma-client.ts` turns
+   `connection_limit`, `pool_timeout`, `connect_timeout` and `schema` into pg
+   pool settings, so the Prisma client itself has no pool configuration.
+   Because Prisma CLI commands use `DIRECT_URL` first, point **both**
+   variables at the target when running one by hand (see §3).
 
 ### When migrations run on Vercel
 
@@ -105,7 +110,7 @@ Perform these steps in order. Steps 1–4 are read-only.
    production and the schema and confirms whether `DeviceToken` and
    `UserCartItem` exist:
    ```bash
-   npx prisma migrate diff --from-url "$BRANCH_DATABASE_URL" --to-schema-datamodel prisma/schema.prisma --script
+   DIRECT_URL="$BRANCH_DATABASE_URL" npx prisma migrate diff --from-config-datasource --to-schema prisma/schema.prisma --script
    ```
    Expected output: empty, or only the objects listed in the baseline
    migration. Anything else must be understood before continuing.
@@ -117,7 +122,7 @@ Perform these steps in order. Steps 1–4 are read-only.
    any historical migration that is **missing**, run
    `prisma migrate resolve --applied <migration_name>` against the branch —
    this only writes a bookkeeping row and executes no SQL.
-5. **Rehearse** on the branch: `DATABASE_URL=$BRANCH_DATABASE_URL npx prisma migrate deploy`.
+5. **Rehearse** on the branch: `DATABASE_URL=$BRANCH_DATABASE_URL DIRECT_URL=$BRANCH_DATABASE_URL npx prisma migrate deploy`.
    Before it, run the read-only reports `npx tsx scripts/report-orphan-course-refs.ts`
    (any row listed makes `20261103001000_course_relations` fail) and
    `npx tsx scripts/report-duplicate-payment-keys.ts` against the branch.

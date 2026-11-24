@@ -14,10 +14,10 @@
  *
  * Idempotent: a second run finds nothing to clear.
  */
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 import { isApplyMode, printMode, writeSnapshot } from "./lib/dry-run";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 const HAS_TOKEN = {
   OR: [{ access_token: { not: null } }, { refresh_token: { not: null } }, { id_token: { not: null } }],

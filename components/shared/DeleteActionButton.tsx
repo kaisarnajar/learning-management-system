@@ -1,9 +1,8 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { unstable_rethrow, useRouter } from "next/navigation";
 import { ConfirmationModal } from "./ConfirmationModal";
 import { useToast } from "@/components/shared/ToastProvider";
-import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import { Button } from "../ui/Button";
 
@@ -90,9 +89,7 @@ export function DeleteActionButton({
             router.push(onSuccessRedirect);
           }
         } catch (error) {
-          if (isRedirectError(error)) {
-            throw error;
-          }
+          unstable_rethrow(error);
           addToast(`An unexpected error occurred while trying to ${verb.toLowerCase()}.`, "error");
         }
       }}

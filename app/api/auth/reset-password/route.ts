@@ -1,4 +1,4 @@
-import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { unstable_rethrow } from "next/navigation";
 import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
 import { revokeAllApiSessions } from "@/services/api-auth";
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    if (isRedirectError(error)) { throw error; }
+    unstable_rethrow(error);
     console.error("Caught error:", error);
     return NextResponse.json(
           { error: "Could not reset your password. Please try again." },

@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { unstable_rethrow } from "next/navigation";
 
 export type DbErrorCode = "UNIQUE" | "NOT_FOUND" | "FK" | "UNKNOWN";
 
@@ -41,9 +41,7 @@ export async function withDbErrorHandling<T>(
   try {
     return await operation();
   } catch (error) {
-    if (isRedirectError(error)) {
-      throw error;
-    }
+    unstable_rethrow(error);
     if (error instanceof DbError) {
       throw error;
     }

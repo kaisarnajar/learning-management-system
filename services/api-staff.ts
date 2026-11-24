@@ -1,16 +1,11 @@
 import type { Session } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { isRedirectError } from "next/dist/client/components/redirect-error";
-import { getURLFromRedirectError } from "next/dist/client/components/redirect";
-import {
-  getAccessFallbackHTTPStatus,
-  isHTTPAccessFallbackError,
-} from "next/dist/client/components/http-access-fallback/http-access-fallback";
 import { authenticateApiRequest, type ApiUserPayload } from "@/services/api-auth";
 import { runAsApiActor } from "@/services/api-actor";
 import { getTeacherForSession } from "@/services/teacher-auth";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { readFlash } from "@/utils/flash";
+import { nextControlFlowOf } from "@/utils/next-control-flow";
 
 /**
  * Staff side of the mobile API: /api/v1/admin/** for admins and developers,
@@ -80,10 +75,10 @@ export async function requireStaffApiAuth(request: NextRequest, roles: readonly 
 
 /** Maps an error thrown by page or action code to a JSON response, or null when it is not one Next.js uses for control flow. */
 function controlFlowResponse(error: unknown): NextResponse | null {
-  if (isRedirectError(error)) return redirectResponse(getURLFromRedirectError(error));
-  if (isHTTPAccessFallbackError(error)) {
-    const status = getAccessFallbackHTTPStatus(error);
-    return fail(status === 404 ? "This record no longer exists." : "You do not have access to this.", status);
+  const flow = nextControlFlowOf(error);
+  if (flow?.kind === "redirect") return redirectResponse(flow.url);
+  if (flow?.kind === "http-status") {
+    return fail(flow.status === 404 ? "This record no longer exists." : "You do not have access to this.", flow.status);
   }
   return null;
 }

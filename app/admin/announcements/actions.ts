@@ -1,9 +1,8 @@
 "use server";
 
-import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { revalidatePath } from "next/cache";
 import { createAdminCrudActions } from "@/services/admin-crud";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { formatInputDateValue } from "@/utils/form-date";
 import { notifyAllStudentsOfSiteAnnouncement } from "@/services/notifications";
@@ -187,7 +186,7 @@ export async function toggleSiteAnnouncementHomepage(id: string) {
       await enforceHomepageAnnouncementLimit();
     }
   } catch (error) {
-    if (isRedirectError(error)) { throw error; }
+    unstable_rethrow(error);
     console.error("Database error toggling site announcement homepage:", error);
     redirect(`${adminListPath()}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
   }

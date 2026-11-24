@@ -1,4 +1,4 @@
-import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { unstable_rethrow } from "next/navigation";
 import { after, NextResponse } from "next/server";
 import { sendPasswordResetEmail } from "@/services/email";
 import { buildPasswordResetUrl, createPasswordResetToken } from "@/services/password-reset";
@@ -72,7 +72,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, message: GENERIC_SUCCESS, ...(debugLink ? { debugLink } : {}) });
   } catch (error) {
-    if (isRedirectError(error)) { throw error; }
+    unstable_rethrow(error);
     console.error("[forgot-password] Request failed:", error);
     return NextResponse.json(
       { error: "Could not process your request. Please try again later." },

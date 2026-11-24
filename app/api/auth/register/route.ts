@@ -1,4 +1,4 @@
-import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
 import { registerSchema } from "@/utils/validations";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, role: "USER", message: REGISTRATION_MESSAGE });
   } catch (error) {
-    if (isRedirectError(error)) { throw error; }
+    unstable_rethrow(error);
     console.error("Caught error:", error);
     return NextResponse.json({ error: "Registration failed. Please try again." }, { status: 500 });
     }

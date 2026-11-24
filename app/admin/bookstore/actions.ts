@@ -1,8 +1,7 @@
 "use server";
 
-import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { saveBookImage, validateBookImage, deleteBookImage, getBookImageUpload } from "@/services/bookstore-upload";
 import { isUploadError } from "@/services/storage";
@@ -94,7 +93,7 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
       },
     });
   } catch (error) {
-    if (isRedirectError(error)) { throw error; }
+    unstable_rethrow(error);
     if (imagePath) await deleteBookImage(imagePath);
     if (isUploadError(error)) return { error: error.message };
     console.error("Database error creating book:", error);
@@ -170,7 +169,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
       },
     });
   } catch (error) {
-    if (isRedirectError(error)) { throw error; }
+    unstable_rethrow(error);
     // The row still references the old cover: drop the new object, keep the old.
     if (imagePath) await deleteBookImage(imagePath);
     if (isUploadError(error)) return { error: error.message };
@@ -212,7 +211,7 @@ export async function deleteBook(bookId: string): Promise<{ error?: string }> {
 
     await prisma.book.delete({ where: { id: bookId } });
   } catch (error) {
-    if (isRedirectError(error)) { throw error; }
+    unstable_rethrow(error);
     console.error("Database error deleting book:", error);
     return { error: "An unexpected error occurred while deleting the book." };
   }

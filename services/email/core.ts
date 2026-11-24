@@ -130,6 +130,29 @@ function isTransientError(error: unknown): boolean {
   return typeof e?.responseCode === "number" && e.responseCode >= 420 && e.responseCode < 460;
 }
 
+/** Replaces the value of every `token=` query parameter, so a logged link cannot be used. */
+export function redactLinkTokens(text: string): string {
+  return text.replace(/([?&]token=)[^&#\s]*/gi, "$1[redacted]");
+}
+
+/**
+ * What is logged when SMTP is not configured. Verification and reset e-mails
+ * pass their live link as `preview`, and logs are readable by more people
+ * than the mailbox, so the link is never logged as is: production logs only
+ * the subject and the recipient's domain; elsewhere the address and the
+ * preview are shown with any `token=` value redacted.
+ */
+function logUnsentMail(to: string, subject: string, preview?: string): void {
+  if (process.env.NODE_ENV === "production") {
+    const domain = to.split("@")[1] ?? "unknown";
+    console.info(`[email] SMTP not configured; not sent: "${subject}" to a recipient at ${domain}`);
+    return;
+  }
+  console.info("[email] SMTP not configured. Email would be sent to:", to);
+  console.info("[email] Subject:", subject);
+  if (preview) console.info("[email] Preview:", redactLinkTokens(preview));
+}
+
 // ---------------------------------------------------------------------------
 // Core delivery function
 // ---------------------------------------------------------------------------
@@ -145,11 +168,7 @@ export async function deliverMail({
   attachments,
 }: DeliverMailParams): Promise<EmailSendResult> {
   if (!isEmailConfigured()) {
-    console.info("[email] SMTP not configured. Email would be sent to:", to);
-    console.info("[email] Subject:", subject);
-    if (preview) {
-      console.info("[email] Preview:", preview);
-    }
+    logUnsentMail(to, subject, preview);
     return { sent: false, skipped: true };
   }
 

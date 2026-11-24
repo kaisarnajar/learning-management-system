@@ -98,6 +98,30 @@ export const adminEnrollUserSchema = z.object({
   courseId: z.string().min(1, "Select a course."),
 });
 
+/**
+ * bcrypt reads only the first 72 bytes of a password and silently ignores the
+ * rest, so a new password is capped at 72 bytes of UTF-8 (72 ASCII
+ * characters, fewer with accented letters or emoji) rather than characters.
+ */
+export const PASSWORD_MAX_BYTES = 72;
+/**
+ * Sign-in only bounds the input. Accounts created while 128 characters were
+ * allowed may have longer passwords, which bcrypt truncated when hashing and
+ * still matches when truncated the same way, so sign-in must not refuse them.
+ */
+export const LOGIN_PASSWORD_MAX_LENGTH = 1024;
+
+const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
+
+/** A password being set: register, reset and change. */
+const newPasswordField = (requiredMessage: string) =>
+  z
+    .string(requiredMessage)
+    .min(8, "Password must be at least 8 characters.")
+    .refine((value) => utf8Bytes(value) <= PASSWORD_MAX_BYTES, {
+      message: "Password must be at most 72 characters (fewer if it uses accented letters or emoji).",
+    });
+
 /** Shared by the web and mobile registration endpoints. */
 export const registerSchema = z.object({
   name: z.string().trim().max(100, "Name must be at most 100 characters.").nullish(),
@@ -108,10 +132,7 @@ export const registerSchema = z.object({
     .min(1, "Email and password are required.")
     .max(254, "Email must be at most 254 characters.")
     .email("Enter a valid email address."),
-  password: z
-    .string("Email and password are required.")
-    .min(8, "Password must be at least 8 characters.")
-    .max(128, "Password must be at most 128 characters."),
+  password: newPasswordField("Email and password are required."),
   acceptPolicies: z.literal(true, {
     error: "You must accept the Terms & Conditions and Privacy Policy.",
   }),
@@ -121,10 +142,7 @@ export const registerSchema = z.object({
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string("Enter your current password.").min(1, "Enter your current password."),
-    newPassword: z
-      .string("Enter a new password.")
-      .min(8, "Password must be at least 8 characters.")
-      .max(128, "Password must be at most 128 characters."),
+    newPassword: newPasswordField("Enter a new password."),
   })
   .refine((v) => v.currentPassword !== v.newPassword, {
     message: "The new password must be different from the current one.",
@@ -138,7 +156,7 @@ export const forgotPasswordSchema = z.object({
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(1, "Reset link is invalid."),
-    password: z.string().min(8, "Password must be at least 8 characters."),
+    password: newPasswordField("Enter a new password."),
     confirmPassword: z.string().min(1, "Confirm your new password."),
   })
   .refine((data) => data.password === data.confirmPassword, {

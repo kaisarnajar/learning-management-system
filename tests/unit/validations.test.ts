@@ -443,3 +443,40 @@ describe("schema transformations and error reporting", () => {
     expect(validations.isAllowedProfileImageUrl("not a url")).toBe(false);
   });
 });
+
+describe("new passwords are capped at bcrypt's 72 bytes", () => {
+  const ascii72 = "a".repeat(72);
+  const ascii73 = "a".repeat(73);
+  // "é" is 2 bytes and "😀" 4 bytes in UTF-8: 36 × "é" = 72 bytes; 18 × "😀" = 72 bytes.
+  const accented72 = "é".repeat(36);
+  const accented73 = `${"é".repeat(36)}a`;
+  const emoji72 = "😀".repeat(18);
+  const emoji76 = "😀".repeat(19);
+
+  const setters: [string, (password: string) => unknown][] = [
+    ["registerSchema", (password) => validations.registerSchema.safeParse({ email: "a@b.co", password, acceptPolicies: true }).success],
+    ["resetPasswordSchema", (password) => validations.resetPasswordSchema.safeParse({ token: "t", password, confirmPassword: password }).success],
+    ["changePasswordSchema", (password) => validations.changePasswordSchema.safeParse({ currentPassword: "old-password", newPassword: password }).success],
+  ];
+
+  it.each(setters)("%s accepts exactly 72 bytes", (_name, accepts) => {
+    expect(accepts(ascii72)).toBe(true);
+    expect(accepts(accented72)).toBe(true);
+    expect(accepts(emoji72)).toBe(true);
+  });
+
+  it.each(setters)("%s rejects 73 bytes or more, counting multi-byte characters by their bytes", (_name, accepts) => {
+    expect(accepts(ascii73)).toBe(false);
+    expect(accepts(accented73)).toBe(false); // 37 characters, 73 bytes
+    expect(accepts(emoji76)).toBe(false); // 19 characters (38 UTF-16 units), 76 bytes
+  });
+
+  it("says what the limit is", () => {
+    const result = validations.registerSchema.safeParse({ email: "a@b.co", password: ascii73, acceptPolicies: true });
+    expect(result.error?.issues[0].message).toMatch(/at most 72 characters/);
+  });
+
+  it("the reset form no longer accepts an unbounded password", () => {
+    expect(validations.resetPasswordSchema.safeParse({ token: "t", password: "a".repeat(10_000), confirmPassword: "a".repeat(10_000) }).success).toBe(false);
+  });
+});

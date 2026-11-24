@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/utils/prisma";
 import { issueApiSession } from "@/services/api-auth";
 import { verifyPassword } from "@/services/password";
+import { LOGIN_PASSWORD_MAX_LENGTH } from "@/utils/validations";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 
@@ -16,6 +17,10 @@ export async function POST(request: NextRequest) {
         { success: false, error: "Email and password are required." },
         { status: 400 }
       );
+    }
+    // No password was ever allowed this long, so it cannot match.
+    if (password.length > LOGIN_PASSWORD_MAX_LENGTH) {
+      return NextResponse.json({ success: false, error: "Invalid email or password." }, { status: 401 });
     }
 
     const limited =

@@ -11,6 +11,7 @@ import { getApiActorSession } from "@/services/api-actor";
 import { googleSignInCallback } from "@/services/google-link";
 import { authJwtCallback } from "@/services/auth-jwt";
 import { verifyPassword } from "@/services/password";
+import { LOGIN_PASSWORD_MAX_LENGTH } from "@/utils/validations";
 
 /** Surfaced to the login form as result.code so it can offer to resend the verification email. */
 class EmailNotVerifiedError extends CredentialsSignin {
@@ -42,6 +43,7 @@ const nextAuth = NextAuth({
       },
       async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) return null;
+        if (String(credentials.password).length > LOGIN_PASSWORD_MAX_LENGTH) return null;
 
         const email = String(credentials.email).toLowerCase().trim();
 

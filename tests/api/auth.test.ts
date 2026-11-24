@@ -321,6 +321,17 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
   });
 
   describe("login", () => {
+    it("still signs in an account whose password was set longer than 72 bytes, and refuses an absurdly long one", async () => {
+      // Allowed while the limit was 128 characters; bcrypt hashed its first 72 bytes.
+      const { user, password } = await createPasswordUser("long-".repeat(25));
+
+      const ok = await login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: user.email, password } }));
+      expect(ok.status).toBe(200);
+
+      const huge = await login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: user.email, password: "x".repeat(2000) } }));
+      expect(huge.status).toBe(401);
+    });
+
     it("signs in a verified user with the right password", async () => {
       const { user, password } = await createPasswordUser();
 

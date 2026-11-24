@@ -1,9 +1,9 @@
 /**
- * Content-Security-Policy construction shared by the middleware (per-request
+ * Content-Security-Policy construction shared by the proxy (per-request
  * nonce) and tests. Kept free of Node-only imports so it runs on the edge.
  *
  * The policy is emitted as Report-Only unless the CSP_ENFORCE environment
- * variable is "true" (see middleware.ts and docs/TESTING.md); CI runs the
+ * variable is "true" (see proxy.ts and docs/TESTING.md); CI runs the
  * end-to-end journeys with it enabled before production is switched over.
  * Either way, violations are reported to CSP_REPORT_PATH: `report-uri` for
  * browsers without the Reporting API, `report-to` (with the

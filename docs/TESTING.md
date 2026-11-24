@@ -5,7 +5,7 @@
 | `npm test` | every Vitest project (unit + the DB-backed ones that are enabled); the DB projects run one after another (`sequence.groupOrder`), never at the same time | nothing; DB suites skip themselves |
 | `npm run test:coverage` | `npm test` with v8 coverage (report in `coverage/`); fails below the `services/**` thresholds in `vitest.config.mts`, which only hold for a run of all four projects with `DATABASE_URL_TEST` set | `DATABASE_URL_TEST` |
 | `npm run test:unit` | pure unit tests in `tests/unit` | nothing |
-| `npm run test:api` | every `/api/v1` route handler called directly, plus the API middleware (CORS, cross-site guard) | `DATABASE_URL_TEST` (the middleware tests run without) |
+| `npm run test:api` | every `/api/v1` route handler called directly, plus the API proxy (`proxy.ts`: CORS, cross-site guard) | `DATABASE_URL_TEST` (the proxy tests run without) |
 | `npm run test:security` | XSS corpus through rich text, JSON-LD, PDF and e-mail templates; teacher IDOR (GRD-1/2); open-redirect vectors; CSP and security headers; rate limiting | `DATABASE_URL_TEST` for the access-control and rate-limit parts |
 | `npm run test:integration` | `tests/integration`: payments, enrollments, roll numbers, book orders, notifications, delete guards, audit and voiding | `DATABASE_URL_TEST` |
 
@@ -43,7 +43,7 @@ PDF_SMOKE=1 npx vitest run tests/integration/pdf-smoke.test.ts
 ## Content-Security-Policy rollout (`CSP_ENFORCE`)
 
 The nonce-based CSP is sent as `Content-Security-Policy-Report-Only` by default and as the enforcing
-`Content-Security-Policy` header when `CSP_ENFORCE=true` (read once at start-up by `middleware.ts`; policy built in
+`Content-Security-Policy` header when `CSP_ENFORCE=true` (read once at start-up by `proxy.ts`; policy built in
 `services/security-headers.ts`). Nothing in the code hard-codes enforcement:
 
 1. CI runs the e2e journeys with `CSP_ENFORCE=true`, so a page that needs an inline script or an

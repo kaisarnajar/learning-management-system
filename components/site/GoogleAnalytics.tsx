@@ -6,7 +6,7 @@ export async function GoogleAnalytics() {
 
   if (!gaId) return null;
 
-  // Nonce issued by the middleware so the inline bootstrap passes the CSP.
+  // Nonce issued by the proxy so the inline bootstrap passes the CSP.
   const nonce = (await headers()).get("x-nonce") ?? undefined;
   const safeGaId = gaId.replace(/[^A-Za-z0-9_-]/g, "");
 

@@ -7,5 +7,5 @@
 /services/payments*.ts  @kaisarnajar
 /services/finance*.ts   @kaisarnajar
 /services/auth*.ts      @kaisarnajar
-/middleware.ts          @kaisarnajar
+/proxy.ts               @kaisarnajar
 /.github/               @kaisarnajar

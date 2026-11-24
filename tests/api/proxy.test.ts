@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { NextRequest } from "next/server";
-import middleware from "@/middleware";
+import proxy from "@/proxy";
 
-type Middleware = (request: NextRequest, event: unknown) => Promise<Response> | Response;
-const run = async (request: NextRequest) => (await (middleware as unknown as Middleware)(request, {})) as Response;
+type Proxy = (request: NextRequest, event: unknown) => Promise<Response> | Response;
+const run = async (request: NextRequest) => (await (proxy as unknown as Proxy)(request, {})) as Response;
 
 const request = (method: string, headers: Record<string, string> = {}, path = "/api/v1/enrollments") =>
   new NextRequest(new URL(path, "http://localhost:3000"), { method, headers });
 
-describe("/api/v1 middleware (CORS and cross-site request guard)", () => {
+describe("/api/v1 proxy (CORS and cross-site request guard)", () => {
   afterEach(() => {
     delete process.env.API_ALLOWED_ORIGINS;
   });

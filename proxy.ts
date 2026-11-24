@@ -116,6 +116,8 @@ function denied(request: NextAuthRequest): NextResponse {
   return NextResponse.redirect(login);
 }
 
+// Next 16 calls this file Proxy (formerly middleware.ts). It runs on the
+// Node.js runtime by default; the Auth.js config it uses stays edge-safe.
 export default auth((request) => {
   const allowed = authConfig.callbacks.authorized({ auth: request.auth, request });
   if (!allowed) return denied(request);

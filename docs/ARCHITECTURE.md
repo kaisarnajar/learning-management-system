@@ -48,7 +48,7 @@ profile linked to the user.
 
 **Enforcement happens in three layers, and each one stands on its own:**
 
-1. `middleware.ts` runs Auth.js's `authorized` decision for every matched request and enforces it: pages redirect to
+1. `proxy.ts` (Next 16's name for middleware) runs Auth.js's `authorized` decision for every matched request and enforces it: pages redirect to
    `/login?callbackUrl=...`, API paths receive 401. It also sets the per-request CSP nonce and, for `/api/v1`, the CORS
    allow-list (`API_ALLOWED_ORIGINS`) and the cross-site request guard.
 2. Route-group layouts (`app/admin`, `app/teacher`, ...) call the matching guard.

@@ -75,41 +75,41 @@ describe("response headers", () => {
     vi.resetModules();
   });
 
-  type Middleware = (request: NextRequest, event: unknown) => Promise<Response> | Response;
-  async function loadMiddleware(cspEnforce?: string) {
+  type Proxy = (request: NextRequest, event: unknown) => Promise<Response> | Response;
+  async function loadProxy(cspEnforce?: string) {
     vi.resetModules();
     vi.stubEnv("CSP_ENFORCE", cspEnforce ?? "");
-    return (await import("@/middleware")).default as unknown as Middleware;
+    return (await import("@/proxy")).default as unknown as Proxy;
   }
   const page = (path = "/") => new NextRequest(new URL(path, "http://localhost:3000"));
 
   it("sends the nonce-based CSP as report-only until CSP_ENFORCE is switched on", async () => {
-    const middleware = await loadMiddleware();
+    const proxy = await loadProxy();
 
-    const response = await middleware(page(), {});
+    const response = await proxy(page(), {});
 
     expect(response.headers.get("content-security-policy-report-only")).toContain("script-src");
     expect(response.headers.get("content-security-policy")).toBeNull();
   });
 
   it("enforces the CSP when CSP_ENFORCE=true, and only then", async () => {
-    const middleware = await loadMiddleware("true");
+    const proxy = await loadProxy("true");
 
-    const response = await middleware(page("/blog"), {});
+    const response = await proxy(page("/blog"), {});
 
     expect(response.headers.get("content-security-policy")).toContain("script-src");
     expect(response.headers.get("content-security-policy-report-only")).toBeNull();
 
     for (const value of ["false", "1", "TRUE", "yes"]) {
-      const lenient = await loadMiddleware(value);
+      const lenient = await loadProxy(value);
       expect((await lenient(page(), {})).headers.get("content-security-policy")).toBeNull();
     }
   });
 
   it("uses a fresh nonce per request and puts it in the policy and the request headers", async () => {
-    const middleware = await loadMiddleware("true");
+    const proxy = await loadProxy("true");
 
-    const [first, second] = await Promise.all([middleware(page(), {}), middleware(page(), {})]);
+    const [first, second] = await Promise.all([proxy(page(), {}), proxy(page(), {})]);
 
     const nonceOf = (response: Response) => /'nonce-([^']+)'/.exec(response.headers.get("content-security-policy") ?? "")?.[1];
     expect(nonceOf(first)).toBeTruthy();
@@ -118,9 +118,9 @@ describe("response headers", () => {
   });
 
   it("does not put a CSP on API responses", async () => {
-    const middleware = await loadMiddleware("true");
+    const proxy = await loadProxy("true");
 
-    const response = await middleware(new NextRequest(new URL("/api/v1/courses", "http://localhost:3000")), {});
+    const response = await proxy(new NextRequest(new URL("/api/v1/courses", "http://localhost:3000")), {});
 
     expect(response.headers.get("content-security-policy")).toBeNull();
   });
@@ -153,7 +153,7 @@ describe("response headers", () => {
 
   it("asks browsers to report violations in both modes", async () => {
     for (const mode of [undefined, "true"]) {
-      const response = await (await loadMiddleware(mode))(page(), {});
+      const response = await (await loadProxy(mode))(page(), {});
       const policy =
         response.headers.get("content-security-policy") ?? response.headers.get("content-security-policy-report-only") ?? "";
       const directives = policy.split("; ");
@@ -166,10 +166,10 @@ describe("response headers", () => {
   it("upgrades insecure requests in production only when the policy is enforced", async () => {
     vi.stubEnv("NODE_ENV", "production");
 
-    const enforced = await (await loadMiddleware("true"))(page(), {});
+    const enforced = await (await loadProxy("true"))(page(), {});
     expect(enforced.headers.get("content-security-policy")?.split("; ")).toContain("upgrade-insecure-requests");
 
-    const reportOnly = await (await loadMiddleware())(page(), {});
+    const reportOnly = await (await loadProxy())(page(), {});
     expect(reportOnly.headers.get("content-security-policy-report-only")).not.toContain("upgrade-insecure-requests");
   });
 
@@ -194,26 +194,26 @@ describe("response headers", () => {
 });
 
 describe("page protection", () => {
-  type Middleware = (request: NextRequest, event: unknown) => Promise<Response> | Response;
+  type Proxy = (request: NextRequest, event: unknown) => Promise<Response> | Response;
 
   // "/teachers" (public list) shares a prefix with the "/teacher" portal; a
   // guest must reach it, and so must its detail pages.
   it.each(["/courses", "/teachers", "/teachers/some-teacher", "/administration-notes", "/profiles"])(
     "leaves the public page %s alone",
     async (pathname) => {
-      const middleware = (await import("@/middleware")).default as unknown as Middleware;
-      const response = await middleware(new NextRequest(new URL(pathname, "http://localhost:3000")), {});
+      const proxy = (await import("@/proxy")).default as unknown as Proxy;
+      const response = await proxy(new NextRequest(new URL(pathname, "http://localhost:3000")), {});
       expect(response.status).toBe(200);
     },
   );
 
   // Auth.js's `auth(handler)` form runs the handler and does not act on a falsy `authorized` result by
-  // itself; middleware.ts enforces the decision explicitly (redirect for pages, 401 for API paths).
+  // itself; proxy.ts enforces the decision explicitly (redirect for pages, 401 for API paths).
   it.each(["/admin/courses", "/admin", "/developer", "/teacher", "/teacher/blogs", "/profile/payments"])(
     "redirects anonymous visitors from %s to /login at the edge",
     async (pathname) => {
-      const middleware = (await import("@/middleware")).default as unknown as Middleware;
-      const response = await middleware(new NextRequest(new URL(`${pathname}?tab=1`, "http://localhost:3000")), {});
+      const proxy = (await import("@/proxy")).default as unknown as Proxy;
+      const response = await proxy(new NextRequest(new URL(`${pathname}?tab=1`, "http://localhost:3000")), {});
       expect(response.status).toBe(307);
       const location = new URL(response.headers.get("location") ?? "", "http://localhost:3000");
       expect(location.pathname).toBe("/login");

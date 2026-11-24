@@ -6,7 +6,7 @@ import { revalidateTag, unstable_cache, updateTag } from "next/cache";
  * by revalidatePublicContent(), which the admin/teacher actions call next to
  * their revalidatePath("/").
  *
- * Why data caching rather than cached pages: the CSP middleware issues a
+ * Why data caching rather than cached pages: the CSP proxy issues a
  * per-request nonce, so HTML must be rendered per request (a cached page
  * would carry a stale nonce and its scripts would be refused once the CSP is
  * enforced), and prerendering pages at build time would make `next build`

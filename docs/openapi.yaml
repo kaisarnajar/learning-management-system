@@ -3,9 +3,15 @@ info:
   title: Academy LMS mobile API
   version: "1.0.0"
   description: |
-    The REST API the Android app uses (guest and student features). See
-    docs/API.md for the conventions, the token refresh rules and the typical
-    flows. Money is in paise; lists are paginated with page/pageSize.
+    The REST API the Android app uses (guest and student features, and the
+    staff areas under /admin for admins and developers and /teacher for
+    teachers). See docs/API.md for the conventions, the token refresh rules and
+    the typical flows. Money is in paise; lists are paginated with page/pageSize.
+
+    Staff writes take JSON, multipart or URL-encoded bodies with the website
+    form's field names. In JSON, `true` is sent as the checkbox value "on" and
+    `false`/null are left out; fields documented as the string "true" must be
+    sent as that string.
 servers:
   - url: https://darsequranacademy.com/api/v1
     description: Production
@@ -21,6 +27,11 @@ tags:
   - name: Payments
   - name: Bookstore
   - name: Notifications
+  - name: "Admin: Dashboard"
+    description: Admins and developers only, as are all /admin endpoints
+  - name: "Admin: Students"
+  - name: "Admin: Teachers"
+  - name: "Admin: Enrollments"
 
 components:
   securitySchemes:
@@ -47,6 +58,52 @@ components:
       name: search
       in: query
       schema: { type: string }
+    Q:
+      name: q
+      in: query
+      description: Search text (the staff lists also accept it as `search`)
+      schema: { type: string }
+    EnrollmentId:
+      name: enrollmentId
+      in: path
+      required: true
+      schema: { type: string }
+    AnnouncementId:
+      name: announcementId
+      in: path
+      required: true
+      schema: { type: string }
+    GradeId:
+      name: gradeId
+      in: path
+      required: true
+      schema: { type: string }
+    AttendanceDate:
+      name: date
+      in: path
+      required: true
+      description: The class day, YYYY-MM-DD
+      schema: { type: string, format: date }
+    BookId:
+      name: bookId
+      in: path
+      required: true
+      schema: { type: string }
+    FinancePreset:
+      name: preset
+      in: query
+      description: Date range; `custom` uses `from` and `to`
+      schema: { type: string, enum: [this_month, last_month, this_year, all_time, custom] }
+    FinanceFrom:
+      name: from
+      in: query
+      description: Start of a custom range, YYYY-MM-DD
+      schema: { type: string, format: date }
+    FinanceTo:
+      name: to
+      in: query
+      description: End of a custom range, YYYY-MM-DD
+      schema: { type: string, format: date }
 
   responses:
     Error:
@@ -77,6 +134,21 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Ok" }
+    Forbidden:
+      description: Signed in without the staff role this endpoint needs (or a teacher account with no teacher profile)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    StaffWrite:
+      description: Done
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/StaffWrite" }
+    Pdf:
+      description: The PDF
+      content:
+        application/pdf:
+          schema: { type: string, format: binary }
 
   schemas:
     Ok:
@@ -269,6 +341,121 @@ components:
         deliveryPhoneNumber: { type: string, pattern: "^[0-9]{10,15}$" }
         notes: { type: string }
         screenshot: { type: string, format: binary, description: Multipart only }
+
+    # ------------------------------------------------------------ Staff
+    StaffWrite:
+      type: object
+      required: [success]
+      description: |
+        The outcome of a staff write. The endpoints run the website's own server
+        actions: when the action redirects, `redirect` is the website page it went
+        to (it may carry flags such as `email=failed`); otherwise `result` is the
+        action's return value (often null, or `{ success, message }`).
+      properties:
+        success: { type: boolean, const: true }
+        redirect: { type: string }
+        result: {}
+    Option:
+      type: object
+      properties:
+        value: { type: string }
+        label: { type: string }
+    UserRef:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: [string, "null"] }
+        email: { type: string }
+    StaffStudent:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: [string, "null"] }
+        email: { type: string }
+        registrationNumber: { type: [string, "null"] }
+        image: { type: [string, "null"] }
+        gender: { type: [string, "null"], enum: [MALE, FEMALE, null] }
+        createdAt: { type: string, format: date-time }
+    StaffStudentDetail:
+      allOf:
+        - $ref: "#/components/schemas/StaffStudent"
+        - type: object
+          properties:
+            fatherName: { type: [string, "null"] }
+            dateOfBirth: { type: [string, "null"], format: date-time }
+            dateOfBirthDisplay: { type: [string, "null"] }
+            occupation: { type: [string, "null"] }
+            occupationLabel: { type: [string, "null"] }
+            address: { type: [string, "null"] }
+            whatsapp: { type: [string, "null"] }
+            profileComplete: { type: boolean }
+            enrollments:
+              type: array
+              items:
+                type: object
+                properties:
+                  id: { type: string }
+                  courseId: { type: string }
+                  courseTitle: { type: string }
+                  rollNumber: { type: [string, "null"], description: Formatted roll number }
+                  status: { $ref: "#/components/schemas/EnrollmentStatus" }
+                  statusLabel: { type: string }
+                  createdAt: { type: string, format: date-time }
+    StaffStudentForm:
+      type: object
+      required: [name, fatherName, dateOfBirth, occupation, address, whatsapp, gender]
+      properties:
+        name: { type: string }
+        fatherName: { type: string }
+        dateOfBirth: { type: string, format: date }
+        occupation: { type: string, description: "Value from /app-config lookups.occupations" }
+        address: { type: string }
+        whatsapp: { type: string }
+        gender: { type: string, enum: [MALE, FEMALE] }
+        confirmReplacePhoto: { type: string, enum: ["on"], description: Required when switching a student with an uploaded photo to FEMALE (the photo is replaced by the avatar) }
+    EnrollmentStatus:
+      type: string
+      enum: [PENDING_APPROVAL, AWAITING_ENROLLMENT_FEE, ACTIVE, COMPLETED, REJECTED]
+    StaffTeacher:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: [string, "null"] }
+        specialization: { type: string }
+        initials: { type: string }
+        imageUrl: { type: [string, "null"] }
+        published: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    TeacherForm:
+      type: object
+      required: [email, specialization, bio]
+      properties:
+        email: { type: string, format: email, description: A registered account }
+        specialization: { type: string }
+        bio: { type: string }
+        initials: { type: string, description: Derived from the account name when blank }
+        published: { type: string, enum: ["on"], description: '"on" (JSON true) to show the teacher publicly' }
+    AccountLookup:
+      oneOf:
+        - type: object
+          properties:
+            ok: { type: boolean, const: true }
+            userId: { type: string }
+            name: { type: [string, "null"] }
+            email: { type: string }
+            image: { type: [string, "null"] }
+        - type: object
+          properties:
+            ok: { type: boolean, const: false }
+            error: { type: string }
+    DashboardLink:
+      type: object
+      properties:
+        href: { type: string, description: The website path; the app maps it to its own screen }
+        label: { type: string }
+        count: { type: [integer, "null"], description: Null for tool pages with no number }
+        highlight: { type: boolean, description: Needs action }
 
 security:
   - bearer: []
@@ -1028,3 +1215,358 @@ paths:
             schema: { type: object, required: [token], properties: { token: { type: string } } }
       responses:
         "200": { $ref: "#/components/responses/Ok" }
+
+  # ------------------------------------------------------ Admin: Dashboard
+  /admin/dashboard:
+    get:
+      tags: ["Admin: Dashboard"]
+      summary: The admin sidebar groups with each page's count
+      responses:
+        "200":
+          description: Groups and the links that need action
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  groups:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        title: { type: string }
+                        links: { type: array, items: { $ref: "#/components/schemas/DashboardLink" } }
+                  actionRequired: { type: array, items: { $ref: "#/components/schemas/DashboardLink" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/audit-log:
+    get:
+      tags: ["Admin: Dashboard"]
+      summary: The audit log, newest first
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+        - { name: entity, in: query, description: One of `entities`, schema: { type: string } }
+        - { name: entityId, in: query, schema: { type: string } }
+        - { name: actor, in: query, description: Part of the actor's e-mail, schema: { type: string } }
+      responses:
+        "200":
+          description: Entries, and every entity name for the filter
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      entities: { type: array, items: { type: string } }
+                      data:
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            createdAt: { type: string, format: date-time }
+                            actorId: { type: [string, "null"] }
+                            actorEmail: { type: [string, "null"] }
+                            actor: { type: string, description: 'E-mail, id or "system"' }
+                            action: { type: string }
+                            entity: { type: string }
+                            entityId: { type: [string, "null"] }
+                            reason: { type: [string, "null"] }
+                            before: { description: JSON snapshot }
+                            after: { description: JSON snapshot }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ------------------------------------------------------- Admin: Students
+  /admin/students:
+    get:
+      tags: ["Admin: Students"]
+      summary: Students
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+        - { $ref: "#/components/parameters/Q" }
+        - { name: sort, in: query, schema: { type: string, enum: [regNo_asc, regNo_desc, name_asc, name_desc, date_asc, date_desc, email_asc, email_desc], default: regNo_asc } }
+      responses:
+        "200": { description: Students, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/StaffStudent" } } } }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/students/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Students"]
+      summary: One student with their course enrollments
+      responses:
+        "200": { description: The student, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, student: { $ref: "#/components/schemas/StaffStudentDetail" } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Admin: Students"]
+      summary: Saves the student edit form
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/StaffStudentForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/StaffStudentForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    delete:
+      tags: ["Admin: Students"]
+      summary: Deletes the account (refused while it has enrollments, pending fees or payment records)
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/students/{id}/payments:
+    get:
+      tags: ["Admin: Students"]
+      summary: The student's payment history, newest first
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200":
+          description: Payment records (voided ones left out)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - properties:
+                      data:
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            paidAt: { type: string, format: date-time }
+                            amountInrPaise: { type: integer }
+                            courseId: { type: [string, "null"] }
+                            courseTitle: { type: [string, "null"] }
+                            description: { type: [string, "null"] }
+                            receiptGeneratedAt: { type: [string, "null"], format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/students/{id}/id-card:
+    get:
+      tags: ["Admin: Students"]
+      summary: The student's ID card
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/Pdf" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: The student's profile is not complete, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /admin/students/{id}/id-card/email:
+    post:
+      tags: ["Admin: Students"]
+      summary: E-mails the ID card PDF to the student
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ------------------------------------------------------- Admin: Teachers
+  /admin/teachers:
+    get:
+      tags: ["Admin: Teachers"]
+      summary: Teachers, newest first
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200": { description: Teachers, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/StaffTeacher" } } } }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: ["Admin: Teachers"]
+      summary: Adds a teacher profile to a registered account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TeacherForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/TeacherForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/teachers/lookup:
+    get:
+      tags: ["Admin: Teachers"]
+      summary: Checks the account behind an e-mail for the teacher form
+      parameters:
+        - { name: email, in: query, required: true, schema: { type: string } }
+        - { name: excludeTeacherId, in: query, description: The teacher being edited, schema: { type: string } }
+      responses:
+        "200": { description: The check, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, lookup: { $ref: "#/components/schemas/AccountLookup" } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/teachers/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Teachers"]
+      summary: One teacher and the courses they teach
+      responses:
+        "200":
+          description: The teacher
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  teacher:
+                    allOf:
+                      - $ref: "#/components/schemas/StaffTeacher"
+                      - type: object
+                        properties:
+                          bio: { type: string }
+                          courses:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id: { type: string }
+                                title: { type: string }
+                                category: { type: string }
+                                status: { type: string }
+                                statusLabel: { type: string }
+                                studentCount: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Admin: Teachers"]
+      summary: Saves the teacher edit form
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TeacherForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/TeacherForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Admin: Teachers"]
+      summary: Deletes the teacher profile (refused while courses are assigned); the account stays
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ---------------------------------------------------- Admin: Enrollments
+  /admin/enrollments:
+    get:
+      tags: ["Admin: Enrollments"]
+      summary: Pending enrollments (free requests or paid awaiting the fee)
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { $ref: "#/components/parameters/PageSize" }
+        - { $ref: "#/components/parameters/Q" }
+        - { name: type, in: query, schema: { type: string, enum: [free_requests, paid_awaiting], default: free_requests } }
+      responses:
+        "200":
+          description: The tab's enrollments, both tabs' counts and the courses the enrol form offers
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      type: { type: string, enum: [free_requests, paid_awaiting] }
+                      freeCount: { type: integer }
+                      paidCount: { type: integer }
+                      enrollableCourses: { type: array, items: { type: object, properties: { id: { type: string }, title: { type: string } } } }
+                      data:
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            courseId: { type: string }
+                            courseTitle: { type: string }
+                            status: { $ref: "#/components/schemas/EnrollmentStatus" }
+                            createdAt: { type: string, format: date-time }
+                            user: { $ref: "#/components/schemas/UserRef" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: ["Admin: Enrollments"]
+      summary: Enrols a registered account in a course
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [email, courseId], properties: { email: { type: string, format: email }, courseId: { type: string } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/enrollments/lookup:
+    get:
+      tags: ["Admin: Enrollments"]
+      summary: Checks the account behind an e-mail for the enrol form
+      parameters: [{ name: email, in: query, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: The check, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, lookup: { $ref: "#/components/schemas/AccountLookup" } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/enrollments/{id}:
+    delete:
+      tags: ["Admin: Enrollments"]
+      summary: Removes a student from one course; the account stays
+      parameters:
+        - { $ref: "#/components/parameters/Id" }
+        - { name: courseId, in: query, required: true, schema: { type: string } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/enrollments/{id}/approve:
+    post:
+      tags: ["Admin: Enrollments"]
+      summary: Approves a free-course enrollment request
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [courseId], properties: { courseId: { type: string } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/enrollments/{id}/reject:
+    post:
+      tags: ["Admin: Enrollments"]
+      summary: Rejects a pending enrollment (free request or paid awaiting the fee)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [courseId], properties: { courseId: { type: string } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }

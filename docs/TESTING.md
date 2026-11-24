@@ -2,7 +2,8 @@
 
 | Command | What it runs | Needs |
 |---|---|---|
-| `npm test` | every Vitest project (unit + the DB-backed ones that are enabled) | nothing; DB suites skip themselves |
+| `npm test` | every Vitest project (unit + the DB-backed ones that are enabled); the DB projects run one after another (`sequence.groupOrder`), never at the same time | nothing; DB suites skip themselves |
+| `npm run test:coverage` | `npm test` with v8 coverage (report in `coverage/`); fails below the `services/**` thresholds in `vitest.config.mts`, which only hold for a run of all four projects with `DATABASE_URL_TEST` set | `DATABASE_URL_TEST` |
 | `npm run test:unit` | pure unit tests in `tests/unit` | nothing |
 | `npm run test:api` | every `/api/v1` route handler called directly, plus the API middleware (CORS, cross-site guard) | `DATABASE_URL_TEST` (the middleware tests run without) |
 | `npm run test:security` | XSS corpus through rich text, JSON-LD, PDF and e-mail templates; teacher IDOR (GRD-1/2); open-redirect vectors; CSP and security headers; rate limiting | `DATABASE_URL_TEST` for the access-control and rate-limit parts |
@@ -25,7 +26,8 @@ so a mistyped variable cannot point the suites at production. Each test starts f
 (`resetDb()` in `tests/helpers/db.ts`).
 
 The server actions under test run against the real database. `next/cache`, `after()`, Auth.js and the e-mail
-senders are replaced in `tests/helpers/db-setup.ts`; a test signs in as someone with
+senders are replaced in `tests/helpers/db-setup.ts` (work passed to `after()` runs at once and is awaited before
+the next test starts); a test signs in as someone with
 `vi.mocked(auth).mockResolvedValue(sessionFor(user, "ADMIN"))`.
 
 ## PDF rendering (`PDF_SMOKE`)

@@ -99,17 +99,19 @@ jobs:
         continue-on-error: true
         run: npm audit --audit-level=high
 
-      - name: Unit tests
-        run: npm run test:unit
+      - name: Test suites with coverage
+        # One run of all four projects (unit, then integration, api and
+        # security one after another; see sequence.groupOrder in
+        # vitest.config.mts), failing below the services/ coverage thresholds.
+        run: npm run test:coverage
 
-      - name: Integration tests
-        run: npm run test:integration
-
-      - name: API tests
-        run: npm run test:api
-
-      - name: Security tests
-        run: npm run test:security
+      - name: Keep the coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 14
 
   e2e:
     name: End-to-end journeys

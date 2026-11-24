@@ -27,15 +27,16 @@ export function buildContentSecurityPolicy(nonce: string, options?: { enforce?: 
     }
   })();
 
-  const imgSources = ["'self'", "data:", "blob:", "https://*.googleusercontent.com", "https://www.googletagmanager.com"];
+  const imgSources = ["'self'", "data:", "blob:", "https://*.googleusercontent.com"];
   if (r2Host) imgSources.push(`https://${r2Host}`);
 
   // Direct uploads PUT files to the R2 S3 endpoint (services/direct-upload.ts).
-  const connectSources = ["'self'", "https://www.google-analytics.com", "https://*.google-analytics.com", "https://vitals.vercel-insights.com"];
+  const connectSources = ["'self'", "https://vitals.vercel-insights.com"];
   const r2AccountId = process.env.R2_ACCOUNT_ID?.trim();
   if (r2AccountId && /^[A-Za-z0-9]+$/.test(r2AccountId)) connectSources.push(`https://${r2AccountId}.r2.cloudflarestorage.com`);
 
-  const scriptSources = ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", "https://www.googletagmanager.com"];
+  // No third-party script hosts: Google Analytics was removed until a consent banner exists (plan D4).
+  const scriptSources = ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"];
   if (isDev) scriptSources.push("'unsafe-eval'");
 
   const directives: Record<string, string[]> = {

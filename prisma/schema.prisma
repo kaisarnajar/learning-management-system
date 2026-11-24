@@ -196,6 +196,8 @@ model User {
   policiesAcceptedVersion  String?
   /// Soft delete; the account can no longer sign in and is hidden from lists.
   deletedAt                DateTime?
+  /// Incremented on a password reset or change and on an account take-over; web JWTs carrying another value are refused.
+  sessionVersion           Int                       @default(0)
   /// Set through the signed List-Unsubscribe link; stops announcement emails only.
   announcementEmailsOptOut Boolean                   @default(false)
   coupons                  Coupon[]

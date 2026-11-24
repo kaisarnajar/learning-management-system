@@ -23,6 +23,7 @@ import { withDbErrorHandling } from "@/utils/db-error";
 import { getAppBaseUrl } from "@/services/password-reset";
 import { normalizeReason, softDeleteSubmissionTx, voidPaymentRecordTx, VoidError } from "@/services/payment-voiding";
 import { assignRollNumberTx } from "@/services/roll-numbers";
+import { deletePaymentScreenshot } from "@/services/payment-upload";
 
 /** Rolls an approval back when the enrollment stopped awaiting its fee mid-way. */
 class EnrollmentNotAwaitingFeeError extends Error {}
@@ -214,6 +215,11 @@ export async function declineMonthlyPayment(
   if (claimed.count === 0) {
     return { error: "This payment has already been processed." };
   }
+
+  // The row no longer points at the screenshot; remove the object too, after
+  // the response (best effort: a leftover is logged, never fatal).
+  const screenshotPath = submission.paymentScreenshotPath;
+  if (screenshotPath) after(() => deletePaymentScreenshot(screenshotPath));
 
   const base = getAppBaseUrl();
   const paymentUrl =

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import { processEnrollmentPayment, processMonthlyPayment } from "@/services/payments";
@@ -15,6 +16,18 @@ import {
   SKIP_WITHOUT_DB,
   startedEnrollment,
 } from "../helpers/db";
+
+// Storage calls go to this stand-in, so a test can see what would be deleted.
+const r2 = vi.hoisted(() => ({ send: vi.fn<(command: unknown) => Promise<object>>(async () => ({})) }));
+vi.mock("@/utils/s3", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/s3")>()),
+  getR2Client: () => r2,
+}));
+const deletedKeys = () =>
+  r2.send.mock.calls
+    .map(([command]) => command)
+    .filter((command): command is DeleteObjectCommand => command instanceof DeleteObjectCommand)
+    .map((command) => command.input.Key);
 
 async function loginAsAdmin() {
   const admin = await createUser({ email: "admin@example.test", name: "Admin" });
@@ -221,6 +234,28 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     await startedEnrollment(student.id, course.id);
     const again = await processEnrollmentPayment(student.id, course.id, "upi", "UTR4000001", null);
     expect(again).toEqual({ success: true });
+  });
+
+  it("deletes a declined submission's screenshot from storage, and keeps an approved one's", async () => {
+    await loginAsAdmin();
+    const student = await createUser();
+    const course = await createCourse();
+    await createEnrollment(student.id, course.id);
+    const screenshot = (name: string) => `/api/files/private/payments/${name}-1732400000000-k3j9x.png`;
+    const submit = (month: string, name: string) =>
+      prisma.coursePaymentSubmission.create({
+        data: { userId: student.id, courseId: course.id, label: `Monthly fee — ${month} 2026`, amountInrPaise: 34900, paymentScreenshotPath: screenshot(name) },
+      });
+    const declinedOne = await submit("January", "declined");
+    const approvedOne = await submit("February", "approved");
+    r2.send.mockClear();
+
+    expect((await runAction(() => declineMonthlyPayment(declinedOne.id))).redirectedTo).toContain("declined=1");
+    expect((await runAction(() => confirmMonthlyPayment(approvedOne.id))).redirectedTo).toContain("confirmed=1");
+    await new Promise((resolve) => setTimeout(resolve, 0)); // let after() run
+
+    expect(deletedKeys()).toEqual(["private/payments/declined-1732400000000-k3j9x.png"]);
+    expect((await prisma.coursePaymentSubmission.findUniqueOrThrow({ where: { id: declinedOne.id } })).paymentScreenshotPath).toBeNull();
   });
 
   it("rejects a transaction reference that was already used and a stale expected amount", async () => {

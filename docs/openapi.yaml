@@ -48,6 +48,10 @@ tags:
   - name: "Admin: Certificates"
   - name: "Admin: Bookstore"
   - name: "Admin: Settings"
+  - name: "Teacher: Courses"
+    description: Teachers only, as are all /teacher endpoints; a course that is not assigned to the teacher is a 404
+  - name: "Teacher: Blogs"
+  - name: "Teacher: Fatwa"
 
 components:
   securitySchemes:
@@ -4125,3 +4129,463 @@ paths:
         "400": { $ref: "#/components/responses/Error" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ------------------------------------------------------ Teacher: Courses
+  /teacher/courses:
+    get:
+      tags: ["Teacher: Courses"]
+      summary: "The teacher portal home: the teacher, their counts and their courses"
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200":
+          description: Courses (12 per page by default)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      teacher: { type: object, properties: { name: { type: string }, specialization: { type: string }, email: { type: [string, "null"] } } }
+                      stats: { type: object, properties: { totalCourses: { type: integer }, totalStudents: { type: integer } } }
+                      data:
+                        items:
+                          allOf:
+                            - $ref: "#/components/schemas/CourseHeader"
+                            - type: object
+                              properties:
+                                description: { type: string }
+                                studentCount: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /teacher/courses/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Teacher: Courses"]
+      summary: One of the teacher's courses (404 for a course that is not theirs)
+      responses:
+        "200": { description: The course header, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, course: { $ref: "#/components/schemas/CourseHeader" } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/students:
+    get:
+      tags: ["Teacher: Courses"]
+      summary: The students of the course (approved enrollments)
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200":
+          description: Students
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      course: { $ref: "#/components/schemas/CourseHeader" }
+                      data:
+                        items:
+                          allOf:
+                            - $ref: "#/components/schemas/CourseStudent"
+                            - type: object
+                              properties:
+                                status: { $ref: "#/components/schemas/EnrollmentStatus" }
+                                statusLabel: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/students/{enrollmentId}:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
+    get:
+      tags: ["Teacher: Courses"]
+      summary: A student of the course
+      responses:
+        "200":
+          description: The enrollment and the student's profile
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  course: { $ref: "#/components/schemas/CourseHeader" }
+                  enrollment:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      status: { $ref: "#/components/schemas/EnrollmentStatus" }
+                      statusLabel: { type: string }
+                      rollNumberLabel: { type: string }
+                      createdAt: { type: string, format: date-time }
+                      completedAt: { type: [string, "null"], format: date-time }
+                  student:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      name: { type: string, description: The e-mail when no name is set }
+                      email: { type: string }
+                      fatherName: { type: [string, "null"] }
+                      dateOfBirthDisplay: { type: [string, "null"] }
+                      occupationLabel: { type: [string, "null"] }
+                      address: { type: [string, "null"] }
+                      whatsapp: { type: [string, "null"] }
+                      createdAt: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/students/{enrollmentId}/announcements:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
+    get:
+      tags: ["Teacher: Courses"]
+      summary: Private messages to one student, newest first
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200": { $ref: "#/components/responses/CourseAnnouncements" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: ["Teacher: Courses"]
+      summary: Sends a private message to the student (they are e-mailed)
+      requestBody:
+        $ref: "#/components/requestBodies/Announcement"
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/students/{enrollmentId}/announcements/{announcementId}:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }, { $ref: "#/components/parameters/AnnouncementId" }]
+    get:
+      tags: ["Teacher: Courses"]
+      summary: One private message
+      responses:
+        "200": { $ref: "#/components/responses/CourseAnnouncement" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Teacher: Courses"]
+      summary: Edits a private message (own posts only)
+      requestBody:
+        $ref: "#/components/requestBodies/Announcement"
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Teacher: Courses"]
+      summary: Deletes a private message (own posts only)
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/announcements:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Teacher: Courses"]
+      summary: Course-wide announcements, newest first
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200": { $ref: "#/components/responses/CourseAnnouncements" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: ["Teacher: Courses"]
+      summary: Posts a course announcement; students are e-mailed
+      requestBody:
+        $ref: "#/components/requestBodies/Announcement"
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/announcements/{announcementId}:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/AnnouncementId" }]
+    get:
+      tags: ["Teacher: Courses"]
+      summary: One announcement
+      responses:
+        "200": { $ref: "#/components/responses/CourseAnnouncement" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Teacher: Courses"]
+      summary: Edits an announcement. Teachers can change only their own posts (403 otherwise)
+      requestBody:
+        $ref: "#/components/requestBodies/Announcement"
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Teacher: Courses"]
+      summary: Deletes an announcement. Teachers can change only their own posts (403 otherwise)
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/attendance:
+    get:
+      tags: ["Teacher: Courses"]
+      summary: Attendance history of the course
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/AttendanceHistory" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/attendance/students:
+    get:
+      tags: ["Teacher: Courses"]
+      summary: Active students, for marking attendance
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/CourseStudents" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/attendance/{date}:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/AttendanceDate" }]
+    get:
+      tags: ["Teacher: Courses"]
+      summary: One day's attendance (404 when none was taken)
+      responses:
+        "200": { $ref: "#/components/responses/AttendanceDay" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: ["Teacher: Courses"]
+      summary: Creates or replaces the day's attendance
+      requestBody:
+        $ref: "#/components/requestBodies/AttendanceSave"
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Teacher: Courses"]
+      summary: Deletes the day's attendance
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/attendance/student/{enrollmentId}:
+    get:
+      tags: ["Teacher: Courses"]
+      summary: A student's attendance report
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
+      responses:
+        "200": { $ref: "#/components/responses/StudentAttendance" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/grades:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Teacher: Courses"]
+      summary: Grade cards (test reports) of the course
+      responses:
+        "200": { $ref: "#/components/responses/GradeCards" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: ["Teacher: Courses"]
+      summary: Adds a grade card
+      requestBody:
+        $ref: "#/components/requestBodies/GradeCard"
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/grades/students:
+    get:
+      tags: ["Teacher: Courses"]
+      summary: Active students, for a new grade card
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/CourseStudents" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/grades/{gradeId}:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/GradeId" }]
+    get:
+      tags: ["Teacher: Courses"]
+      summary: One grade card with every student's marks
+      responses:
+        "200": { $ref: "#/components/responses/GradeCard" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: ["Teacher: Courses"]
+      summary: Saves a grade card
+      requestBody:
+        $ref: "#/components/requestBodies/GradeCard"
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Teacher: Courses"]
+      summary: Deletes a grade card
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/courses/{id}/grades/student/{enrollmentId}:
+    get:
+      tags: ["Teacher: Courses"]
+      summary: A student's grade report
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
+      responses:
+        "200": { $ref: "#/components/responses/StudentGrades" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # -------------------------------------------------------- Teacher: Blogs
+  /teacher/blogs:
+    get:
+      tags: ["Teacher: Blogs"]
+      summary: The teacher's own posts, newest first
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }]
+      responses:
+        "200":
+          description: Posts
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      maxImages: { type: integer }
+                      data: { items: { allOf: [{ $ref: "#/components/schemas/BlogRow" }, { properties: { canEdit: { type: boolean }, canDelete: { type: boolean } } }] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: ["Teacher: Blogs"]
+      summary: Submits a new post for approval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [title, body], properties: { title: { type: string }, excerpt: { type: string }, body: { type: string, description: HTML }, images: { type: array, items: { type: string, format: binary } } } }
+          multipart/form-data:
+            schema: { type: object, required: [title, body], properties: { title: { type: string }, excerpt: { type: string }, body: { type: string, description: HTML }, images: { type: array, items: { type: string, format: binary } } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /teacher/blogs/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Teacher: Blogs"]
+      summary: One of the teacher's own posts (404 for anyone else's)
+      responses:
+        "200":
+          description: The post
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  maxImages: { type: integer }
+                  post: { allOf: [{ $ref: "#/components/schemas/BlogDetail" }, { properties: { canEdit: { type: boolean }, canDelete: { type: boolean } } }] }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Teacher: Blogs"]
+      summary: Edits the post and resubmits it for approval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [title, body], properties: { title: { type: string }, excerpt: { type: string }, body: { type: string, description: HTML }, removeImage: { type: array, items: { type: string }, description: Image ids to remove }, images: { type: array, items: { type: string, format: binary } } } }
+          multipart/form-data:
+            schema: { type: object, required: [title, body], properties: { title: { type: string }, excerpt: { type: string }, body: { type: string, description: HTML }, removeImage: { type: array, items: { type: string }, description: Image ids to remove }, images: { type: array, items: { type: string, format: binary } } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: The post is approved or awaiting review and can no longer be edited, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    delete:
+      tags: ["Teacher: Blogs"]
+      summary: Deletes one of the teacher's own posts
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: The post can no longer be changed, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+
+  # -------------------------------------------------------- Teacher: Fatwa
+  /teacher/fatwa:
+    get:
+      tags: ["Teacher: Fatwa"]
+      summary: Questions the teacher may answer (unanswered ones and their own answers)
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }, { name: filter, in: query, schema: { type: string, enum: [unanswered, pending, answered, rejected] } }]
+      responses:
+        "200": { description: Questions (no asker details), content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/FatwaRow" } } } }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /teacher/fatwa/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Teacher: Fatwa"]
+      summary: "A question: unanswered, or answered by this teacher (404 otherwise)"
+      responses:
+        "200": { description: The question; `canEdit` is false while the answer awaits review and once it is approved, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, question: { allOf: [{ $ref: "#/components/schemas/FatwaDetail" }, { properties: { canEdit: { type: boolean } } }] } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /teacher/fatwa/{id}/answer:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Teacher: Fatwa"]
+      summary: Saves the teacher's answer and submits it for admin approval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [answer], properties: { answer: { type: string, minLength: 20, description: HTML } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }

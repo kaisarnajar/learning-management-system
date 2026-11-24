@@ -7,6 +7,9 @@
  *   npx tsx scripts/recompute-receipt-gst.ts            # dry run: report only
  *   npx tsx scripts/recompute-receipt-gst.ts --apply    # rewrite receiptFeeAmountPaise / receiptGstAmountPaise
  *
+ * Voided records are skipped. A corrected record's stored PDF (receiptPdfKey)
+ * is discarded, so the next download renders the corrected split.
+ *
  * DEFAULT RECOMMENDATION: do NOT apply to receipts that have already been
  * sent to students. Indian GST practice is to leave an issued invoice as it
  * is and correct it with a credit/debit note. Apply only on the finance
@@ -16,7 +19,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import { isApplyMode, printMode, writeSnapshot } from "./lib/dry-run";
-import { splitInclusiveGst } from "../services/gst";
+import { applyReceiptGstCorrections, findReceiptGstCorrections } from "./lib/receipt-gst";
 
 const prisma = new PrismaClient();
 
@@ -31,37 +34,12 @@ async function main() {
   const ids = parseIds(process.argv);
   printMode("recompute-receipt-gst", apply);
 
-  const receipts = await prisma.paymentRecord.findMany({
-    where: {
-      receiptIncludesGst: true,
-      receiptGeneratedAt: { not: null },
-      ...(ids ? { id: { in: ids } } : {}),
-    },
-    orderBy: { receiptGeneratedAt: "asc" },
-  });
+  const { inspected, corrections } = await findReceiptGstCorrections(prisma, ids);
 
-  const corrections = receipts
-    .map((r) => {
-      const itemTotal = (r.receiptFeeAmountPaise ?? 0) + (r.receiptGstAmountPaise ?? 0);
-      const expected = splitInclusiveGst(itemTotal);
-      return {
-        id: r.id,
-        invoiceNumber: r.invoiceNumber,
-        generatedAt: r.receiptGeneratedAt,
-        emailedAt: r.receiptEmailSentAt,
-        itemTotalPaise: itemTotal,
-        storedFeePaise: r.receiptFeeAmountPaise,
-        storedGstPaise: r.receiptGstAmountPaise,
-        correctFeePaise: expected.basePaise,
-        correctGstPaise: expected.gstPaise,
-      };
-    })
-    .filter((c) => c.storedFeePaise !== c.correctFeePaise || c.storedGstPaise !== c.correctGstPaise);
-
-  console.log(`GST receipts inspected: ${receipts.length}; with a wrong fee/GST split: ${corrections.length}`);
+  console.log(`Live GST receipts inspected (voided excluded): ${inspected}; with a wrong fee/GST split: ${corrections.length}`);
   for (const c of corrections) {
     console.log(
-      `  ${c.invoiceNumber ?? c.id}  total ₹${(c.itemTotalPaise / 100).toFixed(2)}  stored fee/GST ₹${((c.storedFeePaise ?? 0) / 100).toFixed(2)}/₹${((c.storedGstPaise ?? 0) / 100).toFixed(2)}  correct ₹${(c.correctFeePaise / 100).toFixed(2)}/₹${(c.correctGstPaise / 100).toFixed(2)}${c.emailedAt ? "  (ALREADY EMAILED)" : ""}`,
+      `  ${c.invoiceNumber ?? c.id}  total ₹${(c.itemTotalPaise / 100).toFixed(2)}  stored fee/GST ₹${((c.storedFeePaise ?? 0) / 100).toFixed(2)}/₹${((c.storedGstPaise ?? 0) / 100).toFixed(2)}  correct ₹${(c.correctFeePaise / 100).toFixed(2)}/₹${(c.correctGstPaise / 100).toFixed(2)}${c.emailedAt ? "  (ALREADY EMAILED)" : ""}${c.receiptPdfKey ? "  (stored PDF will be discarded)" : ""}`,
     );
   }
 
@@ -75,13 +53,10 @@ async function main() {
   const snapshot = writeSnapshot("recompute-receipt-gst", corrections);
   console.log(`Snapshot written to ${snapshot}`);
 
-  for (const c of corrections) {
-    await prisma.paymentRecord.update({
-      where: { id: c.id },
-      data: { receiptFeeAmountPaise: c.correctFeePaise, receiptGstAmountPaise: c.correctGstPaise },
-    });
-  }
-  console.log(`Corrected ${corrections.length} receipt(s).`);
+  // Loaded only when writing: it pulls in the storage client.
+  const { deleteStoredReceiptPdf } = await import("../services/documents");
+  await applyReceiptGstCorrections(prisma, corrections, deleteStoredReceiptPdf);
+  console.log(`Corrected ${corrections.length} receipt(s); their stored PDFs were discarded and will be re-rendered on download.`);
 }
 
 main()

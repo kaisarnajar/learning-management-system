@@ -3,6 +3,7 @@ import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import { processEnrollmentPayment, processMonthlyPayment } from "@/services/payments";
+import { CouponAlreadyUsedError, recordCouponUsageTx } from "@/services/coupons";
 import { confirmMonthlyPayment, declineMonthlyPayment } from "@/app/admin/payments/actions";
 import { generateReceipt } from "@/app/actions/receipts";
 import {
@@ -451,6 +452,43 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
 
     // February is a different period.
     expect(await processMonthlyPayment(student.id, course.id, "02", "2026", "upi", "UTR8300004", null)).toEqual({ success: true });
+  });
+
+  it.each(["DEFAULT", "SPECIAL"] as const)("a %s coupon sent with two periods at once is redeemed once", async (type) => {
+    const student = await createUser();
+    const course = await createCourse();
+    await createEnrollment(student.id, course.id);
+    const coupon = await createCoupon(100, type === "SPECIAL" ? { type, userId: student.id, code: "WAIVER-AK-1234" } : {});
+
+    const results = await Promise.all([
+      processMonthlyPayment(student.id, course.id, "01", "2026", null, null, null, coupon.id, 0),
+      processMonthlyPayment(student.id, course.id, "02", "2026", null, null, null, coupon.id, 0),
+    ]);
+
+    expect(results.filter((r) => r.success)).toHaveLength(1);
+    expect(results.filter((r) => !r.success)).toEqual([expect.objectContaining({ status: 409 })]);
+    expect(await prisma.couponUsage.count({ where: { couponId: coupon.id } })).toBe(1);
+    expect(await prisma.coursePaymentSubmission.count({ where: { couponId: coupon.id } })).toBe(1);
+  });
+
+  it("redeeming a coupon a second time fails instead of passing silently", async () => {
+    const student = await createUser();
+    const special = await createCoupon(100, { type: "SPECIAL", userId: student.id, code: "WAIVER-AK-5678" });
+    const general = await createCoupon(20);
+
+    await prisma.$transaction((tx) => recordCouponUsageTx(tx, student.id, special.id));
+    expect((await prisma.coupon.findUniqueOrThrow({ where: { id: special.id } })).isActive).toBe(false);
+    await expect(prisma.$transaction((tx) => recordCouponUsageTx(tx, student.id, special.id))).rejects.toBeInstanceOf(CouponAlreadyUsedError);
+
+    await prisma.$transaction((tx) => recordCouponUsageTx(tx, student.id, general.id));
+    await expect(prisma.$transaction((tx) => recordCouponUsageTx(tx, student.id, general.id))).rejects.toBeInstanceOf(CouponAlreadyUsedError);
+    expect(await prisma.couponUsage.count({ where: { userId: student.id } })).toBe(2);
+
+    // A SPECIAL coupon already deactivated (by an admin, or a concurrent redemption) is not redeemed either.
+    const other = await createUser();
+    const inactive = await createCoupon(100, { type: "SPECIAL", userId: other.id, code: "WAIVER-XY-0001", isActive: false });
+    await expect(prisma.$transaction((tx) => recordCouponUsageTx(tx, other.id, inactive.id))).rejects.toBeInstanceOf(CouponAlreadyUsedError);
+    expect(await prisma.couponUsage.count({ where: { userId: other.id } })).toBe(0);
   });
 
   it("keeps a 100% waiver pending unless the academy enabled auto-approval", async () => {

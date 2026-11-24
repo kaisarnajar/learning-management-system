@@ -123,26 +123,43 @@ export async function getSelectedCoupon(
   return selectableCoupons.find((c) => c.id === couponId || c.code === couponId) ?? null;
 }
 
+/** The coupon was redeemed by a concurrent submission after it was offered; the submit paths answer 409. */
+export class CouponAlreadyUsedError extends Error {
+  constructor() {
+    super("This coupon has already been used. Please refresh and choose another option.");
+    this.name = "CouponAlreadyUsedError";
+  }
+}
+
 /**
  * Records that `userId` consumed `couponId` as part of the caller's
  * transaction, so a failed submission never burns the coupon.
  * SPECIAL (single-use, per-student) coupons are deactivated on use.
+ *
+ * Availability is checked before the transaction (getSelectedCoupon), so two
+ * submissions at once (January and February with one coupon) can both get
+ * here. The redemption itself is the guard: the usage row is created, never
+ * upserted, so the second insert hits the (couponId, userId) unique key, and
+ * a SPECIAL coupon is deactivated only if it is still active. Either loss
+ * throws CouponAlreadyUsedError and rolls the caller's transaction back.
  */
 export async function recordCouponUsageTx(tx: Prisma.TransactionClient, userId: string, couponId: string) {
-  await tx.couponUsage.upsert({
-    where: { couponId_userId: { couponId, userId } },
-    create: { couponId, userId },
-    update: {},
-  });
+  try {
+    await tx.couponUsage.create({ data: { couponId, userId } });
+  } catch (error) {
+    if ((error as { code?: string } | null)?.code === "P2002") throw new CouponAlreadyUsedError();
+    throw error;
+  }
   const coupon = await tx.coupon.findUnique({
     where: { id: couponId },
     select: { type: true },
   });
   if (coupon?.type === "SPECIAL") {
-    await tx.coupon.update({
-      where: { id: couponId },
+    const deactivated = await tx.coupon.updateMany({
+      where: { id: couponId, isActive: true },
       data: { isActive: false },
     });
+    if (deactivated.count === 0) throw new CouponAlreadyUsedError();
   }
 }
 

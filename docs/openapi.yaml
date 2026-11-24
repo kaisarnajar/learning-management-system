@@ -1822,7 +1822,8 @@ paths:
           description: >-
             Amount changed, or the fee period is already paid or awaiting verification. A period is the month (or the
             quarter, half or year it starts in) for course fees, the course for one-time and enrollment fees; a coupon
-            does not make it a different period.
+            does not make it a different period. Also answered when the selected coupon was redeemed by another
+            submission in the meantime.
           content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
   /payments/history:
     get:

@@ -20,7 +20,7 @@ import {
   submissionStatusData,
   submissionStatusOf,
 } from "@/services/status-compat";
-import { calculateDiscountedAmount, getSelectedCoupon, recordCouponUsageTx } from "@/services/coupons";
+import { calculateDiscountedAmount, CouponAlreadyUsedError, getSelectedCoupon, recordCouponUsageTx } from "@/services/coupons";
 import { deletePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
 import { isUploadError } from "@/services/storage";
 import { assignRollNumberTx } from "@/services/roll-numbers";
@@ -119,6 +119,7 @@ async function assertUtrNotReused(tx: SubmissionTx, upiTransactionId: string | n
 
 function mapSubmissionError(error: unknown): { error: string; status: number } | null {
   if (error instanceof SubmissionRejected) return { error: error.message, status: error.status };
+  if (error instanceof CouponAlreadyUsedError) return { error: error.message, status: 409 };
   if (isUniqueViolation(error)) {
     // Partial unique indexes: same UTR reused, or same fee period submitted twice.
     return { error: "This payment appears to have been submitted already. Please refresh and check your payment history.", status: 409 };

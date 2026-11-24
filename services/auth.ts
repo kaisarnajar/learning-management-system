@@ -9,7 +9,7 @@ import { withDbErrorHandling } from "@/utils/db-error";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { getClientIp, rateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { getApiActorSession } from "@/services/api-actor";
-import { prepareGoogleLink } from "@/services/google-link";
+import { googleSignInCallback } from "@/services/google-link";
 import { authJwtCallback } from "@/services/auth-jwt";
 
 /** Surfaced to the login form as result.code so it can offer to resend the verification email. */
@@ -77,10 +77,7 @@ const nextAuth = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async signIn({ user, account }) {
-      if (account?.provider !== "google" || !user.email) return true;
-      return prepareGoogleLink(user.email);
-    },
+    signIn: googleSignInCallback,
     jwt: authJwtCallback,
     async session({ session, token }) {
       if (session.user) {

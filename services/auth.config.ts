@@ -30,9 +30,10 @@ export const authConfig = {
             // password can later use Google. The pre-verification takeover it
             // allows (attacker registers the victim's address, victim links
             // Google, attacker's password still works) is closed in the signIn
-            // callback (services/google-link.ts), which scrubs the password of an
-            // unverified row before the link, and by the credentials provider
-            // refusing unverified accounts.
+            // callback (services/google-link.ts), which refuses an address Google
+            // has not verified and scrubs the password of an unverified row
+            // before the link, and by the credentials provider refusing
+            // unverified accounts.
             allowDangerousEmailAccountLinking: true,
           }),
         ]

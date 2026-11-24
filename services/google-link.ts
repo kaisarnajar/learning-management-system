@@ -9,8 +9,28 @@ import { revokeAllApiSessions } from "@/services/api-auth";
  */
 const UNVERIFIED_LINK_POLICY = process.env.AUTH_GOOGLE_LINK_UNVERIFIED === "refuse" ? "refuse" : "scrub";
 
+type GoogleSignInArgs = {
+  user: { email?: string | null };
+  account?: { provider?: string } | null;
+  profile?: { email_verified?: unknown } | null;
+};
+
 /**
- * The web Google sign-in check (Auth.js `signIn` callback), before Auth.js
+ * The Auth.js `signIn` callback. Only Google sign-ins are checked. Auth.js
+ * links a Google account to the row with the same address
+ * (allowDangerousEmailAccountLinking), and the link scrubs passwords and
+ * grants staff roles by address, so Google must vouch for the address:
+ * anything but `email_verified === true` is refused, as the mobile route does.
+ */
+export async function googleSignInCallback({ user, account, profile }: GoogleSignInArgs): Promise<boolean | string> {
+  if (account?.provider !== "google") return true;
+  if (profile?.email_verified !== true) return false;
+  if (!user.email) return true;
+  return prepareGoogleLink(user.email);
+}
+
+/**
+ * The web Google sign-in check, before Auth.js
  * links the Google account to an existing row with the same address. Returns
  * what the callback returns: true to continue, false to deny, or a redirect.
  */

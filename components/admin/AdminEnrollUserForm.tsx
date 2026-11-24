@@ -7,6 +7,7 @@ import {
   previewStudentAccountForEnrollment,
   type AdminEnrollUserState,
 } from "@/app/admin/enrollments/actions";
+import { useStudentLookup } from "@/components/admin/useStudentLookup";
 import { inputClassName, labelClassName } from "@/utils/form";
 import type { Course } from "@prisma/client";
 
@@ -19,36 +20,7 @@ const initialState: AdminEnrollUserState = {};
 export function AdminEnrollUserForm({ courses }: AdminEnrollUserFormProps) {
   const [state, formAction, pending] = useActionState(adminEnrollUser, initialState);
   const [email, setEmail] = useState("");
-  const [linkedName, setLinkedName] = useState("");
-  const [lookupError, setLookupError] = useState("");
-  const [lookupLoading, setLookupLoading] = useState(false);
-
-  async function runLookup(targetEmail: string) {
-    const trimmed = targetEmail.trim();
-    if (!trimmed) {
-      setLinkedName("");
-      setLookupError("");
-      return;
-    }
-
-    setLookupLoading(true);
-    setLookupError("");
-    try {
-      const result = await previewStudentAccountForEnrollment(trimmed);
-      if (result.ok) {
-        setLinkedName(result.name);
-        setLookupError("");
-      } else {
-        setLinkedName("");
-        setLookupError(result.error);
-      }
-    } catch {
-      setLookupError("Could not verify this email. Try again.");
-      setLinkedName("");
-    } finally {
-      setLookupLoading(false);
-    }
-  }
+  const { linkedName, error: lookupError, loading: lookupLoading, runLookup } = useStudentLookup(previewStudentAccountForEnrollment);
 
   const canSubmit = !lookupError && (email.trim().length === 0 || Boolean(linkedName));
 

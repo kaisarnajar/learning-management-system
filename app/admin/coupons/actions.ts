@@ -12,6 +12,8 @@ import { createStudentNotification } from "@/services/notifications";
 import { recordAudit } from "@/services/audit";
 import { BOTH_FEES_COURSE_SUFFIX, resolveWaiverFeeType } from "@/services/waiver-requests";
 import { genderWrite } from "@/services/status-compat";
+import { couponDayEnd, couponDayStart } from "@/services/coupon-dates";
+import { BUSINESS_TIMEZONE } from "@/config/constants/business";
 import {
   couponRequestApprovalSchema,
   couponSchema,
@@ -32,14 +34,14 @@ function waiverCodePrefix(name: string | null | undefined) {
 
 class AlreadyProcessedError extends Error {}
 
+// Calendar days of the academy (services/coupon-dates.ts); the schemas only
+// pass real calendar dates, so these are never null here.
 function startOfCouponDay(value: string) {
-  return new Date(value);
+  return couponDayStart(value)!;
 }
 
 function endOfCouponDay(value: string) {
-  const date = new Date(value);
-  date.setUTCHours(23, 59, 59, 999);
-  return date;
+  return couponDayEnd(value)!;
 }
 
 export async function createDefaultCoupon(formData: FormData) {
@@ -295,6 +297,7 @@ export async function approveCouponRequest(requestId: string, rawPercentage: num
     }));
 
     const formattedValidUntil = untilDate.toLocaleDateString("en-IN", {
+      timeZone: BUSINESS_TIMEZONE,
       day: "numeric",
       month: "short",
       year: "numeric",

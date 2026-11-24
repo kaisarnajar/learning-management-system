@@ -26,9 +26,9 @@ export async function getApplicableCoupons(
     select: { gender: true },
   });
 
+  // Coupon bounds are stored as the first and last instants of their days in
+  // the academy's timezone, so they compare directly with the current instant.
   const now = new Date();
-  // Account for timezones ahead of UTC (e.g. IST +5:30) where local date is today but UTC is previous day
-  const timezoneBuffer = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
   // A coupon is used once a usage row exists (written when its payment is
   // approved) or while a live submission holds it (pending verification, or
@@ -58,7 +58,7 @@ export async function getApplicableCoupons(
   const coupons = await prisma.coupon.findMany({
     where: {
       isActive: true,
-      validFrom: { lte: timezoneBuffer },
+      validFrom: { lte: now },
       validUntil: { gte: now },
       OR: [
         { courseId: courseId },

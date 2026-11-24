@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
-import { approveCouponRequest, deleteCouponRequest, rejectCouponRequest } from "@/app/admin/coupons/actions";
+import { approveCouponRequest, createDefaultCoupon, deleteCouponRequest, rejectCouponRequest, updateCoupon } from "@/app/admin/coupons/actions";
 import { confirmMonthlyPayment } from "@/app/admin/payments/actions";
 import { processEnrollmentPayment } from "@/services/payments";
 import { getApplicableCoupons } from "@/services/coupons";
@@ -174,5 +174,50 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee waiver requests: approve and reject", () =
     await expect(approveCouponRequest(request.id, 100, validUntil())).rejects.toMatchObject({ digest: expect.stringContaining("NEXT_REDIRECT") });
     await expect(rejectCouponRequest(request.id)).rejects.toMatchObject({ digest: expect.stringContaining("NEXT_REDIRECT") });
     expect((await prisma.couponRequest.findUniqueOrThrow({ where: { id: request.id } })).status).toBe("PENDING");
+  });
+});
+
+describe.skipIf(SKIP_WITHOUT_DB)("coupon dates follow the academy's calendar", () => {
+  beforeEach(async () => {
+    await resetDb();
+    await setPaymentSettings({ feeWaiverEnabled: true });
+    await loginAsAdmin();
+  });
+  afterEach(() => vi.useRealTimers());
+
+  const form = (fields: Record<string, string>) => {
+    const data = new FormData();
+    for (const [key, value] of Object.entries(fields)) data.set(key, value);
+    return data;
+  };
+  const december = { code: "DEC26", percentage: "20", validFrom: "2026-12-01", validUntil: "2026-12-31", courseId: "", gender: "", isActive: "true", applyTo: "BOTH" };
+
+  it("a Dec 1–31 coupon is offered from 00:00 IST on 1 Dec until the end of 31 Dec IST", async () => {
+    const student = await createUser();
+    const course = await createCourse();
+    expect(await createDefaultCoupon(form(december))).toMatchObject({ success: true });
+    const offered = async (instant: string) => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date(instant));
+      const codes = (await getApplicableCoupons(student.id, course.id)).map((c) => c.code);
+      vi.useRealTimers();
+      return codes;
+    };
+
+    expect(await offered("2026-11-30T18:29:00Z")).toEqual([]); // 23:59 IST, 30 Nov
+    expect(await offered("2026-11-30T18:30:00Z")).toEqual(["DEC26"]); // 00:00 IST, 1 Dec
+    expect(await offered("2026-12-31T18:29:00Z")).toEqual(["DEC26"]); // 23:59 IST, 31 Dec
+    expect(await offered("2026-12-31T18:30:00Z")).toEqual([]); // 00:00 IST, 1 Jan
+  });
+
+  it("saving the coupon with the dates the edit dialog shows leaves them where they were", async () => {
+    await createDefaultCoupon(form(december));
+    const before = await prisma.coupon.findFirstOrThrow();
+
+    expect(await updateCoupon(before.id, form(december))).toEqual({ success: true });
+
+    const after = await prisma.coupon.findFirstOrThrow();
+    expect(after.validFrom).toEqual(before.validFrom);
+    expect(after.validUntil).toEqual(before.validUntil);
   });
 });

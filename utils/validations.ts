@@ -9,6 +9,7 @@ import {
 } from "@/services/countries";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_OTHER, EXPENSE_CATEGORY_TEACHER_SALARY } from "@/services/expense-categories";
 import { isPaymentYearAllowed } from "@/services/monthly-payments";
+import { businessDateFromToday, businessDayStart } from "@/services/business-time";
 import { OCCUPATION_VALUES } from "@/services/occupations";
 
 export const levelEnum = z.enum(["Beginner", "Intermediate", "Advanced"]);
@@ -609,7 +610,7 @@ export const bookstoreCheckoutSchema = z.object({
 const isoDateString = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date.")
-  .refine((value) => !Number.isNaN(Date.parse(value)), "Enter a valid date.");
+  .refine((value) => businessDayStart(value) !== null, "Enter a valid date.");
 
 const couponPercentage = z.coerce
   .number("Discount must be a number.")
@@ -651,10 +652,8 @@ export const specialCouponUpdateSchema = couponFieldsSchema
 
 export const couponRequestApprovalSchema = z.object({
   percentage: couponPercentage,
-  validUntil: isoDateString.refine(
-    (value) => value >= new Date().toISOString().slice(0, 10),
-    "Valid until cannot be in the past.",
-  ),
+  // "Today" is the academy's calendar day, not the server's UTC one.
+  validUntil: isoDateString.refine((value) => value >= businessDateFromToday(), "Valid until cannot be in the past."),
 });
 
 /**

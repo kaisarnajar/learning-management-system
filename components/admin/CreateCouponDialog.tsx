@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
+import { businessDateFromToday } from "@/services/business-time";
 import { createDefaultCoupon } from "@/app/admin/coupons/actions";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 import { useDialog } from "@/components/shared/useDialog";
@@ -82,7 +82,7 @@ export function CreateCouponDialog({ courses }: { courses: CourseOption[] }) {
                 required
                 type="date"
                 name="validFrom"
-                defaultValue={format(new Date(), "yyyy-MM-dd")}
+                defaultValue={businessDateFromToday()}
                 className={inputClassName}
               />
             </div>
@@ -92,7 +92,7 @@ export function CreateCouponDialog({ courses }: { courses: CourseOption[] }) {
                 required
                 type="date"
                 name="validUntil"
-                defaultValue={format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd")}
+                defaultValue={businessDateFromToday(30)}
                 className={inputClassName}
               />
             </div>

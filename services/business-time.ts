@@ -51,3 +51,9 @@ export function businessCalendarParts(now: Date): { year: number; month: number;
 export function businessDateString(year: number, month: number, day: number): string {
   return new Date(Date.UTC(year, month, day)).toISOString().slice(0, 10);
 }
+
+/** "yyyy-MM-dd" of today in the business timezone, or of the day `days` later. */
+export function businessDateFromToday(days = 0, now: Date = new Date()): string {
+  const { year, month, day } = businessCalendarParts(now);
+  return businessDateString(year, month, day + days);
+}

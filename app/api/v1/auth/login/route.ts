@@ -1,7 +1,7 @@
-import { compare } from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/utils/prisma";
 import { issueApiSession } from "@/services/api-auth";
+import { verifyPassword } from "@/services/password";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 
@@ -37,15 +37,10 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    if (!user || !user.password || user.deletedAt) {
-      return NextResponse.json(
-        { success: false, error: "Invalid email or password." },
-        { status: 401 }
-      );
-    }
-
-    const validPassword = await compare(password, user.password);
-    if (!validPassword) {
+    // An unknown or password-less account costs the same bcrypt work as a
+    // wrong password, so the timing does not reveal which addresses exist.
+    const validPassword = await verifyPassword(password, user?.deletedAt ? null : user?.password);
+    if (!user || !validPassword) {
       return NextResponse.json(
         { success: false, error: "Invalid email or password." },
         { status: 401 }

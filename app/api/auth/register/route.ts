@@ -1,13 +1,14 @@
 import { isRedirectError } from "next/dist/client/components/redirect-error";
-import { hash } from "bcryptjs";
 import { NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
-import { buildVerificationUrl, generateVerificationToken } from "@/services/tokens";
 import { registerSchema } from "@/utils/validations";
-import { sendVerificationEmail } from "@/services/email";
-import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
+import { registerWithPassword, REGISTRATION_MESSAGE } from "@/services/account-registration";
 
+/**
+ * Answers the same for a new address and one that already has an account
+ * (whose owner is told by e-mail), so the form cannot be used to find out who
+ * has an account. The form then tries to sign in with the details entered.
+ */
 export async function POST(request: Request) {
   const limited = await enforceRateLimit(RATE_LIMITS.REGISTER_IP, getClientIp(request.headers));
   if (limited) return limited;
@@ -20,29 +21,10 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const { name, email, password } = parsed.data;
 
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return NextResponse.json({ error: "An account with this email already exists." }, { status: 400 });
-    }
+    await registerWithPassword(parsed.data);
 
-    const hashedPassword = await hash(password, 12);
-
-    await prisma.user.create({
-      data: {
-        name: name || null,
-        email,
-        password: hashedPassword,
-        policiesAcceptedAt: new Date(),
-        policiesAcceptedVersion: CURRENT_POLICIES_VERSION,
-      },
-    });
-
-    const verificationToken = await generateVerificationToken(email);
-    await sendVerificationEmail({ to: email, verificationUrl: buildVerificationUrl(verificationToken.token) });
-
-    return NextResponse.json({ success: true, role: "USER" });
+    return NextResponse.json({ success: true, role: "USER", message: REGISTRATION_MESSAGE });
   } catch (error) {
     if (isRedirectError(error)) { throw error; }
     console.error("Caught error:", error);

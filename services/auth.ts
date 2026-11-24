@@ -1,5 +1,4 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
-import { compare } from "bcryptjs";
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/services/auth.config";
@@ -11,6 +10,7 @@ import { getClientIp, rateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { getApiActorSession } from "@/services/api-actor";
 import { googleSignInCallback } from "@/services/google-link";
 import { authJwtCallback } from "@/services/auth-jwt";
+import { verifyPassword } from "@/services/password";
 
 /** Surfaced to the login form as result.code so it can offer to resend the verification email. */
 class EmailNotVerifiedError extends CredentialsSignin {
@@ -57,10 +57,10 @@ const nextAuth = NextAuth({
         }
         const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { email } }), "Database operation failed");
 
-        if (!user?.password || user.deletedAt) return null;
-
-        const valid = await compare(String(credentials.password), user.password);
-        if (!valid) return null;
+        // An unknown or password-less account costs the same bcrypt work as a
+        // wrong password, so the timing does not reveal which addresses exist.
+        const valid = await verifyPassword(String(credentials.password), user?.deletedAt ? null : user?.password);
+        if (!user || !valid) return null;
 
         // An unverified address cannot sign in with a password: until the
         // owner confirms the mailbox, nobody can prove the account is theirs.

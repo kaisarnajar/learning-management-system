@@ -1203,6 +1203,15 @@ paths:
     post:
       tags: [Auth]
       security: []
+      description: |
+        Creates an unverified account and e-mails a verification link. The answer is identical (200, same
+        body) when the address already has an account; its owner is told by e-mail instead, so the endpoint
+        does not reveal which addresses are registered.
+
+        **Breaking change (2026-11-24):** the response no longer carries tokens or `user`. After a 200, show
+        "check your e-mail", and sign in with `POST /auth/login` once the address is verified (login answers
+        403 `email_not_verified` until then; `POST /auth/resend-verification` sends a new link). A taken
+        address used to answer 400 "An account with this email already exists."; it now answers 200.
       requestBody:
         required: true
         content:
@@ -1216,9 +1225,18 @@ paths:
                 password: { type: string, minLength: 8, maxLength: 128 }
                 acceptPolicies: { type: boolean, const: true }
       responses:
-        "200": { description: Signed in (unverified), content: { application/json: { schema: { $ref: "#/components/schemas/Tokens" } } } }
+        "200":
+          description: Registered, or the address already had an account (indistinguishable). No session.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, verificationRequired, message]
+                properties:
+                  success: { type: boolean, const: true }
+                  verificationRequired: { type: boolean, const: true }
+                  message: { type: string }
         "400": { $ref: "#/components/responses/Error" }
-        "409": { $ref: "#/components/responses/Error" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
   /auth/login:
     post:

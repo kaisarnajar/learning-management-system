@@ -81,3 +81,50 @@ export async function sendPasswordResetEmail(params: PasswordResetEmailParams): 
 
   return deliverMail({ to, subject, text, html, preview: resetUrl, priority: "high" });
 }
+
+export type AccountExistsEmailParams = {
+  to: string;
+  signInUrl: string;
+  resetUrl: string;
+};
+
+/**
+ * Sent when someone registers with an address that already has an account.
+ * Registration answers the same way whether or not the address is taken, so
+ * only the mailbox owner learns that the account exists.
+ */
+export async function sendAccountExistsEmail(params: AccountExistsEmailParams): Promise<EmailSendResult> {
+  const { to, signInUrl, resetUrl } = params;
+
+  const subject = `You already have an account — ${BRAND_CONFIG.name}`;
+  const preview = "Someone tried to register with this email address, which already has an account.";
+
+  const text = [
+    "Assalamu Alaikum,",
+    "",
+    `Someone just tried to create a ${BRAND_CONFIG.name} account with this email address, which already has one. No new account was created and nothing about your account changed.`,
+    "",
+    "If it was you, sign in instead:",
+    signInUrl,
+    "",
+    "If you have forgotten your password, you can choose a new one:",
+    resetUrl,
+    "",
+    "If it was not you, you can safely ignore this email.",
+    "",
+    `${BRAND_CONFIG.name}`,
+  ].join("\n");
+
+  const bodyHtml = `
+    <p>Assalamu Alaikum,</p>
+    <p>Someone just tried to create a <strong>${BRAND_CONFIG.name}</strong> account with this email address, which already has one. No new account was created and nothing about your account changed.</p>
+    <p>If it was you, sign in instead:</p>
+    ${EmailButton({ href: signInUrl, label: "Sign In", color: "#3730a3" })}
+    <p>If you have forgotten your password, you can <a href="${resetUrl}">choose a new one</a>.</p>
+    <p style="font-size:13px;color:#6b7280;">If it was not you, you can safely ignore this email.</p>
+  `;
+
+  const html = buildHtmlEmail({ previewText: preview, bodyHtml });
+
+  return deliverMail({ to, subject, text, html, preview: signInUrl });
+}

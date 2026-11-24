@@ -7,7 +7,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-SOURCES=(app services utils config components prisma scripts middleware.ts next.config.ts)
+SOURCES=(app services utils config components prisma scripts middleware.ts next.config.ts playwright.config.ts)
 
 # Read by Prisma (schema.prisma), shell scripts and the test tooling rather than by process.env in the application code.
 TOOLING_ONLY=(DIRECT_URL DATABASE_URL_TEST SHADOW_DATABASE_URL)

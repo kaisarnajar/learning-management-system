@@ -70,7 +70,7 @@ If you intend to use the demo seed script (`npm run db:seed:demo`) to populate t
    ```
 
 4. **Seed the Database:**
-   Populate the database with the idempotent bootstrap data (teachers, courses, library items, payment-settings row). Admin access is granted by listing addresses in `ADMIN_EMAIL`; admins sign in with Google or register normally.
+   Populate the database with the bootstrap data: the teachers, courses and library items from `content/`, an empty payment-settings row (no bank or UPI details) and the shipping-charge slabs. The seed only creates rows that are missing; it never changes or deletes an existing row, so re-running it keeps every admin edit. It creates no coupons, users or reviews. Admin access is granted by listing addresses in `ADMIN_EMAIL`; admins sign in with Google or register normally.
    ```bash
    npm run db:seed
    ```
@@ -99,7 +99,7 @@ If you intend to use the demo seed script (`npm run db:seed:demo`) to populate t
 | `npm run db:drift` | Fails if `prisma/migrations` and `prisma/schema.prisma` describe different databases (set `SHADOW_DATABASE_URL` for the authoritative check) |
 | `npm run db:safety` | Fails if a migration contains destructive SQL (`DROP`, `TRUNCATE`, column type changes, ...) |
 | `npm run db:migrate` | `prisma migrate dev`: **disposable local databases only** |
-| `npm run db:seed` / `db:seed:demo` | Idempotent bootstrap data / the demo seed, which wipes the database (see above) |
+| `npm run db:seed` / `db:seed:demo` | Create-only bootstrap data / the demo seed, which wipes the database (see above) |
 | `npm test` | Every Vitest project; the database-backed ones skip themselves without `DATABASE_URL_TEST` |
 | `npm run test:unit` / `test:integration` / `test:api` / `test:security` | One Vitest project each |
 | `npm run test:e2e` | Playwright journeys against `next start` (build first; needs `DATABASE_URL_TEST`) |

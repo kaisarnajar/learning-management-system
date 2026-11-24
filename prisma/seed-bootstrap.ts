@@ -17,12 +17,19 @@ const libraryItems = [
   { id: "11", title: "The Sealed Nectar (Ar-Raheeq Al-Makhtum)", author: "Safi-ur-Rahman al-Mubarakpuri", topic: "Seerah", level: "Intermediate", language: "English" },
   { id: "12", title: "Qiraat al-Ashr — Introduction", author: "Compiled Reference", topic: "Qiraat", level: "Advanced", language: "Arabic" },
 ];
-import { studentTestimonials } from "../content/testimonials";
 import { teachers } from "../content/teachers";
 import { seedCourseStatus } from "./seed-helpers";
 import { BRAND_CONFIG } from "../config/brand";
 
-/** Minimal bootstrap data: courses, teachers, library, homepage testimonials. */
+/**
+ * Minimal bootstrap data: teachers, courses, library items, the
+ * payment-settings row (without bank or UPI details) and shipping slabs.
+ *
+ * It only ever creates: every upsert has `update: {}`, so re-running it (as
+ * the README says to) never reverts an admin's edits to these rows. Coupons
+ * and homepage testimonials belong to the demo seed; a public 100% coupon in
+ * production would be offered to every student.
+ */
 export async function seedBootstrap(prisma: PrismaClient) {
   for (const teacher of teachers) {
     await prisma.teacher.upsert({
@@ -36,13 +43,7 @@ export async function seedBootstrap(prisma: PrismaClient) {
         initials: teacher.initials,
         published: true,
       },
-      update: {
-        name: teacher.name,
-        email: teacher.email,
-        specialization: teacher.specialization,
-        bio: teacher.bio,
-        initials: teacher.initials,
-      },
+      update: {},
     });
   }
 
@@ -70,20 +71,7 @@ export async function seedBootstrap(prisma: PrismaClient) {
         featuredAt,
         feeFrequency: "MONTHLY",
       },
-      update: {
-        title: course.title,
-        description: course.description,
-        startDate,
-        duration: course.duration,
-        level: course.level,
-        category: course.category,
-        priceInrPaise: course.priceInrPaise,
-        monthlyFeeInrPaise: fees.monthlyFeePaise,
-        teacherId: course.teacherId,
-        status,
-        featuredOnHomepage: true,
-        feeFrequency: "MONTHLY",
-      },
+      update: {},
     });
   }
 
@@ -104,60 +92,9 @@ export async function seedBootstrap(prisma: PrismaClient) {
         featuredOnHomepage: isFeatured,
         featuredAt: isFeatured ? featuredAt : null,
       },
-      update: {
-        title: item.title,
-        author: item.author,
-        topic: item.topic,
-        level: item.level,
-        language: item.language,
-        featuredOnHomepage: isFeatured,
-      },
+      update: {},
     });
   }
-
-  const featuredAtBase = new Date("2026-01-01T00:00:00.000Z");
-  for (const [index, testimonial] of studentTestimonials.entries()) {
-    const userId = `seed-testimonial-user-${testimonial.id}`;
-    const reviewId = `seed-testimonial-${testimonial.id}`;
-    const email = `seed-testimonial-${testimonial.id}@seed.local`;
-
-    await prisma.user.upsert({
-      where: { id: userId },
-      create: {
-        id: userId,
-        email,
-        name: testimonial.name,
-      },
-      update: {
-        name: testimonial.name,
-      },
-    });
-
-    await prisma.studentReview.upsert({
-      where: { id: reviewId },
-      create: {
-        id: reviewId,
-        userId,
-        quote: testimonial.quote,
-        course: testimonial.course,
-        location: testimonial.location,
-        rating: testimonial.rating ?? 5,
-        status: "APPROVED",
-        featuredOnHomepage: true,
-        featuredAt: new Date(featuredAtBase.getTime() + index * 60_000),
-      },
-      update: {
-        quote: testimonial.quote,
-        course: testimonial.course,
-        location: testimonial.location,
-        rating: testimonial.rating ?? 5,
-        status: "APPROVED",
-        featuredOnHomepage: true,
-      },
-    });
-  }
-
-
 
   await prisma.paymentSettings.upsert({
     where: { id: PAYMENT_SETTINGS_ID },
@@ -181,50 +118,6 @@ export async function seedBootstrap(prisma: PrismaClient) {
     update: {},
   });
 
-  const defaultCoupons = [
-    {
-      id: "coupon-welcome50",
-      code: "WELCOME50",
-      type: "DEFAULT" as const,
-      percentage: 50,
-      validFrom: new Date("2026-01-01T00:00:00.000Z"),
-      validUntil: new Date("2027-12-31T23:59:59.000Z"),
-      applyToEnrollment: true,
-      applyToCourse: true,
-      isActive: true,
-    },
-    {
-      id: "coupon-earlybird20",
-      code: "EARLYBIRD20",
-      type: "DEFAULT" as const,
-      percentage: 20,
-      validFrom: new Date("2026-01-01T00:00:00.000Z"),
-      validUntil: new Date("2027-12-31T23:59:59.000Z"),
-      applyToEnrollment: false,
-      applyToCourse: true,
-      isActive: true,
-    },
-    {
-      id: "coupon-scholarship100",
-      code: "SCHOLARSHIP100",
-      type: "DEFAULT" as const,
-      percentage: 100,
-      validFrom: new Date("2026-01-01T00:00:00.000Z"),
-      validUntil: new Date("2027-12-31T23:59:59.000Z"),
-      applyToEnrollment: true,
-      applyToCourse: true,
-      isActive: true,
-    },
-  ];
-
-  for (const c of defaultCoupons) {
-    await prisma.coupon.upsert({
-      where: { code: c.code },
-      create: c,
-      update: c,
-    });
-  }
-
   const shippingSlabs = [
     { id: "slab-1", minWeightGrams: 0, maxWeightGrams: 500, chargeInrPaise: 5000 },
     { id: "slab-2", minWeightGrams: 501, maxWeightGrams: 1000, chargeInrPaise: 8000 },
@@ -241,11 +134,7 @@ export async function seedBootstrap(prisma: PrismaClient) {
         maxWeightGrams: slab.maxWeightGrams,
         chargeInrPaise: slab.chargeInrPaise,
       },
-      update: {
-        minWeightGrams: slab.minWeightGrams,
-        maxWeightGrams: slab.maxWeightGrams,
-        chargeInrPaise: slab.chargeInrPaise,
-      },
+      update: {},
     });
   }
 }

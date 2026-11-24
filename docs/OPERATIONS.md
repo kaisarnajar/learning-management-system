@@ -118,8 +118,15 @@ release ticket, and apply only after the finance owner has reviewed it.
 
 ## 5. Seeding
 
-- `npm run db:seed` (added in a later commit) runs the non-destructive
-  bootstrap only.
+- `npm run db:seed` runs the bootstrap seed only (`prisma/seed-bootstrap.ts`).
+  It creates, when missing, the teachers, courses and library items from
+  `content/`, the payment-settings row (empty bank and UPI details) and the
+  shipping-charge slabs. Every write is an upsert with `update: {}`: an
+  existing row is never changed, so admin edits survive a re-run, and nothing
+  is deleted. It creates no coupons, users, reviews or payments.
+- Coupons (including the DEFAULT `WELCOME50`, `EARLYBIRD20` and
+  `SCHOLARSHIP100`, which every student would be offered) and the homepage
+  testimonials come only from the demo seed.
 - `npm run db:seed:demo` **deletes every row**. It refuses to run unless
   `ALLOW_DEMO_SEED=true` and the database host is listed in
   `SEED_ALLOWED_DB_HOSTS`. Never list the production host.

@@ -1,35 +1,13 @@
 import { requireAdmin } from "@/services/auth-actions";
-import { prisma } from "@/utils/prisma";
+import { getEnrollmentsAwaitingCertificate } from "@/services/certificates-admin";
 import { GenerateCertificateForm } from "@/components/admin/certificates/GenerateCertificateForm";
 import Link from "next/link";
 
 export default async function AdminGenerateCertificatePage() {
   await requireAdmin();
 
-  // Fetch enrollments where certificate has NOT been generated yet
-  const enrollments = await prisma.enrollment.findMany({
-    where: {
-      certificateGeneratedAt: null,
-    },
-    include: {
-      user: {
-        select: {
-          name: true,
-          email: true,
-        },
-      },
-      course: { select: { id: true, title: true } },
-    },
-    orderBy: [
-      { user: { name: "asc" } },
-    ],
-  });
-
-  const processedEnrollments = enrollments.map((env) => ({
-    id: env.id,
-    user: env.user,
-    course: env.course,
-  }));
+  // Enrollments where certificate has NOT been generated yet
+  const processedEnrollments = await getEnrollmentsAwaitingCertificate();
 
   return (
     <div className="space-y-6">

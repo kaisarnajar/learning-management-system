@@ -55,7 +55,7 @@ export async function getGeneratedCertificatesPaginated(
     const where = andWhere(baseWhere, searchWhere);
 
     const totalCount = await prisma.enrollment.count({ where });
-    const safePage = clampPage(page, pageSize, totalCount);
+    const safePage = clampPage(page, totalCount, pageSize);
 
     const items = await prisma.enrollment.findMany({
       where,
@@ -90,4 +90,36 @@ export async function getGeneratedCertificatesPaginated(
 
     return { items: processedItems, totalCount };
   }, "Failed to fetch certificates");
+}
+
+export type CertificateCandidate = {
+  id: string;
+  user: { name: string | null; email: string };
+  course: { id: string; title: string };
+};
+
+/** Enrollments without a certificate yet, for /admin/certificates/new (by student name). */
+export async function getEnrollmentsAwaitingCertificate(): Promise<CertificateCandidate[]> {
+  noStore();
+  const enrollments = await withDbErrorHandling(() => prisma.enrollment.findMany({
+    where: { certificateGeneratedAt: null },
+    include: {
+      user: { select: { name: true, email: true } },
+      course: { select: { id: true, title: true } },
+    },
+    orderBy: [{ user: { name: "asc" } }],
+  }), "Failed to fetch enrollments");
+  return enrollments.map((e) => ({ id: e.id, user: e.user, course: e.course }));
+}
+
+/** One enrollment with what its certificate shows (student, course, number, type, grade), or null. */
+export async function getCertificateEnrollment(enrollmentId: string) {
+  noStore();
+  return withDbErrorHandling(() => prisma.enrollment.findUnique({
+    where: { id: enrollmentId },
+    include: {
+      user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } },
+      course: { select: { id: true, title: true } },
+    },
+  }), "Failed to fetch certificate");
 }

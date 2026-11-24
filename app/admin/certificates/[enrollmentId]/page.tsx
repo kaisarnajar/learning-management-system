@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/services/auth-actions";
-import { prisma } from "@/utils/prisma";
+import { getCertificateEnrollment } from "@/services/certificates-admin";
 import { CertificatePreview } from "@/components/certificate/CertificatePreview";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -13,13 +13,7 @@ export default async function AdminCertificatePreviewPage({ params }: PageProps)
   const { enrollmentId } = await params;
 
   // Verify enrollment exists and has certificate generated
-  const enrollment = await prisma.enrollment.findUnique({
-    where: { id: enrollmentId },
-    select: {
-      id: true,
-      certificateGeneratedAt: true,
-    },
-  });
+  const enrollment = await getCertificateEnrollment(enrollmentId);
 
   if (!enrollment || !enrollment.certificateGeneratedAt) {
     notFound();

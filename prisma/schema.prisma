@@ -783,7 +783,7 @@ model BookOrderItem {
   unitCostPaise           Int?
   createdAt               DateTime  @default(now())
   order                   BookOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  book                    Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  book                    Book      @relation(fields: [bookId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
   @@index([bookId])
@@ -827,7 +827,7 @@ model CourseAttendanceRecord {
   updatedAt    DateTime @updatedAt
 
   attendance CourseAttendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
-  enrollment Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  enrollment Enrollment       @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
 
   @@unique([attendanceId, enrollmentId])
   @@index([enrollmentId])
@@ -861,7 +861,7 @@ model CourseGradeRecord {
   updatedAt            DateTime @updatedAt
 
   grade      CourseGrade @relation(fields: [gradeId], references: [id], onDelete: Cascade)
-  enrollment Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  enrollment Enrollment  @relation(fields: [enrollmentId], references: [id], onDelete: Restrict)
 
   @@unique([gradeId, enrollmentId])
   @@index([enrollmentId])
@@ -924,8 +924,8 @@ model CouponRequest {
   createdAt DateTime            @default(now())
   updatedAt DateTime            @updatedAt
 
-  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course  @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  course Course  @relation(fields: [courseId], references: [id], onDelete: Restrict)
   coupon Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
 
   @@index([userId])

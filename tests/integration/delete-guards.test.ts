@@ -62,8 +62,21 @@ describe.skipIf(SKIP_WITHOUT_DB)("delete guards", () => {
 
       const result = await runAction(() => deleteCourse(course.id));
 
-      expect(flashOf(result.redirectedTo)).toContain("attendance, grade or coupon records");
+      expect(flashOf(result.redirectedTo)).toContain("attendance, grade, coupon or fee-waiver records");
       expect(await prisma.course.count()).toBe(1);
+    });
+
+    it("refuses when a fee-waiver request exists, and the database refuses too", async () => {
+      const course = await createCourse();
+      const student = await createUser();
+      await prisma.couponRequest.create({ data: { userId: student.id, courseId: course.id, reason: "Hardship" } });
+
+      const result = await runAction(() => deleteCourse(course.id));
+
+      expect(flashOf(result.redirectedTo)).toContain("fee-waiver records");
+      await expect(prisma.course.delete({ where: { id: course.id } })).rejects.toMatchObject({ code: "P2003" });
+      await expect(prisma.user.delete({ where: { id: student.id } })).rejects.toMatchObject({ code: "P2003" });
+      expect(await prisma.couponRequest.count()).toBe(1);
     });
 
     it("deletes an unused course together with its inactive enrollments", async () => {
@@ -205,6 +218,22 @@ describe.skipIf(SKIP_WITHOUT_DB)("delete guards", () => {
       expect(await prisma.bookOrderItem.count({ where: { orderId: order.id } })).toBe(1);
     });
 
+    it("the database keeps order lines when a book delete skips the check (P2003)", async () => {
+      const student = await createUser();
+      const book = await createBook();
+      await prisma.bookOrder.create({
+        data: {
+          userId: student.id,
+          totalAmountInrPaise: book.priceInrPaise,
+          status: "SHIPPED",
+          items: { create: [{ bookId: book.id, quantity: 1, priceAtPurchaseInrPaise: book.priceInrPaise }] },
+        },
+      });
+
+      await expect(prisma.book.delete({ where: { id: book.id } })).rejects.toMatchObject({ code: "P2003" });
+      expect(await prisma.bookOrderItem.count()).toBe(1);
+    });
+
     it("deletes a book that was never ordered", async () => {
       const book = await createBook();
 
@@ -243,6 +272,16 @@ describe.skipIf(SKIP_WITHOUT_DB)("delete guards", () => {
       expect(result.error).toContain("cannot be removed");
       expect(await prisma.enrollment.count({ where: { id: enrollment.id } })).toBe(1);
       expect(await prisma.auditLog.count()).toBe(0);
+    });
+
+    it.each(["a grade", "attendance"] as const)("the database keeps %s when an enrollment delete skips the check (P2003)", async (history) => {
+      const course = await createCourse();
+      const student = await createUser();
+      const enrollment = await createEnrollment(student.id, course.id);
+      await histories[history](enrollment.id, student.id, course.id);
+
+      await expect(prisma.enrollment.delete({ where: { id: enrollment.id } })).rejects.toMatchObject({ code: "P2003" });
+      expect(await prisma.courseGradeRecord.count() + await prisma.courseAttendanceRecord.count()).toBe(1);
     });
 
     it("removes an enrollment without history and audits it", async () => {

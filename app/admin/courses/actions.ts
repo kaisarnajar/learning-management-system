@@ -178,7 +178,7 @@ export async function deleteCourse(id: string) {
       throw new ActionError("Course not found.");
     }
 
-    const [activeStudentCount, submissionCount, attendanceCount, gradeCount, couponCount] =
+    const [activeStudentCount, submissionCount, attendanceCount, gradeCount, couponCount, waiverRequestCount] =
       await withDbErrorHandling(
         () =>
           Promise.all([
@@ -191,6 +191,8 @@ export async function deleteCourse(id: string) {
             prisma.courseAttendance.count({ where: { courseId: id } }),
             prisma.courseGrade.count({ where: { courseId: id } }),
             prisma.coupon.count({ where: { courseId: id } }),
+            // Fee-waiver requests are history too; their foreign key restricts the delete.
+            prisma.couponRequest.count({ where: { courseId: id } }),
           ]),
         "Database operation failed",
       );
@@ -201,8 +203,8 @@ export async function deleteCourse(id: string) {
     if (submissionCount > 0) {
       throw new ActionError(`This course can't be deleted because it has ${submissionCount} fee payment submission${submissionCount === 1 ? "" : "s"} on record. Set it to Completed or On Hold instead.`);
     }
-    if (attendanceCount > 0 || gradeCount > 0 || couponCount > 0) {
-      throw new ActionError("This course can't be deleted because it still has attendance, grade or coupon records. Set it to Completed or On Hold instead.");
+    if (attendanceCount > 0 || gradeCount > 0 || couponCount > 0 || waiverRequestCount > 0) {
+      throw new ActionError("This course can't be deleted because it still has attendance, grade, coupon or fee-waiver records. Set it to Completed or On Hold instead.");
     }
 
     // The announcements cascade with the course, so their attachment paths are

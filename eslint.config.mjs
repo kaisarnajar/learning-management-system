@@ -2,9 +2,34 @@ import { defineConfig, globalIgnores } from "eslint/config";
 import nextVitals from "eslint-config-next/core-web-vitals";
 import nextTs from "eslint-config-next/typescript";
 
+// The layering in docs/ARCHITECTURE.md: app/ (pages, actions, routes) and
+// components/ are adapters over services/; services never reach up into app/,
+// and only services and API routes talk to Prisma. Existing page and action
+// imports of Prisma are a tracked baseline in eslint-suppressions.json.
+const PRISMA_MESSAGE =
+  "Pages, server actions and components read and write through services/*, not Prisma (docs/ARCHITECTURE.md).";
+const APP_MESSAGE =
+  "services/ must not depend on app/: move the shared code into services/ or utils/ (docs/ARCHITECTURE.md).";
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  {
+    files: ["services/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [{ group: ["@/app/*", "**/app/*"], message: APP_MESSAGE }] }],
+    },
+  },
+  {
+    files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
+    ignores: ["app/api/**"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { patterns: [{ group: ["@/utils/prisma", "**/utils/prisma"], message: PRISMA_MESSAGE }] },
+      ],
+    },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

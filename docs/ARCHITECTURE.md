@@ -22,6 +22,16 @@ config/ (brand, assets, constants)
   Prisma client, the R2 client, and the HTML builders for receipts, certificates and cards.
 - **`config/`** is the white-label surface: `brand.ts`, `assets.ts`, `constants/`. Academy-specific strings belong here,
   not in components.
+- **Enforced by ESLint** (`no-restricted-imports` in `eslint.config.mjs`): `services/` may not import from `app/`, and
+  `app/` outside `app/api/` (pages, layouts, server actions) and `components/` may not import `@/utils/prisma`.
+  `utils/prisma.ts` is also `server-only`, so a client component that reaches Prisma through a service fails the
+  build; pure helpers that client components need live in `utils/` or `config/` and are re-exported by the service.
+  Services that the staff API shares with the website return typed results (`{ ok: true, … } | { ok: false, error,
+  status }`) and never redirect; the action or route maps the result to a redirect, flash or HTTP status.
+- **The Prisma baseline.** The 34 pages and server actions under `app/` that still import Prisma directly (8 of them
+  pages) are recorded in `eslint-suppressions.json` under `no-restricted-imports`, one entry per file. New imports
+  fail lint. When a file's queries move into a service, run
+  `npx eslint . --ignore-pattern ".claude/**" --prune-suppressions` to drop its entry; the list only shrinks.
 - **Server actions** are wrapped with `utils/action-utils.ts`: an `ActionError` carries a user-facing message back with
   the redirect, a database error becomes a flash code, and anything else is logged and reported as a generic failure so
   internals never reach a URL.

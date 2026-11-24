@@ -34,6 +34,13 @@ tags:
   - name: "Admin: Enrollments"
   - name: "Admin: Courses"
     description: Courses and their tools (roster, announcements, attendance, grade cards, student cards)
+  - name: "Admin: Announcements"
+  - name: "Admin: Daily inspiration"
+  - name: "Admin: Blogs"
+  - name: "Admin: Fatwa"
+  - name: "Admin: Library"
+  - name: "Admin: Reviews"
+  - name: "Admin: Contact inquiries"
 
 components:
   securitySchemes:
@@ -800,6 +807,194 @@ components:
         name: { type: [string, "null"] }
         email: { type: string }
         rollNumberLabel: { type: string }
+
+    ImageRow:
+      type: object
+      properties:
+        id: { type: string }
+        imagePath: { type: string }
+        caption: { type: [string, "null"] }
+        sortOrder: { type: [integer, "null"] }
+    FeaturedSlots:
+      type: object
+      description: Homepage slots in use, for the "show on homepage" switch
+      properties:
+        featuredCount: { type: integer }
+        featuredMax: { type: integer }
+    SiteAnnouncementRow:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        eventDate: { type: [string, "null"] }
+        location: { type: [string, "null"] }
+        published: { type: boolean }
+        showOnHomepage: { type: boolean }
+        statusLabel: { type: string }
+        imageCount: { type: integer }
+        thumbnail: { type: [string, "null"] }
+        createdBy: { type: [string, "null"], description: Author's name }
+        createdAt: { type: string, format: date-time }
+    SiteAnnouncementForm:
+      type: object
+      required: [title, body]
+      properties:
+        title: { type: string }
+        body: { type: string }
+        eventDate: { type: string, format: date }
+        location: { type: string }
+        published: { type: string, enum: ["on"], description: A published announcement notifies every student }
+        showOnHomepage: { type: string, enum: ["on"] }
+        images: { type: array, items: { type: string, format: binary } }
+        removeImage: { type: array, items: { type: string }, description: Edit only; image ids to remove }
+    BlogRow:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        excerpt: { type: [string, "null"] }
+        approvalStatus: { type: string, enum: [DRAFT, PENDING, APPROVED, REJECTED] }
+        published: { type: boolean }
+        statusLabel: { type: string }
+        featuredOnHomepage: { type: boolean }
+        imageCount: { type: integer }
+        thumbnail: { type: [string, "null"] }
+        authorName: { type: [string, "null"] }
+        authorEmail: { type: [string, "null"] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        publicPath: { type: [string, "null"], description: Set while the post is public }
+    BlogDetail:
+      allOf:
+        - $ref: "#/components/schemas/BlogRow"
+        - type: object
+          properties:
+            body: { type: string, description: Sanitised HTML }
+            images: { type: array, items: { $ref: "#/components/schemas/ImageRow" } }
+    BlogForm:
+      type: object
+      required: [title, body]
+      properties:
+        title: { type: string }
+        excerpt: { type: string }
+        body: { type: string, description: HTML; sanitised by the website }
+        published: { type: string, enum: ["on"], description: Admins only }
+        featuredOnHomepage: { type: string, enum: ["on"], description: Admins only }
+        images: { type: array, items: { type: string, format: binary } }
+        removeImage: { type: array, items: { type: string }, description: Edit only; image ids to remove }
+    FatwaRow:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        category: { type: string }
+        approvalStatus: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+        answered: { type: boolean }
+        statusLabel: { type: string }
+        featuredOnHomepage: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        answeredAt: { type: [string, "null"], format: date-time }
+        publicPath: { type: [string, "null"] }
+        askerName: { type: string, description: Admins only }
+        askerEmail: { type: [string, "null"], description: Admins only; null for an anonymous asker }
+        anonymous: { type: boolean, description: Admins only }
+    FatwaDetail:
+      allOf:
+        - $ref: "#/components/schemas/FatwaRow"
+        - type: object
+          properties:
+            question: { type: string }
+            answer: { type: [string, "null"], description: Sanitised HTML }
+    LibraryItem:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        author: { type: string }
+        topic: { type: string }
+        level: { type: string }
+        language: { type: string }
+        pdfUrl: { type: string }
+        imagePath: { type: [string, "null"] }
+        published: { type: boolean }
+        statusLabel: { type: string }
+        featuredOnHomepage: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    LibraryFormOptions:
+      type: object
+      properties:
+        topics: { type: array, items: { type: string } }
+        languages: { type: array, items: { type: string } }
+        levels: { type: array, items: { type: string } }
+        featuredCount: { type: integer }
+        featuredMax: { type: integer }
+    LibraryForm:
+      type: object
+      required: [title, author, topic, level, language, pdfUrl]
+      properties:
+        title: { type: string }
+        author: { type: string }
+        topic: { type: string }
+        level: { type: string, enum: [Beginner, Intermediate, Advanced] }
+        language: { type: string }
+        pdfUrl: { type: string, format: uri, description: http(s) link to the PDF }
+        published: { type: string, enum: ["on"] }
+        featuredOnHomepage: { type: string, enum: ["on"] }
+        image: { type: string, format: binary, description: Cover; on edit it replaces the current one }
+        removeImage: { type: string, enum: ["true"], description: Edit only; the string "true" removes the cover }
+    DailyInspiration:
+      type: object
+      properties:
+        id: { type: string }
+        kind: { type: string, enum: [QURAN, HADITH] }
+        kindLabel: { type: string }
+        arabicText: { type: string }
+        englishTranslation: { type: string }
+        reference: { type: [string, "null"] }
+        published: { type: boolean }
+        statusLabel: { type: string }
+        onHomepage: { type: boolean, description: The latest published entry is the one on the homepage }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    DailyInspirationForm:
+      type: object
+      required: [kind, arabicText, englishTranslation]
+      properties:
+        kind: { type: string, enum: [QURAN, HADITH] }
+        arabicText: { type: string }
+        englishTranslation: { type: string }
+        reference: { type: string }
+        published: { type: string, enum: ["on"] }
+    StudentReview:
+      type: object
+      properties:
+        id: { type: string }
+        quote: { type: string }
+        course: { type: [string, "null"] }
+        courseLabel: { type: string }
+        location: { type: [string, "null"] }
+        rating: { type: integer }
+        status: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+        statusLabel: { type: string }
+        featuredOnHomepage: { type: boolean }
+        featuredAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        user: { $ref: "#/components/schemas/UserRef" }
+    ContactInquiry:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        phone: { type: [string, "null"] }
+        message: { type: string }
+        reply: { type: [string, "null"] }
+        status: { type: string, enum: [PENDING, REPLIED] }
+        statusLabel: { type: string }
+        repliedAt: { type: [string, "null"], format: date-time }
+        repliedBy: { type: [object, "null"], properties: { name: { type: [string, "null"] }, email: { type: string } } }
+        createdAt: { type: string, format: date-time }
 
 security:
   - bearer: []
@@ -2233,6 +2428,582 @@ paths:
     post:
       tags: ["Admin: Courses"]
       summary: E-mails the grade card PDF to the student
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # -------------------------------------------------- Admin: Announcements
+  /admin/announcements:
+    get:
+      tags: ["Admin: Announcements"]
+      summary: Site announcements, newest first
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200":
+          description: Announcements
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      data: { items: { $ref: "#/components/schemas/SiteAnnouncementRow" } }
+                      featuredCount: { type: integer }
+                      featuredMax: { type: integer }
+                      maxImages: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: ["Admin: Announcements"]
+      summary: Adds an announcement (a published one notifies every student)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SiteAnnouncementForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/SiteAnnouncementForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/announcements/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Announcements"]
+      summary: One announcement with its images (drafts included)
+      responses:
+        "200":
+          description: The announcement
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/FeaturedSlots"
+                  - type: object
+                    properties:
+                      success: { type: boolean }
+                      maxImages: { type: integer }
+                      announcement:
+                        allOf:
+                          - $ref: "#/components/schemas/SiteAnnouncementRow"
+                          - type: object
+                            properties:
+                              body: { type: string }
+                              eventDateInput: { type: [string, "null"], description: YYYY-MM-DD }
+                              images: { type: array, items: { $ref: "#/components/schemas/ImageRow" } }
+                              updatedAt: { type: string, format: date-time }
+                              publicPath: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Admin: Announcements"]
+      summary: Edits an announcement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/SiteAnnouncementForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/SiteAnnouncementForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Admin: Announcements"]
+      summary: Deletes the announcement and its images
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/announcements/{id}/homepage:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Announcements"]
+      summary: Features a published announcement on the homepage, or takes it off
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # --------------------------------------------- Admin: Daily inspiration
+  /admin/daily-inspiration:
+    get:
+      tags: ["Admin: Daily inspiration"]
+      summary: Verse and Hadith of the Day entries, last updated first
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200": { description: Entries, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/DailyInspiration" } } } }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: ["Admin: Daily inspiration"]
+      summary: Adds an entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DailyInspirationForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/daily-inspiration/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Daily inspiration"]
+      summary: One entry
+      responses:
+        "200": { description: The entry, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, item: { $ref: "#/components/schemas/DailyInspiration" } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Admin: Daily inspiration"]
+      summary: Edits an entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DailyInspirationForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Admin: Daily inspiration"]
+      summary: Deletes an entry
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # ---------------------------------------------------------- Admin: Blogs
+  /admin/blogs:
+    get:
+      tags: ["Admin: Blogs"]
+      summary: All blog posts (admins' and teachers')
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200":
+          description: Posts
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      data: { items: { $ref: "#/components/schemas/BlogRow" } }
+                      featuredCount: { type: integer }
+                      featuredMax: { type: integer }
+                      maxImages: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: ["Admin: Blogs"]
+      summary: Adds a post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BlogForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/BlogForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/blogs/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Blogs"]
+      summary: One post with its images
+      responses:
+        "200":
+          description: The post. `contentReadOnly` marks a teacher's submission, of which only publishing and the homepage setting can change
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/FeaturedSlots"
+                  - type: object
+                    properties:
+                      success: { type: boolean }
+                      maxImages: { type: integer }
+                      post: { allOf: [{ $ref: "#/components/schemas/BlogDetail" }, { properties: { contentReadOnly: { type: boolean } } }] }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Admin: Blogs"]
+      summary: Edits a post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BlogForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/BlogForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Admin: Blogs"]
+      summary: Deletes the post and its images
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/blog-approvals:
+    get:
+      tags: ["Admin: Blogs"]
+      summary: Teachers' posts awaiting approval, oldest first
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200": { description: Pending posts, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/BlogRow" } } } }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/blog-approvals/{id}:
+    get:
+      tags: ["Admin: Blogs"]
+      summary: A pending submission (404 once it is no longer pending)
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { description: The post, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, post: { $ref: "#/components/schemas/BlogDetail" } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/blog-approvals/{id}/approve:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Blogs"]
+      summary: Approves a pending post and publishes it
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/blog-approvals/{id}/reject:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Blogs"]
+      summary: Rejects a pending post; the teacher can edit and resubmit it
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ---------------------------------------------------------- Admin: Fatwa
+  /admin/fatwa:
+    get:
+      tags: ["Admin: Fatwa"]
+      summary: Fatwa questions, newest first
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }, { name: filter, in: query, description: "pending: a teacher's answer awaits review", schema: { type: string, enum: [unanswered, pending, answered, rejected] } }]
+      responses:
+        "200": { description: Questions, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/FatwaRow" } } } }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/fatwa/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Fatwa"]
+      summary: One question with its current answer
+      responses:
+        "200":
+          description: The question
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/FeaturedSlots"
+                  - type: object
+                    properties:
+                      success: { type: boolean }
+                      question: { $ref: "#/components/schemas/FatwaDetail" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Admin: Fatwa"]
+      summary: Deletes the question
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/fatwa/{id}/answer:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Fatwa"]
+      summary: Publishes or updates the answer, approving a teacher's pending one
+      description: |
+        The asker is e-mailed the first time the answer goes live; `redirect` carries
+        `email=anonymous|skipped|failed` when no e-mail went out.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [answer], properties: { answer: { type: string, minLength: 20, description: HTML; sanitised by the website }, featuredOnHomepage: { type: string, enum: ["on"] } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/fatwa/{id}/reject:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Fatwa"]
+      summary: Rejects a teacher's pending answer (the teacher is e-mailed)
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { type: object, properties: { answer: { type: string, description: The answer as the review form sends it } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  # -------------------------------------------------------- Admin: Library
+  /admin/library:
+    get:
+      tags: ["Admin: Library"]
+      summary: Digital library items, with the form's options
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200":
+          description: Items
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - $ref: "#/components/schemas/LibraryFormOptions"
+                  - type: object
+                    properties:
+                      data: { items: { $ref: "#/components/schemas/LibraryItem" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: ["Admin: Library"]
+      summary: Adds an item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/LibraryForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/library/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Library"]
+      summary: One item, with the form's options
+      responses:
+        "200":
+          description: The item
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/LibraryFormOptions"
+                  - type: object
+                    properties:
+                      success: { type: boolean }
+                      item: { $ref: "#/components/schemas/LibraryItem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Admin: Library"]
+      summary: Edits an item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/LibraryForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/LibraryForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    delete:
+      tags: ["Admin: Library"]
+      summary: Deletes the item and its cover
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # -------------------------------------------------------- Admin: Reviews
+  /admin/review-approvals:
+    get:
+      tags: ["Admin: Reviews"]
+      summary: Student reviews (pending or approved)
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }, { name: type, in: query, schema: { type: string, enum: [pending, approved], default: pending } }]
+      responses:
+        "200":
+          description: Reviews, both tabs' counts and the homepage slots in use
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      data: { items: { $ref: "#/components/schemas/StudentReview" } }
+                      type: { type: string, enum: [pending, approved] }
+                      pendingCount: { type: integer }
+                      approvedCount: { type: integer }
+                      featuredCount: { type: integer }
+                      featuredMax: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/review-approvals/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Reviews"]
+      summary: One review
+      responses:
+        "200":
+          description: The review
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/FeaturedSlots"
+                  - type: object
+                    properties:
+                      success: { type: boolean }
+                      review: { $ref: "#/components/schemas/StudentReview" }
+                      canFeature: { type: boolean }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Admin: Reviews"]
+      summary: Saves the homepage setting of an approved review
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { type: object, properties: { featuredOnHomepage: { type: string, enum: ["on"], description: Left out to take it off the homepage } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    delete:
+      tags: ["Admin: Reviews"]
+      summary: Deletes the review
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/review-approvals/{id}/approve:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Reviews"]
+      summary: Approves a pending review
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { type: object, properties: { featureOnHomepage: { type: string, enum: ["on"], description: Also features it when a homepage slot is free } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/review-approvals/{id}/reject:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Reviews"]
+      summary: Rejects a pending review; the student can edit and resubmit it
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ---------------------------------------------- Admin: Contact inquiries
+  /admin/contact-inquiries:
+    get:
+      tags: ["Admin: Contact inquiries"]
+      summary: Contact messages
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }, { name: filter, in: query, description: All when left out, schema: { type: string, enum: [pending, replied] } }]
+      responses:
+        "200": { description: Inquiries, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/ContactInquiry" } } } }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/contact-inquiries/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Contact inquiries"]
+      summary: One inquiry
+      responses:
+        "200": { description: The inquiry, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, inquiry: { $ref: "#/components/schemas/ContactInquiry" } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Admin: Contact inquiries"]
+      summary: Deletes the inquiry
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/contact-inquiries/{id}/reply:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Contact inquiries"]
+      summary: Sends (or updates and re-sends) the reply
+      description: |
+        `redirect` carries `email=failed` or `email=skipped` when the e-mail to the visitor did not go out.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [reply], properties: { reply: { type: string, minLength: 10, maxLength: 10000 } } }
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }

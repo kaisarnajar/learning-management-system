@@ -155,7 +155,9 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Ok" }
     Forbidden:
-      description: Signed in without the staff role this endpoint needs (or a teacher account with no teacher profile)
+      description: >-
+        Signed in without the staff role this endpoint needs (or a teacher account with no teacher profile).
+        A staff role is granted only once the account's e-mail address is verified; until then the account acts as USER.
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
@@ -424,7 +426,7 @@ components:
         id: { type: string }
         email: { type: string }
         name: { type: [string, "null"] }
-        role: { type: string, enum: [USER, TEACHER, ADMIN, DEVELOPER] }
+        role: { type: string, enum: [USER, TEACHER, ADMIN, DEVELOPER], description: "USER until the e-mail address is verified" }
         image: { type: [string, "null"] }
         registrationNumber: { type: [string, "null"] }
         emailVerified: { type: [string, "null"], format: date-time }

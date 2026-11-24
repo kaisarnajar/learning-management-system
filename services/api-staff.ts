@@ -46,6 +46,9 @@ function fail(error: string, status: number): NextResponse {
 export async function requireStaffApiAuth(request: NextRequest, roles: readonly StaffRole[]): Promise<StaffAuthResult> {
   const { user, error } = await authenticateApiRequest(request);
   if (!user) return { ctx: null, errorResponse: fail(error || "Unauthorized access", 401) };
+  // authenticateApiRequest already resolves an unverified account to USER;
+  // refuse here too so a staff route never runs for an unproven address.
+  if (!user.emailVerified) return { ctx: null, errorResponse: fail("You do not have access to this.", 403) };
   if (!roles.includes(user.role as StaffRole)) {
     return { ctx: null, errorResponse: fail("You do not have access to this.", 403) };
   }

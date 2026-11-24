@@ -61,6 +61,9 @@ export async function POST(request: NextRequest) {
       console.error("[api/v1/auth/register] Failed to send verification email:", emailErr);
     }
 
+    // Always a USER session: a staff role (from ADMIN_EMAIL, DEVELOPER_EMAIL or
+    // a Teacher row with this address) is granted only after the address is
+    // verified; see apiRoleFor in services/api-auth.ts.
     const tokens = await issueApiSession({
       id: user.id,
       email: user.email,

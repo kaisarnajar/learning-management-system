@@ -2,7 +2,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { decode, encode } from "next-auth/jwt";
 import { prisma } from "@/utils/prisma";
-import { resolveUserRole } from "@/services/teacher-auth";
+import { resolveUserRole, type UserRole } from "@/services/teacher-auth";
 import { getAuthSecret } from "@/services/auth-secret";
 
 /**
@@ -96,7 +96,7 @@ export async function issueApiSession(identity: ApiIdentity): Promise<ApiSession
 export async function rotateApiSession(refreshToken: string): Promise<ApiSessionTokens | null> {
   const current = await prisma.apiRefreshToken.findUnique({
     where: { tokenHash: hashRefreshToken(refreshToken) },
-    include: { user: { select: { id: true, email: true, name: true, deletedAt: true } } },
+    include: { user: { select: { id: true, email: true, name: true, deletedAt: true, emailVerified: true } } },
   });
   if (!current || current.revokedAt || current.expiresAt <= new Date()) return null;
 
@@ -109,7 +109,7 @@ export async function rotateApiSession(refreshToken: string): Promise<ApiSession
 
   if (current.user.deletedAt) return null;
 
-  const role = await resolveUserRole(current.user.email);
+  const role = await apiRoleFor(current.user);
   return issueApiSession({ id: current.user.id, email: current.user.email, name: current.user.name, role });
 }
 
@@ -138,6 +138,17 @@ export async function revokeAllApiSessions(userId: string): Promise<void> {
 }
 
 type AuthenticatedRequest = { user: ApiUserPayload; sessionId: string };
+
+/**
+ * The role an API session acts with. Staff roles are derived from the e-mail
+ * address (ADMIN_EMAIL, DEVELOPER_EMAIL, a Teacher row), so they are granted
+ * only once the address is verified: otherwise anyone could register an
+ * address an admin has set up for a teacher and act as that teacher.
+ */
+async function apiRoleFor(user: { email: string; emailVerified: Date | null }): Promise<UserRole> {
+  if (!user.emailVerified) return "USER";
+  return resolveUserRole(user.email);
+}
 
 /**
  * Verifies the Bearer access token and that its session is still live.
@@ -180,7 +191,7 @@ export async function authenticateApiRequest(
       return { user: null, error: "User account not found" };
     }
 
-    const role = await resolveUserRole(dbUser.email);
+    const role = await apiRoleFor(dbUser);
     return {
       user: {
         id: dbUser.id,

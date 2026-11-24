@@ -7,7 +7,9 @@ import { POST as refresh } from "@/app/api/v1/auth/refresh/route";
 import { POST as logout } from "@/app/api/v1/auth/logout/route";
 import { POST as google } from "@/app/api/v1/auth/google/route";
 import { GET as me, PUT as updateMe } from "@/app/api/v1/auth/me/route";
-import { createUser, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
+import { GET as teacherCourses } from "@/app/api/v1/teacher/courses/route";
+import { GET as adminDashboard } from "@/app/api/v1/admin/dashboard/route";
+import { createTeacher, createUser, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
 import { apiRequest, bearer, createPasswordUser, jsonOf, signedInStudent } from "../helpers/api";
 
 const verifyIdToken = vi.fn();
@@ -69,6 +71,42 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       }
       expect(statuses.slice(0, 5)).toEqual([200, 200, 200, 200, 200]);
       expect(statuses[5]).toBe(429);
+    });
+  });
+
+  describe("staff roles need a verified address", () => {
+    const registerAs = async (email: string) => {
+      const response = await register(
+        apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "Claimant", email, password: "long-enough-1", acceptPolicies: true } }),
+      );
+      expect(response.status).toBe(200);
+      return jsonOf(response);
+    };
+    const verify = (email: string) => prisma.user.update({ where: { email }, data: { emailVerified: new Date() } });
+
+    it("an address with a teacher profile acts as USER until verified", async () => {
+      await createTeacher({ email: "new.teacher@example.test" });
+      const { accessToken, refreshToken } = await registerAs("new.teacher@example.test");
+
+      const before = await teacherCourses(apiRequest("/api/v1/teacher/courses", { headers: bearer(accessToken) }));
+      expect(before.status).toBe(403);
+      expect((await jsonOf(await me(apiRequest("/api/v1/auth/me", { headers: bearer(accessToken) })))).user.role).toBe("USER");
+
+      // A refreshed pair carries no staff role either.
+      const rotated = await jsonOf(await refresh(apiRequest("/api/v1/auth/refresh", { method: "POST", json: { refreshToken } })));
+      expect((await teacherCourses(apiRequest("/api/v1/teacher/courses", { headers: bearer(rotated.accessToken) }))).status).toBe(403);
+
+      await verify("new.teacher@example.test");
+      expect((await teacherCourses(apiRequest("/api/v1/teacher/courses", { headers: bearer(rotated.accessToken) }))).status).toBe(200);
+    });
+
+    it("the ADMIN_EMAIL address acts as USER until verified", async () => {
+      const { accessToken } = await registerAs(process.env.ADMIN_EMAIL!);
+
+      expect((await adminDashboard(apiRequest("/api/v1/admin/dashboard", { headers: bearer(accessToken) }))).status).toBe(403);
+
+      await verify(process.env.ADMIN_EMAIL!);
+      expect((await adminDashboard(apiRequest("/api/v1/admin/dashboard", { headers: bearer(accessToken) }))).status).toBe(200);
     });
   });
 

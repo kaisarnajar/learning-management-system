@@ -1,4 +1,4 @@
-import { revalidateTag, unstable_cache } from "next/cache";
+import { revalidateTag, unstable_cache, updateTag } from "next/cache";
 
 /**
  * Data cache for public, read-mostly content (homepage sections, public
@@ -53,7 +53,18 @@ export function cachedPublic<Args extends unknown[], Result>(
   return async (...args: Args) => reviveDates(await cached(...args));
 }
 
-/** Drops every cached public query; call it from actions that change public content. */
+/**
+ * Drops every cached public query at once; call it from code that changes
+ * public content. The next request reads fresh data rather than one more
+ * stale copy (with "max", an unpublished course or a deleted student's review
+ * was still served once). In a Server Action that is updateTag; updateTag
+ * throws anywhere else (Route Handlers, e.g. the /api/v1 routes that share
+ * these services), where revalidateTag with `expire: 0` does the same.
+ */
 export function revalidatePublicContent(): void {
-  revalidateTag(PUBLIC_CONTENT_TAG, "max");
+  try {
+    updateTag(PUBLIC_CONTENT_TAG);
+  } catch {
+    revalidateTag(PUBLIC_CONTENT_TAG, { expire: 0 });
+  }
 }

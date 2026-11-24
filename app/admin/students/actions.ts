@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { isAdminEmail } from "@/services/admin";
 import { isDeveloperEmail } from "@/services/developer";
 import { recordAudit } from "@/services/audit";
+import { revalidatePublicContent } from "@/services/public-cache";
 import { requireAdmin } from "@/services/auth-actions";
 import { searchStudentOptions } from "@/services/students";
 import { prisma } from "@/utils/prisma";
@@ -99,6 +100,8 @@ export async function deleteStudentUser(id: string): Promise<{ error?: string; s
   }), "Database operation failed");
 
   revalidateStudentPaths(courseIds);
+  // Their featured review leaves the cached homepage now.
+  revalidatePublicContent();
 
   return { success: "Student account removed. Records are kept for auditing." };
 }

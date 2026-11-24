@@ -14,6 +14,7 @@ process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   unstable_noStore: vi.fn(),
   unstable_cache: <T extends (...args: never[]) => unknown>(fn: T) => fn,
 }));

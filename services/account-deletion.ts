@@ -2,6 +2,7 @@ import { compare } from "bcryptjs";
 import type { Session } from "next-auth";
 import { prisma } from "@/utils/prisma";
 import { recordAudit } from "@/services/audit";
+import { revalidatePublicContent } from "@/services/public-cache";
 import { deleteProfileImage } from "@/services/profile-upload";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { ENROLLMENT_STATUS } from "@/config/constants/business";
@@ -114,6 +115,9 @@ export async function deleteOwnAccount(
       after: { email: anonymisedEmail, deletedAt: now.toISOString() },
     });
   });
+
+  // Their featured review (and name on it) leaves the cached homepage now.
+  revalidatePublicContent();
 
   if (user.image && !user.image.startsWith("/assets/")) {
     await deleteProfileImage(userId, user.image);

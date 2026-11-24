@@ -87,7 +87,8 @@ export function canStudentDeleteReview(
 
 export async function getFeaturedHomepageReviews(): Promise<HomepageReview[]> {
   const reviews = await withDbErrorHandling(() => prisma.studentReview.findMany({
-      where: { status: "APPROVED", featuredOnHomepage: true },
+      // A deleted account's review leaves the homepage with the account.
+      where: { status: "APPROVED", featuredOnHomepage: true, user: { deletedAt: null } },
       orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
       take: HOMEPAGE_FEATURED_REVIEWS_MAX,
       include: {
@@ -100,7 +101,7 @@ export async function getFeaturedHomepageReviews(): Promise<HomepageReview[]> {
 
 export async function getFeaturedHomepageReviewCount(): Promise<number> {
   return withDbErrorHandling(() => prisma.studentReview.count({
-      where: { status: "APPROVED", featuredOnHomepage: true },
+      where: { status: "APPROVED", featuredOnHomepage: true, user: { deletedAt: null } },
     }), "Database operation failed");
 }
 

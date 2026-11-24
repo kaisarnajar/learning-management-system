@@ -1,6 +1,7 @@
 import { z } from "zod";
+import { rupeesToPaise } from "@/utils/form";
 import { MAX_ORDER_QTY } from "@/config/constants/business";
-import { PAYMENT_PROOF_REQUIRED_MESSAGE } from "@/config/constants/payments";
+import { MANUAL_PAYMENT_MAX_INR, MANUAL_PAYMENT_MIN_INR, PAYMENT_PROOF_REQUIRED_MESSAGE } from "@/config/constants/payments";
 import {
   PROFILE_COUNTRY_CODES,
   getProfileCountryOrDefault,
@@ -430,7 +431,12 @@ export const calendarDateSchema = z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/,
 
 export const paymentRecordSchema = z.object({
   courseId: z.string().optional(),
-  amountInr: z.coerce.number().positive("Amount must be greater than zero."),
+  amountInr: z.coerce
+    .number("Enter the amount.")
+    .min(MANUAL_PAYMENT_MIN_INR, `Amount must be at least ₹${MANUAL_PAYMENT_MIN_INR}.`)
+    .max(MANUAL_PAYMENT_MAX_INR, `Amount cannot exceed ₹${MANUAL_PAYMENT_MAX_INR.toLocaleString("en-IN")}.`)
+    // Whole paise, as stored.
+    .transform((rupees) => rupeesToPaise(rupees) / 100),
   paidAt: calendarDateSchema,
   paymentType: z.enum(["monthly", "quarterly", "half_yearly", "yearly", "one_time", "enrollment", "manual"]),
 });

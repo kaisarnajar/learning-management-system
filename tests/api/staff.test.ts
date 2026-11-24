@@ -10,6 +10,7 @@ import { GET as teacherCourse } from "@/app/api/v1/teacher/courses/[id]/route";
 import { POST as teacherAnnounce } from "@/app/api/v1/teacher/courses/[id]/announcements/route";
 import { POST as teacherGrade } from "@/app/api/v1/teacher/courses/[id]/grades/route";
 import { GET as adminCourse } from "@/app/api/v1/admin/courses/[id]/route";
+import { POST as recordPayment } from "@/app/api/v1/admin/transactions/payments/route";
 import { POST as orderAction } from "@/app/api/v1/admin/bookstore/orders/[id]/[action]/route";
 import { getStockLevels } from "@/services/inventory";
 import { createBook, createCourse, createEnrollment, createTeacher, createUser, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
@@ -192,6 +193,21 @@ describe.skipIf(SKIP_WITHOUT_DB)("staff API (/api/v1/admin, /api/v1/teacher)", (
       expect(await available()).toBe(3);
       expect((await refund(returned.id, { booksReturned: true })).status).toBe(200);
       expect(await available()).toBe(4);
+    });
+
+    it("record payment: a manual amount is bounded and stored in whole paise", async () => {
+      const { headers } = await signedInAdmin();
+      const student = await createUser();
+      const record = (amountInr: unknown) =>
+        recordPayment(apiRequest("/api/v1/admin/transactions/payments", { method: "POST", headers, json: { email: student.email, amountInr, paidAt: "2026-03-05", paymentType: "manual" } }));
+
+      for (const amountInr of [1e12, -100, 0.001]) {
+        expect((await record(amountInr)).status).toBe(400);
+      }
+      expect(await prisma.paymentRecord.count()).toBe(0);
+
+      expect((await record(499.995)).status).toBe(200);
+      expect((await prisma.paymentRecord.findFirstOrThrow()).amountInrPaise).toBe(50000);
     });
 
     it("enrollments: approve activates a pending request and needs courseId", async () => {

@@ -9,6 +9,7 @@ import { DbError } from "@/utils/db-error";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { PAGINATION } from "@/config/constants/business";
 import { sniffMime, validateUpload, IMAGE_MIMES, ATTACHMENT_MIMES } from "@/services/storage";
+import { rupeesToPaise } from "@/utils/form";
 
 describe("isSafeInternalPath", () => {
   it("accepts same-origin absolute paths", () => {
@@ -225,6 +226,16 @@ describe("slugs", () => {
     });
     await expect(createWithUniqueSlug("x", async () => false, boom)).rejects.toThrow("boom");
     expect(boom).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("rupeesToPaise", () => {
+  it("rounds half up on the typed decimal, not on its binary approximation", () => {
+    expect(rupeesToPaise(499.995)).toBe(50000);
+    expect(rupeesToPaise(1.005)).toBe(101);
+    expect(rupeesToPaise(349)).toBe(34900);
+    expect(rupeesToPaise(0.001)).toBe(0);
+    expect(rupeesToPaise(1_000_000)).toBe(100_000_000);
   });
 });
 

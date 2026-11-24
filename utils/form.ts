@@ -12,6 +12,12 @@ export const adminDestructiveButtonClassName =
 export const adminSecondaryButtonClassName =
   "inline-flex h-8 items-center justify-center rounded-md border border-border bg-surface px-3 text-xs font-semibold text-foreground hover:bg-surface-muted transition-colors disabled:opacity-60";
 
+/**
+ * Rupees to whole paise, rounding half up on the decimal the user typed:
+ * 499.995 is 49999.5 paise and becomes 50000, where `rupees * 100` would give
+ * 49999.4999… and round down.
+ */
 export function rupeesToPaise(rupees: number): number {
-  return Math.round(rupees * 100);
+  const shifted = Number(`${rupees}e2`);
+  return Math.round(Number.isFinite(shifted) ? shifted : rupees * 100);
 }

@@ -3380,7 +3380,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [email, amountInr, paidAt], properties: { email: { type: string, format: email }, amountInr: { type: number }, paidAt: { type: string, format: date }, paymentType: { type: string, enum: [monthly, quarterly, half_yearly, yearly, enrollment, manual], description: See /admin/finance/options recordPaymentTypes }, courseId: { type: string } } }
+            schema: { type: object, required: [email, amountInr, paidAt], properties: { email: { type: string, format: email }, amountInr: { type: number, minimum: 1, maximum: 1000000, description: "Rupees, rounded to whole paise; outside ₹1 to ₹10,00,000 is a 400" }, paidAt: { type: string, format: date }, paymentType: { type: string, enum: [monthly, quarterly, half_yearly, yearly, enrollment, manual], description: See /admin/finance/options recordPaymentTypes }, courseId: { type: string } } }
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }

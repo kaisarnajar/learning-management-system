@@ -5,6 +5,7 @@ import { useActionState, useState } from "react";
 import { recordStudentPayment, type RecordPaymentState } from "@/app/admin/record-payment/actions";
 import { previewStudentAccountForEnrollment } from "@/app/admin/enrollments/actions";
 import { inputClassName, labelClassName } from "@/utils/form";
+import { MANUAL_PAYMENT_MAX_INR, MANUAL_PAYMENT_MIN_INR } from "@/config/constants/payments";
 import { formatBusinessDate } from "@/services/business-time";
 import type { Course } from "@prisma/client";
 
@@ -108,7 +109,8 @@ export function RecordPaymentForm({ courses }: RecordPaymentFormProps) {
             id="amountInr"
             name="amountInr"
             type="number"
-            min="1"
+            min={MANUAL_PAYMENT_MIN_INR}
+            max={MANUAL_PAYMENT_MAX_INR}
             step="0.01"
             required
             placeholder="349"

@@ -255,7 +255,15 @@ const CASES: Record<string, Cases> = {
   calendarDateSchema: { valid: ["2026-03-05", " 2026-03-05 "], invalid: ["05-03-2026", "2026-3-5", "", "2026-03-05T10:00"] },
   paymentRecordSchema: {
     valid: [{ amountInr: "500", paidAt: "2026-03-05", paymentType: "manual" }, { courseId: "c1", amountInr: 349, paidAt: "2026-03-05", paymentType: "monthly" }],
-    invalid: [{ amountInr: 0, paidAt: "2026-03-05", paymentType: "manual" }, { amountInr: 5, paidAt: "2026-03-05", paymentType: "book_purchase" }, { amountInr: 5, paidAt: "bad", paymentType: "manual" }],
+    invalid: [
+      { amountInr: 0, paidAt: "2026-03-05", paymentType: "manual" },
+      { amountInr: 0.001, paidAt: "2026-03-05", paymentType: "manual" },
+      { amountInr: -500, paidAt: "2026-03-05", paymentType: "manual" },
+      { amountInr: 1e12, paidAt: "2026-03-05", paymentType: "manual" },
+      { amountInr: "abc", paidAt: "2026-03-05", paymentType: "manual" },
+      { amountInr: 5, paidAt: "2026-03-05", paymentType: "book_purchase" },
+      { amountInr: 5, paidAt: "bad", paymentType: "manual" },
+    ],
   },
   expenseSchema: {
     valid: [
@@ -414,6 +422,15 @@ describe("schema transformations and error reporting", () => {
       items: [{ bookId: "b1", quantity: 5 }, { bookId: "b2", quantity: 1 }, { bookId: "b1", quantity: 5 }],
     });
     expect(merged.data?.items).toEqual([{ bookId: "b1", quantity: 10 }, { bookId: "b2", quantity: 1 }]);
+  });
+
+  it("paymentRecordSchema bounds a manual payment and rounds it to whole paise", () => {
+    const parse = (amountInr: unknown) => validations.paymentRecordSchema.safeParse({ amountInr, paidAt: "2026-03-05", paymentType: "manual" });
+    expect(parse(499.995).data?.amountInr).toBe(500);
+    expect(parse("349.123").data?.amountInr).toBe(349.12);
+    expect(parse(1_000_000).data?.amountInr).toBe(1_000_000);
+    expect(parse(1_000_000.01).error?.issues[0].message).toMatch(/cannot exceed ₹10,00,000/);
+    expect(parse(0.5).error?.issues[0].message).toMatch(/at least ₹1/);
   });
 
   it("apiProfileUpdateSchema rejects unknown keys (no mass assignment)", () => {

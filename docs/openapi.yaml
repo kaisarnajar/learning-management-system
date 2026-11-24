@@ -3791,7 +3791,7 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     get:
       tags: ["Admin: Receipts"]
-      summary: The receipt PDF
+      summary: The receipt PDF (404 for a voided payment)
       responses:
         "200": { $ref: "#/components/responses/Pdf" }
         "401": { $ref: "#/components/responses/Unauthorized" }

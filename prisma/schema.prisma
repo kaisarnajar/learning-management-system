@@ -668,6 +668,8 @@ model CoursePaymentSubmission {
   paymentReference      String?                  @unique
   paymentRecordId       String?                  @unique
   couponId              String?
+  /// The billing period paid for (services/payment-period.ts), e.g. "MONTHLY:2026-01" or "ONE_TIME"; null for rows the backfill has not reached.
+  periodKey             String?
   /// Soft delete; rows with deletedAt set are hidden from every list.
   deletedAt             DateTime?
   createdAt             DateTime                 @default(now())
@@ -683,6 +685,7 @@ model CoursePaymentSubmission {
   @@index([paymentType])
   @@index([couponId])
   @@index([userId, courseId, label, status])
+  @@index([userId, courseId, periodKey])
 }
 
 model StudentNotification {

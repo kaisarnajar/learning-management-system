@@ -1260,6 +1260,14 @@ paths:
     post:
       tags: [Auth]
       security: []
+      description: |
+        Exchanges a refresh token for a new pair; the presented token is revoked. Store the new refresh
+        token before using it, and send one refresh at a time.
+
+        Presenting a refresh token that was already exchanged is treated as a replay: every token rotated
+        from the same sign-in is revoked, so the client holding the newest pair gets 401 on its next call
+        and must sign in again. A second exchange of the same token within a few seconds (two requests
+        sharing one stored token) only gets 401 and leaves the first exchange's pair working.
       requestBody:
         required: true
         content:

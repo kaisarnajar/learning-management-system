@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { decode, encode } from "next-auth/jwt";
 import { prisma } from "@/utils/prisma";
@@ -17,6 +17,11 @@ import { getAuthSecret } from "@/services/auth-secret";
  *  - a refresh token: a random secret whose SHA-256 hash is stored. Each use
  *    rotates it (old row revoked, new row issued); a revoked or expired
  *    refresh token is refused.
+ *
+ * Every row rotated from one sign-in shares a `familyId`. Presenting a token
+ * that was already revoked is a replay: either the client or a thief holds a
+ * copy, and the server cannot tell which, so the whole family is revoked and
+ * whoever holds the newest token must sign in again.
  */
 
 const AUTH_SECRET = getAuthSecret();
@@ -59,7 +64,17 @@ async function signAccessToken(identity: ApiIdentity, sessionId: string): Promis
 /** Revoked rows are kept this long so a replayed refresh token is still recognised as used. */
 const REVOKED_ROW_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 
-async function createSessionRow(userId: string): Promise<{ id: string; refreshToken: string; expiresAt: Date }> {
+/**
+ * A revoked token presented this soon after its revocation is a client that
+ * refreshed twice at once (two requests sharing one stored token), not a
+ * replay: the loser gets 401 but the winner's new pair is left alone.
+ */
+export const REFRESH_REUSE_GRACE_MS = 10 * 1000;
+
+async function createSessionRow(
+  userId: string,
+  familyId: string,
+): Promise<{ id: string; refreshToken: string; expiresAt: Date }> {
   const refreshToken = randomBytes(32).toString("base64url");
   const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_SECONDS * 1000);
   // Every refresh rotates the row, so an active app adds one row an hour.
@@ -71,15 +86,19 @@ async function createSessionRow(userId: string): Promise<{ id: string; refreshTo
     },
   });
   const row = await prisma.apiRefreshToken.create({
-    data: { userId, tokenHash: hashRefreshToken(refreshToken), expiresAt },
+    data: { userId, tokenHash: hashRefreshToken(refreshToken), expiresAt, familyId },
     select: { id: true },
   });
   return { id: row.id, refreshToken, expiresAt };
 }
 
-/** Starts a new API session for a user who has just authenticated. */
+/** Starts a new API session (a new token family) for a user who has just authenticated. */
 export async function issueApiSession(identity: ApiIdentity): Promise<ApiSessionTokens> {
-  const session = await createSessionRow(identity.id);
+  return issueInFamily(identity, randomUUID());
+}
+
+async function issueInFamily(identity: ApiIdentity, familyId: string): Promise<ApiSessionTokens> {
+  const session = await createSessionRow(identity.id, familyId);
   return {
     accessToken: await signAccessToken(identity, session.id),
     expiresIn: ACCESS_TOKEN_TTL_SECONDS,
@@ -89,28 +108,60 @@ export async function issueApiSession(identity: ApiIdentity): Promise<ApiSession
 }
 
 /**
- * Exchanges a refresh token for a new pair. The presented token is revoked
- * whether or not the exchange succeeds for any other reason, so a stolen
- * token can be used at most once.
+ * Exchanges a refresh token for a new pair in the same family. The presented
+ * token is revoked whether or not the exchange succeeds for any other reason,
+ * so a stolen token can be used at most once, and presenting it again after
+ * that revokes every token rotated from it (see `revokeReusedFamily`).
  */
 export async function rotateApiSession(refreshToken: string): Promise<ApiSessionTokens | null> {
   const current = await prisma.apiRefreshToken.findUnique({
     where: { tokenHash: hashRefreshToken(refreshToken) },
     include: { user: { select: { id: true, email: true, name: true, deletedAt: true, emailVerified: true } } },
   });
-  if (!current || current.revokedAt || current.expiresAt <= new Date()) return null;
+  if (!current) return null;
+  if (current.revokedAt) {
+    await revokeReusedFamily(current);
+    return null;
+  }
+  if (current.expiresAt <= new Date()) return null;
 
+  // Rows issued before families existed join a family named after themselves,
+  // stamped on the revoked row too so a later replay of it is precise.
+  const familyId = current.familyId ?? current.id;
   const revoked = await prisma.apiRefreshToken.updateMany({
     where: { id: current.id, revokedAt: null },
-    data: { revokedAt: new Date() },
+    data: { revokedAt: new Date(), familyId },
   });
-  // Lost the race against a concurrent use of the same token: treat as reuse.
+  // Lost the race against a concurrent use of the same token. Both requests
+  // read the row while it was live, so this is the client refreshing twice at
+  // once, not a replay: refuse this one and leave the winner's pair alone.
   if (revoked.count === 0) return null;
 
   if (current.user.deletedAt) return null;
 
   const role = await apiRoleFor(current.user);
-  return issueApiSession({ id: current.user.id, email: current.user.email, name: current.user.name, role });
+  return issueInFamily({ id: current.user.id, email: current.user.email, name: current.user.name, role }, familyId);
+}
+
+/**
+ * A revoked refresh token was presented again. Outside the short grace that
+ * covers a client's own concurrent refreshes, this is a replay: revoke every
+ * live token of the family. A row issued before families existed and never
+ * rotated since has no family, so all of the user's sessions are revoked.
+ * Revoked rows are pruned after REVOKED_ROW_RETENTION_MS; an older replay is
+ * simply an unknown token.
+ */
+async function revokeReusedFamily(row: { userId: string; familyId: string | null; revokedAt: Date | null }): Promise<void> {
+  if (row.revokedAt && Date.now() - row.revokedAt.getTime() < REFRESH_REUSE_GRACE_MS) return;
+  const ended = await prisma.apiRefreshToken.updateMany({
+    where: row.familyId ? { familyId: row.familyId, revokedAt: null } : { userId: row.userId, revokedAt: null },
+    data: { revokedAt: new Date() },
+  });
+  if (ended.count > 0) {
+    console.warn(
+      `[api-auth] Refresh token reuse for user ${row.userId}: revoked ${ended.count} session(s) ${row.familyId ? "in its family" : "(legacy token, all sessions)"}.`,
+    );
+  }
 }
 
 /** Revokes one session by its refresh token (logout). Unknown tokens are ignored. */

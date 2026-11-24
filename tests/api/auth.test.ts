@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { encode } from "next-auth/jwt";
 import { prisma } from "@/utils/prisma";
@@ -15,6 +16,7 @@ import { confirmEmailVerification } from "@/app/verify-email/actions";
 import { createPasswordResetToken } from "@/services/password-reset";
 import { generateVerificationToken } from "@/services/tokens";
 import { authJwtCallback } from "@/services/auth-jwt";
+import { issueApiSession, REFRESH_REUSE_GRACE_MS } from "@/services/api-auth";
 import { deleteOwnAccount } from "@/services/account-deletion";
 import { createTeacher, createUser, resetDb, runAction, SKIP_WITHOUT_DB } from "../helpers/db";
 import { apiRequest, bearer, createPasswordUser, jsonOf, signedInStudent } from "../helpers/api";
@@ -435,6 +437,94 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       ]);
 
       expect(results.map((r) => r.status).sort()).toEqual([200, 401]);
+      // the client refreshing twice at once is not a replay: the winner's pair keeps working
+      const winner = await jsonOf(results.find((r) => r.status === 200)!);
+      expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(winner.accessToken) }))).status).toBe(200);
+      expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: winner.refreshToken })).status).toBe(200);
+    });
+
+    describe("reuse of a rotated refresh token", () => {
+      const hash = (token: string) => createHash("sha256").update(token).digest("hex");
+      /** Moves the revocation of a token past the grace that covers a client's own concurrent refreshes. */
+      const ageRevocation = (token: string) =>
+        prisma.apiRefreshToken.update({
+          where: { tokenHash: hash(token) },
+          data: { revokedAt: new Date(Date.now() - REFRESH_REUSE_GRACE_MS - 1000) },
+        });
+
+      it("rotation keeps the family, and a replay of the old token ends every token rotated from it", async () => {
+        const student = await signedInStudent();
+        const other = await issueApiSession({ id: student.user.id, email: student.user.email, role: "USER" });
+
+        const second = await jsonOf(await post(refresh, "/api/v1/auth/refresh", { refreshToken: student.tokens.refreshToken }));
+        const third = await jsonOf(await post(refresh, "/api/v1/auth/refresh", { refreshToken: second.refreshToken }));
+        const family = await prisma.apiRefreshToken.findMany({
+          where: { tokenHash: { in: [student.tokens.refreshToken, second.refreshToken, third.refreshToken].map(hash) } },
+          select: { familyId: true },
+        });
+        expect(family).toHaveLength(3);
+        expect(new Set(family.map((r) => r.familyId)).size).toBe(1);
+        expect(family[0].familyId).toBeTruthy();
+
+        // someone replays the first token after the legitimate client moved on
+        await ageRevocation(student.tokens.refreshToken);
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: student.tokens.refreshToken })).status).toBe(401);
+
+        // the newest pair of that family is dead too
+        expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(third.accessToken) }))).status).toBe(401);
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: third.refreshToken })).status).toBe(401);
+        // a separate sign-in of the same user is another family and survives
+        expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(other.accessToken) }))).status).toBe(200);
+      });
+
+      it("a thief who rotates first loses the chain when the owner presents the old token", async () => {
+        const student = await signedInStudent();
+        const stolen = await jsonOf(await post(refresh, "/api/v1/auth/refresh", { refreshToken: student.tokens.refreshToken }));
+
+        await ageRevocation(student.tokens.refreshToken);
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: student.tokens.refreshToken })).status).toBe(401);
+
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: stolen.refreshToken })).status).toBe(401);
+      });
+
+      it("a replayed token issued before families existed ends all of the user's sessions", async () => {
+        const student = await signedInStudent();
+        await prisma.apiRefreshToken.create({
+          data: { userId: student.user.id, tokenHash: hash("legacy-rotated"), expiresAt: new Date(Date.now() + 86_400_000), revokedAt: new Date(Date.now() - 60_000) },
+        });
+
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: "legacy-rotated" })).status).toBe(401);
+
+        expect((await me(apiRequest("/api/v1/auth/me", { headers: student.headers }))).status).toBe(401);
+        expect(await prisma.apiRefreshToken.count({ where: { userId: student.user.id, revokedAt: null } })).toBe(0);
+      });
+
+      it("a live token issued before families existed starts a family when it rotates", async () => {
+        const student = await signedInStudent();
+        const legacy = await prisma.apiRefreshToken.create({
+          data: { userId: student.user.id, tokenHash: hash("legacy-live"), expiresAt: new Date(Date.now() + 86_400_000) },
+        });
+
+        const next = await jsonOf(await post(refresh, "/api/v1/auth/refresh", { refreshToken: "legacy-live" }));
+        expect((await prisma.apiRefreshToken.findUniqueOrThrow({ where: { id: legacy.id } })).familyId).toBe(legacy.id);
+        expect((await prisma.apiRefreshToken.findUniqueOrThrow({ where: { tokenHash: hash(next.refreshToken) } })).familyId).toBe(legacy.id);
+
+        // its replay is then confined to that family
+        await ageRevocation("legacy-live");
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: "legacy-live" })).status).toBe(401);
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: next.refreshToken })).status).toBe(401);
+        expect((await me(apiRequest("/api/v1/auth/me", { headers: student.headers }))).status).toBe(200);
+      });
+
+      it("a token ended by logout presented again does not end the user's other sessions", async () => {
+        const first = await signedInStudent();
+        const second = await issueApiSession({ id: first.user.id, email: first.user.email, role: "USER" });
+        await post(logout, "/api/v1/auth/logout", { refreshToken: first.tokens.refreshToken });
+        await ageRevocation(first.tokens.refreshToken);
+
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: first.tokens.refreshToken })).status).toBe(401);
+        expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(second.accessToken) }))).status).toBe(200);
+      });
     });
 
     it("refuses missing, unknown and expired refresh tokens", async () => {

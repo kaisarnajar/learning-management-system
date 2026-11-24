@@ -28,6 +28,16 @@ The server actions under test run against the real database. `next/cache`, `afte
 senders are replaced in `tests/helpers/db-setup.ts`; a test signs in as someone with
 `vi.mocked(auth).mockResolvedValue(sessionFor(user, "ADMIN"))`.
 
+## PDF rendering (`PDF_SMOKE`)
+
+`tests/integration/pdf-smoke.test.ts` renders a real receipt with Chromium only when `PDF_SMOKE=1`; otherwise
+those cases are skipped and only the stored-file fallback is checked. It needs Puppeteer's browser (downloaded by
+`npm ci`) and `generated/pdf.css` (`npm run build:pdf-css`). CI sets the flag in the verify job.
+
+```bash
+PDF_SMOKE=1 npx vitest run tests/integration/pdf-smoke.test.ts
+```
+
 ## Content-Security-Policy rollout (`CSP_ENFORCE`)
 
 The nonce-based CSP is sent as `Content-Security-Policy-Report-Only` by default and as the enforcing

@@ -44,6 +44,9 @@ jobs:
       DIRECT_URL: postgresql://postgres:postgres@localhost:5432/lms_test
       AUTH_SECRET: ci-secret-ci-secret-ci-secret-0123456789
       CSP_ENFORCE: "true"
+      # Render a real receipt in tests/integration/pdf-smoke.test.ts; `npm ci`
+      # downloads Puppeteer's Chrome, and the PDF stylesheet is built below.
+      PDF_SMOKE: "1"
     steps:
       - uses: actions/checkout@v4
 

@@ -14,6 +14,9 @@ import { isUploadError } from "@/services/storage";
  * checkout page, so the three can never drift apart again.
  */
 
+const TOTAL_CHANGED_MESSAGE =
+  "The order total has changed since you opened checkout (a price or shipping charge was updated). Please review the new total and try again.";
+
 export type BookstoreCheckoutInput = z.infer<typeof bookstoreCheckoutSchema>;
 
 type SlabLike = Pick<ShippingChargeSlab, "minWeightGrams" | "maxWeightGrams" | "chargeInrPaise">;
@@ -173,6 +176,10 @@ export async function createBookOrder(params: {
 
   const quote = await quoteBookOrder(input.items);
   if (!quote.ok) return quote;
+  // A price, stock or shipping change since the client's quote must not be charged silently.
+  if (input.expectedTotalPaise != null && input.expectedTotalPaise !== quote.totalAmountInrPaise) {
+    return { ok: false, error: TOTAL_CHANGED_MESSAGE, status: 409 };
+  }
   const { books: bookMap, shippingChargeInrPaise, totalAmountInrPaise } = quote;
 
   let order: CreatedBookOrder;

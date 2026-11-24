@@ -578,6 +578,7 @@ components:
         deliveryPinCode: { type: string, pattern: "^[0-9]{5,10}$" }
         deliveryPhoneNumber: { type: string, pattern: "^[0-9]{10,15}$" }
         notes: { type: string }
+        expectedTotalPaise: { type: integer, description: "Optional. The total from POST /bookstore/checkout-quote that the customer saw; a different current total answers 409. Without it the current total is charged" }
         screenshot: { type: string, format: binary, description: Multipart only }
 
     # ------------------------------------------------------------ Staff
@@ -1936,7 +1937,9 @@ paths:
         "200": { description: Placed, content: { application/json: { schema: { type: object } } } }
         "400": { $ref: "#/components/responses/Error" }
         "403": { description: E-mail not verified, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
-        "409": { $ref: "#/components/responses/Error" }
+        "409":
+          description: Not enough stock, the transaction reference was already used, or the total differs from expectedTotalPaise
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
   /bookstore/orders/{id}:
     get:
       tags: [Bookstore]

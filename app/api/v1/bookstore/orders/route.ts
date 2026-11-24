@@ -38,6 +38,7 @@ export async function POST(request: NextRequest) {
     let deliveryPinCode: string | null = null;
     let deliveryPhoneNumber: string | null = null;
     let notes: string | null = null;
+    let expectedTotalPaise: unknown;
     let screenshotFile: File | null = null;
 
     const contentType = request.headers.get("content-type") || "";
@@ -51,6 +52,7 @@ export async function POST(request: NextRequest) {
       deliveryPinCode = formData.get("deliveryPinCode") as string;
       deliveryPhoneNumber = formData.get("deliveryPhoneNumber") as string;
       notes = formData.get("notes") as string | null;
+      expectedTotalPaise = formData.get("expectedTotalPaise");
       screenshotFile = formData.get("screenshot") as File | null;
     } else {
       const bodyJson = await request.json();
@@ -61,6 +63,7 @@ export async function POST(request: NextRequest) {
       deliveryPinCode = bodyJson.deliveryPinCode;
       deliveryPhoneNumber = bodyJson.deliveryPhoneNumber;
       notes = bodyJson.notes || null;
+      expectedTotalPaise = bodyJson.expectedTotalPaise;
     }
 
     if (!rawItems) {
@@ -82,6 +85,8 @@ export async function POST(request: NextRequest) {
       deliveryPinCode,
       deliveryPhoneNumber,
       notes: notes || undefined,
+      // Optional: older app builds send none and are charged the current total.
+      expectedTotalPaise,
     });
 
     if (!validation.success) {

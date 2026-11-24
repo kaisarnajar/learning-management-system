@@ -74,6 +74,8 @@ export function BookCheckoutClient({
       formData.append("deliveryAddress", deliveryAddress.trim());
       formData.append("deliveryPinCode", deliveryPinCode.trim());
       formData.append("deliveryPhoneNumber", deliveryPhoneNumber.trim());
+      // The total shown here; the server refuses the order if it has changed.
+      formData.append("expectedTotalPaise", String(totalAmountInrPaise));
       if (screenshot && screenshot.size > 0) {
         formData.append("screenshot", screenshot);
       }

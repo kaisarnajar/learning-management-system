@@ -394,6 +394,9 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
 
       expect((await order({ ...valid, upiTransactionId: "UTR10000", items: [{ bookId: book.id, quantity: 5 }] })).status).toBe(409);
       expect((await order({ ...valid, deliveryPinCode: "1" })).status).toBe(400);
+      // A total that no longer matches the current price is refused; none at all is accepted.
+      expect((await order({ ...valid, upiTransactionId: "UTR10002", items: [{ bookId: book.id, quantity: 1 }], expectedTotalPaise: 9000 })).status).toBe(409);
+      expect((await order({ ...valid, upiTransactionId: "UTR10003", items: [{ bookId: book.id, quantity: 1 }], expectedTotalPaise: 10000 })).status).toBe(200);
       // Two lines of 20 for one book are 40 copies of it.
       expect((await order({ ...valid, upiTransactionId: "UTR10001", items: [{ bookId: book.id, quantity: 20 }, { bookId: book.id, quantity: 20 }] })).status).toBe(400);
       expect((await order({})).status).toBe(400);

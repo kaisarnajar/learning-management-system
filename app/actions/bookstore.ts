@@ -32,6 +32,7 @@ export async function submitBookOrder(formData: FormData) {
     deliveryPinCode: formData.get("deliveryPinCode"),
     deliveryPhoneNumber: formData.get("deliveryPhoneNumber"),
     notes: formData.get("notes") || undefined,
+    expectedTotalPaise: formData.get("expectedTotalPaise"),
   });
 
   if (!validation.success) {

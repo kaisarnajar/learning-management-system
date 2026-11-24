@@ -596,6 +596,8 @@ export const bookstoreCheckoutSchema = z.object({
   deliveryPinCode: z.string().trim().regex(/^[0-9]{5,10}$/, "Valid pin code is required."),
   deliveryPhoneNumber: z.string().trim().regex(/^[0-9]{10,15}$/, "Valid phone number (10-15 digits) is required."),
   notes: z.string().trim().optional(),
+  /** The total the client showed; optional so older app builds keep working. */
+  expectedTotalPaise: expectedAmountPaiseSchema,
 });
 
 const isoDateString = z

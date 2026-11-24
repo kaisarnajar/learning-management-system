@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
-import { createBookOrder } from "@/services/book-orders";
+import { createBookOrder, quoteBookOrder } from "@/services/book-orders";
 import { getStockLevels } from "@/services/inventory";
 import {
   approveBookOrder,
@@ -78,6 +78,22 @@ describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
     const order = await placeOrder(student.id, [{ bookId: book.id, quantity: 5 }, { bookId: book.id, quantity: 5 }]);
     expect(order.items).toEqual([expect.objectContaining({ bookId: book.id, quantity: 10 })]);
     expect(order.totalAmountInrPaise).toBe(100000 + order.shippingChargeInrPaise);
+  });
+
+  it("refuses an order whose total changed since the quote, and takes one with no expected total", async () => {
+    const student = await createUser();
+    const book = await createBook({ priceInrPaise: 10000, inventoryPurchased: 10 });
+    const quoted = await quoteBookOrder([{ bookId: book.id, quantity: 2 }]);
+    if (!quoted.ok) throw new Error(quoted.error);
+    await prisma.book.update({ where: { id: book.id }, data: { priceInrPaise: 12000 } });
+
+    const stale = await createBookOrder({ userId: student.id, input: { ...input([{ bookId: book.id, quantity: 2 }]), expectedTotalPaise: quoted.totalAmountInrPaise }, screenshotFile: null });
+    expect(stale).toMatchObject({ ok: false, status: 409, error: expect.stringContaining("total has changed") });
+    expect(await prisma.bookOrder.count()).toBe(0);
+
+    // Older app builds send no expected total and are charged the current one.
+    const legacy = await placeOrder(student.id, [{ bookId: book.id, quantity: 2 }]);
+    expect(legacy.totalAmountInrPaise).toBe(quoted.totalAmountInrPaise + 4000);
   });
 
   it("refuses unavailable and unpublished books", async () => {

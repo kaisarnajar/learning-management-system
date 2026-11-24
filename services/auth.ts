@@ -8,6 +8,7 @@ import { getTeacherByEmail, resolveUserRole } from "@/services/teacher-auth";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { getClientIp, rateLimit, RATE_LIMITS } from "@/services/rate-limit";
+import { getApiActorSession } from "@/services/api-actor";
 
 /** Surfaced to the login form as result.code so it can offer to resend the verification email. */
 class EmailNotVerifiedError extends CredentialsSignin {
@@ -36,7 +37,7 @@ if (originalCreateUser) {
   };
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const nextAuth = NextAuth({
   ...authConfig,
   adapter: prismaAdapter,
   providers: [
@@ -200,3 +201,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+export const { handlers, signIn, signOut } = nextAuth;
+
+/**
+ * The current session. Inside an /api/v1 route that runs a server action for
+ * the app (see services/api-actor.ts) this is the app user's session;
+ * everywhere else it is Auth.js's own `auth`.
+ */
+export const auth = ((...args: unknown[]) => {
+  if (args.length === 0) {
+    const apiSession = getApiActorSession();
+    if (apiSession) return Promise.resolve(apiSession);
+  }
+  return (nextAuth.auth as (...a: unknown[]) => unknown)(...args);
+}) as typeof nextAuth.auth;

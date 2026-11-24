@@ -3,6 +3,7 @@ import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import { deleteCertificate, generateCertificate } from "@/app/actions/certificates";
 import { getCoursesAwaitingCertificates, getEnrollmentsAwaitingCertificatePaginated } from "@/services/certificates-admin";
+import { syncEnrollmentsWithCourseStatus } from "@/services/completion";
 import { createCourse, createEnrollment, createUser, resetDb, sessionFor, SKIP_WITHOUT_DB } from "../helpers/db";
 
 // No Chromium here: storing and removing the rendered PDF is not under test.
@@ -118,5 +119,25 @@ describe.skipIf(SKIP_WITHOUT_DB)("certificates: who can be certified", () => {
     const search = await getEnrollmentsAwaitingCertificatePaginated(1, 50, { searchQuery: "bil" });
     expect(search.items.map((e) => e.id)).toEqual([active.id]);
     expect((await getEnrollmentsAwaitingCertificatePaginated(1, 50, { courseId: other.id })).totalCount).toBe(0);
+  });
+});
+
+describe.skipIf(SKIP_WITHOUT_DB)("reopening a completed course", () => {
+  beforeEach(resetDb);
+
+  it("keeps certified students completed and moves the others back to active", async () => {
+    const course = await createCourse({ status: "COMPLETED" });
+    const completed = { status: "completed", statusEnum: "COMPLETED", completedAt: new Date() } as const;
+    const certified = await createEnrollment((await createUser()).id, course.id, {
+      ...completed,
+      certificateNumber: "DQA-CERT/2026/00001",
+      certificateGeneratedAt: new Date(),
+    });
+    const uncertified = await createEnrollment((await createUser()).id, course.id, completed);
+
+    await syncEnrollmentsWithCourseStatus(course.id, "ONGOING");
+
+    expect(await prisma.enrollment.findUniqueOrThrow({ where: { id: certified.id } })).toMatchObject({ statusEnum: "COMPLETED", completedAt: expect.any(Date) });
+    expect(await prisma.enrollment.findUniqueOrThrow({ where: { id: uncertified.id } })).toMatchObject({ statusEnum: "ACTIVE", completedAt: null });
   });
 });

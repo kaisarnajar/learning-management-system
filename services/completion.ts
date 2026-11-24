@@ -20,8 +20,10 @@ export async function syncEnrollmentsWithCourseStatus(
     return;
   }
 
+  // Reopening a course: a student who already holds a certificate finished it
+  // and stays completed; only the uncertified go back to active.
   await withDbErrorHandling(() => prisma.enrollment.updateMany({
-      where: { courseId, status: ENROLLMENT_STATUS.COMPLETED },
+      where: { courseId, status: ENROLLMENT_STATUS.COMPLETED, certificateGeneratedAt: null },
       data: { ...enrollmentStatusData("ACTIVE"), completedAt: null },
     }), "Database operation failed");
 }

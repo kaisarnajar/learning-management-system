@@ -127,9 +127,9 @@ export async function updateCourse(id: string, formData: FormData) {
     const statusChanged = existing.status !== courseData.status;
 
     if (statusChanged && existing.status === "COMPLETED") {
-      // Reopening a completed course flips every completed enrollment back to
-      // active. With certificates already issued that is almost always a
-      // mistake, so it needs an explicit confirmation from the form.
+      // Reopening a completed course moves its uncertified enrollments back to
+      // active (certified students stay completed). With certificates already
+      // issued that is usually a mistake, so it needs an explicit confirmation.
       const certificates = await prisma.enrollment.count({
         where: { courseId: id, certificateGeneratedAt: { not: null } },
       });

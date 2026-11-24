@@ -109,28 +109,27 @@ export async function getFeeWaiverFinanceData(
   const courses = await getAllCourses();
   const courseById = new Map(courses.map((c) => [c.id, c]));
 
-  // The waiver test is in the WHERE clause, so the page is read with
-  // skip/take; the totals still need every matching row's amount and course
-  // (the original fee depends on the course), read with a narrow select.
-  const totalCount = await prisma.coursePaymentSubmission.count({ where });
+  // Totals are summed in the database: one row per distinct (course, type,
+  // snapshot fee, amount) with its count, so the work no longer grows with
+  // the number of waivers. The page itself is read with skip/take.
+  const groups = await prisma.coursePaymentSubmission.groupBy({
+    by: ["courseId", "paymentType", "baseFeePaise", "amountInrPaise"],
+    where,
+    _count: { _all: true },
+  });
+  const totalCount = groups.reduce((sum, g) => sum + g._count._all, 0);
   const safePage = clampPage(page, totalCount, pageSize);
 
-  const [allSubmissions, pageRows] = await Promise.all([
-    prisma.coursePaymentSubmission.findMany({
-      where,
-      select: { courseId: true, paymentType: true, amountInrPaise: true, baseFeePaise: true },
-    }),
-    prisma.coursePaymentSubmission.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      skip: (safePage - 1) * pageSize,
-      take: pageSize,
-      include: {
-        user: { select: { name: true, email: true } },
-        paymentRecord: { select: { receiptGeneratedAt: true } },
-      },
-    }),
-  ]);
+  const pageRows = await prisma.coursePaymentSubmission.findMany({
+    where,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    skip: (safePage - 1) * pageSize,
+    take: pageSize,
+    include: {
+      user: { select: { name: true, email: true } },
+      paymentRecord: { select: { receiptGeneratedAt: true } },
+    },
+  });
 
   // The fee in force at submission (baseFeePaise); the course's current fee
   // only for rows written before the snapshot existed.
@@ -156,21 +155,22 @@ export async function getFeeWaiverFinanceData(
   let partialWaiverCount = 0;
   let partialWaiverSumPaise = 0;
 
-  for (const s of allSubmissions) {
-    const originalFeePaise = originalFeeFor(s);
-    const waivedAmountPaise = Math.max(0, originalFeePaise - s.amountInrPaise);
+  for (const g of groups) {
+    const count = g._count._all;
+    const originalFeePaise = originalFeeFor(g);
+    const waivedAmountPaise = Math.max(0, originalFeePaise - g.amountInrPaise);
 
-    totalWaiverCount++;
-    totalSumWaivedPaise += waivedAmountPaise;
-    totalOriginalFeePaise += originalFeePaise;
-    totalNetPaidPaise += s.amountInrPaise;
+    totalWaiverCount += count;
+    totalSumWaivedPaise += waivedAmountPaise * count;
+    totalOriginalFeePaise += originalFeePaise * count;
+    totalNetPaidPaise += g.amountInrPaise * count;
 
-    if (s.amountInrPaise === 0) {
-      fullWaiverCount++;
-      fullWaiverSumPaise += waivedAmountPaise;
+    if (g.amountInrPaise === 0) {
+      fullWaiverCount += count;
+      fullWaiverSumPaise += waivedAmountPaise * count;
     } else {
-      partialWaiverCount++;
-      partialWaiverSumPaise += waivedAmountPaise;
+      partialWaiverCount += count;
+      partialWaiverSumPaise += waivedAmountPaise * count;
     }
   }
 

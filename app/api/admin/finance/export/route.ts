@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/services/auth";
 import { isAdminSession } from "@/services/admin";
-import { parseFinanceFilters } from "@/services/finance-filters";
+import { FINANCE_EXPORT_MAX_ROWS, parseFinanceFilters } from "@/services/finance-filters";
 import { getIncomeRecordsAll } from "@/services/finance-income";
 import { getExpensesAll } from "@/services/finance-expenses";
 import { getBookSalesAll, getBookOrderFinanceAll } from "@/services/finance-bookstore";
@@ -15,6 +15,14 @@ export const dynamic = "force-dynamic";
 
 function formatDate(date: Date): string {
   return formatBusinessDisplayDate(date, { day: "numeric", month: "short", year: "numeric" });
+}
+
+class TooManyRows extends Error {}
+
+/** Rows are read with take = cap + 1, so one extra row means the export is over the cap. */
+function capped<T>(rows: T[]): T[] {
+  if (rows.length > FINANCE_EXPORT_MAX_ROWS) throw new TooManyRows();
+  return rows;
 }
 
 export async function GET(request: Request) {
@@ -32,13 +40,19 @@ export async function GET(request: Request) {
   });
 
   const filters = parseFinanceFilters(urlParams);
+  // The whole workbook is built in memory: an unbounded range would read
+  // every row ever recorded in one request.
+  if (!filters.from || !filters.to) {
+    return NextResponse.json({ error: "Choose a date range to export; all-time exports are not available." }, { status: 400 });
+  }
+  const take = FINANCE_EXPORT_MAX_ROWS + 1;
 
   let sheetData: Record<string, unknown>[] = [];
   let filename = "export.xlsx";
 
   try {
     if (type === "income") {
-      const records = await getIncomeRecordsAll(filters);
+      const records = capped(await getIncomeRecordsAll(filters, take));
       sheetData = records.map((r) => ({
         "Date": formatDate(r.paidAt),
         "Student Name": r.user.name?.trim() || "—",
@@ -50,7 +64,7 @@ export async function GET(request: Request) {
       }));
       filename = `Course_Income_${new Date().toISOString().slice(0, 10)}.xlsx`;
     } else if (type === "expenses") {
-      const records = await getExpensesAll(filters);
+      const records = capped(await getExpensesAll(filters, take));
       sheetData = records.map((r) => ({
         "Date": formatDate(r.paidAt),
         "Category": r.note ? `${expenseCategoryLabel(r.category)}: ${r.note}` : expenseCategoryLabel(r.category),
@@ -60,7 +74,7 @@ export async function GET(request: Request) {
       }));
       filename = `Course_Expenses_${new Date().toISOString().slice(0, 10)}.xlsx`;
     } else if (type === "book_sales") {
-      const records = await getBookSalesAll(filters);
+      const records = capped(await getBookSalesAll(filters, take));
       sheetData = records.map((r) => ({
         "Book Title": r.title,
         "Author": r.author,
@@ -74,7 +88,7 @@ export async function GET(request: Request) {
       }));
       filename = `Book_Sales_Report_${new Date().toISOString().slice(0, 10)}.xlsx`;
     } else if (type === "book_orders") {
-      const records = await getBookOrderFinanceAll(filters);
+      const records = capped(await getBookOrderFinanceAll(filters, take));
       sheetData = records.map((r) => ({
         "Order ID": r.id.toUpperCase(),
         "Date": formatDate(r.orderDate),
@@ -110,6 +124,12 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
+    if (error instanceof TooManyRows) {
+      return NextResponse.json(
+        { error: `This export has more than ${FINANCE_EXPORT_MAX_ROWS.toLocaleString("en-IN")} rows. Choose a shorter date range.` },
+        { status: 400 },
+      );
+    }
     console.error("Failed to export finance report:", error);
     return NextResponse.json({ error: "Failed to generate Excel export." }, { status: 500 });
   }

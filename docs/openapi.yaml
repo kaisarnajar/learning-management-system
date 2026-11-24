@@ -3531,6 +3531,10 @@ paths:
     get:
       tags: ["Admin: Finance"]
       summary: Export to Excel, with the page's filters
+      description: |
+        The range must be bounded: `preset=all_time`, or `preset=custom` without both `from` and `to`, is refused
+        with 400. With no date parameters the range is this month, as on the page. An export of more than
+        50,000 rows is refused with 400; narrow the range.
       parameters: [{ name: type, in: query, required: true, schema: { type: string, enum: [income, expenses, book_sales, book_orders] } }, { $ref: "#/components/parameters/FinancePreset" }, { $ref: "#/components/parameters/FinanceFrom" }, { $ref: "#/components/parameters/FinanceTo" }]
       responses:
         "200":
@@ -3538,7 +3542,11 @@ paths:
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema: { type: string, format: binary }
-        "400": { $ref: "#/components/responses/Error" }
+        "400":
+          description: Unknown type, an unbounded date range, or more than 50,000 rows
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 

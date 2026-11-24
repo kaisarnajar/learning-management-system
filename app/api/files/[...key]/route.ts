@@ -20,7 +20,7 @@ async function resolveViewer(request: NextRequest): Promise<Viewer | null> {
   const { user } = await authenticateApiRequest(request);
   if (!user) return null;
   const teacher = user.role === "TEACHER"
-    ? await prisma.teacher.findFirst({ where: { OR: [{ userId: user.id }, { email: user.email }] }, select: { id: true } })
+    ? await prisma.teacher.findFirst({ where: { OR: [{ userId: user.id }, { email: user.email.trim().toLowerCase() }] }, select: { id: true } })
     : null;
   return { userId: user.id, isAdmin: user.role === "ADMIN" || user.role === "DEVELOPER", teacherId: teacher?.id ?? null };
 }
@@ -31,7 +31,6 @@ async function canViewAnnouncementAttachment(viewer: Viewer, path: string): Prom
     select: {
       courseId: true,
       enrollmentId: true,
-      teacherId: true,
       attachmentName: true,
       course: { select: { teacherId: true } },
     },
@@ -39,7 +38,9 @@ async function canViewAnnouncementAttachment(viewer: Viewer, path: string): Prom
   if (!announcement) return { ok: false };
   const name = announcement.attachmentName ?? undefined;
   if (viewer.isAdmin) return { ok: true, name };
-  if (viewer.teacherId && (announcement.course.teacherId === viewer.teacherId || announcement.teacherId === viewer.teacherId)) {
+  // Only the course's current teacher: an author who has since left the
+  // course loses access with everything else about it.
+  if (viewer.teacherId && announcement.course.teacherId === viewer.teacherId) {
     return { ok: true, name };
   }
   const enrollment = await prisma.enrollment.findFirst({

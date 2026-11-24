@@ -119,6 +119,29 @@ describe.skipIf(SKIP_WITHOUT_DB)("GET /api/files/private/** authorization", () =
       expect((await open(ATTACHMENT, other.headers)).status).toBe(404);
     });
 
+    it("the author loses access once the course moves to another teacher (L12)", async () => {
+      const { teacher, course } = await courseWithAttachments();
+      const successor = await signedInTeacher();
+      await prisma.course.update({ where: { id: course.id }, data: { teacherId: successor.teacher.id } });
+
+      expect((await open(ATTACHMENT, teacher.headers)).status).toBe(404);
+      const webSession = sessionFor(teacher.user, "TEACHER");
+      vi.mocked(auth).mockResolvedValue({ ...webSession, user: { ...webSession.user, teacherId: teacher.teacher.id } } as never);
+      expect((await open(ATTACHMENT)).status).toBe(404);
+      vi.mocked(auth).mockResolvedValue(null as never);
+
+      expectPresigned(await open(ATTACHMENT, successor.headers), "private/announcements/course-1732400000000-a8b7c.pdf");
+    });
+
+    it("a teacher whose profile is matched by e-mail is recognised whatever its case", async () => {
+      const { course } = await courseWithAttachments();
+      const user = await createUser({ email: "Mixed.Case@Example.test" });
+      const profile = await createTeacher({ email: "mixed.case@example.test" });
+      await prisma.course.update({ where: { id: course.id }, data: { teacherId: profile.id } });
+
+      expectPresigned(await open(ATTACHMENT, await bearerFor(user, "TEACHER")), "private/announcements/course-1732400000000-a8b7c.pdf");
+    });
+
     it("a student who is not enrolled, or whose enrollment is not approved, gets 404", async () => {
       const { course } = await courseWithAttachments();
       const outsider = await signedInStudent();

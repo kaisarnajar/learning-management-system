@@ -43,6 +43,9 @@ export function getR2Client(): S3Client {
       secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
     },
     forcePathStyle: true,
+    // Without this the SDK adds a CRC32 of the (empty) request body to
+    // presigned PUT URLs, and R2 then refuses the browser's upload.
+    requestChecksumCalculation: "WHEN_REQUIRED",
   });
   return client;
 }

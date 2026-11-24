@@ -88,17 +88,28 @@ function describeSize(bytes: number): string {
   return bytes >= 1024 * 1024 ? `${Math.round(bytes / (1024 * 1024))} MB` : `${Math.round(bytes / 1024)} KB`;
 }
 
+/** The message for a declared type or size the rules refuse; null when both are allowed. */
+export function declaredUploadError(type: string, size: number, rules: UploadRules): string | null {
+  const label = rules.label ?? "File";
+  if (!(rules.allowed as readonly string[]).includes(type)) {
+    return `${label} must be ${describeAllowed(rules.allowed)}.`;
+  }
+  if (size > rules.maxBytes) {
+    return `${label} must be ${describeSize(rules.maxBytes)} or smaller.`;
+  }
+  return null;
+}
+
+/** The message for stored bytes whose sniffed type is not the declared one. */
+export function contentMismatchMessage(rules: UploadRules): string {
+  return `${rules.label ?? "File"} content does not match its type. Upload ${describeAllowed(rules.allowed)}.`;
+}
+
 /** Declared type and size check for early form feedback (no bytes read). */
 export function validateUpload(file: File | null | undefined, rules: UploadRules): { error?: string } {
   if (!file || file.size === 0) return {};
-  const label = rules.label ?? "File";
-  if (!(rules.allowed as readonly string[]).includes(file.type)) {
-    return { error: `${label} must be ${describeAllowed(rules.allowed)}.` };
-  }
-  if (file.size > rules.maxBytes) {
-    return { error: `${label} must be ${describeSize(rules.maxBytes)} or smaller.` };
-  }
-  return {};
+  const error = declaredUploadError(file.type, file.size, rules);
+  return error ? { error } : {};
 }
 
 function randomSuffix(): string {
@@ -114,9 +125,31 @@ async function readVerified(file: File, rules: UploadRules): Promise<{ buffer: B
   const buffer = Buffer.from(await file.arrayBuffer());
   const sniffed = sniffMime(buffer);
   if (!sniffed || !(rules.allowed as readonly string[]).includes(sniffed) || sniffed !== file.type) {
-    throw new UploadError(`${rules.label ?? "File"} content does not match its type. Upload ${describeAllowed(rules.allowed)}.`);
+    throw new UploadError(contentMismatchMessage(rules));
   }
   return { buffer, mime: sniffed };
+}
+
+/** Where a new upload is stored: public (uploads/, R2_BUCKET_NAME) or private (private/, the private bucket). */
+export type StorageVisibility = "public" | "private";
+
+/**
+ * A fresh object location for a verified file: the bucket, the key
+ * (<uploads|private>/<prefix>/<idPrefix>-<unique>.<ext>) and what the app
+ * stores for it (the public URL, or the /api/files path for private files).
+ */
+export function newObjectTarget(
+  visibility: StorageVisibility,
+  prefix: StoragePrefix,
+  idPrefix: string,
+  mime: StoredMime,
+): { bucket: string; key: string; location: string } {
+  if (visibility === "private") {
+    const key = `private/${prefix}/${idPrefix}-${randomSuffix()}.${EXT_BY_MIME[mime]}`;
+    return { bucket: getPrivateBucketName(), key, location: `${PRIVATE_FILE_ROUTE}${key}` };
+  }
+  const key = `uploads/${prefix}/${idPrefix}-${randomSuffix()}.${EXT_BY_MIME[mime]}`;
+  return { bucket: R2_BUCKET_NAME, key, location: `${R2_PUBLIC_URL}/${key}` };
 }
 
 /**
@@ -126,11 +159,11 @@ async function readVerified(file: File, rules: UploadRules): Promise<{ buffer: B
  */
 export async function uploadToR2(prefix: StoragePrefix, idPrefix: string, file: File, rules: UploadRules): Promise<string> {
   const { buffer, mime } = await readVerified(file, rules);
-  const key = `uploads/${prefix}/${idPrefix}-${randomSuffix()}.${EXT_BY_MIME[mime]}`;
+  const target = newObjectTarget("public", prefix, idPrefix, mime);
   await getR2Client().send(
-    new PutObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key, Body: buffer, ContentType: mime }),
+    new PutObjectCommand({ Bucket: target.bucket, Key: target.key, Body: buffer, ContentType: mime }),
   );
-  return `${R2_PUBLIC_URL}/${key}`;
+  return target.location;
 }
 
 // ---------------------------------------------------------------------------
@@ -159,11 +192,11 @@ export function privateKeyFromPath(path: string | null | undefined): string | nu
 /** Stores a file privately and returns the app path it is served from. */
 export async function uploadPrivateToR2(prefix: StoragePrefix, idPrefix: string, file: File, rules: UploadRules): Promise<string> {
   const { buffer, mime } = await readVerified(file, rules);
-  const key = `private/${prefix}/${idPrefix}-${randomSuffix()}.${EXT_BY_MIME[mime]}`;
+  const target = newObjectTarget("private", prefix, idPrefix, mime);
   await getR2Client().send(
-    new PutObjectCommand({ Bucket: getPrivateBucketName(), Key: key, Body: buffer, ContentType: mime }),
+    new PutObjectCommand({ Bucket: target.bucket, Key: target.key, Body: buffer, ContentType: mime }),
   );
-  return `${PRIVATE_FILE_ROUTE}${key}`;
+  return target.location;
 }
 
 /** Stores a server-generated file (a rendered PDF) privately under an explicit key. */

@@ -49,6 +49,8 @@ export const RATE_LIMITS = {
   FATWA_ASK_IP: { name: "fatwa:ask:ip", limit: 5, windowSeconds: 60 * 60 },
   COMMENT_USER: { name: "blog:comment:user", limit: 20, windowSeconds: 60 * 60 },
   DOCUMENT_USER: { name: "document:user", limit: 10, windowSeconds: 60 },
+  // Presigned upload URLs for one signed-in user (a blog post takes up to 10).
+  DIRECT_UPLOAD_USER: { name: "upload:user", limit: 60, windowSeconds: 10 * 60 },
   // Browsers send one report per violation; a page can trigger several.
   CSP_REPORT_IP: { name: "csp:report:ip", limit: 30, windowSeconds: 60 },
 } as const satisfies Record<string, RateLimitRule>;

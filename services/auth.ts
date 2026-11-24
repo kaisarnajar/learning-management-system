@@ -3,14 +3,12 @@ import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/services/auth.config";
 import { prisma } from "@/utils/prisma";
 import { resolveUserRole } from "@/services/teacher-auth";
-import { withDbErrorHandling } from "@/utils/db-error";
 import { createAuthAdapter } from "@/services/auth-adapter";
-import { getClientIp, recordFailedSignIn, signInAllowed } from "@/services/rate-limit";
+import { getClientIp } from "@/services/rate-limit";
+import { authenticateCredentials, normalizeSignInEmail } from "@/services/credentials";
 import { getApiActorSession } from "@/services/api-actor";
 import { googleSignInCallback } from "@/services/google-link";
 import { authJwtCallback } from "@/services/auth-jwt";
-import { verifyPassword } from "@/services/password";
-import { LOGIN_PASSWORD_MAX_LENGTH } from "@/utils/validations";
 
 /** Surfaced to the login form as result.code so it can offer to resend the verification email. */
 class EmailNotVerifiedError extends CredentialsSignin {
@@ -30,31 +28,18 @@ const nextAuth = NextAuth({
       },
       async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) return null;
-        if (String(credentials.password).length > LOGIN_PASSWORD_MAX_LENGTH) return null;
 
-        const email = String(credentials.email).toLowerCase().trim();
-
-        // Brute-force protection: failed attempts per address and network,
-        // and every attempt per network.
         const ip = getClientIp(request.headers);
-        if (!(await signInAllowed(email, ip)).ok) {
-          console.warn(`[auth] Login rate limit hit for ${email} from ${ip}`);
-          return null;
-        }
-        const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { email } }), "Database operation failed");
-
-        // An unknown or password-less account costs the same bcrypt work as a
-        // wrong password, so the timing does not reveal which addresses exist.
-        const valid = await verifyPassword(String(credentials.password), user?.deletedAt ? null : user?.password);
-        if (!user || !valid) {
-          await recordFailedSignIn(email, ip);
+        const result = await authenticateCredentials(String(credentials.email), String(credentials.password), ip);
+        if (!result.ok) {
+          if (result.reason === "RATE_LIMITED") {
+            console.warn(`[auth] Login rate limit hit for ${normalizeSignInEmail(String(credentials.email))} from ${ip}`);
+          }
+          if (result.reason === "EMAIL_NOT_VERIFIED") throw new EmailNotVerifiedError();
           return null;
         }
 
-        // An unverified address cannot sign in with a password: until the
-        // owner confirms the mailbox, nobody can prove the account is theirs.
-        if (!user.emailVerified) throw new EmailNotVerifiedError();
-
+        const { user } = result;
         return {
           id: user.id,
           email: user.email,

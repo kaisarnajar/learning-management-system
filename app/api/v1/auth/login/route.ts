@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
 import { issueApiSession } from "@/services/api-auth";
-import { verifyPassword } from "@/services/password";
-import { LOGIN_PASSWORD_MAX_LENGTH } from "@/utils/validations";
+import { authenticateCredentials } from "@/services/credentials";
 import { resolveUserRole } from "@/services/teacher-auth";
-import { getClientIp, RATE_LIMIT_MESSAGE, recordFailedSignIn, signInAllowed } from "@/services/rate-limit";
+import { getClientIp, RATE_LIMIT_MESSAGE } from "@/services/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
@@ -18,57 +16,31 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    // No password was ever allowed this long, so it cannot match.
-    if (password.length > LOGIN_PASSWORD_MAX_LENGTH) {
-      return NextResponse.json({ success: false, error: "Invalid email or password." }, { status: 401 });
+    const result = await authenticateCredentials(email, password, getClientIp(request.headers));
+    if (!result.ok) {
+      switch (result.reason) {
+        case "RATE_LIMITED":
+          return NextResponse.json(
+            { success: false, error: RATE_LIMIT_MESSAGE },
+            { status: 429, headers: { "Retry-After": String(result.retryAfterSeconds) } },
+          );
+        case "EMAIL_NOT_VERIFIED":
+          return NextResponse.json(
+            {
+              success: false,
+              code: "email_not_verified",
+              error: "Please verify your email address before signing in. Check your inbox for the verification link.",
+            },
+            { status: 403 }
+          );
+        case "INVALID":
+          return NextResponse.json(
+            { success: false, error: "Invalid email or password." },
+            { status: 401 }
+          );
+      }
     }
-
-    // Only failed attempts count against the address, and only from the
-    // network they came from, so nobody can lock someone else out.
-    const ip = getClientIp(request.headers);
-    const allowed = await signInAllowed(email, ip);
-    if (!allowed.ok) {
-      return NextResponse.json(
-        { success: false, error: RATE_LIMIT_MESSAGE },
-        { status: 429, headers: { "Retry-After": String(allowed.retryAfterSeconds) } },
-      );
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { email },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        password: true,
-        image: true,
-        registrationNumber: true,
-        emailVerified: true,
-        deletedAt: true,
-      },
-    });
-
-    // An unknown or password-less account costs the same bcrypt work as a
-    // wrong password, so the timing does not reveal which addresses exist.
-    const validPassword = await verifyPassword(password, user?.deletedAt ? null : user?.password);
-    if (!user || !validPassword) {
-      await recordFailedSignIn(email, ip);
-      return NextResponse.json(
-        { success: false, error: "Invalid email or password." },
-        { status: 401 }
-      );
-    }
-
-    if (!user.emailVerified) {
-      return NextResponse.json(
-        {
-          success: false,
-          code: "email_not_verified",
-          error: "Please verify your email address before signing in. Check your inbox for the verification link.",
-        },
-        { status: 403 }
-      );
-    }
+    const { user } = result;
 
     const role = await resolveUserRole(user.email);
     const tokens = await issueApiSession({
@@ -89,7 +61,7 @@ export async function POST(request: NextRequest) {
         name: user.name,
         image: user.image,
         registrationNumber: user.registrationNumber,
-        emailVerified: user.emailVerified ? user.emailVerified.toISOString() : null,
+        emailVerified: user.emailVerified.toISOString(),
         role,
       },
     });

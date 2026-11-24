@@ -4,6 +4,7 @@ import { encode } from "next-auth/jwt";
 import { prisma } from "@/utils/prisma";
 import { POST as register } from "@/app/api/v1/auth/register/route";
 import { POST as webRegister } from "@/app/api/auth/register/route";
+import { POST as resendVerification } from "@/app/api/v1/auth/resend-verification/route";
 import { POST as login } from "@/app/api/v1/auth/login/route";
 import { POST as refresh } from "@/app/api/v1/auth/refresh/route";
 import { POST as logout } from "@/app/api/v1/auth/logout/route";
@@ -65,6 +66,42 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       expect(await prisma.apiRefreshToken.count({ where: { userId: row.id } })).toBe(1);
       expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(data.accessToken) }))).status).toBe(200);
       expect(sendVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "new.student@example.com" }));
+    });
+
+    it("a failing verification e-mail never fails registration, on either route, and the link can be re-sent", async () => {
+      const failingSender = () => {
+        vi.mocked(sendVerificationEmail).mockReset();
+        vi.mocked(sendVerificationEmail).mockRejectedValueOnce(new Error("SMTP down"));
+        vi.mocked(sendVerificationEmail).mockResolvedValue({ sent: false, error: "SMTP down" } as never);
+      };
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        failingSender();
+        const app = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { ...body, email: "app.smtp@example.com" } }));
+        expect(app.status).toBe(200);
+        expect(await jsonOf(app)).toMatchObject({ success: true, verificationRequired: true });
+
+        failingSender();
+        const web = await webRegister(apiRequest("/api/auth/register", { method: "POST", json: { ...body, email: "web.smtp@example.com" } }));
+        expect(web.status).toBe(200);
+        expect(await jsonOf(web)).toEqual({ success: true, role: "USER", message: REGISTRATION_MESSAGE });
+
+        for (const email of ["app.smtp@example.com", "web.smtp@example.com"]) {
+          expect((await prisma.user.findUniqueOrThrow({ where: { email } })).emailVerified).toBeNull();
+        }
+        expect(errors).toHaveBeenCalledWith("[registration] Verification e-mail failed:", expect.anything());
+
+        // The account is there, so "resend the verification e-mail" works once mail is back.
+        vi.mocked(sendVerificationEmail).mockReset();
+        vi.mocked(sendVerificationEmail).mockResolvedValue({ sent: true } as never);
+        const resent = await resendVerification(apiRequest("/api/v1/auth/resend-verification", { method: "POST", json: { email: "web.smtp@example.com" } }));
+        expect(resent.status).toBe(200);
+        expect(sendVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "web.smtp@example.com" }));
+      } finally {
+        errors.mockRestore();
+        vi.mocked(sendVerificationEmail).mockReset();
+        vi.mocked(sendVerificationEmail).mockResolvedValue({ sent: false, skipped: true } as never);
+      }
     });
 
     it("rejects invalid details", async () => {

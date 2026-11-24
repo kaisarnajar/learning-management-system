@@ -12,7 +12,8 @@ import { authJwtCallback } from "@/services/auth-jwt";
 const findUnique = vi.fn();
 (prisma as unknown as { user: unknown }).user = { findUnique, update: vi.fn() };
 
-const dbUser = (sessionVersion: number) => ({
+const dbUser = (sessionVersion: number, email = "student@example.test") => ({
+  email,
   emailVerified: new Date("2026-01-01T00:00:00Z"),
   name: "Student",
   image: null,
@@ -63,6 +64,26 @@ describe("web session version (jwt callback)", () => {
   it("checks again only when the token is due for a refresh", async () => {
     const fresh = staleToken({ sessionVersion: 3, refreshedAt: Date.now() });
     expect(await run({ token: fresh })).toBe(fresh);
+    expect(findUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe("web session lookup (jwt callback)", () => {
+  beforeEach(() => findUnique.mockReset());
+
+  it("reads the account by the token's id, not its address", async () => {
+    findUnique.mockResolvedValue(dbUser(0));
+    await run({ token: staleToken() });
+    expect(findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: "user_1" } }));
+  });
+
+  it("ends a session whose account now has another address", async () => {
+    findUnique.mockResolvedValue(dbUser(0, "someone.else@example.test"));
+    expect(await run({ token: staleToken() })).toBeNull();
+  });
+
+  it("ends a session without a user id", async () => {
+    expect(await run({ token: staleToken({ id: undefined }) })).toBeNull();
     expect(findUnique).not.toHaveBeenCalled();
   });
 });

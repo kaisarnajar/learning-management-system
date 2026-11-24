@@ -15,6 +15,9 @@ export const TOKEN_REFRESH_INTERVAL_MS = 60 * 1000;
  * removing an admin email or verifying an address takes effect on the next
  * request instead of at the next sign-in.
  *
+ * The user is looked up by the token's id and must still have the token's
+ * address.
+ *
  * The session version (User.sessionVersion) is copied into the token at sign-in
  * and compared on every re-read: a password reset or change, or an account
  * take-over, increments it and every web session issued before then ends
@@ -47,12 +50,18 @@ export const authJwtCallback: JwtCallback = async ({ token, user, account, trigg
   const stale = !token.refreshedAt || Date.now() - token.refreshedAt > TOKEN_REFRESH_INTERVAL_MS;
   if (token.email && (user || trigger === "update" || !token.role || stale)) {
     try {
+      // By id, not by address: a deleted account's address can be registered
+      // again, and looking the token up by e-mail would hand the old cookie
+      // (carrying the deleted user's id) to the new account. Every token gets
+      // its id at sign-in; one without is not a session this app issued.
+      if (!token.id) return null;
       const dbUser = await prisma.user.findUnique({
-        select: { emailVerified: true, name: true, image: true, deletedAt: true, sessionVersion: true },
-        where: { email: token.email },
+        select: { email: true, emailVerified: true, name: true, image: true, deletedAt: true, sessionVersion: true },
+        where: { id: token.id },
       });
-      if (!dbUser || dbUser.deletedAt) {
-        // Account gone: hand back an empty token so the session ends.
+      if (!dbUser || dbUser.deletedAt || dbUser.email !== token.email) {
+        // Account gone, or no longer the address this session was issued for:
+        // hand back an empty token so the session ends.
         return null;
       }
       if (user) {

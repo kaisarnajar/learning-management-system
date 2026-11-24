@@ -15,6 +15,7 @@ import { confirmEmailVerification } from "@/app/verify-email/actions";
 import { createPasswordResetToken } from "@/services/password-reset";
 import { generateVerificationToken } from "@/services/tokens";
 import { authJwtCallback } from "@/services/auth-jwt";
+import { deleteOwnAccount } from "@/services/account-deletion";
 import { createTeacher, createUser, resetDb, runAction, SKIP_WITHOUT_DB } from "../helpers/db";
 import { apiRequest, bearer, createPasswordUser, jsonOf, signedInStudent } from "../helpers/api";
 
@@ -197,6 +198,19 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
 
       const changed = await changePassword(apiRequest("/x", { method: "POST", headers: bearer(accessToken), json: { currentPassword: password, newPassword: "second-password-2" } }));
       expect(changed.status).toBe(200);
+
+      expect(await laterRequest(cookie)).toBeNull();
+    });
+
+    it("a deleted account's cookie does not come back when the address is registered again", async () => {
+      const { user, password } = await createPasswordUser();
+      const cookie = await webSignIn(user);
+      expect(await deleteOwnAccount(user.id, { password })).toEqual({ ok: true });
+
+      const again = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "New Owner", email: user.email, password: "long-enough-1", acceptPolicies: true } }));
+      expect(again.status).toBe(200);
+      const newOwner = await prisma.user.findUniqueOrThrow({ where: { email: user.email } });
+      expect(newOwner.id).not.toBe(user.id);
 
       expect(await laterRequest(cookie)).toBeNull();
     });

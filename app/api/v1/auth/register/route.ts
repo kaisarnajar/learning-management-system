@@ -3,7 +3,7 @@ import { registerSchema } from "@/utils/validations";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 import { issueApiSession } from "@/services/api-auth";
 import { registerWithPassword } from "@/services/account-registration";
-import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 /**
  * Creates an unverified account, e-mails a verification link and signs the
@@ -27,18 +27,12 @@ export async function POST(request: NextRequest) {
     if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const parsed = registerSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: parsed.error.issues[0]?.message ?? "Invalid registration details." },
-        { status: 400 }
-      );
+      return apiError(parsed.error.issues[0]?.message ?? "Invalid registration details.", 400);
     }
 
     const result = await registerWithPassword(parsed.data);
     if (!result.created) {
-      return NextResponse.json(
-        { success: false, error: "An account with this email already exists." },
-        { status: 400 }
-      );
+      return apiError("An account with this email already exists.", 400);
     }
     const { user } = result;
 
@@ -69,10 +63,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[api/v1/auth/register] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Registration failed. Please try again." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/auth/register", error, "Registration failed. Please try again.");
   }
 }

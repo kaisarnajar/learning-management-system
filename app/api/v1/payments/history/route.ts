@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { toPaymentRecordDto, toPaymentSubmissionDto } from "@/services/api-dto";
 import { prisma } from "@/utils/prisma";
+import { apiServerError } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -25,10 +26,6 @@ export async function GET(request: NextRequest) {
       records: records.map(toPaymentRecordDto),
     });
   } catch (error) {
-    console.error("[api/v1/payments/history] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch payment history." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/payments/history", error, "Failed to fetch payment history.");
   }
 }

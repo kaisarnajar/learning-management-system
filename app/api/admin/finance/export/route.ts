@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import { auth } from "@/services/auth";
 import { isAdminSession } from "@/services/admin";
 import { FINANCE_EXPORT_MAX_ROWS, parseFinanceFilters } from "@/services/finance-filters";
@@ -10,6 +9,7 @@ import { expenseCategoryLabel } from "@/services/expense-categories";
 import { bookOrderStatusLabel } from "@/services/bookstore";
 import { formatBusinessDisplayDate } from "@/services/business-time";
 import ExcelJS from "exceljs";
+import { apiError, apiServerError } from "@/utils/api-response";
 
 export const dynamic = "force-dynamic";
 
@@ -43,7 +43,7 @@ async function buildWorkbook(rows: Record<string, unknown>[]): Promise<Buffer> {
 export async function GET(request: Request) {
   const session = await auth();
   if (!isAdminSession(session)) {
-    return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
+    return apiError("Unauthorized. Admin access required.", 401);
   }
 
   const { searchParams } = new URL(request.url);
@@ -58,7 +58,7 @@ export async function GET(request: Request) {
   // The whole workbook is built in memory: an unbounded range would read
   // every row ever recorded in one request.
   if (!filters.from || !filters.to) {
-    return NextResponse.json({ error: "Choose a date range to export; all-time exports are not available." }, { status: 400 });
+    return apiError("Choose a date range to export; all-time exports are not available.", 400);
   }
   const take = FINANCE_EXPORT_MAX_ROWS + 1;
 
@@ -121,7 +121,7 @@ export async function GET(request: Request) {
       }));
       filename = `Bookstore_Order_Finance_${new Date().toISOString().slice(0, 10)}.xlsx`;
     } else {
-      return NextResponse.json({ error: "Invalid or missing export type." }, { status: 400 });
+      return apiError("Invalid or missing export type.", 400);
     }
 
     const buffer = await buildWorkbook(sheetData);
@@ -134,12 +134,8 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     if (error instanceof TooManyRows) {
-      return NextResponse.json(
-        { error: `This export has more than ${FINANCE_EXPORT_MAX_ROWS.toLocaleString("en-IN")} rows. Choose a shorter date range.` },
-        { status: 400 },
-      );
+      return apiError(`This export has more than ${FINANCE_EXPORT_MAX_ROWS.toLocaleString("en-IN")} rows. Choose a shorter date range.`, 400);
     }
-    console.error("Failed to export finance report:", error);
-    return NextResponse.json({ error: "Failed to generate Excel export." }, { status: 500 });
+    return apiServerError("api/admin/finance/export", error, "Failed to generate Excel export.");
   }
 }

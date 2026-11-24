@@ -6,6 +6,7 @@ import { getTeacherForSession } from "@/services/teacher-auth";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { readFlash } from "@/utils/flash";
 import { nextControlFlowOf } from "@/utils/next-control-flow";
+import { apiError } from "@/utils/api-response";
 
 /**
  * Staff side of the mobile API: /api/v1/admin/** for admins and developers,
@@ -37,7 +38,7 @@ export type StaffContext = {
 type StaffAuthResult = { ctx: StaffContext; errorResponse: null } | { ctx: null; errorResponse: NextResponse };
 
 function fail(error: string, status: number): NextResponse {
-  return NextResponse.json({ success: false, error }, { status });
+  return apiError(error, status);
 }
 
 /** Verifies the Bearer token and that the user has one of [roles]. */

@@ -287,7 +287,7 @@ export async function recordFailedSignIn(email: string, ip: string): Promise<voi
 export async function enforceRateLimit(
   rule: RateLimitRule,
   identifier: string,
-  body: Record<string, unknown> = { error: RATE_LIMIT_MESSAGE },
+  body: Record<string, unknown> = { success: false, error: RATE_LIMIT_MESSAGE },
 ): Promise<Response | null> {
   const result = await rateLimit(rule, identifier);
   if (result.ok) return null;

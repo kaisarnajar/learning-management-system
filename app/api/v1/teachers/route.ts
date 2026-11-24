@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPublishedTeachersPaginated } from "@/services/teachers";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { toTeacherSummaryDto } from "@/services/api-dto";
+import { apiServerError } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,10 +20,6 @@ export async function GET(request: NextRequest) {
       pageSize,
     });
   } catch (error) {
-    console.error("[api/v1/teachers] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch teachers." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/teachers", error, "Failed to fetch teachers.");
   }
 }

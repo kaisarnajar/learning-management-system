@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPaymentSettings } from "@/services/payment-settings";
+import { apiServerError } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,10 +20,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[api/v1/payment-settings] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch payment settings." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/payment-settings", error, "Failed to fetch payment settings.");
   }
 }

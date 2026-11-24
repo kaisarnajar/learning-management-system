@@ -6,6 +6,7 @@ import { toPublicCourseDto } from "@/services/api-dto";
 import { hasCourseContentAccess } from "@/services/enrollment-status";
 import { isCourseEnrollmentOpen } from "@/services/course-status";
 import { hasPendingEnrollmentFeeSubmission } from "@/services/monthly-payments";
+import { apiError, apiServerError } from "@/utils/api-response";
 
 /**
  * A public course. With a Bearer token the response also carries the
@@ -21,10 +22,7 @@ export async function GET(
     const course = await getPublicCourseById(id);
 
     if (!course) {
-      return NextResponse.json(
-        { success: false, error: "Course not found." },
-        { status: 404 }
-      );
+      return apiError("Course not found.", 404);
     }
 
     // Course-wide announcements are only for students whose enrollment has
@@ -61,10 +59,6 @@ export async function GET(
       announcements,
     });
   } catch (error) {
-    console.error("[api/v1/courses/[id]] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch course details." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/courses/[id]", error, "Failed to fetch course details.");
   }
 }

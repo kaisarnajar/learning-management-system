@@ -5,7 +5,7 @@ import { issueApiSession, revokeAllApiSessions } from "@/services/api-auth";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
-import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
 
@@ -56,24 +56,15 @@ export async function POST(request: NextRequest) {
     const idToken = typeof body.idToken === "string" ? body.idToken : (typeof body.token === "string" ? body.token : "");
 
     if (!idToken) {
-      return NextResponse.json(
-        { success: false, error: "Google ID token is required." },
-        { status: 400 }
-      );
+      return apiError("Google ID token is required.", 400);
     }
 
     const verification = await verifyGoogleIdToken(idToken);
     if (!verification.configured) {
-      return NextResponse.json(
-        { success: false, error: "Google sign-in is not configured." },
-        { status: 503 }
-      );
+      return apiError("Google sign-in is not configured.", 503);
     }
     if (!verification.payload) {
-      return NextResponse.json(
-        { success: false, error: "Invalid Google ID token." },
-        { status: 401 }
-      );
+      return apiError("Invalid Google ID token.", 401);
     }
 
     const payload = verification.payload;
@@ -98,10 +89,7 @@ export async function POST(request: NextRequest) {
         select: userSelect,
       });
     } else if (user.deletedAt) {
-      return NextResponse.json(
-        { success: false, error: "This account is no longer available." },
-        { status: 403 }
-      );
+      return apiError("This account is no longer available.", 403);
     } else if (!user.emailVerified) {
       // Google has verified ownership of this address. A password set on the
       // unverified row (possibly by someone else) must not survive, same as
@@ -140,10 +128,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[api/v1/auth/google] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Google authentication failed." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/auth/google", error, "Google authentication failed.");
   }
 }

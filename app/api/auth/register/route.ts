@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { registerSchema } from "@/utils/validations";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 import { registerWithPassword, REGISTRATION_MESSAGE } from "@/services/account-registration";
-import { INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 /**
  * Answers the same for a new address and one that already has an account
@@ -16,13 +16,10 @@ export async function POST(request: Request) {
 
   try {
     const body = await readJson(request);
-    if (!body) return NextResponse.json({ error: INVALID_JSON_MESSAGE }, { status: 400 });
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const parsed = registerSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Invalid registration details." },
-        { status: 400 },
-      );
+      return apiError(parsed.error.issues[0]?.message ?? "Invalid registration details.", 400);
     }
 
     await registerWithPassword(parsed.data);
@@ -30,7 +27,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, role: "USER", message: REGISTRATION_MESSAGE });
   } catch (error) {
     unstable_rethrow(error);
-    console.error("Caught error:", error);
-    return NextResponse.json({ error: "Registration failed. Please try again." }, { status: 500 });
+    return apiServerError("api/auth/register", error, "Registration failed. Please try again.");
     }
 }

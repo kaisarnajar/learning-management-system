@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getPublicCoursesPaginated } from "@/services/courses";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { toPublicCourseDto } from "@/services/api-dto";
+import { apiServerError } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -20,10 +21,6 @@ export async function GET(request: NextRequest) {
       pageSize,
     });
   } catch (error) {
-    console.error("[api/v1/courses] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch courses." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/courses", error, "Failed to fetch courses.");
   }
 }

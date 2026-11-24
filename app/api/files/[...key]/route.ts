@@ -7,6 +7,7 @@ import { managesCourseTaughtBy, type CourseActor } from "@/services/course-autho
 import { APPROVED_ENROLLMENT_STATUSES } from "@/services/enrollments";
 import { presignPrivateObject, PRIVATE_FILE_ROUTE, privateKeyFromPath } from "@/services/storage";
 import { prisma } from "@/utils/prisma";
+import { apiError } from "@/utils/api-response";
 
 export const dynamic = "force-dynamic";
 
@@ -76,12 +77,12 @@ export async function GET(request: NextRequest, context: { params: Promise<{ key
   const path = `${PRIVATE_FILE_ROUTE}${segments.join("/")}`;
   const key = privateKeyFromPath(path);
   if (!key) {
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return apiError("Not found", 404);
   }
 
   const viewer = await resolveViewer(request);
   if (!viewer) {
-    return NextResponse.json({ error: "Sign in to open this file." }, { status: 401 });
+    return apiError("Sign in to open this file.", 401);
   }
 
   let allowed = false;
@@ -96,7 +97,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ key
 
   if (!allowed) {
     // Same answer whether the object is missing or belongs to someone else.
-    return NextResponse.json({ error: "Not found" }, { status: 404 });
+    return apiError("Not found", 404);
   }
 
   const url = await presignPrivateObject(key, downloadName);

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { getCart, normalizeCartItems, replaceCart, setCartItem } from "@/services/cart";
-import { apiError, readJson } from "@/utils/api-response";
+import { apiError, apiServerError, readJson } from "@/utils/api-response";
 
 /** The signed-in student's cart (published, in-stock books only). */
 export async function GET(request: NextRequest) {
@@ -11,8 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     return NextResponse.json(await getCart(user.id));
   } catch (error) {
-    console.error("[api/v1/bookstore/cart] GET Error:", error);
-    return NextResponse.json({ success: false, error: "Failed to fetch bookstore cart." }, { status: 500 });
+    return apiServerError("api/v1/bookstore/cart", error, "Failed to fetch bookstore cart.");
   }
 }
 
@@ -25,8 +24,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     return NextResponse.json(await replaceCart(user.id, normalizeCartItems(body?.items)));
   } catch (error) {
-    console.error("[api/v1/bookstore/cart] POST Error:", error);
-    return NextResponse.json({ success: false, error: "Failed to sync bookstore cart." }, { status: 500 });
+    return apiServerError("api/v1/bookstore/cart", error, "Failed to sync bookstore cart.");
   }
 }
 
@@ -49,7 +47,6 @@ export async function PATCH(request: NextRequest) {
     if (!cart) return apiError("This book is not available.", 404);
     return NextResponse.json(cart);
   } catch (error) {
-    console.error("[api/v1/bookstore/cart] PATCH Error:", error);
-    return NextResponse.json({ success: false, error: "Failed to update the cart." }, { status: 500 });
+    return apiServerError("api/v1/bookstore/cart", error, "Failed to update the cart.");
   }
 }

@@ -8,6 +8,7 @@ import { levelEnum } from "@/utils/validations";
 import { blogApprovalStatusLabel } from "@/services/blog-approval";
 import { isBlogPubliclyVisible } from "@/services/blogs";
 import { fatwaStatusLabel } from "@/services/fatwa";
+import { apiError } from "@/utils/api-response";
 
 /**
  * Some content actions report a failure by redirecting with a short code
@@ -26,7 +27,7 @@ export async function withErrorCodes<T>(
     if (flow?.kind === "redirect") {
       const code = new URL(flow.url, "http://local").searchParams.get("error");
       const known = code ? codes[code] : undefined;
-      if (known) return NextResponse.json({ success: false, error: known.message }, { status: known.status ?? 400 });
+      if (known) return apiError(known.message, known.status ?? 400);
     }
     throw error;
   }

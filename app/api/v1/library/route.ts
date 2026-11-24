@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublishedLibraryItemsPaginated } from "@/services/library";
 import { parseApiPagination } from "@/utils/api-pagination";
+import { apiServerError } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,10 +20,6 @@ export async function GET(request: NextRequest) {
       pageSize,
     });
   } catch (error) {
-    console.error("[api/v1/library] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch library resources." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/library", error, "Failed to fetch library resources.");
   }
 }

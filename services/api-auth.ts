@@ -4,6 +4,7 @@ import { decode, encode } from "next-auth/jwt";
 import { prisma } from "@/utils/prisma";
 import { resolveUserRole, type UserRole } from "@/services/teacher-auth";
 import { getAuthSecret } from "@/services/auth-secret";
+import { apiError } from "@/utils/api-response";
 
 /**
  * Token issuer for the mobile API (/api/v1).
@@ -287,10 +288,7 @@ export async function requireStudentApiAuth(req: NextRequest): Promise<
   if (!user || !sessionId) {
     return {
       user: null,
-      errorResponse: NextResponse.json(
-        { success: false, error: error || "Unauthorized access" },
-        { status: 401 }
-      ),
+      errorResponse: apiError(error || "Unauthorized access", 401),
     };
   }
 
@@ -303,8 +301,5 @@ export async function requireStudentApiAuth(req: NextRequest): Promise<
  */
 export function requireVerifiedEmail(user: ApiUserPayload, action: string): NextResponse | null {
   if (user.emailVerified) return null;
-  return NextResponse.json(
-    { success: false, code: "email_not_verified", error: `Please verify your email to ${action}.` },
-    { status: 403 },
-  );
+  return apiError(`Please verify your email to ${action}.`, 403, { extra: { code: "email_not_verified" } });
 }

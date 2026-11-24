@@ -5,6 +5,7 @@ import {
   revokeApiSessionById,
   revokeApiSessionByRefreshToken,
 } from "@/services/api-auth";
+import { apiServerError } from "@/utils/api-response";
 
 /**
  * POST with a Bearer access token and/or { refreshToken } in the body: ends
@@ -39,7 +40,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: "Signed out." });
   } catch (error) {
-    console.error("[api/v1/auth/logout] Error:", error);
-    return NextResponse.json({ success: false, error: "Could not sign out." }, { status: 500 });
+    return apiServerError("api/v1/auth/logout", error, "Could not sign out.");
   }
 }

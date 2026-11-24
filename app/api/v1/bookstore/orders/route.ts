@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth, requireVerifiedEmail } from "@/services/api-auth";
 import { getBookOrdersForUser } from "@/services/bookstore";
 import { validatePaymentScreenshot } from "@/services/payment-upload";
-import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 import { bookstoreCheckoutSchema } from "@/utils/validations";
 import { createBookOrder } from "@/services/book-orders";
 
@@ -17,11 +17,7 @@ export async function GET(request: NextRequest) {
       orders,
     });
   } catch (error) {
-    console.error("[api/v1/bookstore/orders] GET Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch bookstore orders." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/bookstore/orders", error, "Failed to fetch bookstore orders.");
   }
 }
 
@@ -70,14 +66,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!rawItems) {
-      return NextResponse.json({ success: false, error: "No items provided." }, { status: 400 });
+      return apiError("No items provided.", 400);
     }
 
     let parsedItems;
     try {
       parsedItems = typeof rawItems === "string" ? JSON.parse(rawItems) : rawItems;
     } catch {
-      return NextResponse.json({ success: false, error: "Invalid items format." }, { status: 400 });
+      return apiError("Invalid items format.", 400);
     }
 
     const validation = bookstoreCheckoutSchema.safeParse({
@@ -93,10 +89,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!validation.success) {
-      return NextResponse.json(
-        { success: false, error: validation.error.issues[0]?.message ?? "Invalid form data." },
-        { status: 400 }
-      );
+      return apiError(validation.error.issues[0]?.message ?? "Invalid form data.", 400);
     }
 
     const body = validation.data;
@@ -104,7 +97,7 @@ export async function POST(request: NextRequest) {
     if (screenshotFile && screenshotFile.size > 0) {
       const { error } = validatePaymentScreenshot(screenshotFile);
       if (error) {
-        return NextResponse.json({ success: false, error }, { status: 400 });
+        return apiError(error, 400);
       }
     }
 
@@ -115,7 +108,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!result.ok) {
-      return NextResponse.json({ success: false, error: result.error }, { status: result.status });
+      return apiError(result.error, result.status);
     }
 
     return NextResponse.json({
@@ -125,10 +118,6 @@ export async function POST(request: NextRequest) {
       order: result.order,
     });
   } catch (error) {
-    console.error("[api/v1/bookstore/orders] POST Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Database operation failed. Please try again." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/bookstore/orders", error, "Database operation failed. Please try again.");
   }
 }

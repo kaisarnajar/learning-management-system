@@ -3,6 +3,7 @@ import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
 import { createWaiverRequest, resolveWaiverFeeType, withIssuedCouponCodes } from "@/services/waiver-requests";
 import { waiverRequestSchema } from "@/utils/validations";
+import { apiError, apiServerError } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -25,11 +26,7 @@ export async function GET(request: NextRequest) {
       data: (await withIssuedCouponCodes(requests)).map((request) => ({ ...request, feeType: resolveWaiverFeeType(request) })),
     });
   } catch (error) {
-    console.error("[api/v1/waiver-requests] GET Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch waiver requests." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/waiver-requests", error, "Failed to fetch waiver requests.");
   }
 }
 
@@ -42,7 +39,7 @@ export async function POST(request: NextRequest) {
     try {
       body = await request.json();
     } catch {
-      return NextResponse.json({ success: false, error: "Invalid request body." }, { status: 400 });
+      return apiError("Invalid request body.", 400);
     }
     const raw = (body ?? {}) as Record<string, unknown>;
     const parsed = waiverRequestSchema.safeParse({
@@ -52,15 +49,12 @@ export async function POST(request: NextRequest) {
       reason: raw.reason,
     });
     if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: parsed.error.issues[0]?.message ?? "Invalid request." },
-        { status: 400 }
-      );
+      return apiError(parsed.error.issues[0]?.message ?? "Invalid request.", 400);
     }
 
     const result = await createWaiverRequest(user.id, parsed.data);
     if (!result.ok) {
-      return NextResponse.json({ success: false, error: result.error }, { status: result.status });
+      return apiError(result.error, result.status);
     }
 
     const created = await prisma.couponRequest.findUnique({ where: { id: result.id } });
@@ -70,10 +64,6 @@ export async function POST(request: NextRequest) {
       data: created,
     });
   } catch (error) {
-    console.error("[api/v1/waiver-requests] POST Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to submit fee waiver request." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/waiver-requests", error, "Failed to submit fee waiver request.");
   }
 }

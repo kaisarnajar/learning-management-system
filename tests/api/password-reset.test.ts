@@ -86,7 +86,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("password reset (/api/auth/forgot-password, /ap
 
       const again = await resetWith(token, "second-new-pass-1");
       expect(again.status).toBe(400);
-      expect(await jsonOf(again)).toEqual({ error: "Reset link is invalid or has expired." });
+      expect(await jsonOf(again)).toEqual({ success: false, error: "Reset link is invalid or has expired." });
       const stored = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
       expect(await compare("first-new-pass-1", stored.password!)).toBe(true);
     });
@@ -98,7 +98,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("password reset (/api/auth/forgot-password, /ap
 
       const response = await resetWith(token);
       expect(response.status).toBe(400);
-      expect(await jsonOf(response)).toEqual({ error: "Reset link is invalid or has expired." });
+      expect(await jsonOf(response)).toEqual({ success: false, error: "Reset link is invalid or has expired." });
       expect(await prisma.passwordResetToken.count()).toBe(0);
       const stored = await prisma.user.findUniqueOrThrow({ where: { id: user.id } });
       expect(await compare("brand-new-pass-1", stored.password!)).toBe(false);

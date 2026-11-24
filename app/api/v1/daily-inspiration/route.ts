@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getHomepageDailyInspiration } from "@/services/daily-inspiration";
+import { apiServerError } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -9,10 +10,6 @@ export async function GET(request: NextRequest) {
       inspiration,
     });
   } catch (error) {
-    console.error("[api/v1/daily-inspiration] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch daily inspiration." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/daily-inspiration", error, "Failed to fetch daily inspiration.");
   }
 }

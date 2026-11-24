@@ -3,6 +3,7 @@ import { auth } from "@/services/auth";
 import { createUploadUrl, isUploadKind, mayUploadKind } from "@/services/direct-upload";
 import { enforceRateLimit, RATE_LIMIT_MESSAGE, RATE_LIMITS } from "@/services/rate-limit";
 import { isUploadError } from "@/services/storage";
+import { apiError } from "@/utils/api-response";
 
 /**
  * A presigned PUT for one file the website's forms upload straight to R2
@@ -16,7 +17,7 @@ import { isUploadError } from "@/services/storage";
 export const dynamic = "force-dynamic";
 
 function error(message: string, status: number) {
-  return NextResponse.json({ success: false, error: message }, { status });
+  return apiError(message, status);
 }
 
 export async function POST(request: Request) {

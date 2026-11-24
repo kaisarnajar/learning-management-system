@@ -4,7 +4,7 @@ import { sendPasswordResetEmail } from "@/services/email";
 import { buildPasswordResetUrl, createPasswordResetToken } from "@/services/password-reset";
 import { forgotPasswordSchema } from "@/utils/validations";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
-import { INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 const GENERIC_SUCCESS =
   "If an account with that email exists and uses a password, we sent reset instructions. Please check your Inbox. If you don't see it, check your Spam/Junk folder as well.";
@@ -15,14 +15,11 @@ export async function POST(request: Request) {
 
   try {
     const body = await readJson(request);
-    if (!body) return NextResponse.json({ error: INVALID_JSON_MESSAGE }, { status: 400 });
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const parsed = forgotPasswordSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Invalid email." },
-        { status: 400 },
-      );
+      return apiError(parsed.error.issues[0]?.message ?? "Invalid email.", 400);
     }
 
     const email = parsed.data.email.toLowerCase().trim();
@@ -40,10 +37,7 @@ export async function POST(request: Request) {
     // before creating a token so nothing is leaked when SMTP is misconfigured.
     if (isProduction && !isEmailConfigured) {
       console.error("[forgot-password] SMTP is not configured; refusing to issue reset tokens.");
-      return NextResponse.json(
-        { error: "Password reset is temporarily unavailable. Please contact support." },
-        { status: 503 },
-      );
+      return apiError("Password reset is temporarily unavailable. Please contact support.", 503);
     }
 
     const token = await createPasswordResetToken(email);
@@ -75,10 +69,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, message: GENERIC_SUCCESS, ...(debugLink ? { debugLink } : {}) });
   } catch (error) {
     unstable_rethrow(error);
-    console.error("[forgot-password] Request failed:", error);
-    return NextResponse.json(
-      { error: "Could not process your request. Please try again later." },
-      { status: 500 },
-    );
+    return apiServerError("forgot-password", error, "Could not process your request. Please try again later.");
   }
 }

@@ -5,24 +5,21 @@ import { revokeAllApiSessions } from "@/services/api-auth";
 import { consumePasswordResetToken } from "@/services/password-reset";
 import { prisma } from "@/utils/prisma";
 import { resetPasswordSchema } from "@/utils/validations";
-import { INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function POST(request: Request) {
   try {
     const body = await readJson(request);
-    if (!body) return NextResponse.json({ error: INVALID_JSON_MESSAGE }, { status: 400 });
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const parsed = resetPasswordSchema.safeParse(body);
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Invalid input." },
-        { status: 400 },
-      );
+      return apiError(parsed.error.issues[0]?.message ?? "Invalid input.", 400);
     }
 
     const consumed = await consumePasswordResetToken(parsed.data.token);
     if (!consumed.ok) {
-      return NextResponse.json({ error: consumed.error }, { status: 400 });
+      return apiError(consumed.error, 400);
     }
 
     const hashedPassword = await hash(parsed.data.password, 12);
@@ -45,10 +42,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true });
   } catch (error) {
     unstable_rethrow(error);
-    console.error("Caught error:", error);
-    return NextResponse.json(
-          { error: "Could not reset your password. Please try again." },
-          { status: 500 },
-        );
+    return apiServerError("api/auth/reset-password", error, "Could not reset your password. Please try again.");
     }
 }

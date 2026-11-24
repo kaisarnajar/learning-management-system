@@ -61,6 +61,6 @@ describe.skipIf(SKIP_WITHOUT_DB)("PDF downloads", () => {
     const response = await webIdCard(apiRequest(`/api/id-card?userId=${student.id}`));
 
     expect(response.status).toBe(500);
-    expect(await response.json()).toEqual({ error: "Failed to generate the ID card." });
+    expect(await response.json()).toEqual({ success: false, error: "Failed to generate the ID card." });
   });
 });

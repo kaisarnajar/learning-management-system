@@ -5,7 +5,7 @@ import { fatwaQuestionSchema } from "@/utils/validations";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { toPublicFatwaDto } from "@/services/api-dto";
-import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -24,11 +24,7 @@ export async function GET(request: NextRequest) {
       pageSize,
     });
   } catch (error) {
-    console.error("[api/v1/fatwa] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch fatwas." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/fatwa", error, "Failed to fetch fatwas.");
   }
 }
 
@@ -51,10 +47,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: parsed.error.issues[0]?.message ?? "Invalid fatwa question." },
-        { status: 400 }
-      );
+      return apiError(parsed.error.issues[0]?.message ?? "Invalid fatwa question.", 400);
     }
 
     const newFatwa = await prisma.fatwaQuestion.create({
@@ -70,10 +63,6 @@ export async function POST(request: NextRequest) {
       data: newFatwa,
     });
   } catch (error) {
-    console.error("[api/v1/fatwa] POST Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to submit fatwa question." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/fatwa", error, "Failed to submit fatwa question.");
   }
 }

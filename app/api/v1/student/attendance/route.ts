@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
+import { apiServerError } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -55,10 +56,6 @@ export async function GET(request: NextRequest) {
       attendance: results,
     });
   } catch (error) {
-    console.error("[api/v1/student/attendance] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch attendance records." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/student/attendance", error, "Failed to fetch attendance records.");
   }
 }

@@ -13,8 +13,10 @@ info:
     `false`/null are left out; fields documented as the string "true" must be
     sent as that string.
 
-    A JSON body that is malformed or not an object is a 400 with the usual
-    error envelope, never a 500.
+    Every error, whatever its status (429 included), has the Error shape
+    `{ success: false, error }`, sometimes with extra fields such as `code`.
+    A JSON body that is malformed or not an object is a 400 with that
+    envelope, never a 500.
 servers:
   - url: https://darsequranacademy.com/api/v1
     description: Production

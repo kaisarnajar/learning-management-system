@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
 import { devicePlatformData, devicePlatformFromText } from "@/services/status-compat";
-import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function POST(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -16,17 +16,11 @@ export async function POST(request: NextRequest) {
     const platform = devicePlatformFromText(rawPlatform);
 
     if (!token) {
-      return NextResponse.json(
-        { success: false, error: "Device FCM token is required." },
-        { status: 400 }
-      );
+      return apiError("Device FCM token is required.", 400);
     }
 
     if (!platform) {
-      return NextResponse.json(
-        { success: false, error: "platform must be one of android, ios or web." },
-        { status: 400 }
-      );
+      return apiError("platform must be one of android, ios or web.", 400);
     }
 
     // A token identifies one app install, and whoever is signed in on it now
@@ -52,11 +46,7 @@ export async function POST(request: NextRequest) {
       deviceToken,
     });
   } catch (error) {
-    console.error("[api/v1/notifications/device-token] POST Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to register FCM device token." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/notifications/device-token", error, "Failed to register FCM device token.");
   }
 }
 
@@ -70,10 +60,7 @@ export async function DELETE(request: NextRequest) {
     const token = typeof body.token === "string" ? body.token.trim() : "";
 
     if (!token) {
-      return NextResponse.json(
-        { success: false, error: "Device FCM token is required." },
-        { status: 400 }
-      );
+      return apiError("Device FCM token is required.", 400);
     }
 
     await prisma.deviceToken.deleteMany({
@@ -88,10 +75,6 @@ export async function DELETE(request: NextRequest) {
       message: "Device token unregistered.",
     });
   } catch (error) {
-    console.error("[api/v1/notifications/device-token] DELETE Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to unregister device token." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/notifications/device-token", error, "Failed to unregister device token.");
   }
 }

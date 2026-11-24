@@ -3,7 +3,7 @@ import { requireStudentApiAuth, requireVerifiedEmail } from "@/services/api-auth
 import { toEnrollmentDto } from "@/services/api-dto";
 import { prisma } from "@/utils/prisma";
 import { requestEnrollment } from "@/services/enrollments";
-import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -28,11 +28,7 @@ export async function GET(request: NextRequest) {
       data: items,
     });
   } catch (error) {
-    console.error("[api/v1/enrollments] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch enrollments." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/enrollments", error, "Failed to fetch enrollments.");
   }
 }
 
@@ -48,10 +44,7 @@ export async function POST(request: NextRequest) {
     const courseId = typeof body.courseId === "string" ? body.courseId.trim() : "";
 
     if (!courseId) {
-      return NextResponse.json(
-        { success: false, error: "Course ID is required." },
-        { status: 400 }
-      );
+      return apiError("Course ID is required.", 400);
     }
 
     // The checks and their order are shared with the website (services/enrollments.ts).
@@ -67,10 +60,7 @@ export async function POST(request: NextRequest) {
 
     switch (result.reason) {
       case "COURSE_NOT_OPEN":
-        return NextResponse.json(
-          { success: false, error: "This course is not open for enrollment." },
-          { status: 400 }
-        );
+        return apiError("This course is not open for enrollment.", 400);
       case "ALREADY_REQUESTED":
         return NextResponse.json({
           success: true,
@@ -79,25 +69,13 @@ export async function POST(request: NextRequest) {
           enrollment: result.enrollment,
         });
       case "PROFILE_INCOMPLETE":
-        return NextResponse.json(
-          {
-            success: false,
-            error: "Please complete your profile before enrolling in a course.",
-            profileIncomplete: true,
-          },
-          { status: 403 }
-        );
+        return apiError("Please complete your profile before enrolling in a course.", 403, {
+          extra: { profileIncomplete: true },
+        });
       case "PAYMENTS_NOT_CONFIGURED":
-        return NextResponse.json(
-          { success: false, error: "Online payment is not configured yet. Please contact the academy." },
-          { status: 503 }
-        );
+        return apiError("Online payment is not configured yet. Please contact the academy.", 503);
     }
   } catch (error) {
-    console.error("[api/v1/enrollments] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to submit enrollment request." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/enrollments", error, "Failed to submit enrollment request.");
   }
 }

@@ -41,6 +41,13 @@ tags:
   - name: "Admin: Library"
   - name: "Admin: Reviews"
   - name: "Admin: Contact inquiries"
+  - name: "Admin: Payments"
+  - name: "Admin: Finance"
+  - name: "Admin: Coupons"
+  - name: "Admin: Receipts"
+  - name: "Admin: Certificates"
+  - name: "Admin: Bookstore"
+  - name: "Admin: Settings"
 
 components:
   securitySchemes:
@@ -995,6 +1002,185 @@ components:
         repliedAt: { type: [string, "null"], format: date-time }
         repliedBy: { type: [object, "null"], properties: { name: { type: [string, "null"] }, email: { type: string } } }
         createdAt: { type: string, format: date-time }
+
+    FinanceRange:
+      type: object
+      description: The date range the filters resolved to
+      properties:
+        preset: { type: string }
+        from: { type: [string, "null"], format: date }
+        to: { type: [string, "null"], format: date }
+    FeeSubmissionRow:
+      type: object
+      properties:
+        kind: { type: string, const: submission }
+        id: { type: string }
+        userId: { type: string }
+        courseId: { type: string }
+        courseTitle: { type: string }
+        paymentType: { type: string }
+        label: { type: [string, "null"] }
+        amountInrPaise: { type: integer }
+        status: { type: string }
+        paymentMethod: { type: [string, "null"] }
+        reference: { type: [string, "null"], description: UPI transaction id }
+        paymentReference: { type: [string, "null"] }
+        screenshotPath: { type: [string, "null"] }
+        screenshotIsPdf: { type: boolean }
+        paymentRecordId: { type: [string, "null"] }
+        receiptGeneratedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        submittedAt: { type: string, format: date-time }
+        user: { $ref: "#/components/schemas/UserRef" }
+    BookOrderPaymentRow:
+      type: object
+      properties:
+        kind: { type: string, const: book_order }
+        id: { type: string }
+        status: { $ref: "#/components/schemas/BookOrderStatus" }
+        statusLabel: { type: string }
+        amountInrPaise: { type: integer }
+        paymentMethod: { type: [string, "null"] }
+        reference: { type: [string, "null"] }
+        screenshotPath: { type: [string, "null"] }
+        screenshotIsPdf: { type: boolean }
+        deliveryAddress: { type: [string, "null"] }
+        deliveryPinCode: { type: [string, "null"] }
+        deliveryPhoneNumber: { type: [string, "null"] }
+        courierServiceName: { type: [string, "null"] }
+        trackingId: { type: [string, "null"] }
+        items: { type: array, items: { type: object, properties: { id: { type: string }, title: { type: string }, quantity: { type: integer }, lineTotalPaise: { type: integer } } } }
+        paymentRecordId: { type: [string, "null"] }
+        receiptGeneratedAt: { type: [string, "null"], format: date-time }
+        canVoid: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        user: { $ref: "#/components/schemas/UserRef" }
+    IncomeRow:
+      type: object
+      properties:
+        kind: { type: string, const: income }
+        id: { type: string }
+        amountInrPaise: { type: integer }
+        paidAt: { type: string, format: date-time }
+        paymentType: { type: [string, "null"] }
+        paymentTypeLabel: { type: string }
+        description: { type: [string, "null"] }
+        paymentRecordId: { type: string }
+        receiptGeneratedAt: { type: [string, "null"], format: date-time }
+        courseId: { type: [string, "null"] }
+        courseTitle: { type: [string, "null"] }
+        user: { $ref: "#/components/schemas/UserRef" }
+    ExpenseRow:
+      type: object
+      properties:
+        kind: { type: string, const: expense }
+        id: { type: string }
+        category: { type: string }
+        categoryLabel: { type: string }
+        note: { type: [string, "null"] }
+        amountInrPaise: { type: integer }
+        paidAt: { type: string, format: date-time }
+        description: { type: [string, "null"] }
+        teacher: { type: [object, "null"], properties: { id: { type: string }, name: { type: string } } }
+    BookOrderStatus:
+      type: string
+      enum: [PENDING_VERIFICATION, APPROVED, DECLINED, SHIPPED, REFUNDED]
+    AdminBook:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        author: { type: string }
+        description: { type: string }
+        priceInrPaise: { type: integer }
+        mrpInrPaise: { type: [integer, "null"] }
+        purchasePriceInrPaise: { type: integer }
+        inventoryPurchased: { type: integer }
+        weightInGrams: { type: integer }
+        status: { type: string, enum: [AVAILABLE, OUT_OF_STOCK, COMING_SOON] }
+        statusLabel: { type: string }
+        imagePath: { type: [string, "null"] }
+        published: { type: boolean }
+        featuredOnHomepage: { type: boolean }
+        featured: { type: boolean, description: Featured and published }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    BookForm:
+      type: object
+      required: [title, author, description, priceInr, purchasePriceInr, inventoryPurchased, weightInGrams, status]
+      description: Prices in rupees
+      properties:
+        title: { type: string }
+        author: { type: string }
+        description: { type: string }
+        priceInr: { type: number }
+        mrpInr: { type: number, description: May be empty }
+        purchasePriceInr: { type: number }
+        inventoryPurchased: { type: integer }
+        weightInGrams: { type: integer }
+        status: { type: string, enum: [AVAILABLE, OUT_OF_STOCK, COMING_SOON] }
+        published: { type: string, enum: ["on", "true"] }
+        featuredOnHomepage: { type: string, enum: ["on", "true"] }
+        image: { type: string, format: binary, description: Cover; on edit it replaces the current one }
+        removeImage: { type: string, enum: ["true"], description: Edit only; the string "true" drops the cover when no new image is sent }
+    AdminBookOrderItem:
+      type: object
+      properties:
+        id: { type: string }
+        bookId: { type: string }
+        title: { type: string }
+        author: { type: string }
+        imagePath: { type: [string, "null"], description: List rows only }
+        quantity: { type: integer }
+        priceAtPurchaseInrPaise: { type: integer }
+        lineTotalInrPaise: { type: integer }
+    AdminBookOrder:
+      type: object
+      properties:
+        id: { type: string }
+        shortId: { type: string }
+        status: { $ref: "#/components/schemas/BookOrderStatus" }
+        statusLabel: { type: string }
+        customerName: { type: [string, "null"] }
+        customerEmail: { type: string }
+        totalAmountInrPaise: { type: integer }
+        shippingChargeInrPaise: { type: integer }
+        paymentMethod: { type: [string, "null"] }
+        upiTransactionId: { type: [string, "null"] }
+        paymentScreenshotPath: { type: [string, "null"] }
+        deliveryAddress: { type: [string, "null"] }
+        deliveryPinCode: { type: [string, "null"] }
+        deliveryPhoneNumber: { type: [string, "null"] }
+        notes: { type: [string, "null"] }
+        courierServiceName: { type: [string, "null"] }
+        trackingId: { type: [string, "null"] }
+        paymentRecordId: { type: [string, "null"] }
+        receiptGeneratedAt: { type: [string, "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        items: { type: array, items: { $ref: "#/components/schemas/AdminBookOrderItem" } }
+    CouponForm:
+      type: object
+      properties:
+        code: { type: string, description: DEFAULT coupons only }
+        percentage: { type: number }
+        validFrom: { type: string, format: date }
+        validUntil: { type: string, format: date }
+        courseId: { type: string, description: DEFAULT coupons only }
+        gender: { type: string, enum: [MALE, FEMALE, ""], description: DEFAULT coupons only }
+        applyTo: { type: string, enum: [BOTH, ENROLLMENT, COURSE], description: DEFAULT coupons only }
+        isActive: { type: string, enum: ["true"], description: The string "true" when ticked; left out when not (a JSON true is sent as "on" and reads as unticked) }
+    CertificateRow:
+      type: object
+      properties:
+        enrollmentId: { type: string }
+        certificateNumber: { type: [string, "null"] }
+        certificateGeneratedAt: { type: [string, "null"], format: date-time }
+        certificateType: { type: [string, "null"], enum: [APPRECIATION, COMPLETION, null] }
+        typeLabel: { type: string }
+        certificateGrade: { type: [number, "null"] }
+        user: { type: object, properties: { name: { type: [string, "null"] }, email: { type: string } } }
+        course: { type: object, properties: { id: { type: string }, title: { type: string } } }
 
 security:
   - bearer: []
@@ -3010,3 +3196,932 @@ paths:
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
         "404": { $ref: "#/components/responses/NotFound" }
+
+  # ------------------------------------------------------- Admin: Payments
+  /admin/payments:
+    get:
+      tags: ["Admin: Payments"]
+      summary: Pending fee submissions
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }, { name: type, in: query, schema: { type: string, enum: [enrollment_pending, monthly_pending], default: enrollment_pending } }]
+      responses:
+        "200":
+          description: The tab's submissions and both tabs' counts
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      type: { type: string, enum: [enrollment_pending, monthly_pending] }
+                      counts: { type: object, properties: { enrollment_pending: { type: integer }, monthly_pending: { type: integer } } }
+                      data: { items: { $ref: "#/components/schemas/FeeSubmissionRow" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/payments/{id}/approve:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Payments"]
+      summary: Approves a pending fee submission (records the payment, notifies the student)
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/payments/{id}/decline:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Payments"]
+      summary: Declines a pending fee submission; the student can resubmit
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/payments/{id}/void:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Payments"]
+      summary: Voids an approved fee payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [reason], properties: { reason: { type: string, minLength: 3, description: At least 3 characters; kept in the audit log } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/payments/book-orders/{id}/void:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Payments"]
+      summary: Voids a declined or refunded book order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [reason], properties: { reason: { type: string, minLength: 3, description: At least 3 characters } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/payment-records/{id}/void:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Payments"]
+      summary: Voids a manually recorded payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [reason], properties: { reason: { type: string, minLength: 3, description: At least 3 characters; kept in the audit log } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/completed-payments:
+    get:
+      tags: ["Admin: Payments"]
+      summary: Completed payments, by tab
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }, { name: type, in: query, schema: { type: string, enum: [enrollment_approved, monthly_approved, enrollment_waiver, monthly_waiver, book_approved, book_refunded, manual_transactions, manual_expenses], default: enrollment_approved } }, { name: preset, in: query, description: "Manual tabs only (default all_time); custom uses from and to", schema: { type: string, enum: [this_month, last_month, this_year, all_time, custom] } }, { $ref: "#/components/parameters/FinanceFrom" }, { $ref: "#/components/parameters/FinanceTo" }]
+      responses:
+        "200":
+          description: The tab's rows; each row's `kind` says its shape
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      type: { type: string }
+                      tabs: { type: array, items: { $ref: "#/components/schemas/Option" } }
+                      data:
+                        items:
+                          oneOf:
+                            - $ref: "#/components/schemas/FeeSubmissionRow"
+                            - $ref: "#/components/schemas/BookOrderPaymentRow"
+                            - $ref: "#/components/schemas/IncomeRow"
+                            - $ref: "#/components/schemas/ExpenseRow"
+                          discriminator: { propertyName: kind }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/transactions/student:
+    get:
+      tags: ["Admin: Payments"]
+      summary: The account behind an e-mail, for the record-payment form
+      parameters: [{ name: email, in: query, required: true, schema: { type: string } }]
+      responses:
+        "200": { description: The student, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, student: { type: object, properties: { userId: { type: string }, name: { type: [string, "null"] } } } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { description: No such student; `error` says why, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /admin/transactions/payments:
+    post:
+      tags: ["Admin: Payments"]
+      summary: Records a payment received outside the app
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [email, amountInr, paidAt], properties: { email: { type: string, format: email }, amountInr: { type: number }, paidAt: { type: string, format: date }, paymentType: { type: string, enum: [monthly, quarterly, half_yearly, yearly, enrollment, manual], description: See /admin/finance/options recordPaymentTypes }, courseId: { type: string } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/transactions/expenses:
+    post:
+      tags: ["Admin: Payments"]
+      summary: Records an expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [category, amountInr, paidAt], properties: { category: { type: string, description: See /admin/finance/options expenseCategories }, note: { type: string, description: Names an "other" category }, teacherId: { type: string, description: For a teacher salary }, amountInr: { type: number }, paidAt: { type: string, format: date }, description: { type: string } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/expenses/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    delete:
+      tags: ["Admin: Payments"]
+      summary: Deletes a recorded expense
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # -------------------------------------------------------- Admin: Finance
+  /admin/finance:
+    get:
+      tags: ["Admin: Finance"]
+      summary: "Courses finance: income or expenses for a date range"
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }, { name: tab, in: query, schema: { type: string, enum: [income, expenses] } }, { $ref: "#/components/parameters/FinancePreset" }, { $ref: "#/components/parameters/FinanceFrom" }, { $ref: "#/components/parameters/FinanceTo" }, { name: courseId, in: query, description: Income filter, schema: { type: string } }, { name: studentId, in: query, description: Income filter, schema: { type: string } }, { name: paymentType, in: query, description: Income filter, schema: { type: string } }, { name: category, in: query, description: Expense filter, schema: { type: string } }, { name: teacherId, in: query, description: Expense filter, schema: { type: string } }]
+      responses:
+        "200":
+          description: |
+            The tab's rows. `summary` uses the date range only; `filtered` also applies the tab's filters.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      tab: { type: string, enum: [income, expenses] }
+                      range: { $ref: "#/components/schemas/FinanceRange" }
+                      summary: { type: object, properties: { incomeTotalPaise: { type: integer }, expenseTotalPaise: { type: integer }, netBalancePaise: { type: integer } } }
+                      filtered: { type: object, properties: { recordCount: { type: integer }, totalPaise: { type: integer } } }
+                      data: { items: { oneOf: [{ $ref: "#/components/schemas/IncomeRow" }, { $ref: "#/components/schemas/ExpenseRow" }] } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/finance/bookstore:
+    get:
+      tags: ["Admin: Finance"]
+      summary: "Book Store finance: the sales report or the order finance report"
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }, { name: view, in: query, schema: { type: string, enum: [sales, orders], default: sales } }, { $ref: "#/components/parameters/FinancePreset" }, { $ref: "#/components/parameters/FinanceFrom" }, { $ref: "#/components/parameters/FinanceTo" }]
+      responses:
+        "200":
+          description: The view's rows; `summary` uses the date range only
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      view: { type: string, enum: [sales, orders] }
+                      range: { $ref: "#/components/schemas/FinanceRange" }
+                      summary:
+                        type: object
+                        properties:
+                          totalBooksPurchased: { type: integer }
+                          totalBooksSold: { type: integer }
+                          currentInventoryCount: { type: integer }
+                          totalPurchaseCostPaise: { type: integer }
+                          totalSalesRevenuePaise: { type: integer }
+                          totalShippingCollectedPaise: { type: integer }
+                          totalProfitLossPaise: { type: integer }
+                          pendingOrdersValuePaise: { type: integer }
+                          approvedOrdersValuePaise: { type: integer }
+                          completedOrdersValuePaise: { type: integer }
+                          averageOrderValuePaise: { type: integer }
+                      data:
+                        items:
+                          oneOf:
+                            - type: object
+                              description: "view=sales"
+                              properties:
+                                kind: { type: string, const: sale }
+                                id: { type: string }
+                                title: { type: string }
+                                author: { type: string }
+                                purchasePriceInrPaise: { type: integer }
+                                sellingPriceInrPaise: { type: integer }
+                                quantityPurchased: { type: integer }
+                                quantitySold: { type: integer }
+                                remainingStock: { type: integer }
+                                revenuePaise: { type: integer }
+                                profitPaise: { type: integer }
+                            - type: object
+                              description: "view=orders"
+                              properties:
+                                kind: { type: string, const: order }
+                                id: { type: string }
+                                orderNumber: { type: string }
+                                orderDate: { type: string, format: date-time }
+                                customerName: { type: string }
+                                customerEmail: { type: string }
+                                deliveryAddress: { type: string }
+                                deliveryPinCode: { type: [string, "null"] }
+                                deliveryPhoneNumber: { type: [string, "null"] }
+                                status: { type: string }
+                                statusLabel: { type: string }
+                                totalAmountPaise: { type: integer }
+                                shippingChargePaise: { type: integer }
+                                refundedAmountPaise: { type: integer }
+                                profitContributionPaise: { type: integer }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/finance/options:
+    get:
+      tags: ["Admin: Finance"]
+      summary: Choices for the finance filters and the record-payment and record-expense forms
+      parameters: [{ name: students, in: query, description: "all: every student (default: students with payments)", schema: { type: string, enum: [all] } }]
+      responses:
+        "200":
+          description: Choices
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  courses: { type: array, items: { type: object, properties: { id: { type: string }, title: { type: string } } } }
+                  students: { type: array, items: { $ref: "#/components/schemas/UserRef" } }
+                  teachers: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string } } } }
+                  expenseCategories: { type: array, items: { $ref: "#/components/schemas/Option" } }
+                  incomePaymentTypes: { type: array, items: { $ref: "#/components/schemas/Option" } }
+                  recordPaymentTypes: { type: array, items: { $ref: "#/components/schemas/Option" } }
+                  datePresets: { type: array, items: { $ref: "#/components/schemas/Option" } }
+                  today: { type: string, format: date, description: Today's business date }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/finance/export:
+    get:
+      tags: ["Admin: Finance"]
+      summary: Export to Excel, with the page's filters
+      parameters: [{ name: type, in: query, required: true, schema: { type: string, enum: [income, expenses, book_sales, book_orders] } }, { $ref: "#/components/parameters/FinancePreset" }, { $ref: "#/components/parameters/FinanceFrom" }, { $ref: "#/components/parameters/FinanceTo" }]
+      responses:
+        "200":
+          description: The spreadsheet
+          content:
+            application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
+              schema: { type: string, format: binary }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # -------------------------------------------------------- Admin: Coupons
+  /admin/coupons:
+    get:
+      tags: ["Admin: Coupons"]
+      summary: Coupons, with the course choices of the coupon forms
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { name: type, in: query, schema: { type: string, enum: [DEFAULT, SPECIAL], default: DEFAULT } }]
+      responses:
+        "200":
+          description: Coupons
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      type: { type: string, enum: [DEFAULT, SPECIAL] }
+                      courses: { type: array, items: { type: object, properties: { id: { type: string }, title: { type: string } } } }
+                      data:
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            code: { type: string }
+                            type: { type: string, enum: [DEFAULT, SPECIAL] }
+                            percentage: { type: number }
+                            validFrom: { type: [string, "null"], format: date-time }
+                            validUntil: { type: [string, "null"], format: date-time }
+                            courseId: { type: [string, "null"] }
+                            courseTitle: { type: [string, "null"] }
+                            gender: { type: [string, "null"] }
+                            user: { description: The student of a SPECIAL coupon }
+                            isActive: { type: boolean }
+                            applyTo: { type: string, enum: [BOTH, ENROLLMENT, COURSE] }
+                            applyToLabel: { type: string }
+                            createdAt: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: ["Admin: Coupons"]
+      summary: Creates a DEFAULT coupon
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CouponForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/CouponForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/coupons/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    patch:
+      tags: ["Admin: Coupons"]
+      summary: "Edits a coupon (a SPECIAL one: only percentage, validFrom, validUntil and isActive)"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CouponForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/CouponForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    delete:
+      tags: ["Admin: Coupons"]
+      summary: Deletes an unused coupon; a used one is deactivated instead
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/coupons/requests:
+    get:
+      tags: ["Admin: Coupons"]
+      summary: Fee-waiver requests, newest first
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { name: status, in: query, schema: { type: string, enum: [PENDING, APPROVED, REJECTED] } }]
+      responses:
+        "200":
+          description: Requests
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      data:
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            createdAt: { type: string, format: date-time }
+                            reason: { type: string }
+                            feeTypeLabel: { type: string }
+                            status: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+                            couponId: { type: [string, "null"] }
+                            user: { type: object }
+                            courseTitle: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/coupons/requests/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    delete:
+      tags: ["Admin: Coupons"]
+      summary: Deletes a waiver request (refused once its coupon has been used)
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/coupons/requests/{id}/approve:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Coupons"]
+      summary: Approves a waiver request and creates the student's coupon
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [percentage, validUntil], properties: { percentage: { type: integer, minimum: 1, maximum: 100 }, validUntil: { type: string, format: date } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/coupons/requests/{id}/reject:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Coupons"]
+      summary: Rejects a pending waiver request; the student is notified
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/coupons/finance:
+    get:
+      tags: ["Admin: Coupons"]
+      summary: Claimed fee waivers with their totals
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }, { $ref: "#/components/parameters/FinancePreset" }, { $ref: "#/components/parameters/FinanceFrom" }, { $ref: "#/components/parameters/FinanceTo" }, { name: courseId, in: query, schema: { type: string } }, { name: studentId, in: query, schema: { type: string } }, { name: paymentType, in: query, schema: { type: string } }]
+      responses:
+        "200":
+          description: Waivers and stats for the filters
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      range: { $ref: "#/components/schemas/FinanceRange" }
+                      stats:
+                        type: object
+                        properties:
+                          totalWaiverCount: { type: integer }
+                          totalSumWaivedPaise: { type: integer }
+                          totalOriginalFeePaise: { type: integer }
+                          totalNetPaidPaise: { type: integer }
+                          fullWaiverCount: { type: integer }
+                          fullWaiverSumPaise: { type: integer }
+                          partialWaiverCount: { type: integer }
+                          partialWaiverSumPaise: { type: integer }
+                      data:
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string }
+                            date: { type: string, format: date-time }
+                            studentName: { type: string }
+                            studentEmail: { type: string }
+                            courseTitle: { type: string }
+                            paymentType: { type: string }
+                            label: { type: string }
+                            originalFeePaise: { type: integer }
+                            waivedAmountPaise: { type: integer }
+                            discountPercentage: { type: number }
+                            netPaidPaise: { type: integer }
+                            paymentRecordId: { type: [string, "null"] }
+                            receiptGeneratedAt: { type: [string, "null"], format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ------------------------------------------------------- Admin: Receipts
+  /admin/receipts:
+    get:
+      tags: ["Admin: Receipts"]
+      summary: Generated receipts, newest first (voided records left out)
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200":
+          description: Receipts
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      data:
+                        items:
+                          type: object
+                          properties:
+                            id: { type: string, description: Payment record id }
+                            invoiceNumber: { type: [string, "null"] }
+                            receiptGeneratedAt: { type: [string, "null"], format: date-time }
+                            paymentType: { type: [string, "null"] }
+                            paymentTypeLabel: { type: string }
+                            amountInrPaise: { type: integer }
+                            receiptIncludesGst: { type: boolean }
+                            receiptFeeAmountPaise: { type: [integer, "null"] }
+                            receiptGstAmountPaise: { type: [integer, "null"] }
+                            user: { type: object }
+                            courseTitle: { type: [string, "null"] }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/receipts/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Receipts"]
+      summary: One payment record's receipt state
+      responses:
+        "200":
+          description: The receipt (the id is the payment record's)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  receipt:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      invoiceNumber: { type: [string, "null"] }
+                      receiptGeneratedAt: { type: [string, "null"], format: date-time }
+                      receiptEmailSentAt: { type: [string, "null"], format: date-time }
+                      receiptIncludesGst: { type: boolean }
+                      receiptFeeAmountPaise: { type: [integer, "null"] }
+                      receiptGstAmountPaise: { type: [integer, "null"] }
+                      receiptShippingAmountPaise: { type: [integer, "null"] }
+                      amountInrPaise: { type: integer }
+                      paidAt: { type: string, format: date-time }
+                      paymentType: { type: [string, "null"] }
+                      paymentTypeLabel: { type: string }
+                      description: { type: [string, "null"] }
+                      paymentMethod: { type: [string, "null"] }
+                      reference: { type: [string, "null"] }
+                      voided: { type: boolean }
+                      courseTitle: { type: [string, "null"] }
+                      user: { $ref: "#/components/schemas/UserRef" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: ["Admin: Receipts"]
+      summary: Generates the receipt (allocates the invoice number, stores the PDF)
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    delete:
+      tags: ["Admin: Receipts"]
+      summary: Deletes the generated receipt; the payment record stays
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/receipts/{id}/pdf:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Receipts"]
+      summary: The receipt PDF
+      responses:
+        "200": { $ref: "#/components/responses/Pdf" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { description: No receipt has been generated yet, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /admin/receipts/{id}/email:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    post:
+      tags: ["Admin: Receipts"]
+      summary: E-mails the receipt PDF to the student
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # --------------------------------------------------- Admin: Certificates
+  /admin/certificates:
+    get:
+      tags: ["Admin: Certificates"]
+      summary: Generated certificates, newest first
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200": { description: Certificates, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/CertificateRow" } } } }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: ["Admin: Certificates"]
+      summary: Generates a certificate
+      description: |
+        Answers `result.certificateNumber`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [enrollmentId, certificateType], properties: { enrollmentId: { type: string }, certificateType: { type: string, enum: [APPRECIATION, COMPLETION] }, certificateGrade: { type: number, minimum: 0, maximum: 10, description: Required for COMPLETION } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/certificates/eligible:
+    get:
+      tags: ["Admin: Certificates"]
+      summary: Enrollments without a certificate, for the generate form
+      responses:
+        "200": { description: Enrollments, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, enrollments: { type: array, items: { type: object, properties: { id: { type: string, description: Enrollment id }, user: { type: object, properties: { name: { type: [string, "null"] }, email: { type: string } } }, course: { type: object, properties: { id: { type: string }, title: { type: string } } } } } } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/certificates/{enrollmentId}:
+    parameters: [{ $ref: "#/components/parameters/EnrollmentId" }]
+    get:
+      tags: ["Admin: Certificates"]
+      summary: One generated certificate
+      responses:
+        "200":
+          description: The certificate
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  certificate:
+                    allOf:
+                      - $ref: "#/components/schemas/CertificateRow"
+                      - type: object
+                        properties:
+                          certificateEmailSentAt: { type: [string, "null"], format: date-time }
+                          user: { $ref: "#/components/schemas/UserRef" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Admin: Certificates"]
+      summary: Deletes the certificate and its PDF; the enrollment can be issued a new one
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/certificates/{enrollmentId}/pdf:
+    parameters: [{ $ref: "#/components/parameters/EnrollmentId" }]
+    get:
+      tags: ["Admin: Certificates"]
+      summary: The certificate PDF
+      responses:
+        "200": { $ref: "#/components/responses/Pdf" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /admin/certificates/{enrollmentId}/email:
+    parameters: [{ $ref: "#/components/parameters/EnrollmentId" }]
+    post:
+      tags: ["Admin: Certificates"]
+      summary: E-mails the certificate PDF to the student
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ------------------------------------------------------ Admin: Bookstore
+  /admin/bookstore:
+    get:
+      tags: ["Admin: Bookstore"]
+      summary: The book catalogue, newest first
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200":
+          description: Books (an empty page past the end)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - $ref: "#/components/schemas/FeaturedSlots"
+                  - type: object
+                    properties:
+                      data: { items: { $ref: "#/components/schemas/AdminBook" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: ["Admin: Bookstore"]
+      summary: Adds a book
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/BookForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/bookstore/new:
+    get:
+      tags: ["Admin: Bookstore"]
+      summary: The add-book form's choices and the homepage slots in use
+      responses:
+        "200":
+          description: Form data
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/FeaturedSlots"
+                  - type: object
+                    properties:
+                      success: { type: boolean }
+                      statusOptions: { type: array, items: { $ref: "#/components/schemas/Option" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/bookstore/{bookId}:
+    parameters: [{ $ref: "#/components/parameters/BookId" }]
+    get:
+      tags: ["Admin: Bookstore"]
+      summary: One book with its stock
+      responses:
+        "200":
+          description: The book. Stock is purchased plus adjustments minus copies held by approved or shipped orders
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/FeaturedSlots"
+                  - type: object
+                    properties:
+                      success: { type: boolean }
+                      book: { $ref: "#/components/schemas/AdminBook" }
+                      stock: { type: [object, "null"], properties: { purchased: { type: integer }, adjustments: { type: integer }, committed: { type: integer }, available: { type: integer } } }
+                      statusOptions: { type: array, items: { $ref: "#/components/schemas/Option" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Admin: Bookstore"]
+      summary: Saves the book edit form
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/BookForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/BookForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    delete:
+      tags: ["Admin: Bookstore"]
+      summary: Deletes the book (refused once it appears in any order)
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/bookstore/orders:
+    get:
+      tags: ["Admin: Bookstore"]
+      summary: Book orders by status tab
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }, { name: status, in: query, description: "pending: awaiting payment verification; approved: awaiting shipment; completed: shipped, refunded or declined", schema: { type: string, enum: [pending, approved, completed], default: pending } }]
+      responses:
+        "200":
+          description: The tab's orders and each tab's total
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      status: { type: string, enum: [pending, approved, completed] }
+                      counts: { type: object, properties: { pending: { type: integer }, approved: { type: integer }, completed: { type: integer } } }
+                      data: { items: { $ref: "#/components/schemas/AdminBookOrder" } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/bookstore/orders/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Bookstore"]
+      summary: One order with its timeline
+      responses:
+        "200":
+          description: The order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  order:
+                    type: object
+                    properties:
+                      id: { type: string }
+                      shortId: { type: string }
+                      status: { $ref: "#/components/schemas/BookOrderStatus" }
+                      statusLabel: { type: string }
+                      deleted: { type: boolean }
+                      deletedAt: { type: [string, "null"], format: date-time }
+                      createdAt: { type: string, format: date-time }
+                      updatedAt: { type: string, format: date-time }
+                      customer: { $ref: "#/components/schemas/UserRef" }
+                      deliveryAddress: { type: [string, "null"] }
+                      deliveryPinCode: { type: [string, "null"] }
+                      deliveryPhoneNumber: { type: [string, "null"] }
+                      notes: { type: [string, "null"] }
+                      paymentMethod: { type: [string, "null"] }
+                      upiTransactionId: { type: [string, "null"] }
+                      paymentScreenshotPath: { type: [string, "null"] }
+                      courierServiceName: { type: [string, "null"] }
+                      trackingId: { type: [string, "null"] }
+                      items: { type: array, items: { $ref: "#/components/schemas/AdminBookOrderItem" } }
+                      subtotalInrPaise: { type: integer }
+                      shippingChargeInrPaise: { type: integer }
+                      totalAmountInrPaise: { type: integer }
+                  timeline:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        action: { type: string }
+                        label: { type: string }
+                        actorEmail: { type: [string, "null"] }
+                        reason: { type: [string, "null"] }
+                        createdAt: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/bookstore/orders/{id}/{action}:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { name: action, in: path, required: true, schema: { type: string, enum: [approve, decline, ship, refund, void] } }]
+    post:
+      tags: ["Admin: Bookstore"]
+      summary: Changes an order's status
+      description: |
+        approve: pending to approved (checks and commits stock, records the payment, e-mails the student);
+        decline: pending to declined; ship: approved to shipped (body courierServiceName, trackingId);
+        refund: approved or shipped to refunded (the recorded payment is voided);
+        void: declined or refunded orders leave the lists (kept for audit; body reason, 3+ characters).
+        An unknown action is a 404.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { type: object, properties: { courierServiceName: { type: string, description: ship }, trackingId: { type: string, description: ship }, reason: { type: string, minLength: 3, description: void } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/shipping-charges:
+    get:
+      tags: ["Admin: Bookstore"]
+      summary: Shipping charge slabs by order weight, lightest first
+      responses:
+        "200": { description: Slabs, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, slabs: { type: array, items: { type: object, properties: { id: { type: string }, minWeightGrams: { type: integer }, maxWeightGrams: { type: integer }, chargeInrPaise: { type: integer } } } } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: ["Admin: Bookstore"]
+      summary: Adds a slab (the slabs must stay contiguous from 0 g)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [minWeightGrams, maxWeightGrams, chargeInr], properties: { minWeightGrams: { type: integer }, maxWeightGrams: { type: integer }, chargeInr: { type: number, description: Rupees } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/shipping-charges/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    delete:
+      tags: ["Admin: Bookstore"]
+      summary: Deletes a slab (refused when it would leave a gap)
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+
+  # ------------------------------------------------------- Admin: Settings
+  /admin/payment-settings:
+    get:
+      tags: ["Admin: Settings"]
+      summary: UPI, bank and receipt settings
+      responses:
+        "200": { description: The settings, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, settings: { type: object, properties: { upiId: { type: string }, upiNumber: { type: string }, upiPayeeName: { type: string }, bankAccountName: { type: string }, bankName: { type: string }, bankAccountNumber: { type: string }, bankIfsc: { type: string }, bankBranch: { type: string }, includeGstByDefault: { type: boolean }, feeWaiverEnabled: { type: boolean }, autoApproveFullWaivers: { type: boolean } } } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    put:
+      tags: ["Admin: Settings"]
+      summary: Saves the payment settings (checkboxes left out are unticked)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, properties: { upiId: { type: string }, upiNumber: { type: string }, upiPayeeName: { type: string }, bankAccountName: { type: string }, bankName: { type: string }, bankAccountNumber: { type: string }, bankIfsc: { type: string }, bankBranch: { type: string }, includeGstByDefault: { type: string, enum: ["on"] }, feeWaiverEnabled: { type: string, enum: ["on"] }, autoApproveFullWaivers: { type: string, enum: ["on"] } } }
+          multipart/form-data:
+            schema: { type: object, properties: { upiId: { type: string }, upiNumber: { type: string }, upiPayeeName: { type: string }, bankAccountName: { type: string }, bankName: { type: string }, bankAccountNumber: { type: string }, bankIfsc: { type: string }, bankBranch: { type: string }, includeGstByDefault: { type: string, enum: ["on"] }, feeWaiverEnabled: { type: string, enum: ["on"] }, autoApproveFullWaivers: { type: string, enum: ["on"] } } }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }

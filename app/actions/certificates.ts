@@ -10,6 +10,7 @@ import { getCourseById } from "@/services/courses";
 import { allocateDocumentNumber } from "@/services/document-numbers";
 import { deleteStoredCertificatePdf, getCertificatePdf, storeCertificatePdf } from "@/services/documents";
 import { certificateTypeData } from "@/services/status-compat";
+import { recordAudit } from "@/services/audit";
 import type { CertificateType } from "@prisma/client";
 
 export async function generateCertificate(enrollmentId: string, certificateType: CertificateType, certificateGrade?: number) {
@@ -46,11 +47,14 @@ export async function generateCertificate(enrollmentId: string, certificateType:
   }
 
   // Sequential number + generation flag in one transaction; a concurrent
-  // second click finds no row to update and reports the duplicate.
+  // second click finds no row to update and reports the duplicate. A deleted
+  // certificate kept its number (issued numbers are never given up), so
+  // regenerating reuses it.
   let certificateNumber: string;
   try {
     certificateNumber = await prisma.$transaction(async (tx) => {
-      const number = await allocateDocumentNumber(tx, "certificate");
+      const reused = enrollment.certificateNumber;
+      const number = reused ?? (await allocateDocumentNumber(tx, "certificate"));
       const updated = await tx.enrollment.updateMany({
         where: { id: enrollmentId, certificateGeneratedAt: null },
         data: {
@@ -62,6 +66,14 @@ export async function generateCertificate(enrollmentId: string, certificateType:
       });
       if (updated.count === 0) {
         throw new Error("ALREADY_GENERATED");
+      }
+      if (reused) {
+        await recordAudit(tx, session, {
+          action: "generate",
+          entity: "Certificate",
+          entityId: enrollmentId,
+          after: { certificateNumber: number, reissued: true, certificateType, certificateGrade: certificateType === "COMPLETION" ? certificateGrade : null },
+        });
       }
       return number;
     });
@@ -104,15 +116,32 @@ export async function deleteCertificate(enrollmentId: string) {
     return { error: "Certificate has not been generated." };
   }
 
-  await prisma.enrollment.update({
-    where: { id: enrollmentId },
-    data: {
-      certificateGeneratedAt: null,
-      certificateNumber: null,
-      ...certificateTypeData(null),
-      certificateGrade: null,
-      certificatePdfKey: null,
-    },
+  // The certificate number stays on the enrollment so the series has no gap;
+  // regenerating reissues it.
+  await prisma.$transaction(async (tx) => {
+    await tx.enrollment.update({
+      where: { id: enrollmentId },
+      data: {
+        certificateGeneratedAt: null,
+        ...certificateTypeData(null),
+        certificateGrade: null,
+        certificateEmailSentAt: null,
+        certificatePdfKey: null,
+      },
+    });
+    await recordAudit(tx, session, {
+      action: "delete",
+      entity: "Certificate",
+      entityId: enrollmentId,
+      before: {
+        certificateNumber: enrollment.certificateNumber,
+        certificateGeneratedAt: enrollment.certificateGeneratedAt,
+        certificateType: enrollment.certificateType,
+        certificateGrade: enrollment.certificateGrade,
+        certificateEmailSentAt: enrollment.certificateEmailSentAt,
+      },
+      after: { certificateNumber: enrollment.certificateNumber, certificateGeneratedAt: null },
+    });
   });
   await deleteStoredCertificatePdf(enrollment);
 

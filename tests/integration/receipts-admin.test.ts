@@ -2,10 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import { getGeneratedReceiptsPaginated } from "@/services/receipts-admin";
-import { generateReceipt, sendReceiptToEmailAction } from "@/app/actions/receipts";
+import { deleteReceipt, generateReceipt, sendReceiptToEmailAction } from "@/app/actions/receipts";
 import { sendReceiptEmail } from "@/services/email";
 import { GET as downloadReceipt } from "@/app/api/receipt/[paymentRecordId]/route";
 import { createUser, resetDb, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB } from "../helpers/db";
+
+// No Chromium here: storing and removing the rendered PDF is not under test.
+vi.mock("@/services/documents", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/services/documents")>()),
+  storeReceiptPdf: vi.fn(async () => true),
+  deleteStoredReceiptPdf: vi.fn(async () => undefined),
+}));
 
 /** `count` payment records with a generated receipt, invoice numbers 00001.. in issue order. */
 async function seedReceipts(count: number) {
@@ -96,5 +103,42 @@ describe.skipIf(SKIP_WITHOUT_DB)("voided payments have no receipt", () => {
 
     expect(await sendReceiptToEmailAction(withReceipt.id)).toEqual({ error: expect.stringContaining("voided") });
     expect(sendReceiptEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe.skipIf(SKIP_WITHOUT_DB)("deleting a receipt", () => {
+  beforeEach(async () => {
+    await resetDb();
+    await setPaymentSettings();
+    const admin = await createUser({ email: "admin@example.test" });
+    vi.mocked(auth).mockResolvedValue(sessionFor(admin, "ADMIN") as never);
+  });
+
+  it("keeps the invoice number, regenerating reissues it, and both are audited", async () => {
+    const student = await createUser();
+    const record = await prisma.paymentRecord.create({
+      data: { userId: student.id, amountInrPaise: 10000, paidAt: new Date(), paymentType: "manual", paymentTypeEnum: "MANUAL" },
+    });
+
+    const first = await generateReceipt(record.id);
+    expect(await deleteReceipt(record.id)).toEqual({ success: true });
+    const deleted = await prisma.paymentRecord.findUniqueOrThrow({ where: { id: record.id } });
+    expect(deleted).toMatchObject({
+      invoiceNumber: first.invoiceNumber,
+      receiptGeneratedAt: null,
+      receiptFeeAmountPaise: null,
+      receiptShippingAmountPaise: null,
+    });
+    // A deleted receipt is no longer listed or served.
+    expect((await getGeneratedReceiptsPaginated(1, 20)).totalCount).toBe(0);
+
+    const second = await generateReceipt(record.id);
+    expect(second.invoiceNumber).toBe(first.invoiceNumber);
+    expect(await prisma.documentSequence.findMany()).toEqual([expect.objectContaining({ kind: "invoice", next: 1 })]);
+
+    const audit = await prisma.auditLog.findMany({ where: { entity: "Receipt", entityId: record.id }, orderBy: { createdAt: "asc" } });
+    expect(audit.map((e) => e.action)).toEqual(["delete", "generate"]);
+    expect(audit[0]!.before).toMatchObject({ invoiceNumber: first.invoiceNumber, receiptFeeAmountPaise: 10000 });
+    expect(audit[1]!.after).toMatchObject({ invoiceNumber: first.invoiceNumber, reissued: true });
   });
 });

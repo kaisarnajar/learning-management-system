@@ -3781,7 +3781,7 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
     delete:
       tags: ["Admin: Receipts"]
-      summary: Deletes the generated receipt; the payment record stays
+      summary: Deletes the generated receipt; the payment record stays and keeps its invoice number, which regenerating reissues (audited)
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }
@@ -3868,7 +3868,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
     delete:
       tags: ["Admin: Certificates"]
-      summary: Deletes the certificate and its PDF; the enrollment can be issued a new one
+      summary: Deletes the certificate and its PDF; the enrollment keeps its certificate number, which a new certificate reissues (audited)
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }

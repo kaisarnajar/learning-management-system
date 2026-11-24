@@ -3263,7 +3263,7 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     post:
       tags: ["Admin: Payments"]
-      summary: Voids an approved fee payment
+      summary: Voids an approved fee payment; a voided enrollment fee reopens the enrollment (awaiting its fee), and a coupon it used is given back
       requestBody:
         required: true
         content:

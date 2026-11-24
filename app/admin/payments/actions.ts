@@ -24,7 +24,8 @@ import { getAppBaseUrl } from "@/services/password-reset";
 import { normalizeReason, softDeleteSubmissionTx, voidPaymentRecordTx, VoidError } from "@/services/payment-voiding";
 import { assignRollNumberTx } from "@/services/roll-numbers";
 import { deletePaymentScreenshot } from "@/services/payment-upload";
-import { CouponAlreadyUsedError, spendReservedCouponTx } from "@/services/coupons";
+import { CouponAlreadyUsedError, releaseCouponTx, spendReservedCouponTx } from "@/services/coupons";
+import { recordAudit } from "@/services/audit";
 
 /** Rolls an approval back when the enrollment stopped awaiting its fee mid-way. */
 class EnrollmentNotAwaitingFeeError extends Error {}
@@ -255,6 +256,11 @@ export async function declineMonthlyPayment(
  * Voids an approved fee payment: the PaymentRecord is marked voided (kept for
  * audit), the submission is soft-deleted, and both are written to the audit
  * log with the admin's reason. Nothing is hard-deleted.
+ *
+ * A voided enrollment fee reopens the enrollment (back to awaiting its fee,
+ * so the student loses access and can pay again; the roll number is kept,
+ * because roll numbers are never reused), and a coupon the payment used is
+ * given back. Both are audited.
  */
 export async function voidApprovedPayment(
   submissionId: string,
@@ -285,6 +291,39 @@ export async function voidApprovedPayment(
         await voidPaymentRecordTx(tx, session, submission.paymentRecordId, normalizedReason);
       }
       await softDeleteSubmissionTx(tx, session, submissionId, normalizedReason);
+
+      if (paymentTypeOf(submission) === "ENROLLMENT") {
+        const enrollment = await tx.enrollment.findUnique({
+          where: { userId_courseId: { userId: submission.userId, courseId: submission.courseId } },
+          select: { id: true, status: true, statusEnum: true, rollNumber: true },
+        });
+        const reopened = enrollment
+          ? await tx.enrollment.updateMany({
+              where: { id: enrollment.id, status: { in: [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.COMPLETED] } },
+              data: enrollmentStatusData("AWAITING_ENROLLMENT_FEE"),
+            })
+          : { count: 0 };
+        if (enrollment && reopened.count > 0) {
+          await recordAudit(tx, session, {
+            action: "update",
+            entity: "Enrollment",
+            entityId: enrollment.id,
+            reason: normalizedReason,
+            before: { status: enrollmentStatusOf(enrollment), rollNumber: enrollment.rollNumber },
+            after: { status: "AWAITING_ENROLLMENT_FEE", rollNumber: enrollment.rollNumber },
+          });
+        }
+      }
+
+      if (submission.couponId && (await releaseCouponTx(tx, submission.userId, submission.couponId))) {
+        await recordAudit(tx, session, {
+          action: "restore",
+          entity: "Coupon",
+          entityId: submission.couponId,
+          reason: normalizedReason,
+          after: { userId: submission.userId, releasedBySubmission: submissionId },
+        });
+      }
     });
   } catch (error) {
     if (error instanceof VoidError) return { error: error.message };

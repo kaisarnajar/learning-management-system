@@ -231,6 +231,27 @@ export async function spendReservedCouponTx(
   });
 }
 
+/**
+ * Gives a spent coupon back when the payment it paid for is voided: the
+ * usage row is deleted and a SPECIAL coupon reactivated. Call it after the
+ * submission was soft-deleted, in the same transaction. Nothing is released
+ * while another live submission of the student's still holds the coupon.
+ * Returns whether the coupon was given back.
+ */
+export async function releaseCouponTx(tx: Prisma.TransactionClient, userId: string, couponId: string): Promise<boolean> {
+  const holder = await tx.coursePaymentSubmission.findFirst({
+    where: { userId, couponId, deletedAt: null, status: { in: LIVE_SUBMISSION_STATUSES } },
+    select: { id: true },
+  });
+  if (holder) return false;
+  const released = await tx.couponUsage.deleteMany({ where: { couponId, userId } });
+  await tx.coupon.updateMany({
+    where: { id: couponId, type: "SPECIAL", isActive: false },
+    data: { isActive: true },
+  });
+  return released.count > 0;
+}
+
 export async function recordCouponUsage(userId: string, couponId: string) {
   await prisma.$transaction((tx) => recordCouponUsageTx(tx, userId, couponId));
 }

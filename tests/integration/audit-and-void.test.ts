@@ -8,7 +8,7 @@ import { getIncomeRecordsPaginated, getIncomeTotal } from "@/services/finance-in
 import { parseFinanceFilters } from "@/services/finance-filters";
 import { getAuditLogPaginated } from "@/services/audit";
 import { getPaymentRecordsForUserPaginated, getPaymentSubmissionsForUser } from "@/services/payments";
-import { createCourse, createEnrollment, createUser, resetDb, runAction, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB } from "../helpers/db";
+import { createCourse, createEnrollment, createUser, resetDb, runAction, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB, startedEnrollment } from "../helpers/db";
 
 const allTime = () => parseFinanceFilters({ preset: "all_time" });
 
@@ -23,6 +23,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("voiding, finance totals and the audit trail", 
   async function approvedFee(amountPaise = 50000) {
     const student = await createUser();
     const course = await createCourse({ priceInrPaise: amountPaise });
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, "upi", `UTR${Math.random().toString(36).slice(2, 10)}`, null);
     const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
     await runAction(() => confirmMonthlyPayment(submission.id));
@@ -76,6 +77,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("voiding, finance totals and the audit trail", 
 
     const student = await createUser();
     const course = await createCourse();
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, "upi", "UTRPENDING1", null);
     const pending = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
     expect((await voidApprovedPayment(pending.id, "not approved yet"))?.error).toBe("Only approved payments can be voided.");

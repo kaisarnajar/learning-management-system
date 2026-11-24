@@ -13,6 +13,7 @@ import {
   sessionFor,
   setPaymentSettings,
   SKIP_WITHOUT_DB,
+  startedEnrollment,
 } from "../helpers/db";
 
 async function loginAsAdmin() {
@@ -32,6 +33,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     const student = await createUser();
     const course = await createCourse();
 
+    await startedEnrollment(student.id, course.id);
     const submitted = await processEnrollmentPayment(student.id, course.id, "upi", "UTR1000001", null);
     expect(submitted).toEqual({ success: true });
 
@@ -80,6 +82,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     await loginAsAdmin();
     const student = await createUser();
     const course = await createCourse();
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, "upi", "UTR2000001", null);
     const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
 
@@ -94,6 +97,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     await loginAsAdmin();
     const student = await createUser();
     const course = await createCourse();
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, "upi", "UTR2100001", null);
     const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
 
@@ -116,6 +120,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     for (let round = 0; round < 5; round++) {
       const student = await createUser();
       const course = await createCourse();
+      await startedEnrollment(student.id, course.id);
       await processEnrollmentPayment(student.id, course.id, "upi", `UTR22000${round}1`, null);
       const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
 
@@ -144,6 +149,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     await loginAsAdmin();
     const student = await createUser();
     const course = await createCourse();
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, "upi", "UTR2300001", null);
     const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
     await runAction(() => confirmMonthlyPayment(submission.id));
@@ -157,6 +163,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     await setPaymentSettings({ includeGstByDefault: true });
     const student = await createUser();
     const course = await createCourse({ priceInrPaise: 11800 });
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, "upi", "UTR3000001", null);
     const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
     await runAction(() => confirmMonthlyPayment(submission.id));
@@ -202,6 +209,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     await loginAsAdmin();
     const student = await createUser();
     const course = await createCourse();
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, "upi", "UTR4000001", null);
     const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
 
@@ -210,6 +218,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     const row = await prisma.coursePaymentSubmission.findUniqueOrThrow({ where: { id: submission.id } });
     expect(row).toMatchObject({ statusEnum: "DECLINED", upiTransactionId: null, paymentMethod: null });
 
+    await startedEnrollment(student.id, course.id);
     const again = await processEnrollmentPayment(student.id, course.id, "upi", "UTR4000001", null);
     expect(again).toEqual({ success: true });
   });
@@ -218,11 +227,14 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     const first = await createUser();
     const second = await createUser();
     const course = await createCourse();
+    await startedEnrollment(first.id, course.id);
     await processEnrollmentPayment(first.id, course.id, "upi", "UTR5000001", null);
 
+    await startedEnrollment(second.id, course.id);
     const reused = await processEnrollmentPayment(second.id, course.id, "upi", "UTR5000001", null);
     expect(reused).toMatchObject({ status: 400, error: expect.stringContaining("already used") });
 
+    await startedEnrollment(second.id, course.id);
     const stale = await processEnrollmentPayment(second.id, course.id, "upi", "UTR5000002", null, null, 12345);
     expect(stale).toMatchObject({ status: 409 });
     expect(await prisma.coursePaymentSubmission.count({ where: { userId: second.id } })).toBe(0);
@@ -231,7 +243,9 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
   it("blocks a duplicate pending enrollment fee", async () => {
     const student = await createUser();
     const course = await createCourse();
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, "upi", "UTR6000001", null);
+    await startedEnrollment(student.id, course.id);
     const duplicate = await processEnrollmentPayment(student.id, course.id, "upi", "UTR6000002", null);
     expect(duplicate).toMatchObject({ status: 400, error: expect.stringContaining("awaiting verification") });
   });
@@ -283,6 +297,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
     const course = await createCourse();
     const coupon = await createCoupon(50);
 
+    await startedEnrollment(student.id, course.id);
     const result = await processEnrollmentPayment(student.id, course.id, "upi", "UTR8000001", null, coupon.id, 25000);
     expect(result).toEqual({ success: true });
 
@@ -292,6 +307,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
 
     // The same coupon cannot be selected again, so the full price is now expected.
     const other = await createCourse();
+    await startedEnrollment(student.id, other.id);
     const second = await processEnrollmentPayment(student.id, other.id, "upi", "UTR8000002", null, coupon.id, 25000);
     expect(second).toMatchObject({ status: 409 });
   });
@@ -301,6 +317,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
     const course = await createCourse();
     await createCoupon(50);
 
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, "upi", "UTR8100001", null);
 
     const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
@@ -313,6 +330,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
     const course = await createCourse();
     const coupon = await createCoupon(100);
 
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, null, null, null, coupon.id);
 
     const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
@@ -328,6 +346,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
     const course = await createCourse();
     const coupon = await createCoupon(100);
 
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, null, null, null, coupon.id);
 
     const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
@@ -337,5 +356,35 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
     expect(record.amountInrPaise).toBe(0);
     const enrollment = await prisma.enrollment.findFirstOrThrow({ where: { userId: student.id } });
     expect(enrollment).toMatchObject({ statusEnum: "ACTIVE", rollNumber: 1 });
+  });
+  it.each(["DRAFT", "ON_HOLD", "COMPLETED"] as const)(
+    "refuses an auto-approved full waiver once the course is %s, leaving the enrollment as it was",
+    async (status) => {
+      await setPaymentSettings({ feeWaiverEnabled: true, autoApproveFullWaivers: true });
+      const student = await createUser();
+      const course = await createCourse();
+      const coupon = await createCoupon(100);
+      await startedEnrollment(student.id, course.id);
+      await prisma.course.update({ where: { id: course.id }, data: { status } });
+
+      const result = await processEnrollmentPayment(student.id, course.id, null, null, null, coupon.id);
+
+      expect(result).toMatchObject({ status: 400 });
+      expect(await prisma.coursePaymentSubmission.count()).toBe(0);
+      expect(await prisma.paymentRecord.count()).toBe(0);
+      expect(await prisma.couponUsage.count()).toBe(0);
+      const enrollment = await prisma.enrollment.findFirstOrThrow({ where: { userId: student.id } });
+      expect(enrollment).toMatchObject({ statusEnum: "AWAITING_ENROLLMENT_FEE", rollNumber: null });
+    },
+  );
+
+  it("refuses an enrollment fee while the profile is incomplete", async () => {
+    const student = await createUser();
+    const course = await createCourse();
+    await startedEnrollment(student.id, course.id);
+    await prisma.user.update({ where: { id: student.id }, data: { fatherName: null } });
+
+    expect(await processEnrollmentPayment(student.id, course.id, "upi", "UTR8400001", null)).toMatchObject({ status: 400 });
+    expect(await prisma.coursePaymentSubmission.count()).toBe(0);
   });
 });

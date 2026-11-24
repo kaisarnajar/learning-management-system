@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { hash } from "bcryptjs";
 import { NextRequest } from "next/server";
 import { issueApiSession, type ApiSessionTokens } from "@/services/api-auth";
-import { createUser } from "./db";
+import { createUser, PROFILE_FIELDS } from "./db";
 
 type RequestOptions = {
   method?: string;
@@ -38,14 +38,7 @@ export async function jsonOf(response: Response): Promise<Json> {
 /** A route's second argument for dynamic segments like `[id]`. */
 export const routeParams = <T extends Record<string, string>>(params: T) => ({ params: Promise.resolve(params) });
 
-export const PROFILE_FIELDS = {
-  fatherName: "Imran Khan",
-  dateOfBirth: new Date("2000-01-15"),
-  occupation: "STUDENT" as const,
-  address: "12 Main Street, Srinagar",
-  whatsapp: "9876543210",
-  gender: "FEMALE" as const,
-};
+export { PROFILE_FIELDS };
 
 /** A verified student with a complete profile who is signed in to the mobile API. */
 export async function signedInStudent(overrides: Parameters<typeof createUser>[0] = {}) {

@@ -1812,7 +1812,11 @@ paths:
             schema: { $ref: "#/components/schemas/PaymentSubmission" }
       responses:
         "200": { $ref: "#/components/responses/Ok" }
-        "400": { $ref: "#/components/responses/Error" }
+        "400":
+          description: >-
+            Invalid details, or (enrollment fee) no enrollment awaiting the fee: start it with POST /enrollments
+            first. Also refused when the course has closed for enrollment or the profile is incomplete.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
         "403": { description: E-mail not verified, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "409": { description: Amount changed or already submitted, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /payments/history:

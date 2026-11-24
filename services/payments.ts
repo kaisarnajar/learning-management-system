@@ -10,6 +10,7 @@ import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
 import { PAYMENTS } from "@/config/constants/payments";
 import {
   enrollmentStatusData,
+  enrollmentStatusOf,
   isApprovedEnrollment,
   paymentMethodWrite,
   paymentTypeData,
@@ -22,6 +23,9 @@ import { deletePaymentScreenshot, savePaymentScreenshot } from "@/services/payme
 import { isUploadError } from "@/services/storage";
 import { assignRollNumberTx } from "@/services/roll-numbers";
 import { getPaymentSettings } from "@/services/payment-settings";
+import { getCourseEnrollmentClosedMessage } from "@/services/course-status";
+import { isUserProfileComplete } from "@/services/profile";
+import { ENROLLMENT_STATUS } from "@/config/constants/business";
 
 const AMOUNT_MISMATCH_MESSAGE =
   "The payable amount has changed (for example a coupon is no longer available). Please refresh the page and try again.";
@@ -265,6 +269,19 @@ export async function processEnrollmentPayment(
   if (enrollment && isApprovedEnrollment(enrollment)) {
     return { error: "You are already enrolled and approved in this course.", status: 400 };
   }
+  // The fee is paid for an enrollment the student has started (startEnrollment
+  // checks the course is open and the profile complete). A rejected, pending
+  // or missing enrollment cannot be paid into the queue, or straight to ACTIVE
+  // with an auto-approved waiver.
+  if (!enrollment || enrollmentStatusOf(enrollment) !== "AWAITING_ENROLLMENT_FEE") {
+    return { error: "Start your enrollment in this course before paying the enrollment fee.", status: 400 };
+  }
+  // Both may have changed since the enrollment was started.
+  const closed = getCourseEnrollmentClosedMessage(course.status);
+  if (closed) return { error: closed, status: 400 };
+  if (!(await isUserProfileComplete(userId))) {
+    return { error: "Please complete your profile before paying the enrollment fee.", status: 400 };
+  }
 
   const label = buildEnrollmentFeeLabel(course.title);
 
@@ -315,11 +332,15 @@ export async function processEnrollmentPayment(
       const rosterStatus = getRosterEnrollmentStatusForCourse(course.status);
       const newStatus = autoApprove ? rosterStatus : "AWAITING_ENROLLMENT_FEE";
 
-      const upserted = await tx.enrollment.upsert({
-        where: { userId_courseId: { userId, courseId } },
-        create: { userId, courseId, ...enrollmentStatusData(newStatus) },
-        update: enrollmentStatusData(newStatus),
+      // Guarded on the status read above, so an admin rejecting the enrollment
+      // meanwhile is not overwritten.
+      const moved = await tx.enrollment.updateMany({
+        where: { id: enrollment.id, status: ENROLLMENT_STATUS.AWAITING_FEE },
+        data: enrollmentStatusData(newStatus),
       });
+      if (moved.count === 0) {
+        throw new SubmissionRejected("Your enrollment is no longer awaiting the enrollment fee. Please refresh and try again.");
+      }
 
       const submission = await tx.coursePaymentSubmission.create({
         data: {
@@ -360,7 +381,7 @@ export async function processEnrollmentPayment(
           data: { paymentRecordId: record.id },
         });
         if (rosterStatus === "ACTIVE") {
-          await assignRollNumberTx(tx, upserted.id, courseId);
+          await assignRollNumberTx(tx, enrollment.id, courseId);
         }
       }
     });

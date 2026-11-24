@@ -12,7 +12,7 @@ import { GET as reviewsGet, POST as reviewsPost } from "@/app/api/v1/reviews/rou
 import { GET as attendanceGet } from "@/app/api/v1/student/attendance/route";
 import { GET as gradesGet } from "@/app/api/v1/student/grades/route";
 import { GET as waiversGet, POST as waiversPost } from "@/app/api/v1/waiver-requests/route";
-import { createBook, createCourse, createEnrollment, createUser, resetDb, setPaymentSettings, SKIP_WITHOUT_DB } from "../helpers/db";
+import { createBook, createCourse, createEnrollment, createUser, resetDb, setPaymentSettings, SKIP_WITHOUT_DB, startedEnrollment } from "../helpers/db";
 import { apiRequest, jsonOf, signedInStudent } from "../helpers/api";
 
 type Handler = (request: ReturnType<typeof apiRequest>) => Promise<Response>;
@@ -199,6 +199,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
       await setPaymentSettings();
       const me = await signedInStudent();
       const course = await createCourse({ priceInrPaise: 50000 });
+      await startedEnrollment(me.user.id, course.id);
 
       const response = await submitPost(
         apiRequest("/api/v1/payments/submit", {

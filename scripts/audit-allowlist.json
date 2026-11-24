@@ -1,0 +1,17 @@
+{
+  "_comment": "Reviewed high/critical production advisories with no fix in the current major. Each entry names the advisory, the one package it may appear on, why it is accepted, and a review date after which scripts/check-audit.mjs fails again. Keep this list short; remove an entry as soon as its fix lands.",
+  "advisories": [
+    {
+      "id": "GHSA-ggr8-5vv4-36mx",
+      "package": "deepmerge-ts",
+      "reason": "Pulled in only by @prisma/config, which the Prisma 6 CLI uses to read its configuration at build/migrate time; never runs with request data. Fixed by Prisma 7 (plan commit 6.6).",
+      "until": "2027-03-31"
+    },
+    {
+      "id": "GHSA-7589-6fvf-x4pw",
+      "package": "effect",
+      "reason": "Pulled in only by @prisma/config (Prisma 6 CLI configuration loading); Schema.TemplateLiteral is never fed request data. Fixed by Prisma 7 (plan commit 6.6).",
+      "until": "2027-03-31"
+    }
+  ]
+}

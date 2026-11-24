@@ -36,6 +36,8 @@ npx eslint . --ignore-pattern ".claude/**"
 npm run db:drift
 npm run db:safety
 bash scripts/check-page-auth.sh
+node scripts/check-audit.mjs   # high/critical production advisories, minus scripts/audit-allowlist.json
+npx next build
 npm run test:unit
 ```
 

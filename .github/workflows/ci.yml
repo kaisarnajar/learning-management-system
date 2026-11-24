@@ -91,13 +91,11 @@ jobs:
       - name: .env.example lists every variable the code reads
         run: bash scripts/check-env-example.sh
 
-      - name: Dependency audit
-        # Reports advisories without failing the build: at the time this was added
-        # npm audit lists high advisories (e.g. xlsx, which has no fixed release)
-        # that need dependency upgrades of their own. Remove continue-on-error
-        # once `npm audit --audit-level=high` is clean.
-        continue-on-error: true
-        run: npm audit --audit-level=high
+      - name: Dependency audit (production, high and critical)
+        # Runs `npm audit --omit=dev` and fails on any high or critical advisory
+        # not reviewed in scripts/audit-allowlist.json (each entry: one advisory
+        # on one package, with a review date).
+        run: node scripts/check-audit.mjs
 
       - name: Test suites with coverage
         # One run of all four projects (unit, then integration, api and

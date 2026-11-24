@@ -23,6 +23,11 @@ import { PAYMENTS } from "@/config/constants/payments";
  *    has filled it for older rows; scripts/check-status-backfill.ts counts
  *    any row still missing it, which such a filter would not see). The
  *    contract step later drops the text columns.
+ *
+ * Since migration 20261124000800_status_twin_agreement the database backs
+ * this up: a trigger fills a NULL twin from its text (and moves it when only
+ * the text changes), and a CHECK refuses a twin that contradicts a text with
+ * a mapping. The SQL mapping there must match the maps below.
  */
 
 function invert<E extends string>(map: Record<E, string>): Map<string, E> {

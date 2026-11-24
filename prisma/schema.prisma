@@ -601,6 +601,7 @@ model PaymentRecord {
   @@index([paidAt])
   @@index([courseId])
   @@index([paymentType])
+  @@index([paymentTypeEnum])
   @@index([voidedAt])
 }
 
@@ -688,6 +689,9 @@ model CoursePaymentSubmission {
   @@index([paymentType])
   @@index([couponId])
   @@index([userId, courseId, label, status])
+  @@index([statusEnum])
+  @@index([paymentTypeEnum])
+  @@index([userId, courseId, label, statusEnum])
   @@index([userId, courseId, periodKey])
 }
 

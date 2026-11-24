@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
-import { approveCouponRequest, rejectCouponRequest } from "@/app/admin/coupons/actions";
+import { approveCouponRequest, deleteCouponRequest, rejectCouponRequest } from "@/app/admin/coupons/actions";
+import { confirmMonthlyPayment } from "@/app/admin/payments/actions";
+import { processEnrollmentPayment } from "@/services/payments";
+import { getApplicableCoupons } from "@/services/coupons";
 import { sendFeeWaiverApprovedEmail, sendFeeWaiverRejectedEmail } from "@/services/email";
-import { createCourse, createUser, resetDb, sessionFor, SKIP_WITHOUT_DB } from "../helpers/db";
+import { createCourse, createUser, resetDb, runAction, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB, startedEnrollment } from "../helpers/db";
 
 /** A date a month ahead, as the approval form sends it. */
 const validUntil = () => new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
@@ -53,6 +56,50 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee waiver requests: approve and reject", () =
     expect(after.coupon!.code).toMatch(/^WAIVER-/);
     expect(sendFeeWaiverApprovedEmail).toHaveBeenCalledTimes(1);
     expect(await prisma.studentNotification.count({ where: { userId: student.id, sourceId: request.id } })).toBe(1);
+  });
+
+  it("a both-fees waiver issues one coupon per fee, and spending one leaves the other", async () => {
+    await setPaymentSettings({ feeWaiverEnabled: true });
+    const { student, course, request } = await pendingRequest("BOTH");
+
+    expect(await approveCouponRequest(request.id, 50, validUntil())).toEqual({ success: true });
+    await flushAfter();
+
+    const coupons = await prisma.coupon.findMany({ orderBy: { code: "asc" } });
+    expect(coupons).toHaveLength(2);
+    const [enrollmentCoupon, courseCoupon] = coupons;
+    expect(enrollmentCoupon).toMatchObject({ type: "SPECIAL", userId: student.id, courseId: course.id, applyToEnrollment: true, applyToCourse: false });
+    expect(courseCoupon).toMatchObject({ type: "SPECIAL", userId: student.id, courseId: course.id, applyToEnrollment: false, applyToCourse: true });
+    expect(courseCoupon!.code).toBe(`${enrollmentCoupon!.code}-C`);
+    expect((await prisma.couponRequest.findUniqueOrThrow({ where: { id: request.id } })).couponId).toBe(enrollmentCoupon!.id);
+    expect(sendFeeWaiverApprovedEmail).toHaveBeenCalledWith(expect.objectContaining({
+      coupons: [
+        { code: enrollmentCoupon!.code, appliesTo: "Enrollment Fee" },
+        { code: courseCoupon!.code, appliesTo: "Course Fee (one payment)" },
+      ],
+    }));
+    const notification = await prisma.studentNotification.findFirstOrThrow({ where: { userId: student.id, sourceId: request.id } });
+    expect(notification.body).toContain(enrollmentCoupon!.code);
+    expect(notification.body).toContain(courseCoupon!.code);
+
+    await startedEnrollment(student.id, course.id);
+    expect(await processEnrollmentPayment(student.id, course.id, "upi", "UTR9100001", null, enrollmentCoupon!.id, 25000)).toEqual({ success: true });
+    const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
+    await runAction(() => confirmMonthlyPayment(submission.id));
+
+    expect((await prisma.coupon.findUniqueOrThrow({ where: { id: enrollmentCoupon!.id } })).isActive).toBe(false);
+    expect(await getApplicableCoupons(student.id, course.id, "course")).toEqual([
+      expect.objectContaining({ id: courseCoupon!.id, isUsed: false }),
+    ]);
+  });
+
+  it("deleting an unused both-fees request removes both of its coupons", async () => {
+    const { request } = await pendingRequest("BOTH");
+    await approveCouponRequest(request.id, 100, validUntil());
+    expect(await prisma.coupon.count()).toBe(2);
+
+    expect(await deleteCouponRequest(request.id)).toEqual({ success: "Waiver request deleted." });
+    expect(await prisma.coupon.count()).toBe(0);
   });
 
   it("two simultaneous approvals issue exactly one coupon", async () => {

@@ -150,19 +150,21 @@ export type FeeWaiverApprovedEmailParams = {
   to: string;
   studentName: string;
   courseTitle: string;
-  couponCode: string;
+  /** One coupon per fee the waiver covers ("both fees" issues two). */
+  coupons: { code: string; appliesTo: string }[];
   percentage: number;
   validUntil: string;
-  feeTypeLabel: string;
   actionUrl: string;
 };
 
 export async function sendFeeWaiverApprovedEmail(params: FeeWaiverApprovedEmailParams): Promise<EmailSendResult> {
-  const { to, studentName, courseTitle, couponCode, percentage, validUntil, feeTypeLabel, actionUrl } = params;
+  const { to, studentName, courseTitle, coupons, percentage, validUntil, actionUrl } = params;
   const displayName = studentName || "Student";
+  const several = coupons.length > 1;
+  const codes = coupons.map((c) => c.code).join(", ");
 
   const subject = `Fee waiver request approved (${percentage}% OFF) — ${courseTitle}`;
-  const preview = `Good news! Your fee waiver request for "${courseTitle}" has been approved. Coupon code: ${couponCode}`;
+  const preview = `Good news! Your fee waiver request for "${courseTitle}" has been approved. Coupon code${several ? "s" : ""}: ${codes}`;
 
   const text = [
     `Assalamu Alaikum ${displayName},`,
@@ -170,10 +172,10 @@ export async function sendFeeWaiverApprovedEmail(params: FeeWaiverApprovedEmailP
     `Good news! Your fee waiver request for "${courseTitle}" has been approved by ${BRAND_CONFIG.name}.`,
     "",
     `Coupon Details:`,
-    `- Coupon Code: ${couponCode}`,
+    ...coupons.map((c) => `- Coupon Code: ${c.code} (applies to: ${c.appliesTo})`),
     `- Discount: ${percentage}% OFF`,
-    `- Applies To: ${feeTypeLabel}`,
     `- Valid Until: ${validUntil}`,
+    ...(several ? ["", "Each coupon can be used once, for the fee it names."] : []),
     "",
     "You can use this coupon code when enrolling or paying fees for your course:",
     actionUrl,
@@ -187,18 +189,18 @@ export async function sendFeeWaiverApprovedEmail(params: FeeWaiverApprovedEmailP
     ${EmailGreeting({ name: displayName })}
     <p>Good news! Your fee waiver request for <strong>${escapeHtml(courseTitle)}</strong> has been <strong style="color:#166534;">approved</strong> by ${BRAND_CONFIG.name}.</p>
     ${EmailInfoCard({
-      title: "Fee Waiver Coupon Approved",
+      title: several ? "Fee Waiver Coupons Approved" : "Fee Waiver Coupon Approved",
       items: [
-        { label: "Coupon Code", value: couponCode },
+        ...coupons.map((c) => ({ label: several ? `Coupon Code (${c.appliesTo})` : "Coupon Code", value: c.code })),
         { label: "Discount", value: `${percentage}% OFF` },
-        { label: "Applies To", value: feeTypeLabel },
+        ...(several ? [] : [{ label: "Applies To", value: coupons[0]?.appliesTo ?? "" }]),
         { label: "Valid Until", value: validUntil },
       ],
       borderColor: "#16a34a",
       bgColor: "#f0fdf4",
       titleColor: "#166534",
     })}
-    <p>Your special coupon code is ready to use. Click below to view your course and claim your discount:</p>
+    <p>${several ? "Your special coupon codes are ready to use, each once for the fee it names." : "Your special coupon code is ready to use."} Click below to view your course and claim your discount:</p>
     ${EmailButton({ href: actionUrl, label: "View Course & Claim Waiver", color: "#166534" })}
     ${EmailFallbackLink({ href: actionUrl })}
     <p style="font-size:13px;color:#6b7280;margin-top:16px;">May Allah make this learning journey blessed for you. Jazakallah Khair!</p>

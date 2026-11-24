@@ -183,7 +183,7 @@ const SENDERS = EMAIL_MODULES.flatMap(([moduleName, exports]) =>
     .map(([name, fn]) => [`${moduleName}/${name}`, fn as (params: unknown) => Promise<unknown>] as const),
 );
 
-/** Params where every user-text field is the payload and every `*Url` field is a safe link. */
+/** Params where every user-text field (including those of list items) is the payload and every `*Url` field is a safe link. */
 function emailParams(payload: string) {
   return new Proxy(
     {},
@@ -193,6 +193,8 @@ function emailParams(payload: string) {
         if (/url$/i.test(prop)) return "https://example.org/profile";
         if (prop === "pdfBuffer") return Buffer.from("%PDF-");
         if (prop === "status") return "approved";
+        // List parameters carry the payload in every field of each item.
+        if (prop === "coupons") return [{ code: payload, appliesTo: payload }, { code: payload, appliesTo: payload }];
         return payload;
       },
     },

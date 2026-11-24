@@ -19,6 +19,8 @@ import {
 } from "@/utils/validations";
 
 const COUPON_CODE_ATTEMPTS = 3;
+/** Code suffix of the course-fee coupon issued with a "both fees" waiver. */
+const BOTH_FEES_COURSE_SUFFIX = "-C";
 
 function isUniqueViolation(error: unknown) {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
@@ -235,9 +237,17 @@ export async function approveCouponRequest(requestId: string, rawPercentage: num
   try {
     const feeType = resolveWaiverFeeType(request);
     const isEnrollmentOnly = feeType === "ENROLLMENT";
-    const isCourseOnly = feeType === "COURSE";
 
     const untilDate = endOfCouponDay(validUntil);
+
+    // A "both fees" waiver is two single-use coupons, one per fee, so using
+    // it for the enrollment fee does not spend the course-fee waiver. The
+    // course-fee coupon's code is the enrollment one plus "-C", which is how
+    // deleting the request finds it (the request links the first coupon).
+    const grants: { appliesTo: "ENROLLMENT" | "COURSE"; suffix: string }[] =
+      feeType === "BOTH"
+        ? [{ appliesTo: "ENROLLMENT", suffix: "" }, { appliesTo: "COURSE", suffix: BOTH_FEES_COURSE_SUFFIX }]
+        : [{ appliesTo: isEnrollmentOnly ? "ENROLLMENT" : "COURSE", suffix: "" }];
 
     // A code collision aborts the transaction, so each attempt gets a fresh
     // code and a fresh transaction.
@@ -246,25 +256,29 @@ export async function approveCouponRequest(requestId: string, rawPercentage: num
       code = `WAIVER-${waiverCodePrefix(request.user.name)}-${randomInt(1000, 10000)}`;
       try {
         await prisma.$transaction(async (tx) => {
-          const coupon = await tx.coupon.create({
-            data: {
-              code,
-              type: "SPECIAL",
-              percentage,
-              validFrom: new Date(),
-              validUntil: untilDate,
-              courseId: request.courseId,
-              userId: request.userId,
-              isActive: true,
-              applyToEnrollment: !isCourseOnly,
-              applyToCourse: !isEnrollmentOnly,
-            },
-          });
+          let firstCouponId: string | null = null;
+          for (const grant of grants) {
+            const coupon = await tx.coupon.create({
+              data: {
+                code: `${code}${grant.suffix}`,
+                type: "SPECIAL",
+                percentage,
+                validFrom: new Date(),
+                validUntil: untilDate,
+                courseId: request.courseId,
+                userId: request.userId,
+                isActive: true,
+                applyToEnrollment: grant.appliesTo === "ENROLLMENT",
+                applyToCourse: grant.appliesTo === "COURSE",
+              },
+            });
+            firstCouponId ??= coupon.id;
+          }
 
           // Guard against a concurrent decision on the same request.
           const claimed = await tx.couponRequest.updateMany({
             where: { id: requestId, status: "PENDING" },
-            data: { status: "APPROVED", couponId: coupon.id },
+            data: { status: "APPROVED", couponId: firstCouponId },
           });
           if (claimed.count === 0) {
             throw new AlreadyProcessedError();
@@ -277,11 +291,10 @@ export async function approveCouponRequest(requestId: string, rawPercentage: num
       }
     }
 
-    const feeTypeLabel = isEnrollmentOnly
-      ? "Enrollment Fee Only"
-      : isCourseOnly
-      ? "Course Fee Only"
-      : "Both Enrollment & Course Fees";
+    const issued = grants.map((grant) => ({
+      code: `${code}${grant.suffix}`,
+      appliesTo: grant.appliesTo === "ENROLLMENT" ? "Enrollment Fee" : "Course Fee (one payment)",
+    }));
 
     const formattedValidUntil = untilDate.toLocaleDateString("en-IN", {
       day: "numeric",
@@ -289,7 +302,7 @@ export async function approveCouponRequest(requestId: string, rawPercentage: num
       year: "numeric",
     });
 
-    const targetPath = isEnrollmentOnly
+    const targetPath = isEnrollmentOnly || feeType === "BOTH"
       ? `/profile/courses/${request.courseId}/enrollment-pay`
       : `/profile/courses/${request.courseId}/pay`;
 
@@ -301,10 +314,9 @@ export async function approveCouponRequest(requestId: string, rawPercentage: num
         to,
         studentName: request.user.name || "Student",
         courseTitle: request.course.title,
-        couponCode: code,
+        coupons: issued,
         percentage,
         validUntil: formattedValidUntil,
-        feeTypeLabel,
         actionUrl,
       }));
     }
@@ -313,7 +325,7 @@ export async function approveCouponRequest(requestId: string, rawPercentage: num
       userId: request.userId,
       type: "PERSONAL_MESSAGE",
       title: `Fee waiver approved (${percentage}% OFF)`,
-      body: `Your fee waiver request for "${request.course.title}" was approved. Use coupon code ${code} before ${formattedValidUntil}.`,
+      body: `Your fee waiver request for "${request.course.title}" was approved. ${issued.length > 1 ? `Use coupon ${issued.map((c) => `${c.code} for the ${c.appliesTo.toLowerCase()}`).join(" and ")}` : `Use coupon code ${code}`} before ${formattedValidUntil}.`,
       href: targetPath,
       sourceType: "CouponRequest",
       sourceId: request.id,
@@ -391,10 +403,23 @@ export async function deleteCouponRequest(requestId: string) {
 
   if (!request) return { error: "Request not found." };
 
+  // A "both fees" waiver also issued a course-fee coupon, named after the linked one.
+  const couponIds = request.couponId ? [request.couponId] : [];
   if (request.couponId) {
+    const linked = await prisma.coupon.findUnique({ where: { id: request.couponId }, select: { code: true } });
+    const sibling = linked
+      ? await prisma.coupon.findFirst({
+          where: { code: `${linked.code}${BOTH_FEES_COURSE_SUFFIX}`, type: "SPECIAL", userId: request.userId, courseId: request.courseId },
+          select: { id: true },
+        })
+      : null;
+    if (sibling) couponIds.push(sibling.id);
+  }
+
+  if (couponIds.length > 0) {
     const [usages, submissions] = await Promise.all([
-      prisma.couponUsage.count({ where: { couponId: request.couponId } }),
-      prisma.coursePaymentSubmission.count({ where: { couponId: request.couponId } }),
+      prisma.couponUsage.count({ where: { couponId: { in: couponIds } } }),
+      prisma.coursePaymentSubmission.count({ where: { couponId: { in: couponIds } } }),
     ]);
     if (usages > 0 || submissions > 0) {
       return {
@@ -406,16 +431,16 @@ export async function deleteCouponRequest(requestId: string) {
 
   try {
     await prisma.$transaction(async (tx) => {
-      if (request.couponId) {
-        // Unused coupon: safe to remove together with the request.
-        await tx.coupon.delete({ where: { id: request.couponId } });
+      if (couponIds.length > 0) {
+        // Unused coupons: safe to remove together with the request.
+        await tx.coupon.deleteMany({ where: { id: { in: couponIds } } });
       }
 
       await recordAudit(tx, session, {
         action: "delete",
         entity: "CouponRequest",
         entityId: requestId,
-        before: { status: request.status, couponId: request.couponId, userId: request.userId, courseId: request.courseId },
+        before: { status: request.status, couponId: request.couponId, couponIds, userId: request.userId, courseId: request.courseId },
       });
 
       // Delete student notifications associated with this request

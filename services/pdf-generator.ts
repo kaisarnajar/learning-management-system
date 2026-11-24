@@ -9,6 +9,7 @@ import { ASSET_LOCAL_PATHS } from "@/config/assets";
 import { getPdfFontFaceCss } from "@/services/pdf-fonts";
 // The same host rule the profile form enforces (own storage, Google avatars).
 import { isAllowedProfileImageUrl } from "@/utils/validations";
+import { createSemaphore, SemaphoreTimeoutError } from "@/utils/semaphore";
 
 export type PdfOptions = {
   format?: "A4" | "A3" | "Letter";
@@ -67,6 +68,39 @@ async function launchBrowserWithRetry(maxRetries = 4) {
 }
 
 // ---------------------------------------------------------------------------
+// One render at a time per instance
+// ---------------------------------------------------------------------------
+
+/**
+ * Each render launches its own Chromium (a few hundred MB). Fluid compute
+ * sends concurrent requests to the same instance, so a burst of downloads
+ * could start several browsers at once and run the instance out of memory.
+ * Renders therefore queue for a slot: PDF_RENDER_CONCURRENCY (default 1) at
+ * a time, waiting at most PDF_QUEUE_TIMEOUT_MS before giving up as busy.
+ */
+const PDF_QUEUE_TIMEOUT_MS = 45_000;
+
+export class PdfBusyError extends SemaphoreTimeoutError {
+  constructor() {
+    super("The PDF service is busy. Please try again in a moment.");
+    this.name = "PdfBusyError";
+  }
+}
+
+const renderSlots = createSemaphore(Number(process.env.PDF_RENDER_CONCURRENCY) || 1, {
+  timeoutMs: PDF_QUEUE_TIMEOUT_MS,
+});
+
+async function withRenderSlot<T>(task: () => Promise<T>): Promise<T> {
+  try {
+    return await renderSlots.run(task);
+  } catch (error) {
+    if (error instanceof SemaphoreTimeoutError && !(error instanceof PdfBusyError)) throw new PdfBusyError();
+    throw error;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -77,6 +111,9 @@ async function launchBrowserWithRetry(maxRetries = 4) {
  * The document is fully self-contained (stylesheet, fonts and images are
  * inlined by wrapHtmlForPdf), so the page runs with JavaScript disabled and
  * may not load anything over the network at all.
+ *
+ * Renders run one at a time per instance (see withRenderSlot); a caller that
+ * waits too long gets a PdfBusyError.
  */
 export async function generatePdfFromHtml(
   html: string,
@@ -86,6 +123,13 @@ export async function generatePdfFromHtml(
     await new Promise((resolve) => setTimeout(resolve, startDelayMs));
   }
 
+  return withRenderSlot(() => renderPdf(html, { format, landscape, width, height }));
+}
+
+async function renderPdf(
+  html: string,
+  { format, landscape, width, height }: Required<Pick<PdfOptions, "format" | "landscape">> & Pick<PdfOptions, "width" | "height">,
+): Promise<Buffer> {
   const browser = await launchBrowserWithRetry();
 
   try {

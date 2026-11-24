@@ -1,7 +1,7 @@
 "use server";
 
 import { auth } from "@/services/auth";
-import { validatePaymentScreenshot } from "@/services/payment-upload";
+import { validatePendingUpload } from "@/services/uploads";
 import { bookstoreCheckoutSchema } from "@/utils/validations";
 import { createBookOrder } from "@/services/book-orders";
 
@@ -40,7 +40,7 @@ export async function submitBookOrder(formData: FormData) {
   }
 
   if (screenshotFile && screenshotFile.size > 0) {
-    const { error } = validatePaymentScreenshot(screenshotFile);
+    const { error } = validatePendingUpload("payment-screenshot", screenshotFile);
     if (error) return { error, status: 400 };
   }
 

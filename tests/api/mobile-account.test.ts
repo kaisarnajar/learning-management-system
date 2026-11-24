@@ -10,10 +10,11 @@ import { createCourse, createEnrollment, createUser, resetDb, setPaymentSettings
 import { apiRequest, bearer, jsonOf, signedInStudent } from "../helpers/api";
 
 // Object storage is not available under test: uploads get a fake public URL.
-vi.mock("@/services/profile-upload", () => ({
-  validateProfileImage: (file: File | null) => (file && file.type.startsWith("image/") ? {} : { error: "Upload a JPEG, PNG or WebP image." }),
-  saveProfileImage: vi.fn(async (userId: string) => `https://files.example.org/uploads/profiles/${userId}-${Math.random().toString(36).slice(2, 8)}.png`),
-  deleteProfileImage: vi.fn(async () => undefined),
+vi.mock("@/services/uploads", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/services/uploads")>()),
+  validatePendingUpload: (_kind: string, file: File | null) => (file && file.type.startsWith("image/") ? {} : { error: "Upload a JPEG, PNG or WebP image." }),
+  saveUpload: vi.fn(async (_kind: string, userId: string) => `https://files.example.org/uploads/profiles/${userId}-${Math.random().toString(36).slice(2, 8)}.png`),
+  deleteOwnedProfileImage: vi.fn(async () => undefined),
 }));
 
 const FULL_PROFILE = {

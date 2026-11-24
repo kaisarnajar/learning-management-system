@@ -27,7 +27,7 @@ import {
   recordCouponUsageTx,
   reserveCouponTx,
 } from "@/services/coupons";
-import { deletePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
+import { deleteUpload, saveUpload } from "@/services/uploads";
 import { isUploadError } from "@/services/storage";
 import { assignRollNumberTx } from "@/services/roll-numbers";
 import { getPaymentSettings } from "@/services/payment-settings";
@@ -107,7 +107,7 @@ export async function getPaymentSubmissionsForUser(userId: string) {
 async function uploadScreenshot(prefix: string, file: File | null): Promise<string | null> {
   if (!file || file.size === 0) return null;
   try {
-    return await savePaymentScreenshot(prefix, file);
+    return await saveUpload("payment-screenshot", prefix, file);
   } catch (error) {
     if (isUploadError(error)) throw new SubmissionRejected(error.message, 400);
     throw error;
@@ -257,7 +257,7 @@ export async function processMonthlyPayment(
       }
     });
   } catch (error) {
-    if (screenshotPath) await deletePaymentScreenshot(screenshotPath);
+    if (screenshotPath) await deleteUpload("payment-screenshot", screenshotPath);
     const mapped = mapSubmissionError(error);
     if (mapped) return mapped;
     throw error;
@@ -408,7 +408,7 @@ export async function processEnrollmentPayment(
       }
     });
   } catch (error) {
-    if (screenshotPath) await deletePaymentScreenshot(screenshotPath);
+    if (screenshotPath) await deleteUpload("payment-screenshot", screenshotPath);
     const mapped = mapSubmissionError(error);
     if (mapped) return mapped;
     throw error;

@@ -3,7 +3,7 @@ import type { Session } from "next-auth";
 import { prisma } from "@/utils/prisma";
 import { recordAudit } from "@/services/audit";
 import { revalidatePublicContent } from "@/services/public-cache";
-import { deleteProfileImage } from "@/services/profile-upload";
+import { deleteOwnedProfileImage } from "@/services/uploads";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { ENROLLMENT_STATUS } from "@/config/constants/business";
 import { PAYMENTS } from "@/config/constants/payments";
@@ -120,7 +120,7 @@ export async function deleteOwnAccount(
   revalidatePublicContent();
 
   if (user.image && !user.image.startsWith("/assets/")) {
-    await deleteProfileImage(userId, user.image);
+    await deleteOwnedProfileImage(userId, user.image);
   }
 
   return { ok: true };

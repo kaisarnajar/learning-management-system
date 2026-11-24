@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
 import { createAdminCrudActions, parseFormWith } from "@/services/admin-crud";
 import { resolveLibraryFeaturedUpdate } from "@/services/library";
-import { deleteLibraryImage, getLibraryImageUpload, saveLibraryImage, validateLibraryImage } from "@/services/library-upload";
+import { deleteUpload, pendingUploadOf, saveUpload, validatePendingUpload } from "@/services/uploads";
 import type { PendingUpload } from "@/services/staged-upload";
 import { prisma } from "@/utils/prisma";
 import { createWithUniqueSlug } from "@/utils/slug";
@@ -49,15 +49,15 @@ function revalidateLibraryPaths(id?: string) {
  * or null; invalid files stop the action with the validation message.
  */
 function uploadedImage(formData: FormData) {
-  const upload = getLibraryImageUpload(formData);
+  const upload = pendingUploadOf("library-cover", formData, "image");
   if (!upload) return null;
-  const { error } = validateLibraryImage(upload);
+  const { error } = validatePendingUpload("library-cover", upload);
   return error ? { error } : { file: upload };
 }
 
 async function saveImage(id: string, file: PendingUpload) {
   try {
-    return await saveLibraryImage(id, file);
+    return await saveUpload("library-cover", id, file);
   } catch (error) {
     if (isUploadError(error)) throw new ActionError(error.message);
     throw error;
@@ -111,7 +111,7 @@ const crud = createAdminCrudActions({
               "Database operation failed",
             );
           } catch (error) {
-            if (imagePath) await deleteLibraryImage(imagePath).catch(() => undefined);
+            if (imagePath) await deleteUpload("library-cover", imagePath).catch(() => undefined);
             throw error;
           }
         },
@@ -150,7 +150,7 @@ const crud = createAdminCrudActions({
           "Database operation failed",
         );
       } catch (error) {
-        if (columns.imagePath) await deleteLibraryImage(columns.imagePath as string);
+        if (columns.imagePath) await deleteUpload("library-cover", columns.imagePath as string);
         throw error;
       }
     },
@@ -159,13 +159,13 @@ const crud = createAdminCrudActions({
     afterUpdate: async ({ existing }, columns) => {
       const imagePath = columns.imagePath as string | null | undefined;
       if (imagePath !== undefined && existing.imagePath && existing.imagePath !== imagePath) {
-        await deleteLibraryImage(existing.imagePath);
+        await deleteUpload("library-cover", existing.imagePath);
       }
     },
 
     beforeDelete: async (existing) => {
       if (existing.imagePath) {
-        await deleteLibraryImage(existing.imagePath);
+        await deleteUpload("library-cover", existing.imagePath);
       }
     },
   },

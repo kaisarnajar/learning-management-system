@@ -6,7 +6,7 @@ import { requireUser } from "@/services/auth-actions";
 import { buildStoredProfileWhatsApp } from "@/services/countries";
 import { Occupation, Gender } from "@prisma/client";
 import { profileUpdateSchema } from "@/utils/validations";
-import { saveProfileImage, validateProfileImage, deleteProfileImage } from "@/services/profile-upload";
+import { deleteOwnedProfileImage, saveUpload, validatePendingUpload } from "@/services/uploads";
 import { isUploadError } from "@/services/storage";
 import { applyStudentProfileChanges } from "@/services/profile-update";
 import { getUserProfile } from "@/services/profile";
@@ -53,7 +53,7 @@ export async function updateProfile(
   } else {
     // MALE
     if (imageFile && imageFile.size > 0) {
-      const validation = validateProfileImage(imageFile);
+      const validation = validatePendingUpload("profile-image", imageFile);
       if (validation.error) {
         return { error: validation.error };
       }
@@ -63,7 +63,7 @@ export async function updateProfile(
       }
 
       try {
-        newImageUrl = await saveProfileImage(session.user.id, imageFile);
+        newImageUrl = await saveUpload("profile-image", session.user.id, imageFile);
       } catch (error) {
         if (isUploadError(error)) return { error: error.message };
         throw error;
@@ -90,12 +90,12 @@ export async function updateProfile(
     });
   } catch (error) {
     // The row still points at the old photo; drop the one we just stored.
-    if (newImageUrl && !newImageUrl.startsWith("/assets/")) await deleteProfileImage(session.user.id, newImageUrl);
+    if (newImageUrl && !newImageUrl.startsWith("/assets/")) await deleteOwnedProfileImage(session.user.id, newImageUrl);
     throw error;
   }
 
   if (previousUpload && previousUpload !== newImageUrl) {
-    await deleteProfileImage(session.user.id, previousUpload);
+    await deleteOwnedProfileImage(session.user.id, previousUpload);
   }
 
   revalidatePath("/profile");

@@ -8,7 +8,7 @@ import { sendPaymentDeclinedEmail } from "@/services/email";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
 import { notifyPaymentApproved, revalidateNotificationPaths } from "@/services/notifications";
 import { getAppBaseUrl } from "@/services/password-reset";
-import { deletePaymentScreenshot } from "@/services/payment-upload";
+import { deleteUpload } from "@/services/uploads";
 import { normalizeReason, softDeleteSubmissionTx, voidPaymentRecordTx, VoidError } from "@/services/payment-voiding";
 import { assignRollNumberTx } from "@/services/roll-numbers";
 import {
@@ -250,7 +250,7 @@ export async function declineFeePayment(
   // The row no longer points at the screenshot; remove the object too, after
   // the response (best effort: a leftover is logged, never fatal).
   const screenshotPath = submission.paymentScreenshotPath;
-  if (screenshotPath) after(() => deletePaymentScreenshot(screenshotPath));
+  if (screenshotPath) after(() => deleteUpload("payment-screenshot", screenshotPath));
 
   const base = getAppBaseUrl();
   const paymentUrl =

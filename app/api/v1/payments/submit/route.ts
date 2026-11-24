@@ -3,7 +3,7 @@ import { requireStudentApiAuth, requireVerifiedEmail } from "@/services/api-auth
 import { processMonthlyPayment, processEnrollmentPayment } from "@/services/payments";
 import { isUpiConfigured } from "@/services/upi";
 import { paymentTypeFromText } from "@/services/status-compat";
-import { validatePaymentScreenshot } from "@/services/payment-upload";
+import { validatePendingUpload } from "@/services/uploads";
 import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 import { enrollmentPaymentSubmitSchema, monthlyPaymentSubmitSchema } from "@/utils/validations";
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
       hasScreenshot: Boolean(screenshotFile && screenshotFile.size > 0),
     };
 
-    const screenshotValidation = validatePaymentScreenshot(screenshotFile);
+    const screenshotValidation = validatePendingUpload("payment-screenshot", screenshotFile);
     if (screenshotValidation.error) {
       return apiError(screenshotValidation.error, 400);
     }

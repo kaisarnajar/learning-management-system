@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
-import { saveBookImage, validateBookImage, deleteBookImage, getBookImageUpload } from "@/services/bookstore-upload";
+import { deleteUpload, pendingUploadOf, saveUpload, validatePendingUpload } from "@/services/uploads";
 import { isUploadError } from "@/services/storage";
 import { prisma } from "@/utils/prisma";
 import { resolveBookFeaturedUpdate } from "@/services/bookstore";
@@ -44,9 +44,9 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
   }
 
   // A file (form upload) or the key of a direct upload.
-  const imageFile = getBookImageUpload(formData);
+  const imageFile = pendingUploadOf("book-cover", formData, "image");
   if (imageFile) {
-    const { error } = validateBookImage(imageFile);
+    const { error } = validatePendingUpload("book-cover", imageFile);
     if (error) return { error };
   }
 
@@ -74,7 +74,7 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
   let imagePath: string | undefined;
   try {
     if (imageFile) {
-      imagePath = await saveBookImage("book", imageFile);
+      imagePath = await saveUpload("book-cover", "book", imageFile);
     }
     await prisma.book.create({
       data: {
@@ -94,7 +94,7 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
     });
   } catch (error) {
     unstable_rethrow(error);
-    if (imagePath) await deleteBookImage(imagePath);
+    if (imagePath) await deleteUpload("book-cover", imagePath);
     if (isUploadError(error)) return { error: error.message };
     console.error("Database error creating book:", error);
     return { error: "An unexpected error occurred while creating the book." };
@@ -113,9 +113,9 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
   }
 
   // A file (form upload) or the key of a direct upload.
-  const imageFile = getBookImageUpload(formData);
+  const imageFile = pendingUploadOf("book-cover", formData, "image");
   if (imageFile) {
-    const { error } = validateBookImage(imageFile);
+    const { error } = validatePendingUpload("book-cover", imageFile);
     if (error) return { error };
   }
 
@@ -146,7 +146,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
 
   try {
     if (imageFile) {
-      imagePath = await saveBookImage(bookId, imageFile);
+      imagePath = await saveUpload("book-cover", bookId, imageFile);
     } else if (removeImage) {
       imagePath = null;
     }
@@ -171,7 +171,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
   } catch (error) {
     unstable_rethrow(error);
     // The row still references the old cover: drop the new object, keep the old.
-    if (imagePath) await deleteBookImage(imagePath);
+    if (imagePath) await deleteUpload("book-cover", imagePath);
     if (isUploadError(error)) return { error: error.message };
     console.error("Database error updating book:", error);
     return { error: "An unexpected error occurred while updating the book." };
@@ -179,7 +179,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
 
   // Committed: the previous cover is no longer referenced.
   if (imagePath !== undefined && existing.imagePath && existing.imagePath !== imagePath) {
-    await deleteBookImage(existing.imagePath);
+    await deleteUpload("book-cover", existing.imagePath);
   }
 
   revalidateBookstorePaths();
@@ -206,7 +206,7 @@ export async function deleteBook(bookId: string): Promise<{ error?: string }> {
     }
 
     if (book.imagePath) {
-      await deleteBookImage(book.imagePath);
+      await deleteUpload("book-cover", book.imagePath);
     }
 
     await prisma.book.delete({ where: { id: bookId } });

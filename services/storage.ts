@@ -40,7 +40,7 @@ const EXT_BY_MIME: Record<StoredMime, string> = {
 };
 
 /** Folder under uploads/ (or private/) that a kind of file lives in. */
-export type StoragePrefix = "blogs" | "library" | "books" | "announcements" | "profiles" | "payments";
+export type StoragePrefix = "blogs" | "library" | "books" | "announcements" | "site-announcements" | "profiles" | "payments";
 
 /** A problem with a file the user chose; the message is safe to show. */
 export class UploadError extends Error {
@@ -185,7 +185,7 @@ export function isPrivateFilePath(path: string | null | undefined): boolean {
 export function privateKeyFromPath(path: string | null | undefined): string | null {
   if (!path || !path.startsWith(PRIVATE_FILE_ROUTE)) return null;
   const key = path.slice(PRIVATE_FILE_ROUTE.length).replace(/^\/+/, "");
-  if (!/^private\/[a-z]+\/[A-Za-z0-9._-]+$/.test(key)) return null;
+  if (!/^private\/[a-z]+(?:-[a-z]+)*\/[A-Za-z0-9._-]+$/.test(key)) return null;
   return key;
 }
 
@@ -243,13 +243,22 @@ export function presignPrivateObject(key: string, downloadName?: string): Promis
   );
 }
 
-/** The bucket and key for a stored URL/path, or null when it is not ours (or not under the prefix). */
-export function r2KeyFromUrl(prefix: StoragePrefix, urlOrPath: string | null | undefined): { bucket: string; key: string } | null {
+/**
+ * The bucket and key for a stored URL/path, or null when it is not ours, not
+ * under the prefix, or (when `visibility` is given) not of that visibility.
+ */
+export function r2KeyFromUrl(
+  prefix: StoragePrefix,
+  urlOrPath: string | null | undefined,
+  visibility?: StorageVisibility,
+): { bucket: string; key: string } | null {
   if (!urlOrPath) return null;
   const privateKey = privateKeyFromPath(urlOrPath);
   if (privateKey) {
+    if (visibility === "public") return null;
     return privateKey.startsWith(`private/${prefix}/`) ? { bucket: getPrivateBucketName(), key: privateKey } : null;
   }
+  if (visibility === "private") return null;
   let key = urlOrPath;
   if (R2_PUBLIC_URL && key.startsWith(R2_PUBLIC_URL)) key = key.slice(R2_PUBLIC_URL.length);
   key = key.replace(/^\/+/, "");
@@ -274,7 +283,11 @@ export function ownedProfileImageKey(userId: string, urlOrPath: string | null | 
 
 /** Best-effort delete; never throws (a leftover object is logged, not fatal). */
 export async function deleteFromR2(prefix: StoragePrefix, urlOrPath: string | null | undefined): Promise<void> {
-  const target = r2KeyFromUrl(prefix, urlOrPath);
+  await deleteR2Object(r2KeyFromUrl(prefix, urlOrPath));
+}
+
+/** Best-effort delete of a resolved bucket/key; never throws. */
+export async function deleteR2Object(target: { bucket: string; key: string } | null): Promise<void> {
   if (!target) return;
   try {
     await getR2Client().send(new DeleteObjectCommand({ Bucket: target.bucket, Key: target.key }));

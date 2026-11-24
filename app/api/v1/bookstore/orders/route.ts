@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth, requireVerifiedEmail } from "@/services/api-auth";
 import { getBookOrdersForUser } from "@/services/bookstore";
-import { validatePaymentScreenshot } from "@/services/payment-upload";
+import { validatePendingUpload } from "@/services/uploads";
 import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 import { bookstoreCheckoutSchema } from "@/utils/validations";
 import { createBookOrder } from "@/services/book-orders";
@@ -95,7 +95,7 @@ export async function POST(request: NextRequest) {
     const body = validation.data;
 
     if (screenshotFile && screenshotFile.size > 0) {
-      const { error } = validatePaymentScreenshot(screenshotFile);
+      const { error } = validatePendingUpload("payment-screenshot", screenshotFile);
       if (error) {
         return apiError(error, 400);
       }

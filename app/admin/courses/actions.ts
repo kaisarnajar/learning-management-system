@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
-import { deleteAnnouncementAttachment } from "@/services/announcement-upload";
+import { deleteUpload } from "@/services/uploads";
 import { syncEnrollmentsWithCourseStatus } from "@/services/completion";
 import { resolveCourseFeaturedUpdate } from "@/services/courses";
 import { prisma } from "@/utils/prisma";
@@ -227,7 +227,7 @@ export async function deleteCourse(id: string) {
     );
 
     for (const { attachmentPath } of attachments) {
-      await deleteAnnouncementAttachment(attachmentPath);
+      await deleteUpload("course-announcement-attachment", attachmentPath);
     }
 
     revalidatePath("/");

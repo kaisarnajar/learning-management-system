@@ -5,7 +5,7 @@ import { withDbErrorHandling } from "@/utils/db-error";
 import { bookstoreCheckoutSchema, mergeBookLines } from "@/utils/validations";
 import { MAX_ORDER_QTY } from "@/config/constants/business";
 import { findStockShortages, formatShortages } from "@/services/inventory";
-import { deletePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
+import { deleteUpload, saveUpload } from "@/services/uploads";
 import { isUploadError } from "@/services/storage";
 import { isUtrUsed, normalizeUtr } from "@/services/utr";
 
@@ -230,7 +230,7 @@ export async function createBookOrder(params: {
   if (screenshotFile && screenshotFile.size > 0) {
     let paymentScreenshotPath: string | null = null;
     try {
-      paymentScreenshotPath = await savePaymentScreenshot(`book-order-${order.id}`, screenshotFile);
+      paymentScreenshotPath = await saveUpload("payment-screenshot", `book-order-${order.id}`, screenshotFile);
       await prisma.bookOrder.update({ where: { id: order.id }, data: { paymentScreenshotPath } });
       order = { ...order, paymentScreenshotPath };
     } catch (error) {
@@ -238,7 +238,7 @@ export async function createBookOrder(params: {
       // again (it is only pending, nothing financial yet) and report it.
       console.error("[book-orders] Screenshot upload failed; withdrawing order", order.id, error);
       await prisma.bookOrder.update({ where: { id: order.id }, data: { deletedAt: new Date() } }).catch(() => undefined);
-      await deletePaymentScreenshot(paymentScreenshotPath);
+      await deleteUpload("payment-screenshot", paymentScreenshotPath);
       if (isUploadError(error)) return { ok: false, error: error.message, status: 400 };
       return { ok: false, error: "Could not store the payment screenshot. Please try again.", status: 500 };
     }

@@ -118,7 +118,7 @@ import type { StudentFormValues } from "@/services/admin-form-validation";
 import { adminStudentSchema } from "@/utils/validations";
 import { ENROLLMENT_STATUS } from "@/config/constants/business";
 import { PAYMENTS } from "@/config/constants/payments";
-import { deleteProfileImage } from "@/services/profile-upload";
+import { deleteOwnedProfileImage } from "@/services/uploads";
 import { getStudentUserById } from "@/services/students";
 
 function parseStudentForm(formData: FormData): Record<keyof StudentFormValues, string> {
@@ -158,7 +158,7 @@ export async function updateStudentUserForm(id: string, formData: FormData) {
         redirect(`/admin/students/${id}/edit?error=${encodeURIComponent("This student has an uploaded photo. Tick \"Replace the uploaded photo with the female avatar\" to confirm.")}`);
       }
       // The photo belongs to the student being edited; only their own upload is removed.
-      await deleteProfileImage(id, currentStudent!.image!);
+      await deleteOwnedProfileImage(id, currentStudent!.image!);
     }
     updateImage = "/assets/female_icon.png";
   } else if (parsed.data.gender === "MALE") {

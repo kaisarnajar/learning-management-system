@@ -8,24 +8,17 @@ import {
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { FILE_CONFIG } from "@/config/constants/file";
 import type { UploadKind } from "@/config/constants/direct-upload";
 import { isAdminSession } from "@/services/admin";
-import { ANNOUNCEMENT_MAX_UPLOAD_BYTES } from "@/services/announcements";
-import { MAX_BLOG_IMAGE_BYTES } from "@/services/blog-limits";
 import {
-  ATTACHMENT_MIMES,
   contentMismatchMessage,
   declaredUploadError,
-  IMAGE_MIMES,
   newObjectTarget,
   sniffMime,
   UploadError,
-  type StoragePrefix,
-  type StorageVisibility,
   type StoredMime,
-  type UploadRules,
 } from "@/services/storage";
+import { UPLOAD_KIND_DEFINITIONS } from "@/services/upload-kinds";
 import { getTeacherForSession } from "@/services/teacher-auth";
 import { getPrivateBucketName, getR2Client } from "@/utils/s3";
 import { prisma } from "@/utils/prisma";
@@ -54,54 +47,6 @@ export const DIRECT_UPLOAD_URL_TTL_SECONDS = 5 * 60;
 
 /** Bytes read to identify the file type (sniffMime needs 12). */
 const SNIFF_BYTES = 32;
-
-type KindAccess = "admin" | "staff" | "course";
-
-type KindDefinition = {
-  rules: UploadRules;
-  visibility: StorageVisibility;
-  prefix: StoragePrefix;
-  /** admin: admins only; staff: admins and teachers; course: admins and the course's teacher. */
-  access: KindAccess;
-};
-
-/** One rule set per kind: the same limits the form upload applies. */
-export const UPLOAD_KIND_DEFINITIONS: Record<UploadKind, KindDefinition> = {
-  "course-announcement-attachment": {
-    rules: { allowed: ATTACHMENT_MIMES, maxBytes: ANNOUNCEMENT_MAX_UPLOAD_BYTES, label: "Attachment" },
-    visibility: "private",
-    prefix: "announcements",
-    access: "course",
-  },
-  "blog-image": {
-    rules: { allowed: IMAGE_MIMES, maxBytes: MAX_BLOG_IMAGE_BYTES, label: "Each image" },
-    visibility: "public",
-    prefix: "blogs",
-    access: "staff",
-  },
-  "site-announcement-image": {
-    rules: { allowed: IMAGE_MIMES, maxBytes: FILE_CONFIG.MAX_IMAGE_SIZE_BYTES, label: "Each image" },
-    visibility: "public",
-    prefix: "announcements",
-    access: "admin",
-  },
-  "library-cover": {
-    rules: { allowed: IMAGE_MIMES, maxBytes: FILE_CONFIG.MAX_AVATAR_SIZE_BYTES, label: "Image" },
-    visibility: "public",
-    prefix: "library",
-    access: "admin",
-  },
-  "book-cover": {
-    rules: { allowed: IMAGE_MIMES, maxBytes: FILE_CONFIG.MAX_AVATAR_SIZE_BYTES, label: "Image" },
-    visibility: "public",
-    prefix: "books",
-    access: "admin",
-  },
-};
-
-export function uploadRulesFor(kind: UploadKind): UploadRules {
-  return UPLOAD_KIND_DEFINITIONS[kind].rules;
-}
 
 /**
  * Whether `session` may upload files of `kind`. Course attachments also need

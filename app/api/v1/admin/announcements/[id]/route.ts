@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { deleteSiteAnnouncement, updateSiteAnnouncement } from "@/app/admin/announcements/actions";
 import { ADMIN_ROLES, readActionForm, staffAction, staffRead } from "@/services/api-staff";
 import { imageRows, NOT_FOUND_CODE, withErrorCodes } from "@/services/api-content";
-import { MAX_ANNOUNCEMENT_IMAGES } from "@/services/site-announcement-upload";
+import { MAX_ANNOUNCEMENT_IMAGES } from "@/services/site-announcement-limits";
 import {
   getFeaturedHomepageAnnouncementCount,
   getSiteAnnouncementForAdmin,

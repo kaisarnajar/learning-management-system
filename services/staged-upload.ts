@@ -1,5 +1,4 @@
 import { stagedKeyField, stagedNameField, type UploadKind } from "@/config/constants/direct-upload";
-import { auth } from "@/services/auth";
 import { finalizeUpload, type FinalizedUpload } from "@/services/direct-upload";
 import { UploadError } from "@/services/storage";
 
@@ -40,6 +39,10 @@ export function pendingUploadFrom(formData: FormData, field: string, kind: Uploa
  * key; throws UploadError when it is not theirs or the file is refused.
  */
 export async function finalizeStagedUpload(upload: StagedUpload, idPrefix: string): Promise<FinalizedUpload> {
+  // Loaded here, not at the top: services/uploads.ts (and so every module
+  // that stores a file, e.g. book orders) imports this file, and only this
+  // function needs the session.
+  const { auth } = await import("@/services/auth");
   const session = await auth();
   const ownerId = session?.user?.id;
   if (!ownerId) throw new UploadError("Sign in again to upload this file.");

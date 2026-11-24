@@ -1,13 +1,8 @@
-import {
-  deleteAnnouncementImageFile,
-  getAnnouncementImageUploads,
-  MAX_ANNOUNCEMENT_IMAGES,
-  saveAnnouncementImage,
-  validateAnnouncementImage,
-} from "@/services/site-announcement-upload";
+import { MAX_ANNOUNCEMENT_IMAGES } from "@/services/site-announcement-limits";
+import { deleteUpload, deleteUploads, pendingUploadsOf, saveUpload, validatePendingUpload } from "@/services/uploads";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { deleteManyFromR2, isUploadError } from "@/services/storage";
+import { isUploadError } from "@/services/storage";
 
 export function getRemoveAnnouncementImageIds(formData: FormData): string[] {
   return formData
@@ -17,7 +12,7 @@ export function getRemoveAnnouncementImageIds(formData: FormData): string[] {
 }
 
 export async function addImagesToAnnouncement(announcementId: string, formData: FormData, existingCount: number) {
-  const files = getAnnouncementImageUploads(formData);
+  const files = pendingUploadsOf("site-announcement-image", formData, "images");
   if (files.length === 0) return { error: undefined as string | undefined };
 
   if (existingCount + files.length > MAX_ANNOUNCEMENT_IMAGES) {
@@ -27,7 +22,7 @@ export async function addImagesToAnnouncement(announcementId: string, formData: 
   }
 
   for (const file of files) {
-    const validation = validateAnnouncementImage(file);
+    const validation = validatePendingUpload("site-announcement-image", file, { requireFile: true });
     if (validation.error) {
       return { error: validation.error };
     }
@@ -36,13 +31,13 @@ export async function addImagesToAnnouncement(announcementId: string, formData: 
   const uploaded: string[] = [];
   try {
     for (const file of files) {
-      uploaded.push(await saveAnnouncementImage(announcementId, file));
+      uploaded.push(await saveUpload("site-announcement-image", announcementId, file));
     }
     await withDbErrorHandling(() => prisma.siteAnnouncementImage.createMany({
       data: uploaded.map((imagePath, index) => ({ siteAnnouncementId: announcementId, imagePath, sortOrder: existingCount + index })),
     }), "Database operation failed");
   } catch (error) {
-    await deleteManyFromR2("announcements", uploaded);
+    await deleteUploads("site-announcement-image", uploaded);
     if (isUploadError(error)) return { error: error.message };
     throw error;
   }
@@ -63,7 +58,7 @@ export async function removeAnnouncementImages(imageIds: string[], announcementI
     where: { id: { in: toRemove.map((img) => img.id) }, siteAnnouncementId: announcementId },
   }), "Database operation failed");
   for (const img of toRemove) {
-    await deleteAnnouncementImageFile(img.imagePath);
+    await deleteUpload("site-announcement-image", img.imagePath);
   }
 }
 

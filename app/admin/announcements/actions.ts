@@ -17,7 +17,7 @@ import {
   toggleSiteAnnouncementHomepageRecord,
   deleteSiteAnnouncementRecord
 } from "@/services/site-announcement-mutations";
-import { deleteAnnouncementImageFile } from "@/services/site-announcement-upload";
+import { deleteUpload } from "@/services/uploads";
 import { revalidatePublicContent } from "@/services/public-cache";
 
 function adminListPath(query = "") {
@@ -149,7 +149,7 @@ const crud = createAdminCrudActions({
 
     beforeDelete: async (existing) => {
       for (const img of existing.images) {
-        await deleteAnnouncementImageFile(img.imagePath);
+        await deleteUpload("site-announcement-image", img.imagePath);
       }
     },
   },

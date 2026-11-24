@@ -223,6 +223,22 @@ export function r2KeyFromUrl(prefix: StoragePrefix, urlOrPath: string | null | u
   return key.startsWith(`uploads/${prefix}/`) ? { bucket: R2_BUCKET_NAME, key } : null;
 }
 
+/**
+ * The storage key of a profile photo `userId` uploaded themselves, or null.
+ * Upload keys are uploads/profiles/<userId>-<unique>.<ext> (uploadToR2), so a
+ * URL that names another user's object, or anything that could escape the
+ * prefix once decoded, is never treated as this user's to replace or delete.
+ */
+export function ownedProfileImageKey(userId: string, urlOrPath: string | null | undefined): string | null {
+  if (!userId || !urlOrPath) return null;
+  if (urlOrPath.includes("..") || urlOrPath.includes("%")) return null;
+  let key = urlOrPath;
+  if (R2_PUBLIC_URL && key.startsWith(`${R2_PUBLIC_URL}/`)) key = key.slice(R2_PUBLIC_URL.length);
+  key = key.replace(/^\//, "");
+  const escapedId = userId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`^uploads/profiles/${escapedId}-[A-Za-z0-9-]+\\.(jpg|png|webp|gif)$`).test(key) ? key : null;
+}
+
 /** Best-effort delete; never throws (a leftover object is logged, not fatal). */
 export async function deleteFromR2(prefix: StoragePrefix, urlOrPath: string | null | undefined): Promise<void> {
   const target = r2KeyFromUrl(prefix, urlOrPath);

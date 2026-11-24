@@ -464,7 +464,12 @@ components:
         gender: { type: string, enum: [MALE, FEMALE] }
         country: { type: string, description: "ISO code; makes whatsapp a local number" }
         whatsapp: { type: string }
-        image: { type: [string, "null"], description: Only the bundled avatars or the academy's own storage }
+        image:
+          type: [string, "null"]
+          description: >-
+            Only the bundled avatars (/assets/male_icon.png, /assets/female_icon.png) or a Google photo
+            (https://*.googleusercontent.com). Upload a photo with POST /auth/me/photo instead; a storage URL
+            is refused (400) unless it is the profile's current image, which is then left unchanged.
 
     Teacher:
       type: object

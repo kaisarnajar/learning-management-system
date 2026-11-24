@@ -49,10 +49,10 @@ export async function POST(request: NextRequest) {
     try {
       await applyStudentProfileChanges(user.id, { image: stored });
     } catch (error) {
-      await deleteProfileImage(stored);
+      await deleteProfileImage(user.id, stored);
       throw error;
     }
-    if (isUploaded(profile?.image) && profile.image !== stored) await deleteProfileImage(profile.image);
+    if (isUploaded(profile?.image) && profile.image !== stored) await deleteProfileImage(user.id, profile.image);
 
     return NextResponse.json({ success: true, image: stored });
   } catch (error) {
@@ -69,7 +69,7 @@ export async function DELETE(request: NextRequest) {
     const profile = await currentImage(user.id);
     const avatar = profile?.gender === "FEMALE" ? "/assets/female_icon.png" : MALE_AVATAR;
     await applyStudentProfileChanges(user.id, { image: avatar });
-    if (isUploaded(profile?.image)) await deleteProfileImage(profile.image);
+    if (isUploaded(profile?.image)) await deleteProfileImage(user.id, profile.image);
     return NextResponse.json({ success: true, image: avatar });
   } catch (error) {
     return apiServerError("api/v1/auth/me/photo DELETE", error, "Failed to remove the photo.");

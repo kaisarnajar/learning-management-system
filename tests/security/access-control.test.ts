@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import {
@@ -8,7 +8,9 @@ import {
   saveCourseGrade,
 } from "@/app/actions/grades";
 import { deleteCourseAttendance, getAttendanceRecordsForDate, saveCourseAttendance } from "@/app/actions/attendance";
+import { PUT as updateMe } from "@/app/api/v1/auth/me/route";
 import { createCourse, createEnrollment, createTeacher, createUser, resetDb, sessionFor, SKIP_WITHOUT_DB } from "../helpers/db";
+import { apiRequest, signedInStudent } from "../helpers/api";
 
 /** Two teachers, each with a course, a student, a grade card and an attendance day. */
 async function twoClassrooms() {
@@ -155,5 +157,27 @@ describe.skipIf(SKIP_WITHOUT_DB)("teacher authorisation: grades and attendance s
     expect(await getGradeRecordsForGradeId(b.course.id, b.grade.id)).toMatchObject({ id: b.grade.id });
     await deleteCourseGrade(b.course.id, b.grade.id);
     expect(await prisma.courseGrade.count({ where: { id: b.grade.id } })).toBe(0);
+  });
+});
+
+describe.skipIf(SKIP_WITHOUT_DB)("profile photo: a user cannot claim another user's upload (H4)", () => {
+  const previousR2 = process.env.R2_PUBLIC_URL;
+  beforeAll(() => {
+    process.env.R2_PUBLIC_URL = "https://files.example.org";
+  });
+  afterAll(() => {
+    process.env.R2_PUBLIC_URL = previousR2;
+  });
+  beforeEach(resetDb);
+
+  it("refuses another user's upload URL as the profile image", async () => {
+    const victim = await createUser();
+    const foreign = `https://files.example.org/uploads/profiles/${victim.id}-1732400000000-k3j9x.jpg`;
+    await prisma.user.update({ where: { id: victim.id }, data: { image: foreign } });
+    const attacker = await signedInStudent();
+
+    const response = await updateMe(apiRequest("/api/v1/auth/me", { method: "PUT", headers: attacker.headers, json: { image: foreign } }));
+    expect(response.status).toBe(400);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: attacker.user.id } })).image).not.toBe(foreign);
   });
 });

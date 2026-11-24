@@ -149,7 +149,8 @@ export async function updateStudentUserForm(id: string, formData: FormData) {
       if (formData.get("confirmReplacePhoto") !== "on") {
         redirect(`/admin/students/${id}/edit?error=${encodeURIComponent("This student has an uploaded photo. Tick \"Replace the uploaded photo with the female avatar\" to confirm.")}`);
       }
-      await deleteProfileImage(currentStudent!.image!);
+      // The photo belongs to the student being edited; only their own upload is removed.
+      await deleteProfileImage(id, currentStudent!.image!);
     }
     updateImage = "/assets/female_icon.png";
   } else if (parsed.data.gender === "MALE") {

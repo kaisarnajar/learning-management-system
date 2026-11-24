@@ -300,8 +300,31 @@ export const profileImageUrlSchema = z
   .refine(isAllowedProfileImageUrl, "Profile image must be hosted on the academy's storage.");
 
 /**
+ * The profile images a client may set directly: the two default avatars and a
+ * Google account photo. An uploaded photo only ever arrives through
+ * POST /api/v1/auth/me/photo, which stores it under the caller's own id;
+ * accepting a storage URL here would let a user point their profile at
+ * someone else's upload, and the next photo change would then delete it.
+ */
+export function isClientSettableProfileImage(value: string): boolean {
+  if (value === "/assets/male_icon.png" || value === "/assets/female_icon.png") return true;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" && parsed.hostname.toLowerCase().endsWith(".googleusercontent.com");
+  } catch {
+    return false;
+  }
+}
+
+const apiProfileImageSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine(isClientSettableProfileImage, "Upload a photo with POST /api/v1/auth/me/photo; only a default avatar or a Google photo can be set here.");
+
+/**
  * Mobile API profile update: every field optional, no unknown keys, image
- * host-restricted. With `country` (ISO code, as on the web form) `whatsapp` is
+ * limited to the default avatars and Google photos. With `country` (ISO code, as on the web form) `whatsapp` is
  * the local number and follows that country's length rule; without it,
  * `whatsapp` is a full international number (7 to 15 digits, legacy clients).
  */
@@ -311,7 +334,7 @@ export const apiProfileUpdateSchema = profileFieldsSchema
       .string()
       .trim()
       .regex(/^\+?\d{4,15}$/, "WhatsApp number must be 4 to 15 digits."),
-    image: profileImageUrlSchema.nullable(),
+    image: apiProfileImageSchema.nullable(),
   })
   .partial()
   .strict()

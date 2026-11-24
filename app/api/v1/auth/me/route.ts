@@ -74,7 +74,14 @@ export async function PUT(request: NextRequest) {
   if (errorResponse) return errorResponse;
 
   try {
-    const parsed = apiProfileUpdateSchema.safeParse(await readJson(request));
+    const body = await readJson(request);
+    // Clients that send the whole profile back echo the stored photo URL;
+    // an unchanged image is a no-op rather than a new value to validate.
+    if (body && typeof body.image === "string") {
+      const current = await prisma.user.findUnique({ where: { id: user.id }, select: { image: true } });
+      if (current?.image && body.image === current.image) delete body.image;
+    }
+    const parsed = apiProfileUpdateSchema.safeParse(body);
     if (!parsed.success) {
       return apiError(parsed.error.issues[0]?.message ?? "Invalid profile data.", 400);
     }

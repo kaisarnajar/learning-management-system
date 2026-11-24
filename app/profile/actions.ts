@@ -90,12 +90,12 @@ export async function updateProfile(
     });
   } catch (error) {
     // The row still points at the old photo; drop the one we just stored.
-    if (newImageUrl && !newImageUrl.startsWith("/assets/")) await deleteProfileImage(newImageUrl);
+    if (newImageUrl && !newImageUrl.startsWith("/assets/")) await deleteProfileImage(session.user.id, newImageUrl);
     throw error;
   }
 
   if (previousUpload && previousUpload !== newImageUrl) {
-    await deleteProfileImage(previousUpload);
+    await deleteProfileImage(session.user.id, previousUpload);
   }
 
   revalidatePath("/profile");

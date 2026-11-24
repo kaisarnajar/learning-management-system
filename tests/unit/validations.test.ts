@@ -190,7 +190,8 @@ const CASES: Record<string, Cases> = {
       {},
       { name: "New Name" },
       { whatsapp: "+919876543210", image: null },
-      { image: "https://files.example.org/a.png" },
+      { image: "/assets/female_icon.png" },
+      { image: "https://lh3.googleusercontent.com/a/photo" },
       // With a country the number is local and follows that country's length.
       { country: "IN", whatsapp: "9876543210" },
     ],
@@ -198,6 +199,9 @@ const CASES: Record<string, Cases> = {
       { whatsapp: "123" },
       { role: "ADMIN" },
       { image: "https://evil.example.com/a.png" },
+      // Uploads arrive only through /me/photo, never as a URL (H4).
+      { image: "https://files.example.org/uploads/profiles/someone-else-1-abc.png" },
+      { image: "http://lh3.googleusercontent.com/a/photo" },
       { country: "IN", whatsapp: "12345" },
       { country: "XX", whatsapp: "9876543210" },
     ],

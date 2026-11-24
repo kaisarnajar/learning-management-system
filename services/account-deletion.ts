@@ -116,7 +116,7 @@ export async function deleteOwnAccount(
   });
 
   if (user.image && !user.image.startsWith("/assets/")) {
-    await deleteProfileImage(user.image);
+    await deleteProfileImage(userId, user.image);
   }
 
   return { ok: true };

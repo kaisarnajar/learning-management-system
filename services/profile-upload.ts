@@ -1,5 +1,5 @@
 import { FILE_CONFIG } from "@/config/constants/file";
-import { deleteFromR2, IMAGE_MIMES, uploadToR2, validateUpload, type UploadRules } from "@/services/storage";
+import { deleteFromR2, IMAGE_MIMES, ownedProfileImageKey, uploadToR2, validateUpload, type UploadRules } from "@/services/storage";
 
 const RULES: UploadRules = { allowed: IMAGE_MIMES, maxBytes: FILE_CONFIG.MAX_AVATAR_SIZE_BYTES, label: "Image" };
 
@@ -12,6 +12,12 @@ export function saveProfileImage(userId: string, file: File): Promise<string> {
   return uploadToR2("profiles", userId, file, RULES);
 }
 
-export function deleteProfileImage(imagePath: string | null | undefined): Promise<void> {
-  return deleteFromR2("profiles", imagePath);
+/**
+ * Deletes `userId`'s own uploaded photo. Anything else (a default avatar, a
+ * Google photo, another user's upload stored on this profile) is left alone.
+ */
+export async function deleteProfileImage(userId: string, imagePath: string | null | undefined): Promise<void> {
+  const key = ownedProfileImageKey(userId, imagePath);
+  if (!key) return;
+  await deleteFromR2("profiles", key);
 }

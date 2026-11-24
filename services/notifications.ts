@@ -66,7 +66,7 @@ async function processEmailBatch<T>(
           successCount++;
         } catch (err) {
           failureCount++;
-          console.error("[processEmailBatch] Error sending email for item:", item, err);
+          console.error("[processEmailBatch] Error sending an email:", err);
         }
       }),
     );
@@ -256,34 +256,50 @@ export async function createStudentNotificationsForUsers(
       }), "Database operation failed");
 }
 
+type AnnouncementRecipient = {
+  id: string;
+  email: string;
+  name: string | null;
+  announcementEmailsOptOut: boolean;
+};
+
+const RECIPIENT_SELECT = { id: true, email: true, name: true, announcementEmailsOptOut: true } as const;
+
 /**
  * Students who are in the course: active or completed enrollments of accounts
  * that still exist. Pending, awaiting-fee and rejected requests are not.
+ * One query returns everything the in-app and e-mail fan-out needs.
  */
-async function getEnrolledStudentUserIdsForCourse(courseId: string): Promise<string[]> {
-  const enrollments = await withDbErrorHandling(() => prisma.enrollment.findMany({
+async function getEnrolledStudentRecipientsForCourse(courseId: string): Promise<AnnouncementRecipient[]> {
+  return withDbErrorHandling(() => prisma.user.findMany({
       where: {
-        courseId,
-        status: { in: [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.COMPLETED] },
-        user: { deletedAt: null },
+        deletedAt: null,
+        enrollments: {
+          some: {
+            courseId,
+            status: { in: [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.COMPLETED] },
+          },
+        },
       },
-      select: { userId: true },
+      select: RECIPIENT_SELECT,
     }), "Database operation failed");
-  return enrollments.map((enrollment) => enrollment.userId);
 }
 
-async function getNonTeacherUserIds(): Promise<string[]> {
+async function getNonTeacherRecipients(): Promise<AnnouncementRecipient[]> {
   const teachers = await withDbErrorHandling(() => prisma.teacher.findMany({ select: { email: true } }), "Database operation failed");
   const teacherEmails = teachers.flatMap((teacher) =>
     teacher.email ? [teacher.email.toLowerCase()] : [],
   );
 
-  const users = await withDbErrorHandling(() => prisma.user.findMany({
+  return withDbErrorHandling(() => prisma.user.findMany({
       where: { deletedAt: null, ...(teacherEmails.length > 0 ? { email: { notIn: teacherEmails } } : {}) },
-      select: { id: true },
+      select: RECIPIENT_SELECT,
     }), "Database operation failed");
+}
 
-  return users.map((user) => user.id);
+/** Recipients who get the announcement e-mail as well as the in-app notification. */
+function emailRecipients(recipients: AnnouncementRecipient[]): AnnouncementRecipient[] {
+  return recipients.filter((recipient) => recipient.email && !recipient.announcementEmailsOptOut);
 }
 
 export async function notifyPaymentApproved(params: {
@@ -393,8 +409,8 @@ export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
   title: string;
   body: string;
 }) {
-  const userIds = await getEnrolledStudentUserIdsForCourse(params.courseId);
-  await createStudentNotificationsForUsers(userIds, {
+  const recipients = await getEnrolledStudentRecipientsForCourse(params.courseId);
+  await createStudentNotificationsForUsers(recipients.map((recipient) => recipient.id), {
     type: "COURSE_ANNOUNCEMENT",
     title: `${params.courseTitle}: ${params.title}`,
     body: notificationPreview(params.body),
@@ -410,24 +426,22 @@ export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
 
   runInBackground(async () => {
     const announcementUrl = toAbsoluteUrl(`/profile/courses/${params.courseId}/announcements`);
-    console.info(`[notifyEnrolledStudentsOfCourseAnnouncement] Starting email dispatch for course ${params.courseId} to ${userIds.length} students...`);
+    const audience = emailRecipients(recipients);
+    console.info(`[notifyEnrolledStudentsOfCourseAnnouncement] Starting email dispatch for course ${params.courseId} to ${audience.length} students...`);
     const { successCount, failureCount } = await processEmailBatch(
-      userIds,
+      audience,
       5,
       100,
-      async (userId) => {
-        const user = await getUserEmailData(userId);
-        if (user && user.email && !user.announcementEmailsOptOut) {
-          await sendCourseAnnouncementEmail({
-            to: user.email,
-            studentName: user.name,
-            courseTitle: params.courseTitle,
-            announcementTitle: params.title,
-            announcementBody: params.body,
-            announcementUrl,
-            unsubscribeUrl: buildUnsubscribeUrl(userId),
-          });
-        }
+      async (recipient) => {
+        await sendCourseAnnouncementEmail({
+          to: recipient.email,
+          studentName: recipient.name || "",
+          courseTitle: params.courseTitle,
+          announcementTitle: params.title,
+          announcementBody: params.body,
+          announcementUrl,
+          unsubscribeUrl: buildUnsubscribeUrl(recipient.id),
+        });
       },
     );
     console.info(`[notifyEnrolledStudentsOfCourseAnnouncement] Completed course announcement email dispatch. Sent: ${successCount}, Failed: ${failureCount}`);
@@ -479,8 +493,8 @@ export async function notifyAllStudentsOfSiteAnnouncement(params: {
   title: string;
   body: string;
 }) {
-  const userIds = await getNonTeacherUserIds();
-  await createStudentNotificationsForUsers(userIds, {
+  const recipients = await getNonTeacherRecipients();
+  await createStudentNotificationsForUsers(recipients.map((recipient) => recipient.id), {
     type: "SITE_ANNOUNCEMENT",
     title: params.title,
     body: notificationPreview(params.body),
@@ -494,23 +508,21 @@ export async function notifyAllStudentsOfSiteAnnouncement(params: {
 
   runInBackground(async () => {
     const announcementUrl = toAbsoluteUrl(`/announcements/${params.announcementId}`);
-    console.info(`[notifyAllStudentsOfSiteAnnouncement] Starting email dispatch for site announcement to ${userIds.length} students...`);
+    const audience = emailRecipients(recipients);
+    console.info(`[notifyAllStudentsOfSiteAnnouncement] Starting email dispatch for site announcement to ${audience.length} students...`);
     const { successCount, failureCount } = await processEmailBatch(
-      userIds,
+      audience,
       5,
       100,
-      async (userId) => {
-        const user = await getUserEmailData(userId);
-        if (user && user.email && !user.announcementEmailsOptOut) {
-          await sendSiteAnnouncementEmail({
-            to: user.email,
-            studentName: user.name,
-            announcementTitle: params.title,
-            announcementBody: params.body,
-            announcementUrl,
-            unsubscribeUrl: buildUnsubscribeUrl(userId),
-          });
-        }
+      async (recipient) => {
+        await sendSiteAnnouncementEmail({
+          to: recipient.email,
+          studentName: recipient.name || "",
+          announcementTitle: params.title,
+          announcementBody: params.body,
+          announcementUrl,
+          unsubscribeUrl: buildUnsubscribeUrl(recipient.id),
+        });
       },
     );
     console.info(`[notifyAllStudentsOfSiteAnnouncement] Completed site announcement email dispatch. Sent: ${successCount}, Failed: ${failureCount}`);

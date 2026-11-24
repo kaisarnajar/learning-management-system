@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/utils/prisma";
 import {
   createStudentNotification,
@@ -10,6 +10,7 @@ import {
   notifyEnrolledStudentsOfCourseAnnouncement,
   notifyPaymentApproved,
 } from "@/services/notifications";
+import { sendCourseAnnouncementEmail } from "@/services/email";
 import { createCourse, createEnrollment, createTeacher, createUser, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
 
 describe.skipIf(SKIP_WITHOUT_DB)("notification fan-out and de-duplication", () => {
@@ -107,6 +108,34 @@ describe.skipIf(SKIP_WITHOUT_DB)("notification fan-out and de-duplication", () =
 
     const recipients = (await prisma.studentNotification.findMany()).map((r) => r.userId).sort();
     expect(recipients).toEqual([active.id, completed.id].sort());
+  });
+
+  it("loads a large course audience in one query and e-mails each opted-in student once", async () => {
+    const course = await createCourse();
+    const students = await Promise.all(Array.from({ length: 50 }, () => createUser()));
+    await prisma.user.update({ where: { id: students[0].id }, data: { announcementEmailsOptOut: true } });
+    for (const student of students) await createEnrollment(student.id, course.id);
+
+    const sendMock = vi.mocked(sendCourseAnnouncementEmail);
+    sendMock.mockClear();
+    const findUnique = vi.spyOn(prisma.user, "findUnique");
+    const findMany = vi.spyOn(prisma.user, "findMany");
+    try {
+      await notifyEnrolledStudentsOfCourseAnnouncement({
+        courseId: course.id, courseTitle: course.title, announcementId: "ann-50", title: "Holiday", body: "No class Monday",
+      });
+      await vi.waitFor(() => expect(sendMock).toHaveBeenCalledTimes(49), { timeout: 10_000 });
+
+      expect(findMany).toHaveBeenCalledTimes(1);
+      expect(findUnique).not.toHaveBeenCalled();
+    } finally {
+      findUnique.mockRestore();
+      findMany.mockRestore();
+    }
+
+    const sentTo = sendMock.mock.calls.map(([args]) => args.to).sort();
+    expect(sentTo).toEqual(students.slice(1).map((s) => s.email).sort());
+    expect(await prisma.studentNotification.count()).toBe(50);
   });
 
   it("sends a site announcement to every non-teacher account except deleted ones", async () => {

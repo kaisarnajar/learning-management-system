@@ -59,7 +59,8 @@ const LABEL_PATTERNS: Array<{ type: PaymentType; pattern: RegExp }> = [
   { type: "QUARTERLY", pattern: new RegExp(`^Quarterly fee${DASH}starting ${MONTH} (\\d{4})$`, "i") },
   { type: "HALF_YEARLY", pattern: new RegExp(`^Half[ -]Yearly fee${DASH}starting ${MONTH} (\\d{4})$`, "i") },
   { type: "YEARLY", pattern: new RegExp(`^Yearly fee${DASH}starting ${MONTH} (\\d{4})$`, "i") },
-  { type: "ONE_TIME", pattern: new RegExp(`^One[ -]Time fee${DASH}(\\d{4})$`, "i") },
+  // Older rows carry the year ("One-Time fee — 2026"); current ones do not.
+  { type: "ONE_TIME", pattern: new RegExp(`^One[ -]Time fee(?:${DASH}(\\d{4}))?$`, "i") },
   { type: "ENROLLMENT", pattern: new RegExp(`^Enrollment fee${DASH}.+$`, "i") },
 ];
 

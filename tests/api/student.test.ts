@@ -230,6 +230,28 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
       expect((await submit(body)).status).toBe(200);
     });
 
+    it("refuses a one-time fee for another year once it is submitted", async () => {
+      await setPaymentSettings();
+      const me = await signedInStudent();
+      const course = await createCourse({ feeFrequency: "ONE_TIME" });
+      await createEnrollment(me.user.id, course.id);
+      const year = new Date().getFullYear();
+      const submit = (paymentYear: number, upiTransactionId: string) =>
+        submitPost(
+          apiRequest("/api/v1/payments/submit", {
+            method: "POST",
+            headers: me.headers,
+            json: { courseId: course.id, paymentType: "monthly", paymentMonth: 1, paymentYear, upiTransactionId },
+          }),
+        );
+
+      expect((await submit(year, "UTR60001")).status).toBe(200);
+      const again = await submit(year + 1, "UTR60002");
+      expect(again.status).toBe(409);
+      expect((await jsonOf(again)).success).toBe(false);
+      expect(await prisma.coursePaymentSubmission.count({ where: { userId: me.user.id } })).toBe(1);
+    });
+
     it("validates the submission", async () => {
       await setPaymentSettings();
       const me = await signedInStudent();

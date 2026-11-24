@@ -299,10 +299,54 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     expect(submission).toMatchObject({ amountInrPaise: 34900, label: "Monthly fee — March 2026" });
 
     const repeat = await processMonthlyPayment(student.id, course.id, "03", "2026", "upi", "UTR7000003", null);
-    expect(repeat).toMatchObject({ status: 400, error: expect.stringContaining("already awaiting verification") });
+    expect(repeat).toMatchObject({ status: 409, error: expect.stringContaining("already awaiting verification") });
 
     const nextMonth = await processMonthlyPayment(student.id, course.id, "04", "2026", "upi", "UTR7000004", null);
     expect(nextMonth).toEqual({ success: true });
+    expect((await prisma.coursePaymentSubmission.findMany({ where: { userId: student.id }, orderBy: { createdAt: "asc" } })).map((s) => s.periodKey)).toEqual([
+      "MONTHLY:2026-03",
+      "MONTHLY:2026-04",
+    ]);
+  });
+
+  it("takes a one-time fee once per course, whatever year it is submitted for", async () => {
+    await loginAsAdmin();
+    const student = await createUser();
+    const course = await createCourse({ feeFrequency: "ONE_TIME", monthlyFeeInrPaise: 120000 });
+    await createEnrollment(student.id, course.id);
+
+    expect(await processMonthlyPayment(student.id, course.id, "01", "2026", "upi", "UTR7100001", null)).toEqual({ success: true });
+    const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
+    expect(submission).toMatchObject({ label: "One-Time fee", periodKey: "ONE_TIME" });
+    await runAction(() => confirmMonthlyPayment(submission.id));
+
+    const nextYear = await processMonthlyPayment(student.id, course.id, "01", "2027", "upi", "UTR7100002", null);
+    expect(nextYear).toMatchObject({ status: 409, error: expect.stringContaining("already recorded") });
+    expect(await prisma.coursePaymentSubmission.count({ where: { userId: student.id } })).toBe(1);
+  });
+
+  it("matches rows written before the period key existed by their label, ignoring coupon text", async () => {
+    const student = await createUser();
+    const course = await createCourse();
+    await createEnrollment(student.id, course.id);
+    const legacy = (label: string, extra: Record<string, unknown> = {}) =>
+      prisma.coursePaymentSubmission.create({
+        data: { userId: student.id, courseId: course.id, label, amountInrPaise: 17450, status: "approved", statusEnum: "APPROVED", ...extra },
+      });
+    await legacy("Monthly fee — January 2026 (50% Fee Waiver)");
+    await legacy("One-Time fee — 2025");
+
+    expect(await processMonthlyPayment(student.id, course.id, "01", "2026", "upi", "UTR7200001", null)).toMatchObject({ status: 409 });
+    // A voided (soft-deleted) payment frees the period again.
+    await prisma.coursePaymentSubmission.updateMany({ where: { userId: student.id }, data: { deletedAt: new Date() } });
+    expect(await processMonthlyPayment(student.id, course.id, "01", "2026", "upi", "UTR7200002", null)).toEqual({ success: true });
+
+    const oneTime = await createCourse({ feeFrequency: "ONE_TIME" });
+    await createEnrollment(student.id, oneTime.id);
+    await prisma.coursePaymentSubmission.create({
+      data: { userId: student.id, courseId: oneTime.id, label: "One-Time fee — 2025", amountInrPaise: 34900, status: "approved", statusEnum: "APPROVED" },
+    });
+    expect(await processMonthlyPayment(student.id, oneTime.id, "01", "2026", "upi", "UTR7200003", null)).toMatchObject({ status: 409 });
   });
 });
 
@@ -358,6 +402,28 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
     const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
     expect(submission.amountInrPaise).toBe(50000);
     expect(submission.couponId).toBeNull();
+  });
+
+  it("a period paid with a coupon cannot be paid again without one, or with another", async () => {
+    await loginAsAdmin();
+    const student = await createUser();
+    const course = await createCourse();
+    await createEnrollment(student.id, course.id);
+    const coupon = await createCoupon(30);
+
+    expect(await processMonthlyPayment(student.id, course.id, "01", "2026", "upi", "UTR8300001", null, coupon.id, 24430)).toEqual({ success: true });
+    const january = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
+    expect(january).toMatchObject({ label: "Monthly fee — January 2026 (30% Fee Waiver)", periodKey: "MONTHLY:2026-01" });
+    await runAction(() => confirmMonthlyPayment(january.id));
+
+    const withoutCoupon = await processMonthlyPayment(student.id, course.id, "01", "2026", "upi", "UTR8300002", null);
+    expect(withoutCoupon).toMatchObject({ status: 409, error: expect.stringContaining("already recorded") });
+    const other = await createCoupon(50, { code: "HALF50" });
+    expect(await processMonthlyPayment(student.id, course.id, "01", "2026", "upi", "UTR8300003", null, other.id)).toMatchObject({ status: 409 });
+    expect(await prisma.coursePaymentSubmission.count({ where: { userId: student.id, deletedAt: null } })).toBe(1);
+
+    // February is a different period.
+    expect(await processMonthlyPayment(student.id, course.id, "02", "2026", "upi", "UTR8300004", null)).toEqual({ success: true });
   });
 
   it("keeps a 100% waiver pending unless the academy enabled auto-approval", async () => {

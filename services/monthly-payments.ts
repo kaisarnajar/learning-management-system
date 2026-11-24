@@ -171,7 +171,9 @@ export function buildMonthlyFeeLabel(month: string, year: string, paymentType: s
     return `Yearly fee — starting ${monthName} ${year}`;
   }
   if (type === "ONE_TIME") {
-    return `One-Time fee — ${year}`;
+    // Paid once per course, so the label names no year (older rows did:
+    // "One-Time fee — 2026"); the period key is ONE_TIME either way.
+    return "One-Time fee";
   }
   return `Monthly fee — ${monthName} ${year}`;
 }

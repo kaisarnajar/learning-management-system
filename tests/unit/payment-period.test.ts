@@ -56,6 +56,8 @@ describe("periodKeyFromLabel", () => {
     }
     expect(periodKeyFromLabel("ONE_TIME", buildMonthlyFeeLabel("01", "2026", "one_time"))).toBe("ONE_TIME");
     expect(periodKeyFromLabel("ONE_TIME", buildMonthlyFeeLabel("05", "2031", "one_time"))).toBe("ONE_TIME");
+    // Rows written before the one-time label dropped its year.
+    expect(periodKeyFromLabel("ONE_TIME", "One-Time fee — 2026")).toBe("ONE_TIME");
   });
 
   it("reads the enrollment fee label, whatever the course title", () => {

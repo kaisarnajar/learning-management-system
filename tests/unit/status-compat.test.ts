@@ -132,7 +132,9 @@ describe("fee labels", () => {
     expect(buildMonthlyFeeLabel("11", "2026", "quarterly")).toBe("Quarterly fee — starting November 2026");
     expect(buildMonthlyFeeLabel("01", "2026", "half_yearly")).toBe("Half Yearly fee — starting January 2026");
     expect(buildMonthlyFeeLabel("01", "2026", "yearly")).toBe("Yearly fee — starting January 2026");
-    expect(buildMonthlyFeeLabel("01", "2026", "one_time")).toBe("One-Time fee — 2026");
+    // Paid once per course: the label names no year (M11).
+    expect(buildMonthlyFeeLabel("01", "2026", "one_time")).toBe("One-Time fee");
+    expect(buildMonthlyFeeLabel("01", "2027", "one_time")).toBe("One-Time fee");
   });
 
   it("falls back to the raw value for an out-of-range month", () => {

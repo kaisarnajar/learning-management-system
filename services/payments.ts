@@ -6,6 +6,7 @@ import { getMonthlyFeePaise, getRegistrationFeePaise } from "@/services/course-p
 import { getCourseById } from "@/services/courses";
 import { buildMonthlyFeeLabel, buildEnrollmentFeeLabel } from "@/services/monthly-payments";
 import { getFeeFrequencyPaymentType } from "@/services/fee-frequency";
+import { buildPeriodKey } from "@/services/payment-period";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
 import { PAYMENTS } from "@/config/constants/payments";
 import {
@@ -14,6 +15,7 @@ import {
   isApprovedEnrollment,
   paymentMethodWrite,
   paymentTypeData,
+  paymentTypeFromText,
   paymentTypeWrite,
   submissionStatusData,
   submissionStatusOf,
@@ -149,6 +151,8 @@ export async function processMonthlyPayment(
   }
 
   const label = buildMonthlyFeeLabel(paymentMonth, paymentYear, derivedPaymentType);
+  const derivedType = paymentTypeFromText(derivedPaymentType);
+  const periodKey = derivedType ? buildPeriodKey(derivedType, Number.parseInt(paymentMonth, 10), Number.parseInt(paymentYear, 10)) : null;
   const baseAmountInrPaise = getMonthlyFeePaise(course);
 
   const coupon = await getSelectedCoupon(userId, courseId, "course", couponId);
@@ -162,15 +166,18 @@ export async function processMonthlyPayment(
   const autoApprove = isFree && (await getPaymentSettings()).autoApproveFullWaivers;
   const finalLabel = coupon && !label.includes("Waiver") ? `${label} (${coupon.percentage}% Fee Waiver)` : label;
 
-  // Cheap pre-check outside the transaction for a friendly message; the
-  // partial unique index on (userId, courseId, label) is the real guard.
+  // One live submission per billing period, whatever coupon text the label
+  // carries. Rows written before periodKey existed (and not yet backfilled)
+  // are matched by their label without the coupon suffix. Checked outside
+  // the transaction for a friendly message; the partial unique indexes on
+  // the period key and the label are the real guard.
   const duplicatePending = await prisma.coursePaymentSubmission.findFirst({
     where: {
       userId,
       courseId: course.id,
-      label: { in: [label, finalLabel] },
       deletedAt: null,
       status: { in: [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED] },
+      OR: [...(periodKey ? [{ periodKey }] : []), { periodKey: null, label: { startsWith: label } }],
     },
     select: { status: true, statusEnum: true },
   });
@@ -179,7 +186,7 @@ export async function processMonthlyPayment(
       error: submissionStatusOf(duplicatePending) === "APPROVED"
         ? `Payment for ${label} is already recorded.`
         : `A payment for ${label} is already awaiting verification.`,
-      status: 400,
+      status: 409,
     };
   }
 
@@ -202,6 +209,7 @@ export async function processMonthlyPayment(
           courseId: course.id,
           ...paymentTypeWrite(derivedPaymentType),
           label: finalLabel,
+          periodKey,
           amountInrPaise,
           ...submissionStatusData(autoApprove ? "APPROVED" : "PENDING_VERIFICATION"),
           ...paymentMethodWrite(isFree ? WAIVER_PAYMENT_METHOD : paymentMethod),
@@ -348,6 +356,7 @@ export async function processEnrollmentPayment(
           courseId,
           ...paymentTypeData("ENROLLMENT"),
           label: finalLabel,
+          periodKey: buildPeriodKey("ENROLLMENT", 0, 0),
           amountInrPaise: enrollmentFeePaise,
           ...submissionStatusData(autoApprove ? "APPROVED" : "PENDING_VERIFICATION"),
           ...paymentMethodWrite(isFree ? WAIVER_PAYMENT_METHOD : paymentMethod),

@@ -6,6 +6,7 @@ import { consumePasswordResetToken } from "@/services/password-reset";
 import { prisma } from "@/utils/prisma";
 import { resetPasswordSchema } from "@/utils/validations";
 import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { forgetRecentClaims } from "@/services/auth-jwt";
 
 export async function POST(request: Request) {
   try {
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
       data: { password: hashedPassword, sessionVersion: { increment: 1 } },
       select: { id: true, emailVerified: true },
     });
+    forgetRecentClaims(user.id);
     // The reset link was delivered to the mailbox, which proves ownership as
     // well as the verification link does; without this an unverified account
     // could reset its password and still not sign in.

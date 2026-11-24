@@ -5,6 +5,7 @@ import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { prisma } from "@/utils/prisma";
 import { changePasswordSchema } from "@/utils/validations";
 import { apiError, apiServerError, readJson } from "@/utils/api-response";
+import { forgetRecentClaims } from "@/services/auth-jwt";
 
 /**
  * Changes the caller's password: `{ currentPassword, newPassword }`. Every
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
         where: { userId: user.id, ...(parsed.data.deviceToken ? { token: { not: parsed.data.deviceToken } } : {}) },
       }),
     ]);
+    forgetRecentClaims(user.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

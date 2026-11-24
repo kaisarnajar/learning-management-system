@@ -71,6 +71,15 @@ export const authConfig = {
       }
       return session;
     },
+    /**
+     * Advisory, not the authority: the role here is the one in the cookie,
+     * which this edge-safe config never re-reads, so it can be stale by as
+     * long as the cookie goes unrefreshed (an admin removed from ADMIN_EMAIL
+     * still passes here until then). Every protected layout, page and action
+     * calls a guard from services/auth-actions.ts, whose auth() re-reads the
+     * role at least once a minute (services/auth-jwt.ts); this only turns
+     * signed-out or obviously wrong visitors away early.
+     */
     authorized({ auth, request }) {
       const { pathname } = request.nextUrl;
 

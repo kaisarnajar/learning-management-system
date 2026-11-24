@@ -48,9 +48,11 @@ profile linked to the user.
 
 **Enforcement happens in three layers, and each one stands on its own:**
 
-1. `proxy.ts` (Next 16's name for middleware) runs Auth.js's `authorized` decision for every matched request and enforces it: pages redirect to
-   `/login?callbackUrl=...`, API paths receive 401. It also sets the per-request CSP nonce and, for `/api/v1`, the CORS
-   allow-list (`API_ALLOWED_ORIGINS`) and the cross-site request guard.
+1. `proxy.ts` (Next 16's name for middleware) runs Auth.js's `authorized` decision for every matched request and
+   enforces it: pages redirect to `/login?callbackUrl=...`, API paths receive 401. The role it checks is the cookie's
+   and may be stale, so this layer is advisory; layers 2 and 3 re-read the role (at most a minute old, read once per
+   request: `services/auth-jwt.ts`). It also sets the per-request CSP nonce and, for `/api/v1`, the CORS allow-list
+   (`API_ALLOWED_ORIGINS`) and the cross-site request guard.
 2. Route-group layouts (`app/admin`, `app/teacher`, ...) call the matching guard.
 3. Every protected page and server action calls an explicit guard from `services/auth-actions.ts` (`requireAdmin`,
    `requireTeacher`, `requireDeveloper`, `requireUser`). The guards are plain helpers, not a `"use server"` module,

@@ -7,7 +7,8 @@ vi.mock("@/services/teacher-auth", () => ({
 }));
 
 import { prisma } from "@/utils/prisma";
-import { authJwtCallback } from "@/services/auth-jwt";
+import { authJwtCallback, CLAIMS_REUSE_MS, forgetRecentClaims } from "@/services/auth-jwt";
+import { getTeacherByEmail, resolveUserRole } from "@/services/teacher-auth";
 
 const findUnique = vi.fn();
 (prisma as unknown as { user: unknown }).user = { findUnique, update: vi.fn() };
@@ -33,6 +34,8 @@ const staleToken = (claims: Partial<JWT> = {}): JWT => ({
   ...claims,
 });
 
+beforeEach(() => forgetRecentClaims());
+
 describe("web session version (jwt callback)", () => {
   beforeEach(() => findUnique.mockReset());
 
@@ -56,7 +59,8 @@ describe("web session version (jwt callback)", () => {
     findUnique.mockResolvedValue(dbUser(0));
     expect(await run({ token: staleToken() })).not.toBeNull();
 
-    // ...but such a token still ends once the account's version moves on.
+    // ...but such a token still ends once the account's version moves on (on a later request).
+    forgetRecentClaims();
     findUnique.mockResolvedValue(dbUser(1));
     expect(await run({ token: staleToken() })).toBeNull();
   });
@@ -85,5 +89,65 @@ describe("web session lookup (jwt callback)", () => {
   it("ends a session without a user id", async () => {
     expect(await run({ token: staleToken({ id: undefined }) })).toBeNull();
     expect(findUnique).not.toHaveBeenCalled();
+  });
+});
+
+describe("re-reads shared within a request (jwt callback)", () => {
+  beforeEach(() => {
+    findUnique.mockReset();
+    vi.mocked(resolveUserRole).mockReset().mockResolvedValue("USER");
+    vi.mocked(getTeacherByEmail).mockReset().mockResolvedValue(null);
+  });
+
+  it("reads the account and role once for several auth() calls with the same stale token", async () => {
+    findUnique.mockResolvedValue(dbUser(0));
+    vi.mocked(resolveUserRole).mockResolvedValue("TEACHER");
+    vi.mocked(getTeacherByEmail).mockResolvedValue({ id: "teacher_1" } as Awaited<ReturnType<typeof getTeacherByEmail>>);
+
+    // A page render calls auth() from the layout, the page and a guard, each with the cookie's stale token.
+    const tokens = await Promise.all([run({ token: staleToken() }), run({ token: staleToken() })]);
+    tokens.push(await run({ token: staleToken() }));
+
+    expect(findUnique).toHaveBeenCalledTimes(1);
+    expect(resolveUserRole).toHaveBeenCalledTimes(1);
+    expect(getTeacherByEmail).toHaveBeenCalledTimes(1);
+    for (const token of tokens) expect(token).toMatchObject({ role: "TEACHER", teacherId: "teacher_1" });
+  });
+
+  it("reads again after the reuse window, on update() and at sign-in", async () => {
+    vi.useFakeTimers({ now: new Date("2026-11-25T10:00:00Z") });
+    try {
+      findUnique.mockResolvedValue(dbUser(0));
+      await run({ token: staleToken() });
+      await run({ token: staleToken() });
+      expect(findUnique).toHaveBeenCalledTimes(1);
+
+      await run({ token: staleToken(), trigger: "update" });
+      expect(findUnique).toHaveBeenCalledTimes(2);
+
+      await run({ token: { email: "student@example.test" }, user: { id: "user_1", email: "student@example.test" } });
+      expect(findUnique).toHaveBeenCalledTimes(3);
+
+      vi.advanceTimersByTime(CLAIMS_REUSE_MS + 1);
+      await run({ token: staleToken() });
+      expect(findUnique).toHaveBeenCalledTimes(4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not share a failed read", async () => {
+    findUnique.mockRejectedValueOnce(new Error("connection reset")).mockResolvedValue(dbUser(0));
+    // The failure keeps the token's role, as before.
+    expect(await run({ token: staleToken({ role: "ADMIN" }) })).toMatchObject({ role: "ADMIN" });
+    expect(await run({ token: staleToken() })).toMatchObject({ role: "USER" });
+    expect(findUnique).toHaveBeenCalledTimes(2);
+  });
+
+  it("keeps the session checks per token: a shared read still ends an outdated session", async () => {
+    findUnique.mockResolvedValue(dbUser(2));
+    expect(await run({ token: staleToken({ sessionVersion: 2 }) })).not.toBeNull();
+    expect(await run({ token: staleToken({ sessionVersion: 1 }) })).toBeNull();
+    expect(findUnique).toHaveBeenCalledTimes(1);
   });
 });

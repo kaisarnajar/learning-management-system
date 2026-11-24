@@ -6,6 +6,7 @@ import { resolveUserRole } from "@/services/teacher-auth";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { forgetRecentClaims } from "@/services/auth-jwt";
 
 const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
 
@@ -102,6 +103,7 @@ export async function POST(request: NextRequest) {
       });
       // Whoever registered the unverified row may still hold an API session.
       await revokeAllApiSessions(user.id);
+      forgetRecentClaims(user.id);
     }
 
     const role = await resolveUserRole(user.email);

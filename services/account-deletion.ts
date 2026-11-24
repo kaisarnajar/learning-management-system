@@ -7,6 +7,7 @@ import { deleteOwnedProfileImage } from "@/services/uploads";
 import { resolveUserRole } from "@/services/teacher-auth";
 
 import { enrollmentStatusData } from "@/services/status-compat";
+import { forgetRecentClaims } from "@/services/auth-jwt";
 
 /**
  * A student deleting their own account (required by Google Play for apps that
@@ -114,6 +115,9 @@ export async function deleteOwnAccount(
       after: { email: anonymisedEmail, deletedAt: now.toISOString() },
     });
   });
+
+  // The web session ends on its next request on this instance, not after the shared re-read expires.
+  forgetRecentClaims(userId);
 
   // Their featured review (and name on it) leaves the cached homepage now.
   revalidatePublicContent();

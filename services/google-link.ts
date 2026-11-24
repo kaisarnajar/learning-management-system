@@ -1,6 +1,7 @@
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { revokeAllApiSessions } from "@/services/api-auth";
+import { forgetRecentClaims } from "@/services/auth-jwt";
 
 /**
  * What to do when Google signs in an address that exists as an unverified
@@ -65,5 +66,6 @@ export async function prepareGoogleLink(rawEmail: string): Promise<boolean | str
     "Database operation failed",
   );
   await revokeAllApiSessions(existing.id);
+  forgetRecentClaims(existing.id);
   return true;
 }

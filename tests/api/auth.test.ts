@@ -149,6 +149,17 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       expect((await refreshWith(refreshToken)).status).toBe(401);
     });
 
+    it("a verification link matches by hash only: the stored value is not itself a token", async () => {
+      const user = await createUser({ email: "hash.only@example.test", emailVerified: null });
+      await generateVerificationToken(user.email);
+      const stored = await prisma.verificationToken.findFirstOrThrow({ where: { identifier: user.email } });
+      const form = new FormData();
+      form.set("token", stored.token);
+
+      expect((await runAction(() => confirmEmailVerification(form))).redirectedTo).toBe("/verify-email?error=invalid");
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).emailVerified).toBeNull();
+    });
+
     it("mobile Google sign-in on an unverified row revokes the squatter's sessions", async () => {
       process.env.AUTH_GOOGLE_ID = "client-id";
       verifyIdToken.mockResolvedValue({

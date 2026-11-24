@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ScreenshotPreview } from "@/components/admin/BookOrdersTable";
 import { requireAdmin } from "@/services/auth-actions";
-import { getBookOrderDetail } from "@/services/book-order-detail";
+import { bookOrderAuditActionLabel, getBookOrderDetail } from "@/services/book-order-detail";
 import { bookOrderStatusClass, bookOrderStatusLabel } from "@/services/bookstore";
 import { formatPrice } from "@/utils/money";
 
@@ -16,19 +16,6 @@ const dateTimeFormat = new Intl.DateTimeFormat("en-IN", {
   hour: "numeric",
   minute: "2-digit",
 });
-
-const AUDIT_ACTION_LABELS: Record<string, string> = {
-  approve: "Approved",
-  decline: "Declined",
-  ship: "Marked as shipped",
-  refund: "Marked as refunded",
-  void: "Voided",
-  delete: "Deleted",
-  soft_delete: "Deleted",
-  restore: "Restored",
-  update: "Updated",
-  create: "Created",
-};
 
 export default async function AdminBookOrderDetailPage({
   params,
@@ -204,7 +191,7 @@ export default async function AdminBookOrderDetailPage({
           {timeline.map((entry) => (
             <li key={entry.id}>
               <p className="font-medium text-foreground">
-                {AUDIT_ACTION_LABELS[entry.action] ?? entry.action}
+                {bookOrderAuditActionLabel(entry.action)}
                 {entry.actorEmail ? <span className="font-normal text-muted"> by {entry.actorEmail}</span> : null}
               </p>
               {entry.reason && <p className="text-xs text-muted">Reason: {entry.reason}</p>}

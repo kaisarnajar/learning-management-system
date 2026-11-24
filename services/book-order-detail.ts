@@ -34,3 +34,21 @@ export async function getBookOrderDetail(id: string) {
     return { order, timeline };
   }, "Failed to fetch book order");
 }
+
+const AUDIT_ACTION_LABELS: Record<string, string> = {
+  approve: "Approved",
+  decline: "Declined",
+  ship: "Marked as shipped",
+  refund: "Marked as refunded",
+  void: "Voided",
+  delete: "Deleted",
+  soft_delete: "Deleted",
+  restore: "Restored",
+  update: "Updated",
+  create: "Created",
+};
+
+/** The words the order timeline shows for an audit-log action. */
+export function bookOrderAuditActionLabel(action: string): string {
+  return AUDIT_ACTION_LABELS[action] ?? action;
+}

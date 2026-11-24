@@ -32,6 +32,8 @@ tags:
   - name: "Admin: Students"
   - name: "Admin: Teachers"
   - name: "Admin: Enrollments"
+  - name: "Admin: Courses"
+    description: Courses and their tools (roster, announcements, attendance, grade cards, student cards)
 
 components:
   securitySchemes:
@@ -149,6 +151,217 @@ components:
       content:
         application/pdf:
           schema: { type: string, format: binary }
+
+    CourseAnnouncements:
+      description: Announcements, newest first, with the course, the student (private messages only) and the categories
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: "#/components/schemas/Page"
+              - type: object
+                properties:
+                  data: { items: { $ref: "#/components/schemas/CourseAnnouncement" } }
+                  course: { $ref: "#/components/schemas/CourseHeader" }
+                  student:
+                    oneOf:
+                      - type: object
+                        properties:
+                          enrollmentId: { type: string }
+                          name: { type: string }
+                          email: { type: string }
+                      - type: "null"
+                  categories: { type: array, items: { $ref: "#/components/schemas/Option" } }
+    CourseAnnouncement:
+      description: The announcement and the categories
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean }
+              announcement: { $ref: "#/components/schemas/CourseAnnouncement" }
+              categories: { type: array, items: { $ref: "#/components/schemas/Option" } }
+    CourseStudents:
+      description: The active students, for the attendance or grade form
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean }
+              data: { type: array, items: { $ref: "#/components/schemas/CourseStudent" } }
+    AttendanceHistory:
+      description: One row per class day with present and absent counts
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean }
+              course: { $ref: "#/components/schemas/CourseHeader" }
+              data:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    date: { type: string, format: date }
+                    dateLabel: { type: string }
+                    present: { type: integer }
+                    absent: { type: integer }
+                    total: { type: integer }
+    AttendanceDay:
+      description: The day's attendance, by roll number
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean }
+              date: { type: string, format: date }
+              dateLabel: { type: string }
+              present: { type: integer }
+              absent: { type: integer }
+              total: { type: integer }
+              records:
+                type: array
+                items:
+                  allOf:
+                    - $ref: "#/components/schemas/CourseStudent"
+                    - type: object
+                      properties:
+                        isPresent: { type: boolean }
+    StudentAttendance:
+      description: The student's attendance in every class, with the summary
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean }
+              student: { $ref: "#/components/schemas/StudentReportStudent" }
+              courseTitle: { type: string }
+              summary:
+                type: object
+                properties:
+                  total: { type: integer }
+                  present: { type: integer }
+                  absent: { type: integer }
+                  percentage: { type: integer }
+              records:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    date: { type: string, format: date }
+                    dateLabel: { type: string }
+                    isPresent: { type: boolean }
+              canDownloadCard: { type: boolean, description: True for admins }
+    GradeCards:
+      description: The course's grade cards (test reports)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean }
+              course: { $ref: "#/components/schemas/CourseHeader" }
+              data:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    title: { type: string }
+                    date: { type: string, format: date }
+                    dateLabel: { type: string }
+                    maxMarks: { type: number }
+                    graded: { type: integer, description: Students with marks }
+    GradeCard:
+      description: The grade card with every student's marks
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean }
+              grade:
+                type: object
+                properties:
+                  id: { type: string }
+                  title: { type: string }
+                  date: { type: string, format: date }
+                  dateLabel: { type: string }
+                  maxMarks: { type: number }
+                  records:
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: "#/components/schemas/CourseStudent"
+                        - type: object
+                          properties:
+                            marksObtained: { type: [number, "null"] }
+    StudentGrades:
+      description: The student's marks in every graded test, with the totals
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success: { type: boolean }
+              student: { $ref: "#/components/schemas/StudentReportStudent" }
+              courseTitle: { type: string }
+              summary:
+                type: object
+                properties:
+                  exams: { type: integer }
+                  obtained: { type: number }
+                  max: { type: number }
+                  percentage: { type: integer }
+              records:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    title: { type: string }
+                    date: { type: string, format: date }
+                    dateLabel: { type: string }
+                    maxMarks: { type: number }
+                    marksObtained: { type: number }
+              canDownloadCard: { type: boolean, description: True for admins }
+
+  requestBodies:
+    Announcement:
+      required: true
+      content:
+        multipart/form-data:
+          schema: { $ref: "#/components/schemas/AnnouncementForm" }
+        application/json:
+          schema: { $ref: "#/components/schemas/AnnouncementForm" }
+    AttendanceSave:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [records]
+            properties:
+              records:
+                type: array
+                items:
+                  type: object
+                  required: [enrollmentId, isPresent]
+                  properties:
+                    enrollmentId: { type: string }
+                    isPresent: { type: boolean }
+    GradeCard:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/GradeCardInput" }
 
   schemas:
     Ok:
@@ -456,6 +669,137 @@ components:
         label: { type: string }
         count: { type: [integer, "null"], description: Null for tool pages with no number }
         highlight: { type: boolean, description: Needs action }
+
+    CourseStatus:
+      type: string
+      enum: [DRAFT, PUBLISHED, ONGOING, COMPLETED, ON_HOLD, COMING_SOON]
+    CourseHeader:
+      type: object
+      description: The course header both portals' course pages show
+      properties:
+        id: { type: string }
+        title: { type: string }
+        status: { $ref: "#/components/schemas/CourseStatus" }
+        statusLabel: { type: string }
+        category: { type: string }
+        level: { type: string }
+        startDate: { type: [string, "null"] }
+        duration: { type: [string, "null"] }
+    AdminCourseRow:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        category: { type: string }
+        level: { type: string }
+        teacherName: { type: [string, "null"] }
+        duration: { type: [string, "null"] }
+        registrationFeePaise: { type: integer }
+        feePaise: { type: integer, description: Course fee per period }
+        feeFrequency: { type: string, enum: [MONTHLY, EVERY_3_MONTHS, EVERY_6_MONTHS, YEARLY, ONE_TIME] }
+        feeFrequencyLabel: { type: string }
+        studentCount: { type: integer }
+        status: { $ref: "#/components/schemas/CourseStatus" }
+        statusLabel: { type: string }
+        featured: { type: boolean }
+        deleteWarning: { type: [string, "null"], description: Why a delete would be refused (students enrolled) }
+    CourseForm:
+      type: object
+      description: The website's course form. Fees are in rupees.
+      required: [title, description, category, level, status]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        startDate: { type: string, format: date }
+        duration: { type: string }
+        category: { type: string }
+        teacherId: { type: string }
+        level: { type: string, enum: [Beginner, Intermediate, Advanced] }
+        enrollmentFeeInr: { type: number }
+        monthlyFeeInr: { type: number, description: Course fee per period }
+        feeFrequency: { type: string, enum: [MONTHLY, EVERY_3_MONTHS, EVERY_6_MONTHS, YEARLY, ONE_TIME] }
+        status: { $ref: "#/components/schemas/CourseStatus" }
+        featuredOnHomepage: { type: string, enum: ["on"] }
+    CourseFormValues:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        startDate: { type: string }
+        duration: { type: string }
+        category: { type: string }
+        teacherId: { type: string }
+        level: { type: string }
+        enrollmentFeeInr: { type: number }
+        monthlyFeeInr: { type: number }
+        feeFrequency: { type: string }
+        status: { $ref: "#/components/schemas/CourseStatus" }
+        featuredOnHomepage: { type: boolean }
+    CourseFormOptions:
+      type: object
+      properties:
+        teachers: { type: array, items: { type: object, properties: { id: { type: string }, name: { type: string }, specialization: { type: string } } } }
+        categories: { type: array, items: { type: string } }
+        levels: { type: array, items: { type: object, properties: { value: { type: string }, label: { type: string }, defaultFeeInr: { type: number } } } }
+        statuses: { type: array, items: { type: object, properties: { value: { $ref: "#/components/schemas/CourseStatus" }, label: { type: string }, description: { type: string } } } }
+        feeFrequencies: { type: array, items: { $ref: "#/components/schemas/Option" } }
+        featuredCount: { type: integer }
+        featuredMax: { type: integer }
+    CourseAnnouncement:
+      type: object
+      properties:
+        id: { type: string }
+        category: { type: string, enum: [EXAMS_TESTS, ASSIGNMENTS_HOMEWORK, STUDY_MATERIALS, CLASS_SCHEDULE, COURSE_ANNOUNCEMENT, GENERAL_NOTICE] }
+        categoryLabel: { type: string }
+        title: { type: string }
+        body: { type: string }
+        authorName: { type: string }
+        postedByAdmin: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+        edited: { type: boolean }
+        attachmentPath: { type: [string, "null"] }
+        attachmentName: { type: [string, "null"] }
+        canManage: { type: boolean, description: False for a teacher looking at an admin's or another teacher's post }
+    AnnouncementForm:
+      type: object
+      required: [category, title, body]
+      properties:
+        category: { type: string, enum: [EXAMS_TESTS, ASSIGNMENTS_HOMEWORK, STUDY_MATERIALS, CLASS_SCHEDULE, COURSE_ANNOUNCEMENT, GENERAL_NOTICE] }
+        title: { type: string }
+        body: { type: string }
+        attachment: { type: string, format: binary, description: Optional file; on edit it replaces the current one }
+        removeAttachment: { type: string, enum: ["1"], description: Edit only; removes the current attachment }
+    CourseStudent:
+      type: object
+      properties:
+        enrollmentId: { type: string }
+        rollNumber: { type: [integer, "null"] }
+        rollNumberLabel: { type: string }
+        name: { type: [string, "null"] }
+        email: { type: string }
+    GradeCardInput:
+      type: object
+      required: [title, date, maxMarks, records]
+      properties:
+        title: { type: string }
+        date: { type: string, format: date }
+        maxMarks: { type: number }
+        records:
+          type: array
+          items:
+            type: object
+            required: [enrollmentId]
+            properties:
+              enrollmentId: { type: string }
+              marksObtained: { type: [number, "null"], description: Null when not graded }
+    StudentReportStudent:
+      type: object
+      properties:
+        enrollmentId: { type: string }
+        name: { type: [string, "null"] }
+        email: { type: string }
+        rollNumberLabel: { type: string }
 
 security:
   - bearer: []
@@ -1570,3 +1914,328 @@ paths:
         "400": { $ref: "#/components/responses/Error" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
+
+  # -------------------------------------------------------- Admin: Courses
+  /admin/courses:
+    get:
+      tags: ["Admin: Courses"]
+      summary: Courses (`q` searches title, category and instructor)
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200": { description: Courses, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/AdminCourseRow" } } } }] } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    post:
+      tags: ["Admin: Courses"]
+      summary: Adds a course
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CourseForm" }
+          multipart/form-data:
+            schema: { $ref: "#/components/schemas/CourseForm" }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/courses/new:
+    get:
+      tags: ["Admin: Courses"]
+      summary: The add-course form's choices and starting values
+      responses:
+        "200": { description: Form data, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, options: { $ref: "#/components/schemas/CourseFormOptions" }, values: { $ref: "#/components/schemas/CourseFormValues" } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/courses/{id}:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Courses"]
+      summary: "One course: its header, the edit form's values and choices"
+      responses:
+        "200": { description: The course, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, course: { allOf: [{ $ref: "#/components/schemas/CourseHeader" }, { properties: { teacherName: { type: [string, "null"] } } }] }, values: { $ref: "#/components/schemas/CourseFormValues" }, options: { $ref: "#/components/schemas/CourseFormOptions" } } } } } }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Admin: Courses"]
+      summary: Saves the course edit form
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { allOf: [{ $ref: "#/components/schemas/CourseForm" }, { properties: { confirmReopen: { type: string, enum: ["on"], description: Required to reopen a completed course } } }] }
+          multipart/form-data:
+            schema: { allOf: [{ $ref: "#/components/schemas/CourseForm" }, { properties: { confirmReopen: { type: string, enum: ["on"], description: Required to reopen a completed course } } }] }
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+    delete:
+      tags: ["Admin: Courses"]
+      summary: Deletes the course (refused while it has students, payments, attendance, grades or coupons)
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+  /admin/courses/{id}/students:
+    get:
+      tags: ["Admin: Courses"]
+      summary: The course roster (active students; completed ones for a completed course)
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200":
+          description: Roster. Remove a student with DELETE /admin/enrollments/{enrollmentId}?courseId=
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Page"
+                  - type: object
+                    properties:
+                      course: { allOf: [{ $ref: "#/components/schemas/CourseHeader" }, { properties: { teacherName: { type: [string, "null"] } } }] }
+                      rosterLabel: { type: string }
+                      data:
+                        items:
+                          type: object
+                          properties:
+                            enrollmentId: { type: string }
+                            userId: { type: string }
+                            name: { type: [string, "null"] }
+                            email: { type: string }
+                            rollNumber: { type: [integer, "null"] }
+                            rollNumberLabel: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/courses/{id}/announcements:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Courses"]
+      summary: Course-wide announcements, newest first
+      parameters: [{ $ref: "#/components/parameters/Page" }, { $ref: "#/components/parameters/PageSize" }, { $ref: "#/components/parameters/Q" }]
+      responses:
+        "200": { $ref: "#/components/responses/CourseAnnouncements" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: ["Admin: Courses"]
+      summary: Posts a course announcement; students are e-mailed
+      requestBody:
+        $ref: "#/components/requestBodies/Announcement"
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/courses/{id}/announcements/{announcementId}:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/AnnouncementId" }]
+    get:
+      tags: ["Admin: Courses"]
+      summary: One announcement
+      responses:
+        "200": { $ref: "#/components/responses/CourseAnnouncement" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      tags: ["Admin: Courses"]
+      summary: Edits an announcement. Admins can change any post
+      requestBody:
+        $ref: "#/components/requestBodies/Announcement"
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Admin: Courses"]
+      summary: Deletes an announcement. Admins can change any post
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/courses/{id}/attendance:
+    get:
+      tags: ["Admin: Courses"]
+      summary: Attendance history of the course
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/AttendanceHistory" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/courses/{id}/attendance/students:
+    get:
+      tags: ["Admin: Courses"]
+      summary: Active students, for marking attendance
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/CourseStudents" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/courses/{id}/attendance/{date}:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/AttendanceDate" }]
+    get:
+      tags: ["Admin: Courses"]
+      summary: One day's attendance (404 when none was taken)
+      responses:
+        "200": { $ref: "#/components/responses/AttendanceDay" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: ["Admin: Courses"]
+      summary: Creates or replaces the day's attendance
+      requestBody:
+        $ref: "#/components/requestBodies/AttendanceSave"
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Admin: Courses"]
+      summary: Deletes the day's attendance
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/courses/{id}/attendance/student/{enrollmentId}:
+    get:
+      tags: ["Admin: Courses"]
+      summary: A student's attendance report
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
+      responses:
+        "200": { $ref: "#/components/responses/StudentAttendance" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/courses/{id}/grades:
+    parameters: [{ $ref: "#/components/parameters/Id" }]
+    get:
+      tags: ["Admin: Courses"]
+      summary: Grade cards (test reports) of the course
+      responses:
+        "200": { $ref: "#/components/responses/GradeCards" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    post:
+      tags: ["Admin: Courses"]
+      summary: Adds a grade card
+      requestBody:
+        $ref: "#/components/requestBodies/GradeCard"
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/courses/{id}/grades/students:
+    get:
+      tags: ["Admin: Courses"]
+      summary: Active students, for a new grade card
+      parameters: [{ $ref: "#/components/parameters/Id" }]
+      responses:
+        "200": { $ref: "#/components/responses/CourseStudents" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/courses/{id}/grades/{gradeId}:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/GradeId" }]
+    get:
+      tags: ["Admin: Courses"]
+      summary: One grade card with every student's marks
+      responses:
+        "200": { $ref: "#/components/responses/GradeCard" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    put:
+      tags: ["Admin: Courses"]
+      summary: Saves a grade card
+      requestBody:
+        $ref: "#/components/requestBodies/GradeCard"
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: ["Admin: Courses"]
+      summary: Deletes a grade card
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/courses/{id}/grades/student/{enrollmentId}:
+    get:
+      tags: ["Admin: Courses"]
+      summary: A student's grade report
+      parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
+      responses:
+        "200": { $ref: "#/components/responses/StudentGrades" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/courses/{id}/attendance/student/{enrollmentId}/card:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
+    get:
+      tags: ["Admin: Courses"]
+      summary: The student's attendance card
+      responses:
+        "200": { $ref: "#/components/responses/Pdf" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /admin/courses/{id}/attendance/student/{enrollmentId}/card/email:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
+    post:
+      tags: ["Admin: Courses"]
+      summary: E-mails the attendance card PDF to the student
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /admin/courses/{id}/grades/student/{enrollmentId}/card:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
+    get:
+      tags: ["Admin: Courses"]
+      summary: The student's grade card
+      responses:
+        "200": { $ref: "#/components/responses/Pdf" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "429": { $ref: "#/components/responses/TooManyRequests" }
+  /admin/courses/{id}/grades/student/{enrollmentId}/card/email:
+    parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
+    post:
+      tags: ["Admin: Courses"]
+      summary: E-mails the grade card PDF to the student
+      responses:
+        "200": { $ref: "#/components/responses/StaffWrite" }
+        "400": { $ref: "#/components/responses/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }

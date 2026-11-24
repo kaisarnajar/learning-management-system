@@ -4,6 +4,7 @@ import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteDailyInspiration } from "@/app/admin/daily-inspiration/actions";
 import {
   dailyInspirationKindLabel,
+  dailyInspirationStatusBadge,
   getAllDailyInspirationsForAdminPaginated,
   getHomepageDailyInspirationId,
 } from "@/services/daily-inspiration";
@@ -88,7 +89,7 @@ export default async function AdminDailyInspirationPage({
             </thead>
             <tbody className="divide-y divide-border">
               {items.map((item) => {
-                const onHomepage = item.published && item.id === homepageId;
+                const status = dailyInspirationStatusBadge(item, homepageId);
                 const preview =
                   item.arabicText.length > 60
                     ? `${item.arabicText.slice(0, 60)}…`
@@ -103,19 +104,9 @@ export default async function AdminDailyInspirationPage({
                       {preview}
                     </td>
                     <td className="px-4 py-3">
-                      {!item.published ? (
-                        <span className="rounded-full bg-surface-muted-hover px-2.5 py-0.5 text-xs font-medium text-muted">
-                          Draft
-                        </span>
-                      ) : onHomepage ? (
-                        <span className="rounded-full bg-info-bg px-2.5 py-0.5 text-xs font-medium text-info-text">
-                          On homepage
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-success-bg px-2.5 py-0.5 text-xs font-medium text-success-text">
-                          Published
-                        </span>
-                      )}
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${status.className}`}>
+                        {status.label}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-muted">
                       {item.updatedAt.toLocaleDateString("en-IN", {

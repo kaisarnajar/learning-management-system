@@ -24,6 +24,13 @@ export function dailyInspirationKindLabel(kind: DailyInspirationKind): string {
   return kind === "QURAN" ? "Quranic verse" : "Hadith";
 }
 
+/** The status on /admin/daily-inspiration: draft, published, or the published entry the homepage shows. */
+export function dailyInspirationStatusBadge(item: { id: string; published: boolean }, homepageId: string | null) {
+  if (!item.published) return { label: "Draft", className: "bg-surface-muted-hover text-muted" };
+  if (item.id === homepageId) return { label: "On homepage", className: "bg-info-bg text-info-text" };
+  return { label: "Published", className: "bg-success-bg text-success-text" };
+}
+
 export async function getHomepageDailyInspiration(): Promise<DailyInspirationRecord | null> {
   return withDbErrorHandling(() => prisma.dailyInspiration.findFirst({
       where: { published: true },

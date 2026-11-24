@@ -7,6 +7,7 @@ import { incomePaymentTypeLabel } from "@/services/monthly-payment-status";
 import { loadStandardPdfAssets } from "@/services/pdf-generator";
 import { PAYMENTS } from "@/config/constants/payments";
 import { paymentMethodFromText, paymentTypeOf } from "@/services/status-compat";
+import { formatBusinessDisplayDate } from "@/services/business-time";
 
 
 /**
@@ -140,11 +141,7 @@ export async function prepareReceiptData(
   ]);
 
   const invoiceNumber = options?.invoiceNumberOverride || record.invoiceNumber || "";
-  const dateFormatted = (record.receiptGeneratedAt || new Date()).toLocaleDateString("en-IN", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const dateFormatted = formatBusinessDisplayDate(record.receiptGeneratedAt || new Date());
 
   const baseAmount = options?.baseAmountPaiseOverride !== undefined
     ? options.baseAmountPaiseOverride

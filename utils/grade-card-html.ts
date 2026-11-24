@@ -5,6 +5,7 @@ import { getAcademySettings } from "@/services/academy-settings";
 import { BRAND_CONFIG } from "@/config/brand";
 import { AUTHORITY_SIGNATURE } from "@/services/academy-contact";
 import { formatRollNumber } from "@/services/roll-numbers";
+import { formatBusinessDisplayDate } from "@/services/business-time";
 import { withMarks } from "@/services/grades";
 import { escapeHtml as e } from "@/utils/html-escape";
 
@@ -271,11 +272,7 @@ export async function generateGradeCardPdf(enrollmentId: string): Promise<Buffer
     rollNumber: formatRollNumber(enrollment.rollNumber),
     studentEmail: enrollment.user.email,
     courseTitle: course.title,
-    issueDate: new Date().toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    }),
+    issueDate: formatBusinessDisplayDate(new Date()),
     exams: examsData,
     totalExams,
     totalMarksObtained,

@@ -5,6 +5,7 @@ import { generateCertificatePdf, getCertificateFilename } from "@/services/certi
 import { prepareReceiptData, type ReceiptRecordInput } from "@/services/payment-receipt";
 import { generatePdfFromHtml, wrapHtmlForPdf } from "@/services/pdf-generator";
 import { certificateTypeOf } from "@/services/status-compat";
+import { formatBusinessDisplayDate } from "@/services/business-time";
 import { deletePrivateObject, getPrivateObject, putPrivateObject } from "@/services/storage";
 import { renderReceiptToHtml } from "@/utils/receipt-html";
 import { prisma } from "@/utils/prisma";
@@ -118,11 +119,7 @@ type CertificateEnrollment = Pick<
 };
 
 function certificateIssueDate(enrollment: CertificateEnrollment): string {
-  return (enrollment.certificateGeneratedAt ?? new Date()).toLocaleDateString("en-IN", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  return formatBusinessDisplayDate(enrollment.certificateGeneratedAt ?? new Date());
 }
 
 export async function renderCertificatePdf(

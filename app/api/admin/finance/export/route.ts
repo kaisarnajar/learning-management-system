@@ -8,16 +8,13 @@ import { getBookSalesAll, getBookOrderFinanceAll } from "@/services/finance-book
 import { incomePaymentTypeLabel } from "@/services/monthly-payment-status";
 import { expenseCategoryLabel } from "@/services/expense-categories";
 import { bookOrderStatusLabel } from "@/services/bookstore";
+import { formatBusinessDisplayDate } from "@/services/business-time";
 import * as XLSX from "xlsx";
 
 export const dynamic = "force-dynamic";
 
 function formatDate(date: Date): string {
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return formatBusinessDisplayDate(date, { day: "numeric", month: "short", year: "numeric" });
 }
 
 export async function GET(request: Request) {

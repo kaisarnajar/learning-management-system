@@ -21,6 +21,10 @@ import {
 } from "@/services/student-admin";
 import { adminEnrollUserSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { recordAudit } from "@/services/audit";
+
+/** Rolls the removal back when the enrollment gained history since it was read. */
+class EnrollmentHasHistoryError extends Error {}
 
 function revalidateEnrollmentPaths(courseId: string) {
   const paths = [
@@ -213,8 +217,15 @@ export async function previewStudentAccountForEnrollment(email: string) {
   return lookupStudentAccountForEnrollment(normalizeStudentEmail(email));
 }
 
+/**
+ * Removes an enrollment that never got going (a mistaken or abandoned one).
+ * Deleting cascades to its grades and attendance, and a payment or a
+ * certificate would lose the enrollment it belongs to, so an enrollment with
+ * any of those is refused and kept as the student's record. The removal is
+ * audited with a snapshot of the row.
+ */
 export async function removeEnrollmentFromCourse(enrollmentId: string, courseId: string) {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
       where: { id: enrollmentId },
@@ -223,7 +234,45 @@ export async function removeEnrollmentFromCourse(enrollmentId: string, courseId:
   if (!enrollment || enrollment.courseId !== courseId) {
     return { error: "Enrollment not found." };
   }
-  await withDbErrorHandling(() => prisma.enrollment.delete({ where: { id: enrollmentId } }), "Database operation failed");
+
+  const removed = await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
+    const [current, payments, grades, attendance] = await Promise.all([
+      tx.enrollment.findUnique({ where: { id: enrollmentId }, select: { certificateNumber: true, certificateGeneratedAt: true } }),
+      tx.paymentRecord.count({ where: { userId: enrollment.userId, courseId } }),
+      tx.courseGradeRecord.count({ where: { enrollmentId } }),
+      tx.courseAttendanceRecord.count({ where: { enrollmentId } }),
+    ]);
+    if (!current) return false;
+    if (current.certificateNumber || current.certificateGeneratedAt || payments > 0 || grades > 0 || attendance > 0) {
+      throw new EnrollmentHasHistoryError();
+    }
+    await tx.enrollment.delete({ where: { id: enrollmentId } });
+    await recordAudit(tx, session, {
+      action: "delete",
+      entity: "Enrollment",
+      entityId: enrollmentId,
+      before: {
+        userId: enrollment.userId,
+        courseId,
+        status: enrollmentStatusOf(enrollment),
+        rollNumber: enrollment.rollNumber,
+        createdAt: enrollment.createdAt,
+      },
+    });
+    return true;
+  }).catch((error: unknown) => {
+    if (error instanceof EnrollmentHasHistoryError) return "has-history" as const;
+    throw error;
+  }), "Database operation failed");
+
+  if (removed === "has-history") {
+    return {
+      error: "This enrollment has a certificate, payments, grades or attendance, so it cannot be removed: it is kept as the student's record.",
+    };
+  }
+  if (!removed) {
+    return { error: "Enrollment not found." };
+  }
 
   revalidateEnrollmentPaths(courseId);
   revalidatePath(`/admin/students/${enrollment.userId}`);

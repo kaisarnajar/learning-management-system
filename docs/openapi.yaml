@@ -2277,7 +2277,7 @@ paths:
   /admin/enrollments/{id}:
     delete:
       tags: ["Admin: Enrollments"]
-      summary: Removes a student from one course; the account stays
+      summary: Removes a student from one course (audited); the account stays. An enrollment with a certificate, payments, grades or attendance is refused with 400
       parameters:
         - { $ref: "#/components/parameters/Id" }
         - { name: courseId, in: query, required: true, schema: { type: string } }

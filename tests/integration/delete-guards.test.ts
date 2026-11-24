@@ -5,6 +5,7 @@ import { deleteCourse } from "@/app/admin/courses/actions";
 import { deleteTeacherById } from "@/app/admin/teachers/actions";
 import { deleteStudentUser } from "@/app/admin/students/actions";
 import { deleteBook } from "@/app/admin/bookstore/actions";
+import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
 import {
   createBook,
   createCourse,
@@ -196,6 +197,51 @@ describe.skipIf(SKIP_WITHOUT_DB)("delete guards", () => {
       expect(await deleteBook(book.id)).toEqual({});
       expect(await prisma.book.count()).toBe(0);
       expect((await deleteBook(book.id)).error).toBe("Book not found.");
+    });
+  });
+
+  describe("enrollments", () => {
+    const histories = {
+      "a certificate": async (enrollmentId: string) => {
+        await prisma.enrollment.update({ where: { id: enrollmentId }, data: { certificateNumber: "DQA-CERT/2026-27/00001", certificateGeneratedAt: new Date() } });
+      },
+      "a payment record": async (_enrollmentId: string, userId: string, courseId: string) => {
+        await prisma.paymentRecord.create({ data: { userId, courseId, amountInrPaise: 50000, paidAt: new Date(), paymentType: "enrollment", paymentTypeEnum: "ENROLLMENT" } });
+      },
+      "a grade": async (enrollmentId: string, _userId: string, courseId: string) => {
+        const grade = await prisma.courseGrade.create({ data: { courseId, title: "Test 1", date: new Date(), maxMarks: 10 } });
+        await prisma.courseGradeRecord.create({ data: { gradeId: grade.id, enrollmentId, marksObtained: 7 } });
+      },
+      "attendance": async (enrollmentId: string, _userId: string, courseId: string) => {
+        const day = await prisma.courseAttendance.create({ data: { courseId, date: new Date() } });
+        await prisma.courseAttendanceRecord.create({ data: { attendanceId: day.id, enrollmentId, isPresent: true } });
+      },
+    };
+
+    it.each(Object.keys(histories) as (keyof typeof histories)[])("refuses to remove an enrollment with %s", async (history) => {
+      const course = await createCourse();
+      const student = await createUser();
+      const enrollment = await createEnrollment(student.id, course.id);
+      await histories[history](enrollment.id, student.id, course.id);
+
+      const result = await removeEnrollmentFromCourse(enrollment.id, course.id);
+
+      expect(result.error).toContain("cannot be removed");
+      expect(await prisma.enrollment.count({ where: { id: enrollment.id } })).toBe(1);
+      expect(await prisma.auditLog.count()).toBe(0);
+    });
+
+    it("removes an enrollment without history and audits it", async () => {
+      const course = await createCourse();
+      const student = await createUser();
+      const enrollment = await createEnrollment(student.id, course.id, { status: "pending_approval", statusEnum: "PENDING_APPROVAL" });
+
+      expect(await removeEnrollmentFromCourse(enrollment.id, course.id)).toEqual({ success: "Enrollment removed successfully." });
+
+      expect(await prisma.enrollment.count({ where: { id: enrollment.id } })).toBe(0);
+      const audit = await prisma.auditLog.findFirstOrThrow({ where: { entity: "Enrollment", entityId: enrollment.id } });
+      expect(audit).toMatchObject({ action: "delete", actorEmail: "admin@example.test" });
+      expect(audit.before).toMatchObject({ userId: student.id, courseId: course.id, status: "PENDING_APPROVAL" });
     });
   });
 });

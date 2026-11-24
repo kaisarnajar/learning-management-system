@@ -1360,6 +1360,7 @@ paths:
   /auth/change-password:
     post:
       tags: [Account]
+      description: Every other app session and every website session of the account is signed out; the calling session stays signed in.
       requestBody:
         required: true
         content:

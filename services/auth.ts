@@ -4,20 +4,18 @@ import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/services/auth.config";
 import { prisma } from "@/utils/prisma";
-import { getTeacherByEmail, resolveUserRole } from "@/services/teacher-auth";
+import { resolveUserRole } from "@/services/teacher-auth";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { getClientIp, rateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { getApiActorSession } from "@/services/api-actor";
 import { prepareGoogleLink } from "@/services/google-link";
+import { authJwtCallback } from "@/services/auth-jwt";
 
 /** Surfaced to the login form as result.code so it can offer to resend the verification email. */
 class EmailNotVerifiedError extends CredentialsSignin {
   code = "email_not_verified";
 }
-
-/** How long role, teacher link and verification state may be served from the token before being re-read. */
-const TOKEN_REFRESH_INTERVAL_MS = 60 * 1000;
 
 const prismaAdapter = PrismaAdapter(prisma);
 const originalCreateUser = prismaAdapter.createUser;
@@ -83,70 +81,7 @@ const nextAuth = NextAuth({
       if (account?.provider !== "google" || !user.email) return true;
       return prepareGoogleLink(user.email);
     },
-    async jwt({ token, user, account, trigger }) {
-      if (user?.id) {
-        token.id = user.id;
-
-        // Auto-verify email for OAuth providers (e.g. Google) on first sign-in.
-        if (account && account.provider !== "credentials") {
-          try {
-            const dbUser = await prisma.user.findUnique({
-              select: { emailVerified: true },
-              where: { id: user.id },
-            });
-            if (dbUser && !dbUser.emailVerified) {
-              await prisma.user.update({
-                where: { id: user.id },
-                data: { emailVerified: new Date() },
-              });
-            }
-          } catch (e) {
-            console.error("[auth] Error auto-verifying OAuth user:", e);
-          }
-        }
-      }
-
-      // Role, teacher link and verification state are re-read from the
-      // database on sign-in, on an explicit update() and at most once a
-      // minute otherwise, so removing an admin email or verifying an address
-      // takes effect on the next request instead of at the next sign-in.
-      const stale = !token.refreshedAt || Date.now() - token.refreshedAt > TOKEN_REFRESH_INTERVAL_MS;
-      if (token.email && (user || trigger === "update" || !token.role || stale)) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            select: { emailVerified: true, name: true, image: true, deletedAt: true },
-            where: { email: token.email }
-          });
-          if (!dbUser || dbUser.deletedAt) {
-            // Account gone: hand back an empty token so the session ends.
-            return null;
-          }
-          token.emailVerified = dbUser.emailVerified ? dbUser.emailVerified.toISOString() : null;
-          token.refreshedAt = Date.now();
-          if (dbUser?.name) token.name = dbUser.name;
-          
-          // Never store large base64 data URLs in JWT session cookie header to prevent Vercel 494 (REQUEST_HEADER_TOO_LARGE)
-          if (dbUser?.image && !dbUser.image.startsWith("data:") && dbUser.image.length < 500) {
-            token.picture = dbUser.image;
-          } else {
-            token.picture = null;
-          }
-
-          const role = await resolveUserRole(token.email as string);
-          token.role = role;
-          if (role === "TEACHER") {
-            const teacher = await getTeacherByEmail(token.email as string);
-            token.teacherId = teacher?.id;
-          } else {
-            token.teacherId = undefined;
-          }
-        } catch (error) {
-          console.error("[auth] Failed to resolve user role:", error);
-          token.role = token.role ?? "USER";
-        }
-      }
-      return token;
-    },
+    jwt: authJwtCallback,
     async session({ session, token }) {
       if (session.user) {
         if (token.name) session.user.name = token.name as string;

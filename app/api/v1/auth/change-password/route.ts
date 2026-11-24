@@ -8,7 +8,8 @@ import { apiError, apiServerError, readJson } from "@/utils/api-response";
 
 /**
  * Changes the caller's password: `{ currentPassword, newPassword }`. Every
- * other app session of the account is signed out; this one stays signed in.
+ * other app session and every website session of the account is signed out;
+ * this one stays signed in.
  * Accounts that only use Google have no password to change.
  */
 export async function POST(request: NextRequest) {
@@ -35,7 +36,11 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
     await prisma.$transaction([
-      prisma.user.update({ where: { id: user.id }, data: { password: await hash(parsed.data.newPassword, 12) } }),
+      // sessionVersion ends every web session (services/auth-jwt.ts).
+      prisma.user.update({
+        where: { id: user.id },
+        data: { password: await hash(parsed.data.newPassword, 12), sessionVersion: { increment: 1 } },
+      }),
       prisma.apiRefreshToken.updateMany({
         where: { userId: user.id, revokedAt: null, id: { not: sessionId } },
         data: { revokedAt: now },

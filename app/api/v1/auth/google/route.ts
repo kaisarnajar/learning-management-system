@@ -106,7 +106,8 @@ export async function POST(request: NextRequest) {
       // the web sign-in flow.
       user = await prisma.user.update({
         where: { id: user.id },
-        data: { emailVerified: new Date(), password: null },
+        // sessionVersion ends any web session on the row (services/auth-jwt.ts).
+        data: { emailVerified: new Date(), password: null, sessionVersion: { increment: 1 } },
         select: userSelect,
       });
       // Whoever registered the unverified row may still hold an API session.

@@ -10,9 +10,11 @@ import { GET as me, PUT as updateMe } from "@/app/api/v1/auth/me/route";
 import { GET as teacherCourses } from "@/app/api/v1/teacher/courses/route";
 import { GET as adminDashboard } from "@/app/api/v1/admin/dashboard/route";
 import { POST as resetPassword } from "@/app/api/auth/reset-password/route";
+import { POST as changePassword } from "@/app/api/v1/auth/change-password/route";
 import { confirmEmailVerification } from "@/app/verify-email/actions";
 import { createPasswordResetToken } from "@/services/password-reset";
 import { generateVerificationToken } from "@/services/tokens";
+import { authJwtCallback } from "@/services/auth-jwt";
 import { createTeacher, createUser, resetDb, runAction, SKIP_WITHOUT_DB } from "../helpers/db";
 import { apiRequest, bearer, createPasswordUser, jsonOf, signedInStudent } from "../helpers/api";
 
@@ -158,6 +160,66 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       expect((await refreshWith(refreshToken)).status).toBe(401);
       // The owner's own new session is unaffected.
       expect((await refreshWith(ownerTokens.refreshToken)).status).toBe(200);
+    });
+  });
+
+  describe("web sessions end on a password reset or change and on a take-over", () => {
+    type JwtArgs = Parameters<typeof authJwtCallback>[0];
+    /** The web session cookie's token right after a sign-in, as Auth.js builds it. */
+    const webSignIn = async (user: { id: string; email: string }) =>
+      (await authJwtCallback({ token: { email: user.email }, user: { id: user.id, email: user.email } } as JwtArgs))!;
+    /** The same cookie presented on a later request, once its refresh minute has passed. */
+    const laterRequest = (token: Awaited<ReturnType<typeof webSignIn>>) =>
+      authJwtCallback({ token: { ...token, refreshedAt: 0 } } as JwtArgs);
+    const sessionVersionOf = async (email: string) =>
+      (await prisma.user.findUniqueOrThrow({ where: { email }, select: { sessionVersion: true } })).sessionVersion;
+
+    it("a password reset ends the web sessions issued before it", async () => {
+      const { user } = await createPasswordUser();
+      const cookie = await webSignIn(user);
+      expect(cookie.sessionVersion).toBe(0);
+      expect(await laterRequest(cookie)).not.toBeNull();
+
+      const token = await createPasswordResetToken(user.email);
+      const reset = await resetPassword(apiRequest("/api/auth/reset-password", { method: "POST", json: { token, password: "brand-new-pass-1", confirmPassword: "brand-new-pass-1" } }));
+      expect(reset.status).toBe(200);
+
+      expect(await sessionVersionOf(user.email)).toBe(1);
+      expect(await laterRequest(cookie)).toBeNull();
+      // Signing in again starts a session at the new version.
+      expect(await laterRequest(await webSignIn(user))).not.toBeNull();
+    });
+
+    it("changing the password in the app ends the web sessions", async () => {
+      const { user, password } = await createPasswordUser();
+      const cookie = await webSignIn(user);
+      const { accessToken } = await (await import("@/services/api-auth")).issueApiSession({ id: user.id, email: user.email, role: "USER" });
+
+      const changed = await changePassword(apiRequest("/x", { method: "POST", headers: bearer(accessToken), json: { currentPassword: password, newPassword: "second-password-2" } }));
+      expect(changed.status).toBe(200);
+
+      expect(await laterRequest(cookie)).toBeNull();
+    });
+
+    it("verifying the address and a mobile Google take-over move the version", async () => {
+      await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "Squatter", email: "verify.web@example.test", password: "long-enough-1", acceptPolicies: true } }));
+      const { token } = await generateVerificationToken("verify.web@example.test");
+      const form = new FormData();
+      form.set("token", token);
+      await runAction(() => confirmEmailVerification(form));
+      expect(await sessionVersionOf("verify.web@example.test")).toBe(1);
+
+      process.env.AUTH_GOOGLE_ID = "client-id";
+      verifyIdToken.mockResolvedValue({
+        getPayload: () => ({ iss: "https://accounts.google.com", aud: "client-id", email: "taken.web@example.test", email_verified: true, name: "Owner" }),
+      });
+      await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "Squatter", email: "taken.web@example.test", password: "long-enough-1", acceptPolicies: true } }));
+      expect((await google(apiRequest("/api/v1/auth/google", { method: "POST", json: { idToken: "id-token" } }))).status).toBe(200);
+      expect(await sessionVersionOf("taken.web@example.test")).toBe(1);
+
+      // A verified account signing in with Google again is not a take-over.
+      expect((await google(apiRequest("/api/v1/auth/google", { method: "POST", json: { idToken: "id-token" } }))).status).toBe(200);
+      expect(await sessionVersionOf("taken.web@example.test")).toBe(1);
     });
   });
 

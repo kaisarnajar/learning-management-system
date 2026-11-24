@@ -27,21 +27,23 @@ export async function prepareGoogleLink(rawEmail: string): Promise<boolean | str
   if (existing.deletedAt) return false;
   if (existing.emailVerified) return true;
 
-  if (existing.password) {
-    // The row was created with a password nobody has proven ownership of.
-    // Google has just proven ownership of the address, so the password
-    // (possibly set by someone else) must not survive the link.
-    if (UNVERIFIED_LINK_POLICY === "refuse") return "/login?error=unverified-link";
-    await withDbErrorHandling(
-      () => prisma.user.update({
-        where: { id: existing.id },
-        data: { password: null, emailVerified: new Date() },
-      }),
-      "Database operation failed",
-    );
-  }
-  // Whoever registered the unverified row may hold a mobile API session;
-  // it must not carry over to the account the real owner is taking back.
+  // The row was created with a password nobody has proven ownership of.
+  // Google has just proven ownership of the address, so the password
+  // (possibly set by someone else) must not survive the link.
+  if (existing.password && UNVERIFIED_LINK_POLICY === "refuse") return "/login?error=unverified-link";
+  // Whoever registered the unverified row may hold a session; none carries
+  // over to the account the real owner is taking back. sessionVersion ends
+  // web sessions (services/auth-jwt.ts); the owner's new session reads the
+  // bumped value when the jwt callback runs after this one.
+  await withDbErrorHandling(
+    () => prisma.user.update({
+      where: { id: existing.id },
+      data: existing.password
+        ? { password: null, emailVerified: new Date(), sessionVersion: { increment: 1 } }
+        : { sessionVersion: { increment: 1 } },
+    }),
+    "Database operation failed",
+  );
   await revokeAllApiSessions(existing.id);
   return true;
 }

@@ -19,6 +19,8 @@ describe.skipIf(SKIP_WITHOUT_DB)("prepareGoogleLink", () => {
     const row = await prisma.user.findUniqueOrThrow({ where: { id: squatter.id } });
     expect(row.password).toBeNull();
     expect(row.emailVerified).not.toBeNull();
+    // Web sessions on the row end too (services/auth-jwt.ts).
+    expect(row.sessionVersion).toBe(1);
     expect(await rotateApiSession(refreshToken)).toBeNull();
   });
 
@@ -28,6 +30,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("prepareGoogleLink", () => {
 
     expect(await prepareGoogleLink("verified@example.test")).toBe(true);
     expect(await rotateApiSession(refreshToken)).not.toBeNull();
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: owner.id } })).sessionVersion).toBe(0);
 
     await prisma.user.update({ where: { id: owner.id }, data: { deletedAt: new Date() } });
     expect(await prepareGoogleLink("verified@example.test")).toBe(false);

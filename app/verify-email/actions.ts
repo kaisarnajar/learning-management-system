@@ -24,7 +24,8 @@ export async function confirmEmailVerification(formData: FormData) {
   await prisma.$transaction([
     prisma.user.update({
       where: { id: user.id },
-      data: { emailVerified: new Date() },
+      // No session of any kind from before verification survives.
+      data: { emailVerified: new Date(), sessionVersion: { increment: 1 } },
     }),
     prisma.verificationToken.delete({
       where: {

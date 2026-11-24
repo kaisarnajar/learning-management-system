@@ -27,7 +27,8 @@ export async function POST(request: Request) {
 
     const user = await prisma.user.update({
       where: { email: consumed.email },
-      data: { password: hashedPassword },
+      // Ends every web session issued before the reset (services/auth-jwt.ts).
+      data: { password: hashedPassword, sessionVersion: { increment: 1 } },
       select: { id: true, emailVerified: true },
     });
     // The reset link was delivered to the mailbox, which proves ownership as
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     if (!user.emailVerified) {
       await prisma.user.update({ where: { id: user.id }, data: { emailVerified: new Date() } });
     }
-    // A reset follows a lost or compromised password: end every mobile session.
+    // A reset follows a lost or compromised password: end every mobile session too.
     await revokeAllApiSessions(user.id);
 
     return NextResponse.json({ success: true });

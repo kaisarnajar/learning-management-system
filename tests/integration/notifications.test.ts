@@ -88,6 +88,27 @@ describe.skipIf(SKIP_WITHOUT_DB)("notification fan-out and de-duplication", () =
     expect(rows.some((r) => r.userId === pending.id || r.userId === outsider.id)).toBe(false);
   });
 
+  it("leaves rejected, awaiting-fee and deleted students out of a course announcement", async () => {
+    const course = await createCourse();
+    const active = await createUser();
+    const completed = await createUser();
+    const rejected = await createUser();
+    const awaitingFee = await createUser();
+    const deleted = await createUser({ deletedAt: new Date() });
+    await createEnrollment(active.id, course.id);
+    await createEnrollment(completed.id, course.id, { status: "completed", statusEnum: "COMPLETED" });
+    await createEnrollment(rejected.id, course.id, { status: "rejected", statusEnum: "REJECTED" });
+    await createEnrollment(awaitingFee.id, course.id, { status: "awaiting_enrollment_fee", statusEnum: "AWAITING_ENROLLMENT_FEE" });
+    await createEnrollment(deleted.id, course.id);
+
+    await notifyEnrolledStudentsOfCourseAnnouncement({
+      courseId: course.id, courseTitle: course.title, announcementId: "ann-2", title: "Exam", body: "Exam on Friday",
+    });
+
+    const recipients = (await prisma.studentNotification.findMany()).map((r) => r.userId).sort();
+    expect(recipients).toEqual([active.id, completed.id].sort());
+  });
+
   it("sends a site announcement to every non-teacher account except deleted ones", async () => {
     const student = await createUser();
     const removed = await createUser({ deletedAt: new Date() });

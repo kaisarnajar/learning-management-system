@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import type { StudentNotification, StudentNotificationType } from "@prisma/client";
-import { PENDING_ENROLLMENT_APPROVAL } from "@/services/enrollment-status";
+import { ENROLLMENT_STATUS } from "@/config/constants/business";
 import {
   DEFAULT_PAGE_SIZE,
   type PaginatedResult,
@@ -256,11 +256,16 @@ export async function createStudentNotificationsForUsers(
       }), "Database operation failed");
 }
 
+/**
+ * Students who are in the course: active or completed enrollments of accounts
+ * that still exist. Pending, awaiting-fee and rejected requests are not.
+ */
 async function getEnrolledStudentUserIdsForCourse(courseId: string): Promise<string[]> {
   const enrollments = await withDbErrorHandling(() => prisma.enrollment.findMany({
       where: {
         courseId,
-        status: { not: PENDING_ENROLLMENT_APPROVAL },
+        status: { in: [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.COMPLETED] },
+        user: { deletedAt: null },
       },
       select: { userId: true },
     }), "Database operation failed");

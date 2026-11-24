@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { formatPrice } from "@/utils/money";
 import { requireAdmin } from "@/services/auth-actions";
-import { prisma } from "@/utils/prisma";
+import { getShippingSlabs } from "@/services/book-orders";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteShippingSlab } from "./actions";
 import { ShippingSlabForm } from "@/components/admin/ShippingSlabForm";
@@ -14,9 +14,7 @@ export const metadata: Metadata = {
 export default async function AdminShippingChargesPage() {
   await requireAdmin();
 
-  const slabs = await prisma.shippingChargeSlab.findMany({
-    orderBy: { minWeightGrams: "asc" },
-  });
+  const slabs = await getShippingSlabs();
 
   return (
     <div>

@@ -1,12 +1,11 @@
 import { requireAdmin } from "@/services/auth-actions";
-import { prisma } from "@/utils/prisma";
-import { resolveWaiverFeeType, waiverFeeTypeLabel } from "@/services/waiver-requests";
+import { getAdminCouponsPaginated, getCouponCourseOptions, getWaiverRequests } from "@/services/coupons-admin";
 import { AdminCouponsTable } from "@/components/admin/AdminCouponsTable";
 import { AdminCouponRequestsTable } from "@/components/admin/AdminCouponRequestsTable";
 import { CreateCouponDialog } from "@/components/admin/CreateCouponDialog";
 import Link from "next/link";
 import { Pagination } from "@/components/shared/Pagination";
-import { clampPage, paginationArgs, parsePaginationParams } from "@/utils/pagination";
+import { parsePaginationParams } from "@/utils/pagination";
 
 export const metadata = {
   title: "Fee Waivers & Coupons | Admin",
@@ -53,34 +52,16 @@ export default async function AdminCouponsPage({
   // Coupons are paginated per tab (special / default) instead of loading every row.
   const couponType = activeTab === "special" ? "SPECIAL" : "DEFAULT";
   const { page: requestedPage, pageSize } = parsePaginationParams(params);
-  const couponWhere = { type: couponType as "SPECIAL" | "DEFAULT" };
-  const couponTotal = activeTab === "requests" ? 0 : await prisma.coupon.count({ where: couponWhere });
-  const couponPage = clampPage(requestedPage, couponTotal, pageSize);
-  const coupons = activeTab === "requests" ? [] : await prisma.coupon.findMany({
-    where: couponWhere,
-    include: {
-      course: { select: { title: true } },
-      user: { select: { name: true, email: true } },
-    },
-    orderBy: { createdAt: "desc" },
-    ...paginationArgs(couponPage, pageSize),
-  });
+  const couponResult = activeTab === "requests"
+    ? { items: [], totalCount: 0, page: 1 }
+    : await getAdminCouponsPaginated(couponType, requestedPage, pageSize);
+  const coupons = couponResult.items;
+  const couponTotal = couponResult.totalCount;
+  const couponPage = couponResult.page;
 
-  const requests = activeTab !== "requests" ? [] : (await prisma.couponRequest.findMany({
-    include: {
-      user: { select: { name: true, email: true, whatsapp: true } },
-      course: { select: { title: true } },
-    },
-    orderBy: { createdAt: "desc" },
-  })).map((request) => ({
-    ...request,
-    feeTypeLabel: waiverFeeTypeLabel(resolveWaiverFeeType(request)),
-  }));
+  const requests = activeTab !== "requests" ? [] : await getWaiverRequests();
 
-  const courses = await prisma.course.findMany({
-    select: { id: true, title: true },
-    orderBy: { title: "asc" },
-  });
+  const courses = await getCouponCourseOptions();
 
   return (
     <div className="space-y-6">

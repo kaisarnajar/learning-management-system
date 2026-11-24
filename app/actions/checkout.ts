@@ -1,16 +1,14 @@
 "use server";
 
 import { ensureAuth } from "@/utils/auth-utils";
-import { isCourseEnrollmentOpen } from "@/services/course-status";
-import { getRegistrationFeePaise } from "@/services/course-pricing";
-import { getCourseById } from "@/services/courses";
-import { canReapplyForEnrollment } from "@/services/enrollment-status";
-import { startEnrollment } from "@/services/enrollments";
-import { enrollmentStatusOf, isApprovedEnrollment } from "@/services/status-compat";
-import { isUserProfileComplete, PROFILE_COMPLETE_REDIRECT } from "@/services/profile";
-import { prisma } from "@/utils/prisma";
-import { isUpiConfigured } from "@/services/upi";
+import { requestEnrollment } from "@/services/enrollments";
+import { PROFILE_COMPLETE_REDIRECT } from "@/utils/profile-format";
 
+/**
+ * The website's "Enrol" button: signs the student in, runs requestEnrollment
+ * (services/enrollments.ts, shared with POST /api/v1/enrollments) and answers
+ * where the page should go next.
+ */
 export async function submitCheckout(courseId: string) {
   const { session, error: authError } = await ensureAuth();
 
@@ -26,85 +24,37 @@ export async function submitCheckout(courseId: string) {
   }
 
   try {
-    const course = await getCourseById(courseId);
-    if (!course || !isCourseEnrollmentOpen(course.status)) {
-      return { error: "This course is not open for enrollment.", status: 404 };
+    const result = await requestEnrollment(session.user.id, courseId);
+    if (result.ok) {
+      // A course with a fee goes to payment; a free one awaits the admin's approval.
+      return { redirectUrl: result.requiresEnrollmentFee ? `/profile/courses/${courseId}/enrollment-pay` : "/profile/courses" };
     }
 
-    const enrollmentFeePaise = getRegistrationFeePaise(course);
-    const requiresEnrollmentFee = enrollmentFeePaise > 0;
-
-    if (requiresEnrollmentFee && !(await isUpiConfigured())) {
-      return {
-        error:
-          "This course requires an enrollment fee, but online payments are not configured yet. Please contact the academy.",
-        status: 503,
-      };
+    switch (result.reason) {
+      case "COURSE_NOT_OPEN":
+        return { error: "This course is not open for enrollment.", status: 404 };
+      case "ALREADY_REQUESTED":
+        if (result.status === "ACTIVE" || result.status === "COMPLETED") {
+          return { error: "You are already enrolled in this course.", alreadyEnrolled: true, status: 400 };
+        }
+        if (result.status === "AWAITING_ENROLLMENT_FEE") {
+          return { redirectUrl: `/profile/courses/${courseId}/enrollment-pay`, alreadyEnrolled: true };
+        }
+        return { redirectUrl: "/profile/courses", alreadyEnrolled: true };
+      case "PROFILE_INCOMPLETE":
+        return {
+          error: "Please complete your profile before enrolling in a course.",
+          profileIncomplete: true,
+          redirectUrl: PROFILE_COMPLETE_REDIRECT,
+          status: 403,
+        };
+      case "PAYMENTS_NOT_CONFIGURED":
+        return {
+          error:
+            "This course requires an enrollment fee, but online payments are not configured yet. Please contact the academy.",
+          status: 503,
+        };
     }
-
-    const existing = await prisma.enrollment.findUnique({
-      where: {
-        userId_courseId: { userId: session.user.id, courseId },
-      },
-    });
-
-    const existingStatus = existing ? enrollmentStatusOf(existing) : null;
-
-    if (existing && isApprovedEnrollment(existing)) {
-      return {
-        error: "You are already enrolled in this course.",
-        alreadyEnrolled: true,
-        status: 400,
-      };
-    }
-
-    if (existingStatus === "PENDING_APPROVAL") {
-      return {
-        redirectUrl: "/profile/courses",
-        alreadyEnrolled: true,
-      };
-    }
-
-    if (existingStatus === "AWAITING_ENROLLMENT_FEE") {
-      return {
-        redirectUrl: `/profile/courses/${courseId}/enrollment-pay`,
-        alreadyEnrolled: true,
-      };
-    }
-
-    if (existing && !canReapplyForEnrollment(existing.status)) {
-      return {
-        redirectUrl: "/profile/courses",
-        alreadyEnrolled: true,
-      };
-    }
-
-    const profileComplete = await isUserProfileComplete(session.user.id);
-    if (!profileComplete) {
-      return {
-        error: "Please complete your profile before enrolling in a course.",
-        profileIncomplete: true,
-        redirectUrl: PROFILE_COMPLETE_REDIRECT,
-        status: 403,
-      };
-    }
-
-    // A previously rejected request is reused (same row, status reset) so the
-    // (userId, courseId) uniqueness holds and the history stays on one row.
-    await startEnrollment(
-      session.user.id,
-      course.id,
-      requiresEnrollmentFee ? "AWAITING_ENROLLMENT_FEE" : "PENDING_APPROVAL",
-    );
-
-    if (requiresEnrollmentFee) {
-      return {
-        redirectUrl: `/profile/courses/${courseId}/enrollment-pay`,
-      };
-    }
-
-    // Free course: the request now awaits admin approval.
-    return { redirectUrl: "/profile/courses" };
   } catch (error) {
     console.error("Caught error:", error);
     return { error: "Could not submit enrollment request. Please try again.", status: 500 };

@@ -14,6 +14,11 @@ import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr, type TextSearchWhere } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollment-status";
+import { isCourseEnrollmentOpen } from "@/services/course-status";
+import { getRegistrationFeePaise } from "@/services/course-pricing";
+import { getCourseById } from "@/services/courses";
+import { isUserProfileComplete } from "@/services/profile";
+import { isUpiConfigured } from "@/services/upi";
 
 async function enrollmentSearchWhere(searchQuery?: string): Promise<TextSearchWhere | undefined> {
   if (!searchQuery) return undefined;
@@ -73,6 +78,45 @@ export async function startEnrollment(
       data: { ...enrollmentStatusData(status), rejectedAt: null, rollNumber: null },
     });
   }), "Database operation failed");
+}
+
+/**
+ * What happened when a student asked to enrol (website checkout and
+ * POST /api/v1/enrollments). Checked in this order, the same for both:
+ *  1. the course exists and is open for enrollment;
+ *  2. an existing row the student cannot re-apply over (anything but a
+ *     rejected request) is reported as it is, with its status;
+ *  3. the student's profile is complete;
+ *  4. a course with an enrollment fee needs online payment configured;
+ * then the enrollment is started (a rejected row is reused), awaiting its
+ * fee or the admin's approval.
+ */
+export type EnrollmentRequestResult =
+  | { ok: true; enrollment: Enrollment; requiresEnrollmentFee: boolean; feeAmountPaise: number }
+  | { ok: false; reason: "COURSE_NOT_OPEN" }
+  | { ok: false; reason: "ALREADY_REQUESTED"; enrollment: Enrollment; status: EnrollmentStatus | null }
+  | { ok: false; reason: "PROFILE_INCOMPLETE" }
+  | { ok: false; reason: "PAYMENTS_NOT_CONFIGURED" };
+
+export async function requestEnrollment(userId: string, courseId: string): Promise<EnrollmentRequestResult> {
+  const course = await getCourseById(courseId);
+  if (!course || !isCourseEnrollmentOpen(course.status)) return { ok: false, reason: "COURSE_NOT_OPEN" };
+
+  const existing = await withDbErrorHandling(() => prisma.enrollment.findUnique({
+      where: { userId_courseId: { userId, courseId } },
+    }), "Database operation failed");
+  if (existing && enrollmentStatusOf(existing) !== "REJECTED") {
+    return { ok: false, reason: "ALREADY_REQUESTED", enrollment: existing, status: enrollmentStatusOf(existing) };
+  }
+
+  if (!(await isUserProfileComplete(userId))) return { ok: false, reason: "PROFILE_INCOMPLETE" };
+
+  const feeAmountPaise = getRegistrationFeePaise(course);
+  const requiresEnrollmentFee = feeAmountPaise > 0;
+  if (requiresEnrollmentFee && !(await isUpiConfigured())) return { ok: false, reason: "PAYMENTS_NOT_CONFIGURED" };
+
+  const enrollment = await startEnrollment(userId, course.id, requiresEnrollmentFee ? "AWAITING_ENROLLMENT_FEE" : "PENDING_APPROVAL");
+  return { ok: true, enrollment, requiresEnrollmentFee, feeAmountPaise };
 }
 
 export async function getUserCourseEnrollmentMap(userId: string) {

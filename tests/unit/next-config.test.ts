@@ -10,3 +10,9 @@ describe("the Server Action body limit", () => {
     expect(limit as number).toBeLessThanOrEqual(4.5 * 1024 * 1024);
   });
 });
+
+describe("next/image remote hosts in the config", () => {
+  it("never falls back to a placeholder host", () => {
+    expect(JSON.stringify(nextConfig.images?.remotePatterns ?? [])).not.toContain("your-academy");
+  });
+});

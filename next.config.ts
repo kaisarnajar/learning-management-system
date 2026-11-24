@@ -1,10 +1,13 @@
 import type { NextConfig } from "next";
 import { FORM_UPLOAD_FALLBACK_MAX_BYTES } from "./config/constants/direct-upload";
+import { imageRemotePatterns } from "./config/image-remote-patterns";
 import { STATIC_SECURITY_HEADERS } from "./services/security-headers";
 
-const r2Domain = process.env.R2_PUBLIC_URL 
-  ? new URL(process.env.R2_PUBLIC_URL).hostname 
-  : "cdn.your-academy.com";
+// Warn only for a production build or server; dev and tests often run without R2.
+const remotePatterns = imageRemotePatterns(
+  process.env.R2_PUBLIC_URL,
+  process.env.NODE_ENV === "production" ? (message) => console.warn(`[next.config] ${message}`) : undefined,
+);
 
 const nextConfig: NextConfig = {
   turbopack: {
@@ -27,12 +30,7 @@ const nextConfig: NextConfig = {
     },
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: r2Domain,
-      },
-    ],
+    remotePatterns,
   },
   async headers() {
     return [

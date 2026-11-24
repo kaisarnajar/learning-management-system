@@ -8,7 +8,7 @@ import { buildMonthlyFeeLabel, buildEnrollmentFeeLabel } from "@/services/monthl
 import { getFeeFrequencyPaymentType } from "@/services/fee-frequency";
 import { buildPeriodKey } from "@/services/payment-period";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
-import { PAYMENT_PROOF_REQUIRED_MESSAGE, PAYMENTS } from "@/config/constants/payments";
+import { PAYMENT_PROOF_REQUIRED_MESSAGE, PAYMENTS, RECEIPT_SUBMISSION_SELECT } from "@/config/constants/payments";
 import {
   enrollmentStatusData,
   enrollmentStatusOf,
@@ -69,7 +69,7 @@ export async function getPaymentRecordById(id: string) {
           select: { id: true, name: true, email: true, address: true, whatsapp: true },
         },
         submission: {
-          select: { paymentMethod: true, upiTransactionId: true, label: true, couponId: true },
+          select: RECEIPT_SUBMISSION_SELECT,
         },
       },
     }), "Database operation failed");

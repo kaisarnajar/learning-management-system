@@ -40,3 +40,12 @@ export const PAYMENT_SUBMISSION_UI: Record<string, { label: string; variant: "de
   [PAYMENTS.SUBMISSION_STATUS.APPROVED]: { label: "Approved", variant: "success" },
   [PAYMENTS.SUBMISSION_STATUS.REJECTED]: { label: "Rejected", variant: "destructive" },
 };
+
+/** The submission fields a receipt reads; select exactly these wherever a receipt is rendered. */
+export const RECEIPT_SUBMISSION_SELECT = {
+  paymentMethod: true,
+  upiTransactionId: true,
+  label: true,
+  couponId: true,
+  baseFeePaise: true,
+} as const;

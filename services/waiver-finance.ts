@@ -52,12 +52,14 @@ async function buildWaiverSearchWhere(filters: FinanceFilters): Promise<Record<s
     AND: [WAIVER_CLAIM_WHERE],
   };
 
-  // Date filtering
+  // Date filtering on when the waiver was claimed. updatedAt moved with
+  // every later edit (a void, a relabel), shifting old waivers into the
+  // current period.
   if (filters.from || filters.to) {
-    const updatedAt: { gte?: Date; lte?: Date } = {};
-    if (filters.from) updatedAt.gte = filters.from;
-    if (filters.to) updatedAt.lte = filters.to;
-    where.updatedAt = updatedAt;
+    const createdAt: { gte?: Date; lte?: Date } = {};
+    if (filters.from) createdAt.gte = filters.from;
+    if (filters.to) createdAt.lte = filters.to;
+    where.createdAt = createdAt;
   }
 
   // Course filtering
@@ -116,11 +118,11 @@ export async function getFeeWaiverFinanceData(
   const [allSubmissions, pageRows] = await Promise.all([
     prisma.coursePaymentSubmission.findMany({
       where,
-      select: { courseId: true, paymentType: true, amountInrPaise: true },
+      select: { courseId: true, paymentType: true, amountInrPaise: true, baseFeePaise: true },
     }),
     prisma.coursePaymentSubmission.findMany({
       where,
-      orderBy: { updatedAt: "desc" },
+      orderBy: { createdAt: "desc" },
       skip: (safePage - 1) * pageSize,
       take: pageSize,
       include: {
@@ -130,7 +132,10 @@ export async function getFeeWaiverFinanceData(
     }),
   ]);
 
-  const originalFeeFor = (s: { courseId: string; paymentType: string; amountInrPaise: number }) => {
+  // The fee in force at submission (baseFeePaise); the course's current fee
+  // only for rows written before the snapshot existed.
+  const originalFeeFor = (s: { courseId: string; paymentType: string; amountInrPaise: number; baseFeePaise: number | null }) => {
+    if (s.baseFeePaise != null) return Math.max(s.baseFeePaise, s.amountInrPaise);
     const course = courseById.get(s.courseId);
     const baseCourseFeePaise = course
       ? s.paymentType === PAYMENT_TYPE_ENROLLMENT
@@ -179,7 +184,7 @@ export async function getFeeWaiverFinanceData(
 
     processedItems.push({
       id: s.id,
-      date: s.updatedAt,
+      date: s.createdAt,
       studentName: s.user.name || "Student",
       studentEmail: s.user.email,
       courseTitle: course?.title || s.courseId,

@@ -4,7 +4,7 @@ import { auth } from "@/services/auth";
 import { BRAND_CONFIG } from "@/config/brand";
 
 import { splitInclusiveGst } from "@/services/gst";
-import { PAYMENTS } from "@/config/constants/payments";
+import { PAYMENTS, RECEIPT_SUBMISSION_SELECT } from "@/config/constants/payments";
 import { findBookOrderForRecord } from "@/services/payment-receipt";
 import { isAdminSession } from "@/services/admin";
 import { prisma } from "@/utils/prisma";
@@ -32,7 +32,7 @@ export async function generateReceipt(paymentRecordId: string) {
     where: { id: paymentRecordId },
     include: {
       user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } },
-      submission: { select: { paymentMethod: true, upiTransactionId: true, label: true, couponId: true } },
+      submission: { select: RECEIPT_SUBMISSION_SELECT },
     },
   });
 
@@ -110,7 +110,7 @@ export async function generateReceipt(paymentRecordId: string) {
     where: { id: paymentRecordId },
     include: {
       user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } },
-      submission: { select: { paymentMethod: true, upiTransactionId: true, label: true, couponId: true } },
+      submission: { select: RECEIPT_SUBMISSION_SELECT },
     },
   });
   if (issued) await storeReceiptPdf(issued);
@@ -186,7 +186,7 @@ export async function sendReceiptToEmailAction(paymentRecordId: string): Promise
     where: { id: paymentRecordId },
     include: {
       user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } },
-      submission: { select: { paymentMethod: true, upiTransactionId: true, label: true } },
+      submission: { select: RECEIPT_SUBMISSION_SELECT },
     },
   });
 

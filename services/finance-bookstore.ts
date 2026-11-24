@@ -58,6 +58,14 @@ export type BookOrderFinanceRecord = {
   profitContributionPaise: number;
 };
 
+/**
+ * Cost of one copy as it was when the order was placed (unitCostPaise); the
+ * book's current purchase price only for lines written before the snapshot.
+ */
+function unitCostOf(item: { unitCostPaise: number | null }, currentPurchasePricePaise: number | null | undefined): number {
+  return item.unitCostPaise ?? currentPurchasePricePaise ?? 0;
+}
+
 export async function getBookstoreFinanceSummary(filters: Pick<FinanceFilters, "from" | "to">): Promise<BookstoreFinanceSummary> {
   const dateWhere = filters.from || filters.to ? { createdAt: financePaidAtWhere(filters) } : {};
 
@@ -118,7 +126,7 @@ export async function getBookstoreFinanceSummary(filters: Pick<FinanceFilters, "
       for (const item of order.items) {
         totalBooksSold += item.quantity;
         const itemRevenue = item.quantity * item.priceAtPurchaseInrPaise;
-        const itemCost = item.quantity * (item.book?.purchasePriceInrPaise || 0);
+        const itemCost = item.quantity * unitCostOf(item, item.book?.purchasePriceInrPaise);
         totalSalesRevenuePaise += itemRevenue;
         totalProfitLossPaise += (itemRevenue - itemCost);
       }
@@ -175,14 +183,15 @@ async function toBookSalesRecords(books: BookSalesSource[]): Promise<BookSalesRe
   return books.map((book) => {
     let quantitySold = 0;
     let revenuePaise = 0;
+    let costOfGoodsSold = 0;
 
     for (const item of book.orderItems) {
       quantitySold += item.quantity;
       revenuePaise += item.quantity * item.priceAtPurchaseInrPaise;
+      costOfGoodsSold += item.quantity * unitCostOf(item, book.purchasePriceInrPaise);
     }
 
     const adjustments = book.stockMovements.reduce((sum, m) => sum + m.delta, 0);
-    const costOfGoodsSold = quantitySold * book.purchasePriceInrPaise;
 
     return {
       id: book.id,
@@ -264,7 +273,7 @@ export async function getBookOrderFinancePaginated(
     if (order.status === "APPROVED" || order.status === "SHIPPED") {
       for (const item of order.items) {
         const itemRevenue = item.quantity * item.priceAtPurchaseInrPaise;
-        const itemCost = item.quantity * (item.book?.purchasePriceInrPaise || 0);
+        const itemCost = item.quantity * unitCostOf(item, item.book?.purchasePriceInrPaise);
         profitContributionPaise += (itemRevenue - itemCost);
       }
     }
@@ -341,7 +350,7 @@ export async function getBookOrderFinanceAll(
     if (order.status === "APPROVED" || order.status === "SHIPPED") {
       for (const item of order.items) {
         const itemRevenue = item.quantity * item.priceAtPurchaseInrPaise;
-        const itemCost = item.quantity * (item.book?.purchasePriceInrPaise || 0);
+        const itemCost = item.quantity * unitCostOf(item, item.book?.purchasePriceInrPaise);
         profitContributionPaise += (itemRevenue - itemCost);
       }
     }

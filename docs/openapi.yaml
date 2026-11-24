@@ -3716,13 +3716,13 @@ paths:
                           type: object
                           properties:
                             id: { type: string }
-                            date: { type: string, format: date-time }
+                            date: { type: string, format: date-time, description: "When the waiver was claimed (the submission's creation); the date range filters on it, newest first." }
                             studentName: { type: string }
                             studentEmail: { type: string }
                             courseTitle: { type: string }
                             paymentType: { type: string }
                             label: { type: string }
-                            originalFeePaise: { type: integer }
+                            originalFeePaise: { type: integer, description: "The fee before the waiver as it was when the student submitted; the course's current fee for submissions made before that was recorded." }
                             waivedAmountPaise: { type: integer }
                             discountPercentage: { type: number }
                             netPaidPaise: { type: integer }

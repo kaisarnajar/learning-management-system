@@ -3,6 +3,7 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/paginat
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX } from "@/config/constants/business";
 
 function siteAnnouncementAdminWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -10,7 +11,7 @@ function siteAnnouncementAdminWhere(searchQuery?: string) {
 }
 
 /** Maximum announcements featured on the homepage. */
-export const HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX = 4;
+export { HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX };
 
 export type SiteAnnouncementPublic = SiteAnnouncement & {
   createdBy: { name: string | null } | null;

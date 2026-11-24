@@ -1,7 +1,8 @@
 import type { Occupation, Gender } from "@prisma/client";
 import Image from "next/image";
-import { getInitialsFromName } from "@/services/student-reviews";
-import { occupationLabel, formatDateOfBirthDisplay } from "@/services/profile";
+import { getInitialsFromName } from "@/utils/initials";
+import { occupationLabel } from "@/services/occupations";
+import { formatDateOfBirthDisplay } from "@/utils/profile-format";
 import {
   getProfileCountryOrDefault,
   parseStoredProfileWhatsApp,

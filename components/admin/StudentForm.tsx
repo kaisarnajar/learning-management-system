@@ -10,7 +10,7 @@ import {
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
 import { useZodForm } from "@/utils/use-zod-form";
-import { OCCUPATION_OPTIONS } from "@/services/profile";
+import { OCCUPATION_OPTIONS } from "@/services/occupations";
 
 type StudentFormProps = {
   student: User;

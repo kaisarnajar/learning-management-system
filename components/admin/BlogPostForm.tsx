@@ -8,7 +8,7 @@ import {
   type BlogPostFormValues,
   validateBlogPostForm,
 } from "@/services/admin-form-validation";
-import { HOMEPAGE_FEATURED_BLOGS_MAX } from "@/services/blogs";
+import { HOMEPAGE_FEATURED_BLOGS_MAX } from "@/config/constants/business";
 import { MAX_BLOG_IMAGES } from "@/services/blog-limits";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";

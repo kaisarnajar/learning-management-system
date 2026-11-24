@@ -12,7 +12,7 @@ import {
 import { getFormDateInputValue } from "@/utils/form-date";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
-import { HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX } from "@/services/site-announcements";
+import { HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX } from "@/config/constants/business";
 import { MAX_ANNOUNCEMENT_IMAGES } from "@/services/site-announcement-limits";
 import { useZodForm } from "@/utils/use-zod-form";
 import { useDirectUploadAction } from "@/utils/use-direct-upload";

@@ -5,6 +5,7 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/paginat
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { HOMEPAGE_FEATURED_COURSES_MAX } from "@/config/constants/business";
 
 function allCoursesWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -15,7 +16,7 @@ function allCoursesWhere(searchQuery?: string) {
   );
 }
 
-export const HOMEPAGE_FEATURED_COURSES_MAX = 6;
+export { HOMEPAGE_FEATURED_COURSES_MAX };
 
 export type Course = PrismaCourse;
 export type CourseLevel = "Beginner" | "Intermediate" | "Advanced";

@@ -5,7 +5,7 @@ import { formatPrice } from "@/utils/money";
 import { useState } from "react";
 import type { BookOrderWithItems } from "@/services/bookstore";
 import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrderRefunded, voidBookOrder } from "@/app/admin/bookstore/orders/actions";
-import { bookOrderStatusLabel, bookOrderStatusClass } from "@/services/bookstore";
+import { bookOrderStatusLabel, bookOrderStatusClass } from "@/utils/bookstore-status";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { useToast } from "@/components/shared/ToastProvider";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";

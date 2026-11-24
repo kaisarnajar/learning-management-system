@@ -8,7 +8,7 @@ import {
   type LibraryFormValues,
   validateLibraryForm,
 } from "@/services/admin-form-validation";
-import { HOMEPAGE_FEATURED_RESOURCES_MAX } from "@/services/library";
+import { HOMEPAGE_FEATURED_RESOURCES_MAX } from "@/config/constants/business";
 import { getLibraryLanguageOptions, getLibraryTopicOptions } from "@/services/library-options";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";

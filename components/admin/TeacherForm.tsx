@@ -8,7 +8,7 @@ import {
   type TeacherFormValues,
   validateTeacherForm,
 } from "@/services/admin-form-validation";
-import { deriveTeacherInitials } from "@/services/teacher-admin";
+import { deriveTeacherInitials } from "@/utils/initials";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
 import { useZodForm } from "@/utils/use-zod-form";

@@ -5,13 +5,14 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/paginat
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { HOMEPAGE_FEATURED_RESOURCES_MAX } from "@/config/constants/business";
 
 function allLibraryItemsWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
   return buildSearchOr(["title", "author", "topic"], [], searchQuery);
 }
 
-export const HOMEPAGE_FEATURED_RESOURCES_MAX = 4;
+export { HOMEPAGE_FEATURED_RESOURCES_MAX };
 
 export type LibraryItem = PrismaLibraryItem;
 

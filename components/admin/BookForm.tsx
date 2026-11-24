@@ -7,7 +7,8 @@ import {
   validateBookForm,
   type BookFormValues,
 } from "@/services/admin-form-validation";
-import { type BookWithDetails, HOMEPAGE_FEATURED_BOOKS_MAX } from "@/services/bookstore";
+import type { BookWithDetails } from "@/services/bookstore";
+import { HOMEPAGE_FEATURED_BOOKS_MAX } from "@/config/constants/business";
 import { useZodForm } from "@/utils/use-zod-form";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";

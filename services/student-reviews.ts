@@ -5,6 +5,10 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/paginat
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { getInitialsFromName } from "@/utils/initials";
+
+// Pure helpers, importable from client components: utils/initials.ts
+export { getInitialsFromName };
 
 function studentReviewSearchWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -48,13 +52,6 @@ export function reviewStatusClass(status: StudentReviewStatus): string {
   if (status === "PENDING") return "bg-warning-bg text-warning-text";
   if (status === "REJECTED") return "bg-destructive-bg text-destructive-text";
   return "bg-success-bg text-success-text";
-}
-
-export function getInitialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] ?? ""}${parts[parts.length - 1][0] ?? ""}`.toUpperCase();
 }
 
 export function toHomepageReview(review: StudentReviewWithUser): HomepageReview {

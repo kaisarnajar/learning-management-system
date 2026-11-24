@@ -6,6 +6,12 @@ import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getAppBaseUrl } from "@/services/password-reset";
 import { cache } from "react";
+import { BASE_CATEGORIES, FATWA_CATEGORIES, FATWA_CATEGORY_OPTIONS, getFatwaCategoryOptions, isFatwaCategory, type FatwaCategory } from "@/config/fatwa-categories";
+import { HOMEPAGE_FEATURED_FATWA_MAX } from "@/config/constants/business";
+
+// Pure helpers, importable from client components: config/fatwa-categories.ts
+export { BASE_CATEGORIES, FATWA_CATEGORIES, FATWA_CATEGORY_OPTIONS, getFatwaCategoryOptions, isFatwaCategory };
+export type { FatwaCategory };
 
 /**
  * A teacher cannot change an answer while it awaits review or once it is
@@ -35,38 +41,7 @@ function fatwaPublicSearchWhere(searchQuery?: string) {
   return buildSearchOr(["title", "question", "category"], [], searchQuery);
 }
 
-export const HOMEPAGE_FEATURED_FATWA_MAX = 4;
-
-export const BASE_CATEGORIES = [
-  "Islam",
-  "Quran",
-  "Hadith",
-  "Fiqh",
-  "Tajweed",
-  "Seerah",
-  "Arabic Language",
-  "Atheism",
-  "Fatwa",
-] as const;
-
-export const FATWA_CATEGORIES = [...BASE_CATEGORIES, "Others"] as const;
-export type FatwaCategory = (typeof FATWA_CATEGORIES)[number];
-
-export function isFatwaCategory(value: string): value is FatwaCategory {
-  return FATWA_CATEGORIES.includes(value as FatwaCategory);
-}
-
-export const FATWA_CATEGORY_OPTIONS = FATWA_CATEGORIES.map((category) => ({
-  value: category,
-  label: category,
-}));
-
-export function getFatwaCategoryOptions(current?: string | null) {
-  if (!current || isFatwaCategory(current)) {
-    return FATWA_CATEGORY_OPTIONS;
-  }
-  return [{ value: current, label: current }, ...FATWA_CATEGORY_OPTIONS];
-}
+export { HOMEPAGE_FEATURED_FATWA_MAX };
 
 type FatwaStatusFields = { answer: string | null; approvalStatus: string };
 

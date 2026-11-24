@@ -8,7 +8,7 @@ import {
   type CourseAnnouncementFormValues,
   validateCourseAnnouncementForm,
 } from "@/services/admin-form-validation";
-import { ANNOUNCEMENT_CATEGORIES, announcementCategoryLabels } from "@/services/announcements";
+import { ANNOUNCEMENT_CATEGORIES, announcementCategoryLabels } from "@/config/announcement-categories";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
 import { useZodForm } from "@/utils/use-zod-form";

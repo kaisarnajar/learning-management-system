@@ -14,7 +14,14 @@ import { APPROVAL_PAGE_SIZE, clampPage, paginationArgs, type PaginatedResult } f
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr, type TextSearchWhere } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { paymentTypeFromText } from "@/services/status-compat";
+import { PAYMENT_YEARS_BACK, PAYMENT_YEARS_FORWARD, getPaymentYearBounds, getPaymentYearOptions, isPaymentYearAllowed } from "@/utils/payment-years";
+import { buildEnrollmentFeeLabel, buildMonthlyFeeLabel } from "@/services/fee-labels";
+
+// Pure helpers, importable from client components: services/fee-labels.ts
+export { buildEnrollmentFeeLabel, buildMonthlyFeeLabel };
+
+// Pure helpers, importable from client components: utils/payment-years.ts
+export { PAYMENT_YEARS_BACK, PAYMENT_YEARS_FORWARD, getPaymentYearBounds, getPaymentYearOptions, isPaymentYearAllowed };
 
 async function paymentSubmissionSearchWhere(
   searchQuery?: string,
@@ -110,76 +117,6 @@ export async function getPendingPaymentCount(): Promise<number> {
   return withDbErrorHandling(() => prisma.coursePaymentSubmission.count({
       where: { status: MONTHLY_PAYMENT_PENDING, deletedAt: null },
     }), "Database operation failed");
-}
-
-/** How many calendar years before the current year students may select. */
-export const PAYMENT_YEARS_BACK = 2;
-
-/** How many calendar years after the current year students may select (e.g. 2035, 2040). */
-export const PAYMENT_YEARS_FORWARD = 25;
-
-export function getPaymentYearBounds(referenceDate = new Date()) {
-  const current = referenceDate.getFullYear();
-  return {
-    min: current - PAYMENT_YEARS_BACK,
-    max: current + PAYMENT_YEARS_FORWARD,
-  };
-}
-
-export function getPaymentYearOptions(referenceDate = new Date()): string[] {
-  const { min, max } = getPaymentYearBounds(referenceDate);
-  const years: string[] = [];
-  for (let y = min; y <= max; y++) {
-    years.push(String(y));
-  }
-  return years;
-}
-
-export function isPaymentYearAllowed(year: string, referenceDate = new Date()): boolean {
-  const y = Number.parseInt(year, 10);
-  if (!Number.isFinite(y) || year.length !== 4) return false;
-  const { min, max } = getPaymentYearBounds(referenceDate);
-  return y >= min && y <= max;
-}
-
-export function buildMonthlyFeeLabel(month: string, year: string, paymentType: string = "monthly"): string {
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-  const index = Number.parseInt(month, 10) - 1;
-  const monthName = monthNames[index] ?? month;
-
-  const type = paymentTypeFromText(paymentType);
-  if (type === "QUARTERLY") {
-    return `Quarterly fee — starting ${monthName} ${year}`;
-  }
-  if (type === "HALF_YEARLY") {
-    return `Half Yearly fee — starting ${monthName} ${year}`;
-  }
-  if (type === "YEARLY") {
-    return `Yearly fee — starting ${monthName} ${year}`;
-  }
-  if (type === "ONE_TIME") {
-    // Paid once per course, so the label names no year (older rows did:
-    // "One-Time fee — 2026"); the period key is ONE_TIME either way.
-    return "One-Time fee";
-  }
-  return `Monthly fee — ${monthName} ${year}`;
-}
-
-export function buildEnrollmentFeeLabel(courseTitle: string): string {
-  return `Enrollment fee — ${courseTitle}`;
 }
 
 export async function hasPendingEnrollmentFeeSubmission(

@@ -2,7 +2,8 @@ import path from "node:path";
 import { defineConfig } from "vitest/config";
 
 const root = import.meta.dirname;
-const alias = { "@": root };
+// "server-only" (utils/prisma.ts) is resolved by Next.js; outside it, as here, it is a no-op.
+const alias = { "@": root, "server-only": path.join(root, "node_modules/next/dist/compiled/server-only/empty.js") };
 
 // Suites that need Postgres share one disposable database, so their files run
 // one at a time, and each project gets its own `sequence.groupOrder` so that

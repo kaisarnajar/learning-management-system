@@ -1,4 +1,4 @@
-import { BASE_CATEGORIES } from "@/services/fatwa";
+import { BASE_CATEGORIES } from "@/config/fatwa-categories";
 
 export const LIBRARY_LANGUAGES = ["English", "Urdu", "Arabic", "Other"] as const;
 

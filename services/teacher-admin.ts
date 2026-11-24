@@ -2,15 +2,12 @@ import { isAdminEmail } from "@/services/admin";
 import { prisma } from "@/utils/prisma";
 import { lookupRegisteredUser, normalizeAccountEmail } from "@/services/user-account-lookup";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { deriveTeacherInitials } from "@/utils/initials";
+
+// Pure helpers, importable from client components: utils/initials.ts
+export { deriveTeacherInitials };
 
 export const normalizeTeacherEmail = normalizeAccountEmail;
-
-export function deriveTeacherInitials(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "??";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0]![0]}${parts[parts.length - 1]![0]}`.toUpperCase();
-}
 
 export type TeacherAccountLookup =
   | { ok: true; name: string; email: string; image: string | null }

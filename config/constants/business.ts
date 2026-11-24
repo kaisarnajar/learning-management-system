@@ -102,6 +102,14 @@ export const MAX_ORDER_QTY = 20;
  */
 export const HOMEPAGE_FEATURED_REVIEWS_MAX = 4;
 
+/** How many items of each kind the homepage features at most (the admin forms cap the checkbox). */
+export const HOMEPAGE_FEATURED_BLOGS_MAX = 4;
+export const HOMEPAGE_FEATURED_COURSES_MAX = 6;
+export const HOMEPAGE_FEATURED_FATWA_MAX = 4;
+export const HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX = 4;
+export const HOMEPAGE_FEATURED_BOOKS_MAX = 4;
+export const HOMEPAGE_FEATURED_RESOURCES_MAX = 4;
+
 export const DOCUMENT_TYPES = {
   CERTIFICATE: "certificate",
   PAYMENT_RECEIPT: "payment_receipt",

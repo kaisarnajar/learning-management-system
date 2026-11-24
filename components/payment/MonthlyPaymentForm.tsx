@@ -1,7 +1,7 @@
 "use client";
 
 import { SubmitButton } from "@/components/shared/SubmitButton";
-import { getPaymentYearOptions } from "@/services/monthly-payments";
+import { getPaymentYearOptions } from "@/utils/payment-years";
 import { getFeeFrequencyOption, isOneTimeFee, getFeeFrequencyLabel } from "@/services/fee-frequency";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -9,10 +9,10 @@ import { submitMonthlyPayment } from "@/app/actions/payments";
 import { CouponSelector } from "@/components/payment/CouponSelector";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { PaymentProofFields, type PaymentMethod } from "@/components/payment/PaymentProofFields";
-import { calculateDiscountedAmount, type ApplicableCoupon } from "@/services/coupons";
+import { calculateDiscountedAmount, type ApplicableCoupon } from "@/utils/coupon-discount";
 import { formatPrice } from "@/utils/money";
 import { PAYMENT_PROOF_REQUIRED_MESSAGE } from "@/config/constants/payments";
-import type { PaymentSettingsData } from "@/services/payment-settings";
+import type { PaymentSettingsData } from "@/utils/payment-settings-format";
 
 const MONTHS = [
   { value: "01", label: "January" },

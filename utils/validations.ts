@@ -8,7 +8,7 @@ import {
   isValidProfileLocalNumber,
 } from "@/services/countries";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_OTHER, EXPENSE_CATEGORY_TEACHER_SALARY } from "@/services/expense-categories";
-import { isPaymentYearAllowed } from "@/services/monthly-payments";
+import { isPaymentYearAllowed } from "@/utils/payment-years";
 import { businessDateFromToday, businessDayStart } from "@/services/business-time";
 import { OCCUPATION_VALUES } from "@/services/occupations";
 

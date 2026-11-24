@@ -12,7 +12,7 @@ import {
   canReapplyForEnrollment,
   PENDING_ENROLLMENT_APPROVAL,
 } from "@/services/enrollment-status";
-import { PROFILE_COMPLETE_REDIRECT } from "@/services/profile";
+import { PROFILE_COMPLETE_REDIRECT } from "@/utils/profile-format";
 
 type CourseEnrollButtonProps = {
   courseId: string;

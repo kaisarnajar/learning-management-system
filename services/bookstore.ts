@@ -5,6 +5,7 @@ import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { resolveHomepageFeaturedUpdate } from "@/services/homepage-featured";
 import { PAYMENTS } from "@/config/constants/payments";
+import { HOMEPAGE_FEATURED_BOOKS_MAX } from "@/config/constants/business";
 
 export { BookStatus };
 
@@ -53,65 +54,8 @@ export type BookOrderWithItems = {
   receiptGeneratedAt: Date | null;
 };
 
-export function bookStatusLabel(status: BookStatus): string {
-  switch (status) {
-    case "AVAILABLE":
-      return "Available";
-    case "OUT_OF_STOCK":
-      return "Out of Stock";
-    case "COMING_SOON":
-      return "Coming Soon";
-    default:
-      return status;
-  }
-}
-
-export function bookStatusClass(status: BookStatus): string {
-  switch (status) {
-    case "AVAILABLE":
-      return "bg-success-bg text-success-text";
-    case "OUT_OF_STOCK":
-      return "bg-destructive-bg text-destructive-text";
-    case "COMING_SOON":
-      return "bg-warning-bg text-warning-text";
-    default:
-      return "bg-surface-muted-hover text-muted";
-  }
-}
-
-export function bookOrderStatusLabel(status: string): string {
-  switch (status) {
-    case "PENDING_VERIFICATION":
-      return "Pending Verification";
-    case "APPROVED":
-      return "Approved";
-    case "DECLINED":
-      return "Declined";
-    case "SHIPPED":
-      return "Shipped";
-    case "REFUNDED":
-      return "Refunded";
-    default:
-      return status;
-  }
-}
-
-export function bookOrderStatusClass(status: string): string {
-  switch (status) {
-    case "PENDING_VERIFICATION":
-      return "bg-warning-bg text-warning-text";
-    case "APPROVED":
-      return "bg-success-bg text-success-text";
-    case "DECLINED":
-      return "bg-destructive-bg text-destructive-text";
-    case "SHIPPED":
-      return "bg-info-bg text-info-text";
-    case "REFUNDED":
-      return "bg-surface-muted-hover text-muted";
-    default:
-      return "bg-surface-muted-hover text-muted";
-  }
-}
+// Pure display helpers live in utils/bookstore-status.ts (client components import them there).
+export { bookOrderStatusClass, bookOrderStatusLabel, bookStatusClass, bookStatusLabel } from "@/utils/bookstore-status";
 
 function allBooksWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -317,7 +261,7 @@ export async function getBookCount(): Promise<number> {
   return withDbErrorHandling(() => prisma.book.count(), "Database operation failed");
 }
 
-export const HOMEPAGE_FEATURED_BOOKS_MAX = 4;
+export { HOMEPAGE_FEATURED_BOOKS_MAX };
 
 export async function getFeaturedHomepageBooks(): Promise<BookWithDetails[]> {
   return withDbErrorHandling(() => prisma.book.findMany({

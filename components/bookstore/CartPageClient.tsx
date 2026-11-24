@@ -7,7 +7,7 @@ import { useState } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
 import { CartStaleNotice } from "@/components/bookstore/CartStaleNotice";
 
-import { bookOrderStatusLabel, bookOrderStatusClass } from "@/services/bookstore";
+import { bookOrderStatusLabel, bookOrderStatusClass } from "@/utils/bookstore-status";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 

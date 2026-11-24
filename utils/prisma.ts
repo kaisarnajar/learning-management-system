@@ -1,3 +1,6 @@
+// Prisma never belongs in a browser bundle: a client component that reaches
+// this module (directly or through a service) fails the build.
+import "server-only";
 import { PrismaClient } from "@prisma/client";
 
 /**

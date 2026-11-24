@@ -13,6 +13,7 @@ import { paginateQuery } from "@/utils/prisma-utils";
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr, type TextSearchWhere } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { getRosterEnrollmentStatusForCourse } from "@/services/enrollment-status";
 
 async function enrollmentSearchWhere(searchQuery?: string): Promise<TextSearchWhere | undefined> {
   if (!searchQuery) return undefined;
@@ -165,10 +166,7 @@ export async function getApprovedEnrollmentsForCoursePaginated(
   }, page, pageSize);
 }
 
-/** Active roster for in-progress courses; completed roster when the course is completed. */
-export function getRosterEnrollmentStatusForCourse(courseStatus: CourseStatus): Extract<EnrollmentStatus, "ACTIVE" | "COMPLETED"> {
-  return courseStatus === "COMPLETED" ? "COMPLETED" : "ACTIVE";
-}
+export { getRosterEnrollmentStatusForCourse };
 
 export async function getCourseRosterEnrollmentsPaginated(
   courseId: string,

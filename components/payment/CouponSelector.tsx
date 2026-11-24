@@ -1,7 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import type { ApplicableCoupon } from "@/services/coupons";
+import type { ApplicableCoupon } from "@/utils/coupon-discount";
 import { formatPrice } from "@/utils/money";
 
 type CouponSelectorProps = {

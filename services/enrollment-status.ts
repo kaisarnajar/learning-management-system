@@ -1,3 +1,4 @@
+import type { CourseStatus, EnrollmentStatus } from "@prisma/client";
 import { ENROLLMENT_STATUS } from "@/config/constants/business";
 
 /** Student requested enrollment; awaiting admin approval (free courses). */
@@ -28,4 +29,9 @@ export function canApproveEnrollment(status: string): boolean {
 
 export function canRejectEnrollment(status: string): boolean {
   return status === PENDING_ENROLLMENT_APPROVAL || status === AWAITING_ENROLLMENT_FEE;
+}
+
+/** Active roster for in-progress courses; completed roster when the course is completed. */
+export function getRosterEnrollmentStatusForCourse(courseStatus: CourseStatus): Extract<EnrollmentStatus, "ACTIVE" | "COMPLETED"> {
+  return courseStatus === "COMPLETED" ? "COMPLETED" : "ACTIVE";
 }

@@ -1,17 +1,11 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
 import { PAYMENTS } from "@/config/constants/payments";
+import { calculateDiscountedAmount, type ApplicableCoupon } from "@/utils/coupon-discount";
 
-export type ApplicableCoupon = {
-  id: string;
-  code: string;
-  percentage: number;
-  type: "DEFAULT" | "SPECIAL";
-  validUntil: Date;
-  applyToEnrollment: boolean;
-  applyToCourse: boolean;
-  isUsed: boolean;
-};
+// Pure helpers, importable from client components: utils/coupon-discount.ts
+export { calculateDiscountedAmount };
+export type { ApplicableCoupon };
 
 export async function getApplicableCoupons(
   userId: string,
@@ -256,9 +250,3 @@ export async function recordCouponUsage(userId: string, couponId: string) {
   await prisma.$transaction((tx) => recordCouponUsageTx(tx, userId, couponId));
 }
 
-export function calculateDiscountedAmount(originalPaise: number, percentage: number): number {
-  if (percentage >= 100) return 0;
-  if (percentage <= 0) return originalPaise;
-  const discount = Math.floor((originalPaise * percentage) / 100);
-  return originalPaise - discount;
-}

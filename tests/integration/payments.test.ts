@@ -472,6 +472,31 @@ describe.skipIf(SKIP_WITHOUT_DB)("coupons and fee waivers", () => {
     expect(second).toMatchObject({ status: 409 });
   });
 
+  it("snapshots the fee before the coupon on every new submission", async () => {
+    const student = await createUser();
+    const enrolling = await createCourse({ priceInrPaise: 50000 });
+    const studying = await createCourse({ monthlyFeeInrPaise: 34900 });
+    const enrollmentCoupon = await createCoupon(50, { applyToCourse: false });
+    const courseCoupon = await createCoupon(20, { applyToEnrollment: false });
+
+    await startedEnrollment(student.id, enrolling.id);
+    expect(await processEnrollmentPayment(student.id, enrolling.id, "upi", "UTR8050001", null, enrollmentCoupon.id, 25000)).toEqual({ success: true });
+    await createEnrollment(student.id, studying.id);
+    expect(await processMonthlyPayment(student.id, studying.id, "05", "2026", "upi", "UTR8050002", null, courseCoupon.id, 27920)).toEqual({ success: true });
+    expect(await processMonthlyPayment(student.id, studying.id, "06", "2026", "upi", "UTR8050003", null)).toEqual({ success: true });
+
+    const rows = await prisma.coursePaymentSubmission.findMany({
+      where: { userId: student.id },
+      orderBy: { createdAt: "asc" },
+      select: { amountInrPaise: true, baseFeePaise: true },
+    });
+    expect(rows).toEqual([
+      { amountInrPaise: 25000, baseFeePaise: 50000 },
+      { amountInrPaise: 27920, baseFeePaise: 34900 },
+      { amountInrPaise: 34900, baseFeePaise: 34900 },
+    ]);
+  });
+
   it("does not apply any coupon when none is selected", async () => {
     const student = await createUser();
     const course = await createCourse();

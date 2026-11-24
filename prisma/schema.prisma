@@ -670,6 +670,8 @@ model CoursePaymentSubmission {
   couponId              String?
   /// The billing period paid for (services/payment-period.ts), e.g. "MONTHLY:2026-01" or "ONE_TIME"; null for rows the backfill has not reached.
   periodKey             String?
+  /// The full fee before any coupon, as charged when the submission was made; null for rows written before the snapshot existed.
+  baseFeePaise          Int?
   /// Soft delete; rows with deletedAt set are hidden from every list.
   deletedAt             DateTime?
   createdAt             DateTime                 @default(now())
@@ -775,6 +777,8 @@ model BookOrderItem {
   bookId                  String
   quantity                Int       @default(1)
   priceAtPurchaseInrPaise Int
+  /// The book's purchase cost per copy when the order was placed; null for rows written before the snapshot existed.
+  unitCostPaise           Int?
   createdAt               DateTime  @default(now())
   order                   BookOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
   book                    Book      @relation(fields: [bookId], references: [id], onDelete: Cascade)

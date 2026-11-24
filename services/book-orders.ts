@@ -208,6 +208,7 @@ export async function createBookOrder(params: {
               bookId: item.bookId,
               quantity: item.quantity,
               priceAtPurchaseInrPaise: bookMap.get(item.bookId)!.priceInrPaise,
+              unitCostPaise: bookMap.get(item.bookId)!.purchasePriceInrPaise,
             })),
           },
         },

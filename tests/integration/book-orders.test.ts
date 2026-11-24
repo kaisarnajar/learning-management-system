@@ -53,6 +53,19 @@ describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
     expect(order.items[0]).toMatchObject({ quantity: 2, priceAtPurchaseInrPaise: 10000 });
   });
 
+  it("snapshots each book's purchase cost on the order line", async () => {
+    const student = await createUser();
+    const book = await createBook({ priceInrPaise: 10000, purchasePriceInrPaise: 6500 });
+
+    const order = await placeOrder(student.id, [{ bookId: book.id, quantity: 2 }]);
+    await prisma.book.update({ where: { id: book.id }, data: { purchasePriceInrPaise: 9000 } });
+
+    expect(await prisma.bookOrderItem.findFirstOrThrow({ where: { orderId: order.id } })).toMatchObject({
+      priceAtPurchaseInrPaise: 10000,
+      unitCostPaise: 6500,
+    });
+  });
+
   it("refuses an order that exceeds the stock and clears the cart on success", async () => {
     const student = await createUser();
     const book = await createBook({ inventoryPurchased: 2 });

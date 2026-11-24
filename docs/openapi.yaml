@@ -3293,7 +3293,7 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     post:
       tags: ["Admin: Payments"]
-      summary: Voids a manually recorded payment
+      summary: Voids a manually recorded payment (a fee payment or a book order's payment is refused with 400; use their own flows)
       requestBody:
         required: true
         content:

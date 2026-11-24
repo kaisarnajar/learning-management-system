@@ -9,6 +9,7 @@ import { parseFinanceFilters } from "@/services/finance-filters";
 import { getAuditLogPaginated } from "@/services/audit";
 import { getPaymentRecordsForUserPaginated, getPaymentSubmissionsForUser } from "@/services/payments";
 import { getApplicableCoupons } from "@/services/coupons";
+import { paymentTypeData } from "@/services/status-compat";
 import { createCourse, createEnrollment, createUser, resetDb, runAction, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB, startedEnrollment } from "../helpers/db";
 
 const allTime = () => parseFinanceFilters({ preset: "all_time" });
@@ -104,6 +105,23 @@ describe.skipIf(SKIP_WITHOUT_DB)("voiding, finance totals and the audit trail", 
     const audit = await prisma.auditLog.findFirstOrThrow({ where: { entity: "PaymentRecord", entityId: record.id } });
     expect(audit).toMatchObject({ action: "void", reason: "recorded in error" });
     expect((await voidManualPaymentRecord(record.id, "second try"))?.error).toBe("Payment record not found.");
+  });
+
+  it("refuses to void a fee payment or a book order's payment as a manual record", async () => {
+    const fee = await approvedFee(20000);
+    const result = await voidManualPaymentRecord(fee.submission.paymentRecordId!, "wrong flow");
+    expect(result?.error).toContain("fee payment");
+
+    const student = await createUser();
+    const order = await prisma.bookOrder.create({ data: { userId: student.id, totalAmountInrPaise: 30000, status: "APPROVED" } });
+    const bookRecord = await prisma.paymentRecord.create({
+      data: { userId: student.id, amountInrPaise: 30000, paidAt: new Date(), ...paymentTypeData("BOOK_PURCHASE"), description: "Books", bookOrderId: order.id },
+    });
+    expect((await voidManualPaymentRecord(bookRecord.id, "wrong flow"))?.error).toContain("book order");
+
+    // Nothing changed and nothing was audited.
+    expect(await prisma.paymentRecord.count({ where: { voidedAt: { not: null } } })).toBe(0);
+    expect(await prisma.auditLog.count()).toBe(0);
   });
 
   it("never renumbers or alters an issued invoice when a record is voided", async () => {

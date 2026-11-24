@@ -334,7 +334,12 @@ export async function voidApprovedPayment(
   redirect(adminReturnUrl(returnTo, "/admin/payments", "deleted"));
 }
 
-/** Voids a manually recorded payment (kept for audit; excluded from finance). */
+/**
+ * Voids a manually recorded payment (kept for audit; excluded from finance).
+ * A fee payment or a book order's payment has its own void flow, which also
+ * undoes the submission or the order; voiding only the record here would
+ * leave those approved with no income behind them.
+ */
 export async function voidManualPaymentRecord(
   recordId: string,
   reason: string | undefined,
@@ -347,12 +352,18 @@ export async function voidManualPaymentRecord(
   }
 
   const record = await withDbErrorHandling(
-    () => prisma.paymentRecord.findUnique({ where: { id: recordId } }),
+    () => prisma.paymentRecord.findUnique({ where: { id: recordId }, include: { submission: { select: { id: true } } } }),
     "Database operation failed",
   );
 
   if (!record || record.voidedAt) {
     return { error: "Payment record not found." };
+  }
+  if (record.submission) {
+    return { error: "This is a fee payment, not a manual record. Void it from Completed Payments so its submission is undone too." };
+  }
+  if (record.bookOrderId) {
+    return { error: "This is a book order's payment, not a manual record. Refund the order from the Bookstore orders page instead." };
   }
 
   try {

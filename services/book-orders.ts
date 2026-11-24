@@ -7,6 +7,7 @@ import { MAX_ORDER_QTY } from "@/config/constants/business";
 import { findStockShortages, formatShortages } from "@/services/inventory";
 import { deletePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
 import { isUploadError } from "@/services/storage";
+import { isUtrUsed, normalizeUtr } from "@/services/utr";
 
 /**
  * Single place for everything a book order submission needs. Used by the web
@@ -81,6 +82,8 @@ export type CreatedBookOrder = Prisma.BookOrderGetPayload<{ include: typeof orde
 export type CreateBookOrderResult =
   | { ok: true; order: CreatedBookOrder }
   | { ok: false; error: string; status: number };
+
+class UtrAlreadyUsed extends Error {}
 
 function isUniqueViolation(error: unknown): boolean {
   return typeof error === "object" && error !== null && (error as { code?: string }).code === "P2002";
@@ -182,16 +185,19 @@ export async function createBookOrder(params: {
   }
   const { books: bookMap, shippingChargeInrPaise, totalAmountInrPaise } = quote;
 
+  const upiTransactionId = normalizeUtr(input.upiTransactionId);
   let order: CreatedBookOrder;
   try {
     order = await prisma.$transaction(async (tx) => {
+      // One reference backs one payment, a fee submission or an order, in any case.
+      if (await isUtrUsed(tx, upiTransactionId)) throw new UtrAlreadyUsed();
       const created = await tx.bookOrder.create({
         data: {
           userId,
           totalAmountInrPaise,
           shippingChargeInrPaise,
           paymentMethod: input.paymentMethod,
-          upiTransactionId: input.upiTransactionId.trim() || null,
+          upiTransactionId,
           deliveryAddress: input.deliveryAddress,
           deliveryPinCode: input.deliveryPinCode,
           deliveryPhoneNumber: input.deliveryPhoneNumber,
@@ -213,8 +219,8 @@ export async function createBookOrder(params: {
       return created;
     });
   } catch (error) {
-    if (isUniqueViolation(error)) {
-      return { ok: false, error: "This transaction reference was already used for another order. Contact support if this is a mistake.", status: 409 };
+    if (error instanceof UtrAlreadyUsed || isUniqueViolation(error)) {
+      return { ok: false, error: "This transaction reference was already used for another payment. Contact support if this is a mistake.", status: 409 };
     }
     console.error("[book-orders] Failed to create order:", error);
     return { ok: false, error: "Could not submit the order. Please try again.", status: 500 };

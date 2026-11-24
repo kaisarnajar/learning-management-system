@@ -34,15 +34,15 @@ import { getPaymentSettings } from "@/services/payment-settings";
 import { getCourseEnrollmentClosedMessage } from "@/services/course-status";
 import { isUserProfileComplete } from "@/services/profile";
 import { ENROLLMENT_STATUS } from "@/config/constants/business";
+import { isUtrUsed, normalizeUtr, WAIVER_TRANSACTION_REF } from "@/services/utr";
 
 const AMOUNT_MISMATCH_MESSAGE =
   "The payable amount has changed (for example a coupon is no longer available). Please refresh the page and try again.";
 const DUPLICATE_UTR_MESSAGE =
   "This transaction reference was already used. Contact support if this is a mistake.";
 
-/** Sentinel values written for 100 % fee waivers (no money changes hands). */
+/** Written for 100 % fee waivers (no money changes hands), with WAIVER_TRANSACTION_REF. */
 export const WAIVER_PAYMENT_METHOD = "waiver";
-export const WAIVER_TRANSACTION_REF = "FEE-WAIVER";
 
 type SubmissionTx = Prisma.TransactionClient;
 
@@ -116,16 +116,13 @@ async function uploadScreenshot(prefix: string, file: File | null): Promise<stri
 
 /** A fee that costs money is only verifiable with a UTR or a screenshot. */
 function missingPaymentProof(isFree: boolean, upiTransactionId: string | null, screenshotFile: File | null): boolean {
-  return !isFree && !upiTransactionId?.trim() && !(screenshotFile && screenshotFile.size > 0);
+  return !isFree && !upiTransactionId && !(screenshotFile && screenshotFile.size > 0);
 }
 
+/** A reference already backing a fee submission or a book order, in any case, is refused. */
 async function assertUtrNotReused(tx: SubmissionTx, upiTransactionId: string | null, isFree: boolean) {
-  if (!upiTransactionId || isFree || upiTransactionId === WAIVER_TRANSACTION_REF) return;
-  const duplicate = await tx.coursePaymentSubmission.findFirst({
-    where: { upiTransactionId },
-    select: { id: true },
-  });
-  if (duplicate) throw new SubmissionRejected(DUPLICATE_UTR_MESSAGE);
+  if (isFree) return;
+  if (await isUtrUsed(tx, upiTransactionId)) throw new SubmissionRejected(DUPLICATE_UTR_MESSAGE, 409);
 }
 
 function mapSubmissionError(error: unknown): { error: string; status: number } | null {
@@ -149,6 +146,7 @@ export async function processMonthlyPayment(
   couponId?: string | null,
   expectedAmountPaise?: number | null,
 ): Promise<ProcessPaymentResult> {
+  upiTransactionId = normalizeUtr(upiTransactionId);
   const course = await getCourseById(courseId);
   if (!course) return { error: "Course not found.", status: 404 };
 
@@ -276,6 +274,7 @@ export async function processEnrollmentPayment(
   couponId?: string | null,
   expectedAmountPaise?: number | null,
 ): Promise<ProcessPaymentResult> {
+  upiTransactionId = normalizeUtr(upiTransactionId);
   const course = await getCourseById(courseId);
   if (!course) return { error: "Course not found.", status: 404 };
 

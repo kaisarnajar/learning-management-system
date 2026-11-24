@@ -3,11 +3,13 @@ import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import { processEnrollmentPayment, processMonthlyPayment } from "@/services/payments";
+import { createBookOrder } from "@/services/book-orders";
 import { CouponAlreadyUsedError, recordCouponUsageTx } from "@/services/coupons";
 import { confirmMonthlyPayment, declineMonthlyPayment } from "@/app/admin/payments/actions";
 import { generateReceipt } from "@/app/actions/receipts";
 import { PAYMENT_PROOF_REQUIRED_MESSAGE } from "@/config/constants/payments";
 import {
+  createBook,
   createCourse,
   createEnrollment,
   createUser,
@@ -269,7 +271,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
 
     await startedEnrollment(second.id, course.id);
     const reused = await processEnrollmentPayment(second.id, course.id, "upi", "UTR5000001", null);
-    expect(reused).toMatchObject({ status: 400, error: expect.stringContaining("already used") });
+    expect(reused).toMatchObject({ status: 409, error: expect.stringContaining("already used") });
 
     await startedEnrollment(second.id, course.id);
     const stale = await processEnrollmentPayment(second.id, course.id, "upi", "UTR5000002", null, null, 12345);
@@ -294,6 +296,33 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     await startedEnrollment(other.id, course.id);
     expect(await processEnrollmentPayment(other.id, course.id, "upi", "", null)).toEqual({ status: 400, error: PAYMENT_PROOF_REQUIRED_MESSAGE });
     expect((await prisma.enrollment.findFirstOrThrow({ where: { userId: other.id } })).statusEnum).toBe("AWAITING_ENROLLMENT_FEE");
+  });
+
+  it("one UTR backs one payment, a fee or a book order, ignoring case and spaces", async () => {
+    const student = await createUser();
+    const course = await createCourse();
+    await createEnrollment(student.id, course.id);
+    const book = await createBook({ inventoryPurchased: 10 });
+    const order = (utr: string) =>
+      createBookOrder({
+        userId: student.id,
+        input: { items: [{ bookId: book.id, quantity: 1 }], paymentMethod: "upi", upiTransactionId: utr, deliveryAddress: "12 Main Street, Srinagar", deliveryPinCode: "190001", deliveryPhoneNumber: "9876543210" },
+        screenshotFile: null,
+      });
+
+    expect(await processMonthlyPayment(student.id, course.id, "01", "2026", "upi", " abc123 ", null)).toEqual({ success: true });
+    expect((await prisma.coursePaymentSubmission.findFirstOrThrow()).upiTransactionId).toBe("ABC123");
+    expect(await processMonthlyPayment(student.id, course.id, "02", "2026", "upi", "ABC123", null)).toMatchObject({ status: 409, error: expect.stringContaining("already used") });
+    expect(await order("Abc123")).toMatchObject({ ok: false, status: 409 });
+
+    expect(await order("ord777")).toMatchObject({ ok: true });
+    expect((await prisma.bookOrder.findFirstOrThrow()).upiTransactionId).toBe("ORD777");
+    expect(await processMonthlyPayment(student.id, course.id, "03", "2026", "upi", "ORD777", null)).toMatchObject({ status: 409 });
+
+    // A row stored before references were upper-cased still counts.
+    await prisma.coursePaymentSubmission.create({ data: { userId: student.id, courseId: course.id, label: "Legacy", amountInrPaise: 100, upiTransactionId: "legacy42" } });
+    expect(await processMonthlyPayment(student.id, course.id, "04", "2026", "upi", "LEGACY42", null)).toMatchObject({ status: 409 });
+    expect(await prisma.coursePaymentSubmission.count({ where: { userId: student.id } })).toBe(2);
   });
 
   it("blocks a duplicate pending enrollment fee", async () => {

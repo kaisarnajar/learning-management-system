@@ -252,6 +252,32 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
       expect(await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: me.user.id } })).toMatchObject({ amountInrPaise: 0, upiTransactionId: "FEE-WAIVER" });
     });
 
+    it("refuses a UTR that already backs a book order, whatever its case", async () => {
+      await setPaymentSettings();
+      const me = await signedInStudent();
+      const course = await createCourse();
+      await createEnrollment(me.user.id, course.id);
+      const book = await createBook({ inventoryPurchased: 5 });
+      const placed = await ordersPost(
+        apiRequest("/api/v1/bookstore/orders", {
+          method: "POST",
+          headers: me.headers,
+          json: { items: [{ bookId: book.id, quantity: 1 }], paymentMethod: "upi", upiTransactionId: "utr424242", deliveryAddress: "12 Main Street, Srinagar", deliveryPinCode: "190001", deliveryPhoneNumber: "9876543210" },
+        }),
+      );
+      expect(placed.status).toBe(200);
+
+      const fee = await submitPost(
+        apiRequest("/api/v1/payments/submit", {
+          method: "POST",
+          headers: me.headers,
+          json: { courseId: course.id, paymentType: "monthly", paymentMonth: 3, paymentYear: new Date().getFullYear(), upiTransactionId: "UTR424242" },
+        }),
+      );
+      expect(fee.status).toBe(409);
+      expect(await prisma.coursePaymentSubmission.count()).toBe(0);
+    });
+
     it("refuses a one-time fee for another year once it is submitted", async () => {
       await setPaymentSettings();
       const me = await signedInStudent();

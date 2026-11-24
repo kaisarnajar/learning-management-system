@@ -1,7 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
 
 /**
  * marksObtained is migrating from Float to DECIMAL(6,2) (expand step:
@@ -56,7 +55,7 @@ export async function getEnrolledStudentsForGradesFromDb(courseId: string) {
     return prisma.enrollment.findMany({
       where: {
         courseId,
-        status: ENROLLMENT_STATUS.ACTIVE, // Only active students
+        statusEnum: "ACTIVE", // Only active students
       },
       select: {
         id: true,
@@ -90,7 +89,7 @@ async function assertEnrollmentsBelongToCourse(
   const unique = [...new Set(enrollmentIds)];
   if (unique.length === 0) return;
   const found = await tx.enrollment.findMany({
-    where: { courseId, id: { in: unique }, status: ENROLLMENT_STATUS.ACTIVE },
+    where: { courseId, id: { in: unique }, statusEnum: "ACTIVE" },
     select: { id: true },
   });
   if (found.length !== unique.length) {

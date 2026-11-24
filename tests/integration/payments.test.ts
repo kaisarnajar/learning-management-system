@@ -20,6 +20,7 @@ import {
   SKIP_WITHOUT_DB,
   startedEnrollment,
 } from "../helpers/db";
+import { paymentTypeData, submissionStatusData } from "@/services/status-compat";
 
 // Storage calls go to this stand-in, so a test can see what would be deleted.
 const r2 = vi.hoisted(() => ({ send: vi.fn<(command: unknown) => Promise<object>>(async () => ({})) }));
@@ -248,7 +249,15 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     const screenshot = (name: string) => `/api/files/private/payments/${name}-1732400000000-k3j9x.png`;
     const submit = (month: string, name: string) =>
       prisma.coursePaymentSubmission.create({
-        data: { userId: student.id, courseId: course.id, label: `Monthly fee — ${month} 2026`, amountInrPaise: 34900, paymentScreenshotPath: screenshot(name) },
+        data: {
+          userId: student.id,
+          courseId: course.id,
+          label: `Monthly fee — ${month} 2026`,
+          amountInrPaise: 34900,
+          paymentScreenshotPath: screenshot(name),
+          ...paymentTypeData("MONTHLY"),
+          ...submissionStatusData("PENDING_VERIFICATION"),
+        },
       });
     const declinedOne = await submit("January", "declined");
     const approvedOne = await submit("February", "approved");

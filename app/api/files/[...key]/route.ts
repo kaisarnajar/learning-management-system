@@ -42,7 +42,7 @@ async function canViewAnnouncementAttachment(viewer: Viewer, path: string): Prom
   // left the course loses access with everything else about it.
   if (await managesCourseTaughtBy(viewer.actor, announcement.course.teacherId)) return { ok: true, name };
   const enrollment = await prisma.enrollment.findFirst({
-    where: { userId: viewer.userId, courseId: announcement.courseId, status: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
+    where: { userId: viewer.userId, courseId: announcement.courseId, statusEnum: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
     select: { id: true },
   });
   if (!enrollment) return { ok: false };

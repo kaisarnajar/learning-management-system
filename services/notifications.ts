@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import type { StudentNotification, StudentNotificationType } from "@prisma/client";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
+
 import {
   DEFAULT_PAGE_SIZE,
   type PaginatedResult,
@@ -59,7 +59,6 @@ function toAbsoluteUrl(href: string): string {
   const base = getAppBaseUrl().replace(/\/$/, "");
   return `${base}${href.startsWith("/") ? "" : "/"}${href}`;
 }
-
 
 export type CreateStudentNotificationInput = {
   userId: string;
@@ -244,7 +243,7 @@ async function getEnrolledStudentRecipientsForCourse(courseId: string): Promise<
         enrollments: {
           some: {
             courseId,
-            status: { in: [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.COMPLETED] },
+            statusEnum: { in: ["ACTIVE", "COMPLETED"] },
           },
         },
       },

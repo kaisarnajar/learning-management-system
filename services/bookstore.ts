@@ -4,7 +4,7 @@ import { buildSearchOr } from "@/utils/text-search";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { resolveHomepageFeaturedUpdate } from "@/services/homepage-featured";
-import { PAYMENTS } from "@/config/constants/payments";
+
 import { HOMEPAGE_FEATURED_BOOKS_MAX } from "@/config/constants/business";
 
 export { BookStatus };
@@ -150,7 +150,7 @@ async function fetchBookOrdersPaginated(
   if (items.length > 0) {
     const paymentRecords = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
       where: {
-        paymentType: PAYMENTS.TYPES.BOOK_ORDER,
+        paymentTypeEnum: "BOOK_PURCHASE",
         voidedAt: null,
         OR: [
           { bookOrderId: { in: items.map((o) => o.id) } },
@@ -238,7 +238,7 @@ export async function getBookOrdersForUser(userId: string): Promise<BookOrderWit
   
   const paymentRecords = await withDbErrorHandling(() => prisma.paymentRecord.findMany({
     where: {
-      paymentType: PAYMENTS.TYPES.BOOK_ORDER,
+      paymentTypeEnum: "BOOK_PURCHASE",
       voidedAt: null,
       userId,
     },

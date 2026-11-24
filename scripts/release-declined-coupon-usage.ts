@@ -17,7 +17,6 @@
 import { createPrismaClient } from "../utils/prisma-client";
 import { isApplyMode, printMode, writeSnapshot } from "./lib/dry-run";
 import { submissionStatusOf } from "../services/status-compat";
-import { PAYMENTS } from "../config/constants/payments";
 
 const prisma = createPrismaClient();
 
@@ -78,7 +77,7 @@ async function main() {
     await prisma.$transaction(async (tx) => {
       // Re-checked inside the write: a submission made since the scan holds the coupon again.
       const live = await tx.coursePaymentSubmission.findFirst({
-        where: { userId: usage.userId, couponId: usage.couponId, deletedAt: null, status: { in: [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED] } },
+        where: { userId: usage.userId, couponId: usage.couponId, deletedAt: null, statusEnum: { in: ["PENDING_VERIFICATION", "APPROVED"] } },
         select: { id: true },
       });
       if (live) return;

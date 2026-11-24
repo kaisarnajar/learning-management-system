@@ -5,6 +5,7 @@ import { getBookstoreFinanceSummary } from "@/services/finance-bookstore";
 import { getFeeWaiverFinanceData } from "@/services/waiver-finance";
 import { parseFinanceFilters, type FinanceFilters } from "@/services/finance-filters";
 import { createBook, createCourse, createUser, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
+import { paymentTypeData, submissionStatusData } from "@/services/status-compat";
 
 /**
  * The bookstore and waiver totals moved from JavaScript loops over every row
@@ -169,11 +170,12 @@ describe.skipIf(SKIP_WITHOUT_DB)("finance totals computed in SQL match the row-b
         data: {
           userId: student.id,
           courseId,
-          paymentType,
+          // Written as the app writes them: text and typed twin together.
+          ...paymentTypeData(paymentType === "enrollment" ? "ENROLLMENT" : "MONTHLY"),
           label: `Fee ${n} (50% Fee Waiver)`,
           amountInrPaise: amount,
           baseFeePaise: base,
-          status: status ?? "approved",
+          ...submissionStatusData(status ? "PENDING_VERIFICATION" : "APPROVED"),
           couponId: coupon.id,
           createdAt,
         },

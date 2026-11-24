@@ -5,7 +5,7 @@ import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr, type TextSearchWhere } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
 import type { EnrollmentStatus, Prisma } from "@prisma/client";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
+
 import { enrollmentStatusOf } from "@/services/status-compat";
 
 async function certificateSearchWhere(searchQuery?: string): Promise<TextSearchWhere | undefined> {
@@ -109,7 +109,7 @@ export type CertificateCandidate = {
  */
 const CERTIFIABLE_WHERE = {
   certificateGeneratedAt: null,
-  status: { in: [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.COMPLETED] },
+  statusEnum: { in: ["ACTIVE", "COMPLETED"] },
   user: { deletedAt: null },
 } satisfies Prisma.EnrollmentWhereInput;
 

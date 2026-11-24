@@ -1,7 +1,7 @@
 import type { Session } from "next-auth";
 import { revalidatePath } from "next/cache";
 import type { BookOrderStatus } from "@prisma/client";
-import { PAYMENTS } from "@/config/constants/payments";
+
 import { recordAudit } from "@/services/audit";
 import { findStockShortages, formatShortages, lockBooksForUpdate, writeOffUnreturnedStockTx } from "@/services/inventory";
 import {
@@ -238,7 +238,7 @@ export async function refundOrder(
       const shortId = orderId.slice(-6).toUpperCase();
       const voided = await tx.paymentRecord.updateMany({
         where: {
-          paymentType: PAYMENTS.TYPES.BOOK_ORDER,
+          paymentTypeEnum: "BOOK_PURCHASE",
           userId: order.userId,
           voidedAt: null,
           OR: [{ bookOrderId: orderId }, { bookOrderId: null, description: `Book order #${shortId}` }],
@@ -301,7 +301,7 @@ export async function voidOrder(
     const shortId = orderId.slice(-6).toUpperCase();
     await tx.paymentRecord.updateMany({
       where: {
-        paymentType: PAYMENTS.TYPES.BOOK_ORDER,
+        paymentTypeEnum: "BOOK_PURCHASE",
         userId: order.userId,
         voidedAt: null,
         OR: [{ bookOrderId: orderId }, { bookOrderId: null, description: `Book order #${shortId}` }],

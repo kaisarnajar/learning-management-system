@@ -1,6 +1,6 @@
 import type { Session } from "next-auth";
 import { after } from "next/server";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
+
 import { recordAudit } from "@/services/audit";
 import { CouponAlreadyUsedError, releaseCouponTx, spendReservedCouponTx } from "@/services/coupons";
 import { getCourseById } from "@/services/courses";
@@ -18,7 +18,6 @@ import {
   paymentTypeWrite,
   submissionStatusData,
   submissionStatusOf,
-  SUBMISSION_STATUS_TEXT,
 } from "@/services/status-compat";
 import { revalidateAdminPaths } from "@/utils/admin-redirects";
 import { withDbErrorHandling } from "@/utils/db-error";
@@ -113,7 +112,7 @@ export async function approveFeePayment(
     // at once, both get here; only the one whose update moves the row out of
     // PENDING_VERIFICATION creates the payment record.
     const claimed = await tx.coursePaymentSubmission.updateMany({
-      where: { id: submissionId, status: SUBMISSION_STATUS_TEXT.PENDING_VERIFICATION, deletedAt: null },
+      where: { id: submissionId, statusEnum: "PENDING_VERIFICATION", deletedAt: null },
       data: submissionStatusData("APPROVED"),
     });
     if (claimed.count === 0) return "already-processed" as const;
@@ -123,7 +122,7 @@ export async function approveFeePayment(
         where: {
           userId: submission.userId,
           courseId: submission.courseId,
-          status: ENROLLMENT_STATUS.AWAITING_FEE,
+          statusEnum: "AWAITING_ENROLLMENT_FEE",
         },
         data: enrollmentStatusData(getRosterEnrollmentStatusForCourse(course.status)),
       });
@@ -234,7 +233,7 @@ export async function declineFeePayment(
   // The same guarded claim as approval: a decline that loses the race to an
   // approval (or to another decline) changes nothing.
   const claimed = await withDbErrorHandling(() => prisma.coursePaymentSubmission.updateMany({
-      where: { id: submissionId, status: SUBMISSION_STATUS_TEXT.PENDING_VERIFICATION, deletedAt: null },
+      where: { id: submissionId, statusEnum: "PENDING_VERIFICATION", deletedAt: null },
       data: {
         ...submissionStatusData("DECLINED"),
         upiTransactionId: null,
@@ -315,7 +314,7 @@ export async function voidFeePayment(
         });
         const reopened = enrollment
           ? await tx.enrollment.updateMany({
-              where: { id: enrollment.id, status: { in: [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.COMPLETED] } },
+              where: { id: enrollment.id, statusEnum: { in: ["ACTIVE", "COMPLETED"] } },
               data: enrollmentStatusData("AWAITING_ENROLLMENT_FEE"),
             })
           : { count: 0 };

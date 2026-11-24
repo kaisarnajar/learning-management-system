@@ -53,7 +53,7 @@ export async function courseAccessFor(actor: CourseActor | null, courseId: strin
   if (write) return null;
 
   const enrollment = await withDbErrorHandling(() => prisma.enrollment.findFirst({
-      where: { userId: actor.user.id, courseId, status: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
+      where: { userId: actor.user.id, courseId, statusEnum: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
       select: { id: true },
     }), "Database operation failed");
   return enrollment ? { course, as: "student" } : null;

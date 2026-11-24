@@ -1,12 +1,12 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { prisma } from "@/utils/prisma";
-import { MONTHLY_PAYMENT_APPROVED, PAYMENT_TYPE_ENROLLMENT } from "@/services/monthly-payment-status";
+import { PAYMENT_TYPE_ENROLLMENT } from "@/services/monthly-payment-status";
 import { getCourseIdsByTitleSearch, getAllCourses } from "@/services/courses";
 import { getMonthlyFeePaise, getRegistrationFeePaise } from "@/services/course-pricing";
 import { clampPage, type PaginatedResult } from "@/utils/pagination";
 import { buildSearchOr } from "@/utils/text-search";
 import type { FinanceFilters } from "@/services/finance-filters";
-import { PAYMENT_METHOD_TEXT } from "@/services/status-compat";
+import { paymentTypeFromText } from "@/services/status-compat";
 
 export type FeeWaiverFinanceStats = {
   totalWaiverCount: number;
@@ -39,7 +39,6 @@ export type ClaimedFeeWaiverItem = {
 const WAIVER_CLAIM_WHERE = {
   OR: [
     { couponId: { not: null } },
-    { paymentMethod: { equals: PAYMENT_METHOD_TEXT.WAIVER, mode: "insensitive" as const } },
     { paymentMethodEnum: "WAIVER" as const },
     { label: { contains: "waiver", mode: "insensitive" as const } },
   ],
@@ -47,7 +46,7 @@ const WAIVER_CLAIM_WHERE = {
 
 async function buildWaiverSearchWhere(filters: FinanceFilters): Promise<Record<string, unknown>> {
   const where: Record<string, unknown> = {
-    status: MONTHLY_PAYMENT_APPROVED,
+    statusEnum: "APPROVED",
     deletedAt: null,
     AND: [WAIVER_CLAIM_WHERE],
   };
@@ -74,7 +73,7 @@ async function buildWaiverSearchWhere(filters: FinanceFilters): Promise<Record<s
 
   // Payment type filter if set
   if (filters.paymentType) {
-    where.paymentType = filters.paymentType;
+    where.paymentTypeEnum = paymentTypeFromText(filters.paymentType) ?? { in: [] };
   }
 
   // Search query

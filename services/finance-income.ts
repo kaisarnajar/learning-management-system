@@ -1,11 +1,11 @@
 import type { Prisma } from "@prisma/client";
+import { paymentTypeFromText } from "@/services/status-compat";
 import type { FinanceFilters } from "@/services/finance-filters";
 import { financePaidAtWhere } from "@/services/finance-filters";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/pagination";
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { PAYMENTS } from "@/config/constants/payments";
 
 function incomeSearchWhere(q?: string) {
   if (!q) return undefined;
@@ -26,7 +26,7 @@ function buildIncomeWhere(filters: FinanceFilters) {
     voidedAt: null,
     ...(filters.courseId ? { courseId: filters.courseId } : {}),
     ...(filters.studentId ? { userId: filters.studentId } : {}),
-    paymentType: filters.paymentType ? filters.paymentType : { not: PAYMENTS.TYPES.BOOK_ORDER },
+    paymentTypeEnum: filters.paymentType ? (paymentTypeFromText(filters.paymentType) ?? { in: [] }) : { not: "BOOK_PURCHASE" },
     ...(paidAt ? { paidAt } : {}),
   };
 
@@ -41,7 +41,6 @@ const incomeInclude = {
   user: { select: { id: true, name: true, email: true } },
   course: { select: { id: true, title: true } },
 } as const;
-
 
 export async function getIncomeRecordsPaginated(
   filters: FinanceFilters,

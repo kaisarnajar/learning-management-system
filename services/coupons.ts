@@ -1,6 +1,6 @@
-import type { Prisma } from "@prisma/client";
+import type { PaymentSubmissionStatus, Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
-import { PAYMENTS } from "@/config/constants/payments";
+
 import { calculateDiscountedAmount, type ApplicableCoupon } from "@/utils/coupon-discount";
 
 // Pure helpers, importable from client components: utils/coupon-discount.ts
@@ -37,7 +37,7 @@ export async function getApplicableCoupons(
         userId,
         couponId: { not: null },
         deletedAt: null,
-        status: { in: [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED] },
+        statusEnum: { in: ["PENDING_VERIFICATION", "APPROVED"] },
       },
       select: { couponId: true },
     }),
@@ -127,7 +127,7 @@ export class CouponAlreadyUsedError extends Error {
   }
 }
 
-const LIVE_SUBMISSION_STATUSES = [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED];
+const LIVE_SUBMISSION_STATUSES: PaymentSubmissionStatus[] = ["PENDING_VERIFICATION", "APPROVED"];
 
 /**
  * Reserves `couponId` for a submission `userId` is about to create in the
@@ -148,7 +148,7 @@ export async function reserveCouponTx(tx: Prisma.TransactionClient, userId: stri
   const [usage, holder] = await Promise.all([
     tx.couponUsage.findUnique({ where: { couponId_userId: { couponId, userId } }, select: { id: true } }),
     tx.coursePaymentSubmission.findFirst({
-      where: { userId, couponId, deletedAt: null, status: { in: LIVE_SUBMISSION_STATUSES } },
+      where: { userId, couponId, deletedAt: null, statusEnum: { in: LIVE_SUBMISSION_STATUSES } },
       select: { id: true },
     }),
   ]);
@@ -211,7 +211,7 @@ export async function spendReservedCouponTx(
         couponId,
         id: { not: submissionId },
         deletedAt: null,
-        status: PAYMENTS.SUBMISSION_STATUS.APPROVED,
+        statusEnum: "APPROVED",
       },
       select: { id: true },
     });
@@ -234,7 +234,7 @@ export async function spendReservedCouponTx(
  */
 export async function releaseCouponTx(tx: Prisma.TransactionClient, userId: string, couponId: string): Promise<boolean> {
   const holder = await tx.coursePaymentSubmission.findFirst({
-    where: { userId, couponId, deletedAt: null, status: { in: LIVE_SUBMISSION_STATUSES } },
+    where: { userId, couponId, deletedAt: null, statusEnum: { in: LIVE_SUBMISSION_STATUSES } },
     select: { id: true },
   });
   if (holder) return false;

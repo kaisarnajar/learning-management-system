@@ -82,7 +82,7 @@ export async function approveEnrollmentRequest(
   // second concurrent approval a no-op instead of a double update.
   const approved = await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
     const updated = await tx.enrollment.updateMany({
-      where: { id: enrollmentId, status: enrollment.status },
+      where: { id: enrollmentId, statusEnum: enrollment.statusEnum },
       data: { ...enrollmentStatusData(rosterStatus), rejectedAt: null },
     });
     if (updated.count === 0) return false;
@@ -134,7 +134,7 @@ export async function rejectEnrollmentRequest(
   // Rejection is a status, not a deletion: the request stays visible in the
   // student's history and the student can apply again later.
   const rejected = await withDbErrorHandling(() => prisma.enrollment.updateMany({
-      where: { id: enrollmentId, status: enrollment.status },
+      where: { id: enrollmentId, statusEnum: enrollment.statusEnum },
       data: { ...enrollmentStatusData("REJECTED"), rejectedAt: new Date() },
     }), "Database operation failed");
 

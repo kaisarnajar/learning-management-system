@@ -1,7 +1,7 @@
 import { unstable_noStore as noStore } from "next/cache";
 import type { CourseStatus, Enrollment, EnrollmentStatus, Prisma } from "@prisma/client";
 import { ENROLLMENT_STATUS } from "@/config/constants/business";
-import { ENROLLMENT_STATUS_TEXT, enrollmentStatusData, enrollmentStatusOf } from "@/services/status-compat";
+import { enrollmentStatusData, enrollmentStatusOf } from "@/services/status-compat";
 import {
   AWAITING_ENROLLMENT_FEE,
   PENDING_ENROLLMENT_APPROVAL,
@@ -185,8 +185,8 @@ export async function getEnrollmentsForCoursePaginated(
   }, page, pageSize);
 }
 
-/** Legacy text values of the statuses that grant access to course content and appear on teacher rosters (for where-clauses). */
-export const APPROVED_ENROLLMENT_STATUSES = [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.COMPLETED] as const;
+/** The statuses that grant access to course content and appear on teacher rosters (for `statusEnum` where-clauses). */
+export const APPROVED_ENROLLMENT_STATUSES: readonly EnrollmentStatus[] = ["ACTIVE", "COMPLETED"];
 
 /**
  * Approved (active or completed) enrollments for a course. Pending applicants
@@ -198,7 +198,7 @@ export async function getApprovedEnrollmentsForCoursePaginated(
   pageSize: number,
 ): Promise<PaginatedResult<CourseEnrollmentWithUser>> {
   noStore();
-  const where = { courseId, status: { in: [...APPROVED_ENROLLMENT_STATUSES] } };
+  const where = { courseId, statusEnum: { in: [...APPROVED_ENROLLMENT_STATUSES] } };
   return paginateQuery<CourseEnrollmentWithUser>(prisma.enrollment, {
     where,
     orderBy: { rollNumber: { sort: "asc", nulls: "last" } },
@@ -222,7 +222,7 @@ export async function getCourseRosterEnrollmentsPaginated(
   noStore();
   const base = {
     courseId,
-    status: ENROLLMENT_STATUS_TEXT[getRosterEnrollmentStatusForCourse(courseStatus)],
+    statusEnum: getRosterEnrollmentStatusForCourse(courseStatus),
   };
   const searchWhere = searchQuery
     ? buildSearchOr([], [{ relation: "user", fields: ["name", "email"] }], searchQuery)
@@ -253,12 +253,12 @@ export async function getEnrollmentCountsByCourse(courseIds?: string[]): Promise
   const [activeCounts, completedCounts] = await Promise.all([
     withDbErrorHandling(() => prisma.enrollment.groupBy({
             by: ["courseId"],
-            where: { ...enrollmentScope, status: ENROLLMENT_STATUS.ACTIVE },
+            where: { ...enrollmentScope, statusEnum: "ACTIVE" },
             _count: { _all: true },
           }), "Database operation failed"),
     withDbErrorHandling(() => prisma.enrollment.groupBy({
             by: ["courseId"],
-            where: { ...enrollmentScope, status: ENROLLMENT_STATUS.COMPLETED },
+            where: { ...enrollmentScope, statusEnum: "COMPLETED" },
             _count: { _all: true },
           }), "Database operation failed"),
   ]);
@@ -286,7 +286,7 @@ export async function getPendingFreeEnrollmentApprovalsPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<PendingEnrollmentWithUser>> {
   noStore();
-  const base = { status: PENDING_ENROLLMENT_APPROVAL };
+  const base = { statusEnum: "PENDING_APPROVAL" as const };
   const where = andWhere(base, await enrollmentSearchWhere(searchQuery));
   return paginateQuery<PendingEnrollmentWithUser>(prisma.enrollment, {
     where,
@@ -305,7 +305,7 @@ export async function getAwaitingEnrollmentFeeEnrollmentsPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<PendingEnrollmentWithUser>> {
   noStore();
-  const base = { status: AWAITING_ENROLLMENT_FEE };
+  const base = { statusEnum: "AWAITING_ENROLLMENT_FEE" as const };
   const where = andWhere(base, await enrollmentSearchWhere(searchQuery));
   return paginateQuery<PendingEnrollmentWithUser>(prisma.enrollment, {
     where,
@@ -321,26 +321,24 @@ export async function getAwaitingEnrollmentFeeEnrollmentsPaginated(
 export async function getPendingEnrollmentApprovalCount(): Promise<number> {
   noStore();
   return withDbErrorHandling(() => prisma.enrollment.count({
-      where: { status: PENDING_ENROLLMENT_APPROVAL },
+      where: { statusEnum: "PENDING_APPROVAL" },
     }), "Database operation failed");
 }
 
 export async function getAwaitingEnrollmentFeeCount(): Promise<number> {
   noStore();
   return withDbErrorHandling(() => prisma.enrollment.count({
-      where: { status: AWAITING_ENROLLMENT_FEE },
+      where: { statusEnum: "AWAITING_ENROLLMENT_FEE" },
     }), "Database operation failed");
 }
 
-
-type EnrollmentStatusText = (typeof ENROLLMENT_STATUS)[keyof typeof ENROLLMENT_STATUS];
 
 /**
  * Enrollments whose attendance and grades staff may look at: approved
  * students, current or finished. Pending or rejected applicants are not part
  * of the class.
  */
-export const CLASS_MEMBER_STATUSES: readonly EnrollmentStatusText[] = [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.COMPLETED];
+export const CLASS_MEMBER_STATUSES: readonly EnrollmentStatus[] = ["ACTIVE", "COMPLETED"];
 
 /**
  * Whether [enrollmentId] is an enrollment of [courseId]; with `statuses`, only
@@ -349,10 +347,10 @@ export const CLASS_MEMBER_STATUSES: readonly EnrollmentStatusText[] = [ENROLLMEN
 export async function isEnrollmentInCourse(
   enrollmentId: string,
   courseId: string,
-  options: { statuses?: readonly EnrollmentStatusText[] } = {},
+  options: { statuses?: readonly EnrollmentStatus[] } = {},
 ): Promise<boolean> {
   const found = await withDbErrorHandling(() => prisma.enrollment.findFirst({
-      where: { id: enrollmentId, courseId, ...(options.statuses ? { status: { in: [...options.statuses] } } : {}) },
+      where: { id: enrollmentId, courseId, ...(options.statuses ? { statusEnum: { in: [...options.statuses] } } : {}) },
       select: { id: true },
     }), "Database operation failed");
   return Boolean(found);

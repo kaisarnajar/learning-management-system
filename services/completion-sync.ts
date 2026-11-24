@@ -1,5 +1,5 @@
 import type { CourseStatus, PrismaClient } from "@prisma/client";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
+
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollment-status";
 import { enrollmentStatusData } from "@/services/status-compat";
 import { withDbErrorHandling } from "@/utils/db-error";
@@ -19,7 +19,7 @@ export async function syncEnrollmentsWithCourseStatusIn(
 
   if (rosterStatus === "COMPLETED") {
     await withDbErrorHandling(() => db.enrollment.updateMany({
-          where: { courseId, status: ENROLLMENT_STATUS.ACTIVE },
+          where: { courseId, statusEnum: "ACTIVE" },
           data: { ...enrollmentStatusData("COMPLETED"), completedAt: new Date() },
         }), "Database operation failed");
     return;
@@ -28,7 +28,7 @@ export async function syncEnrollmentsWithCourseStatusIn(
   // Reopening a course: a student who already holds a certificate finished it
   // and stays completed; only the uncertified go back to active.
   await withDbErrorHandling(() => db.enrollment.updateMany({
-      where: { courseId, status: ENROLLMENT_STATUS.COMPLETED, certificateGeneratedAt: null },
+      where: { courseId, statusEnum: "COMPLETED", certificateGeneratedAt: null },
       data: { ...enrollmentStatusData("ACTIVE"), completedAt: null },
     }), "Database operation failed");
 }

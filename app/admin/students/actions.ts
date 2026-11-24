@@ -52,8 +52,8 @@ export async function deleteStudentUser(id: string): Promise<{ error?: string; s
   }
 
   const [activeEnrollments, pendingSubmissions, paymentRecords] = await Promise.all([
-    withDbErrorHandling(() => prisma.enrollment.count({ where: { userId: id, status: { in: [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.PENDING, ENROLLMENT_STATUS.AWAITING_FEE] } } }), "Database operation failed"),
-    withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where: { userId: id, deletedAt: null, status: PAYMENTS.SUBMISSION_STATUS.PENDING } }), "Database operation failed"),
+    withDbErrorHandling(() => prisma.enrollment.count({ where: { userId: id, statusEnum: { in: ["ACTIVE", "PENDING_APPROVAL", "AWAITING_ENROLLMENT_FEE"] } } }), "Database operation failed"),
+    withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where: { userId: id, deletedAt: null, statusEnum: "PENDING_VERIFICATION" } }), "Database operation failed"),
     withDbErrorHandling(() => prisma.paymentRecord.count({ where: { userId: id, voidedAt: null } }), "Database operation failed"),
   ]);
 
@@ -116,8 +116,7 @@ export async function deleteStudentUserForm(id: string) {
 
 import type { StudentFormValues } from "@/services/admin-form-validation";
 import { adminStudentSchema } from "@/utils/validations";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
-import { PAYMENTS } from "@/config/constants/payments";
+
 import { deleteOwnedProfileImage } from "@/services/uploads";
 import { getStudentUserById } from "@/services/students";
 

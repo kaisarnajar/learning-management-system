@@ -183,7 +183,7 @@ export async function deleteCourse(id: string) {
         () =>
           Promise.all([
             prisma.enrollment.count({
-              where: { courseId: id, status: { in: ["active", "completed"] } },
+              where: { courseId: id, statusEnum: { in: ["ACTIVE", "COMPLETED"] } },
             }),
             // Any submission (pending, decided or voided) is payment history and
             // the foreign key restricts the delete, so all of them block it.

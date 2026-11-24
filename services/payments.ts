@@ -8,7 +8,7 @@ import { buildMonthlyFeeLabel, buildEnrollmentFeeLabel } from "@/services/monthl
 import { getFeeFrequencyPaymentType } from "@/services/fee-frequency";
 import { buildPeriodKey } from "@/services/payment-period";
 import { getRosterEnrollmentStatusForCourse } from "@/services/enrollments";
-import { PAYMENT_PROOF_REQUIRED_MESSAGE, PAYMENTS, RECEIPT_SUBMISSION_SELECT } from "@/config/constants/payments";
+import { PAYMENT_PROOF_REQUIRED_MESSAGE, RECEIPT_SUBMISSION_SELECT } from "@/config/constants/payments";
 import {
   enrollmentStatusData,
   enrollmentStatusOf,
@@ -33,7 +33,7 @@ import { assignRollNumberTx } from "@/services/roll-numbers";
 import { getPaymentSettings } from "@/services/payment-settings";
 import { getCourseEnrollmentClosedMessage } from "@/services/course-status";
 import { isUserProfileComplete } from "@/services/profile";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
+
 import { isUtrUsed, normalizeUtr, WAIVER_TRANSACTION_REF } from "@/services/utr";
 
 const AMOUNT_MISMATCH_MESSAGE =
@@ -187,7 +187,7 @@ export async function processMonthlyPayment(
       userId,
       courseId: course.id,
       deletedAt: null,
-      status: { in: [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED] },
+      statusEnum: { in: ["PENDING_VERIFICATION", "APPROVED"] },
       OR: [...(periodKey ? [{ periodKey }] : []), { periodKey: null, label: { startsWith: label } }],
     },
     select: { status: true, statusEnum: true },
@@ -309,9 +309,9 @@ export async function processEnrollmentPayment(
     where: {
       userId,
       courseId,
-      paymentType: PAYMENTS.TYPES.ENROLLMENT,
+      paymentTypeEnum: "ENROLLMENT",
       deletedAt: null,
-      status: { in: [PAYMENTS.SUBMISSION_STATUS.PENDING, PAYMENTS.SUBMISSION_STATUS.APPROVED] },
+      statusEnum: { in: ["PENDING_VERIFICATION", "APPROVED"] },
     },
     select: { status: true, statusEnum: true },
   });
@@ -358,7 +358,7 @@ export async function processEnrollmentPayment(
       // Guarded on the status read above, so an admin rejecting the enrollment
       // meanwhile is not overwritten.
       const moved = await tx.enrollment.updateMany({
-        where: { id: enrollment.id, status: ENROLLMENT_STATUS.AWAITING_FEE },
+        where: { id: enrollment.id, statusEnum: "AWAITING_ENROLLMENT_FEE" },
         data: enrollmentStatusData(newStatus),
       });
       if (moved.count === 0) {

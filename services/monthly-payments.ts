@@ -1,14 +1,5 @@
 import { unstable_noStore as noStore } from "next/cache";
-import {
-  MONTHLY_PAYMENT_PENDING,
-  MONTHLY_PAYMENT_APPROVED,
-  PAYMENT_TYPE_ENROLLMENT,
-  PAYMENT_TYPE_MONTHLY,
-  PAYMENT_TYPE_QUARTERLY,
-  PAYMENT_TYPE_HALF_YEARLY,
-  PAYMENT_TYPE_YEARLY,
-  PAYMENT_TYPE_ONE_TIME,
-} from "@/services/monthly-payment-status";
+import { COURSE_FEE_PAYMENT_TYPES } from "@/services/status-compat";
 import { getCourseIdsByTitleSearch } from "@/services/courses";
 import { APPROVAL_PAGE_SIZE, clampPage, paginationArgs, type PaginatedResult } from "@/utils/pagination";
 import { prisma } from "@/utils/prisma";
@@ -73,9 +64,9 @@ export async function getPendingMonthlyPaymentsPaginated(
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
   const base = {
-    status: MONTHLY_PAYMENT_PENDING,
+    statusEnum: "PENDING_VERIFICATION" as const,
     deletedAt: null,
-    paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY, PAYMENT_TYPE_ONE_TIME] }
+    paymentTypeEnum: { in: COURSE_FEE_PAYMENT_TYPES }
   };
   const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
   const totalCount = await withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where }), "Database operation failed");
@@ -97,7 +88,7 @@ export async function getPendingEnrollmentFeePaymentsPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
-  const base = { status: MONTHLY_PAYMENT_PENDING, paymentType: PAYMENT_TYPE_ENROLLMENT, deletedAt: null };
+  const base = { statusEnum: "PENDING_VERIFICATION" as const, paymentTypeEnum: "ENROLLMENT" as const, deletedAt: null };
   const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
   const totalCount = await withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
@@ -115,7 +106,7 @@ export async function getPendingEnrollmentFeePaymentsPaginated(
 export async function getPendingPaymentCount(): Promise<number> {
   noStore();
   return withDbErrorHandling(() => prisma.coursePaymentSubmission.count({
-      where: { status: MONTHLY_PAYMENT_PENDING, deletedAt: null },
+      where: { statusEnum: "PENDING_VERIFICATION", deletedAt: null },
     }), "Database operation failed");
 }
 
@@ -127,8 +118,8 @@ export async function hasPendingEnrollmentFeeSubmission(
       where: {
         userId,
         courseId,
-        paymentType: PAYMENT_TYPE_ENROLLMENT,
-        status: MONTHLY_PAYMENT_PENDING,
+        paymentTypeEnum: "ENROLLMENT",
+        statusEnum: "PENDING_VERIFICATION",
         deletedAt: null,
       },
       select: { id: true },
@@ -140,8 +131,8 @@ export async function getPendingEnrollmentFeeSubmissionMap(userId: string) {
   const rows = await withDbErrorHandling(() => prisma.coursePaymentSubmission.findMany({
       where: {
         userId,
-        paymentType: PAYMENT_TYPE_ENROLLMENT,
-        status: MONTHLY_PAYMENT_PENDING,
+        paymentTypeEnum: "ENROLLMENT",
+        statusEnum: "PENDING_VERIFICATION",
         deletedAt: null,
       },
       select: { courseId: true },
@@ -157,9 +148,9 @@ export async function getApprovedMonthlyPaymentsPaginated(
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
   const base: Record<string, unknown> = {
-    status: MONTHLY_PAYMENT_APPROVED,
+    statusEnum: "APPROVED",
     deletedAt: null,
-    paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY, PAYMENT_TYPE_ONE_TIME] }
+    paymentTypeEnum: { in: COURSE_FEE_PAYMENT_TYPES }
   };
   if (filterType === "paid") {
     base.amountInrPaise = { gt: 0 };
@@ -191,7 +182,7 @@ export async function getApprovedEnrollmentFeePaymentsPaginated(
   filterType: "all" | "paid" | "waiver" = "all",
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
-  const base: Record<string, unknown> = { status: MONTHLY_PAYMENT_APPROVED, paymentType: PAYMENT_TYPE_ENROLLMENT, deletedAt: null };
+  const base: Record<string, unknown> = { statusEnum: "APPROVED", paymentTypeEnum: "ENROLLMENT", deletedAt: null };
   if (filterType === "paid") {
     base.amountInrPaise = { gt: 0 };
   } else if (filterType === "waiver") {

@@ -10,7 +10,6 @@ import { getCourseById } from "@/services/courses";
 import { allocateDocumentNumber } from "@/services/document-numbers";
 import { deleteStoredCertificatePdf, getCertificatePdf, storeCertificatePdf } from "@/services/documents";
 import { certificateTypeData, enrollmentStatusOf } from "@/services/status-compat";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
 import { recordAudit } from "@/services/audit";
 import type { CertificateType, EnrollmentStatus } from "@prisma/client";
 
@@ -18,10 +17,6 @@ import type { CertificateType, EnrollmentStatus } from "@prisma/client";
 const CERTIFIABLE_STATUSES: Record<CertificateType, EnrollmentStatus[]> = {
   COMPLETION: ["COMPLETED"],
   APPRECIATION: ["ACTIVE", "COMPLETED"],
-};
-const STATUS_TEXT: Partial<Record<EnrollmentStatus, string>> = {
-  ACTIVE: ENROLLMENT_STATUS.ACTIVE,
-  COMPLETED: ENROLLMENT_STATUS.COMPLETED,
 };
 
 function notCertifiableMessage(certificateType: CertificateType) {
@@ -86,7 +81,7 @@ export async function generateCertificate(enrollmentId: string, certificateType:
         where: {
           id: enrollmentId,
           certificateGeneratedAt: null,
-          status: { in: allowed.map((s) => STATUS_TEXT[s]!) },
+          statusEnum: { in: allowed },
         },
         data: {
           certificateGeneratedAt: new Date(),

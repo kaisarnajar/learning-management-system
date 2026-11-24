@@ -5,8 +5,7 @@ import { recordAudit } from "@/services/audit";
 import { revalidatePublicContent } from "@/services/public-cache";
 import { deleteOwnedProfileImage } from "@/services/uploads";
 import { resolveUserRole } from "@/services/teacher-auth";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
-import { PAYMENTS } from "@/config/constants/payments";
+
 import { enrollmentStatusData } from "@/services/status-compat";
 
 /**
@@ -54,7 +53,7 @@ export async function deleteOwnAccount(
   // academy can no longer attach to a person.
   const [pendingPayments, openOrders] = await Promise.all([
     prisma.coursePaymentSubmission.count({
-      where: { userId, deletedAt: null, status: PAYMENTS.SUBMISSION_STATUS.PENDING },
+      where: { userId, deletedAt: null, statusEnum: "PENDING_VERIFICATION" },
     }),
     prisma.bookOrder.count({
       where: { userId, deletedAt: null, status: { in: ["PENDING_VERIFICATION", "APPROVED"] } },
@@ -82,7 +81,7 @@ export async function deleteOwnAccount(
 
     // Applications the academy has not decided on yet are withdrawn.
     await tx.enrollment.updateMany({
-      where: { userId, status: { in: [ENROLLMENT_STATUS.PENDING, ENROLLMENT_STATUS.AWAITING_FEE] } },
+      where: { userId, statusEnum: { in: ["PENDING_APPROVAL", "AWAITING_ENROLLMENT_FEE"] } },
       data: { ...enrollmentStatusData("REJECTED"), rejectedAt: now },
     });
     await tx.couponRequest.updateMany({ where: { userId, status: "PENDING" }, data: { status: "REJECTED" } });

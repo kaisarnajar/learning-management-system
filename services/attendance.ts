@@ -1,6 +1,5 @@
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
 
 export type AttendanceRecordInput = {
   enrollmentId: string;
@@ -34,7 +33,7 @@ export async function getEnrolledStudentsForAttendanceFromDb(courseId: string) {
     return prisma.enrollment.findMany({
       where: {
         courseId,
-        status: ENROLLMENT_STATUS.ACTIVE, // Only active students
+        statusEnum: "ACTIVE", // Only active students
       },
       select: {
         id: true,
@@ -91,7 +90,7 @@ export async function saveCourseAttendanceToDb(courseId: string, targetDate: Dat
       const enrollmentIds = [...new Set(records.map((r) => r.enrollmentId))];
       if (enrollmentIds.length > 0) {
         const found = await tx.enrollment.findMany({
-          where: { courseId, id: { in: enrollmentIds }, status: ENROLLMENT_STATUS.ACTIVE },
+          where: { courseId, id: { in: enrollmentIds }, statusEnum: "ACTIVE" },
           select: { id: true },
         });
         if (found.length !== enrollmentIds.length) {

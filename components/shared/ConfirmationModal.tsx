@@ -15,6 +15,8 @@ interface ConfirmationModalProps {
   /** When set, a reason textarea is shown and must be filled before confirming. */
   reasonLabel?: string;
   reasonRequired?: boolean;
+  /** Extra fields shown under the description (state stays with the caller). */
+  children?: ReactNode;
 }
 
 export function ConfirmationModal({
@@ -26,6 +28,7 @@ export function ConfirmationModal({
   variant = "destructive",
   reasonLabel,
   reasonRequired = true,
+  children,
 }: ConfirmationModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isPending, setIsPending] = useState(false);
@@ -93,6 +96,7 @@ export function ConfirmationModal({
       >
         <h3 id={titleId} className="text-lg font-semibold text-foreground leading-snug break-words whitespace-normal">{title}</h3>
         <p className="mt-2 text-sm text-muted break-words leading-relaxed whitespace-normal">{description}</p>
+        {children}
 
         {reasonLabel && (
           <label className="mt-4 block text-sm">

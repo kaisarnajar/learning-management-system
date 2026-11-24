@@ -10,7 +10,9 @@ import { GET as teacherCourse } from "@/app/api/v1/teacher/courses/[id]/route";
 import { POST as teacherAnnounce } from "@/app/api/v1/teacher/courses/[id]/announcements/route";
 import { POST as teacherGrade } from "@/app/api/v1/teacher/courses/[id]/grades/route";
 import { GET as adminCourse } from "@/app/api/v1/admin/courses/[id]/route";
-import { createCourse, createEnrollment, createTeacher, createUser, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
+import { POST as orderAction } from "@/app/api/v1/admin/bookstore/orders/[id]/[action]/route";
+import { getStockLevels } from "@/services/inventory";
+import { createBook, createCourse, createEnrollment, createTeacher, createUser, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
 import { apiRequest, bearerFor, jsonOf, routeParams, signedInAdmin, signedInStudent, signedInTeacher } from "../helpers/api";
 
 // The shared setup replaces Auth.js with a mock whose `auth()` returns null.
@@ -161,6 +163,35 @@ describe.skipIf(SKIP_WITHOUT_DB)("staff API (/api/v1/admin, /api/v1/teacher)", (
       );
       expect(declined.status).toBe(400);
       expect(await jsonOf(declined)).toEqual({ success: false, error: "Only pending payments can be declined." });
+    });
+
+    it("bookstore: refunding a shipped order returns its books to stock only with booksReturned", async () => {
+      const { headers } = await signedInAdmin();
+      const student = await createUser();
+      const book = await createBook({ inventoryPurchased: 5, priceInrPaise: 10000 });
+      const shippedOrder = () =>
+        prisma.bookOrder.create({
+          data: {
+            userId: student.id,
+            status: "SHIPPED",
+            totalAmountInrPaise: 10000,
+            upiTransactionId: `UTR${Math.random().toString().slice(2, 10)}`,
+            deliveryAddress: "1 Test Street, Srinagar",
+            deliveryPinCode: "190001",
+            deliveryPhoneNumber: "9876543210",
+            items: { create: [{ bookId: book.id, quantity: 1, priceAtPurchaseInrPaise: 10000 }] },
+          },
+        });
+      const refund = (id: string, json?: unknown) =>
+        orderAction(apiRequest(`/api/v1/admin/bookstore/orders/${id}/refund`, { method: "POST", headers, json }), routeParams({ id, action: "refund" }));
+      const available = async () => (await getStockLevels(prisma, [book.id])).get(book.id)!.available;
+      const [kept, returned] = [await shippedOrder(), await shippedOrder()];
+      expect(await available()).toBe(3);
+
+      expect((await refund(kept.id)).status).toBe(200);
+      expect(await available()).toBe(3);
+      expect((await refund(returned.id, { booksReturned: true })).status).toBe(200);
+      expect(await available()).toBe(4);
     });
 
     it("enrollments: approve activates a pending request and needs courseId", async () => {

@@ -16,7 +16,7 @@ import { recordAudit } from "@/services/audit";
 import { normalizeReason } from "@/services/payment-voiding";
 import { PAYMENTS } from "@/config/constants/payments";
 import type { BookOrderStatus } from "@prisma/client";
-import { findStockShortages, formatShortages, lockBooksForUpdate } from "@/services/inventory";
+import { findStockShortages, formatShortages, lockBooksForUpdate, writeOffUnreturnedStockTx } from "@/services/inventory";
 import { paymentTypeData } from "@/services/status-compat";
 
 const MAX_SHIPMENT_FIELD_LENGTH = 100;
@@ -207,11 +207,15 @@ export async function markBookOrderShipped(
 /**
  * Refunds an approved or shipped order. The income that was recorded at
  * approval is voided (kept for audit, excluded from finance and receipts)
- * and the refund is written to the audit log.
+ * and the refund is written to the audit log. An approved order's books never
+ * left, so they are available again; a shipped order's books are only when
+ * the admin confirms they came back (`booksReturned`), otherwise they are
+ * written off so the shop cannot sell copies it no longer has.
  */
 export async function markBookOrderRefunded(
   orderId: string,
   returnTo?: string,
+  booksReturned = false,
 ): Promise<{ error?: string }> {
   const session = await requireAdmin();
 
@@ -227,7 +231,11 @@ export async function markBookOrderRefunded(
 
   try {
     await prisma.$transaction(async (tx) => {
-      await transitionOrder(tx, orderId, ["APPROVED", "SHIPPED"], "REFUNDED");
+      // From the status read above only: whether the books left depends on it.
+      await transitionOrder(tx, orderId, order.status, "REFUNDED");
+      const writtenOff = order.status === "SHIPPED" && !booksReturned
+        ? await writeOffUnreturnedStockTx(tx, orderId, session.user.id)
+        : 0;
 
       const shortId = orderId.slice(-6).toUpperCase();
       const voided = await tx.paymentRecord.updateMany({
@@ -245,7 +253,11 @@ export async function markBookOrderRefunded(
         entity: "BookOrder",
         entityId: orderId,
         before: { status: order.status, totalAmountInrPaise: order.totalAmountInrPaise },
-        after: { status: "REFUNDED", voidedPaymentRecords: voided.count },
+        after: {
+          status: "REFUNDED",
+          voidedPaymentRecords: voided.count,
+          ...(order.status === "SHIPPED" ? { booksReturned, booksWrittenOff: writtenOff } : {}),
+        },
       });
     });
   } catch (error) {

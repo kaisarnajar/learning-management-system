@@ -19,7 +19,8 @@ type OrderAction = (typeof ACTIONS)[number];
  *  - approve: pending → approved (checks and commits stock, records the payment, e-mails the student);
  *  - decline: pending → declined;
  *  - ship:    approved → shipped, body { courierServiceName, trackingId };
- *  - refund:  approved or shipped → refunded (the recorded payment is voided);
+ *  - refund:  approved or shipped → refunded (the recorded payment is voided); body { booksReturned }
+ *             for a shipped order: true puts its books back in stock, otherwise they are written off;
  *  - void:    declined or refunded → removed from the lists (kept for audit), body { reason } (3+ characters).
  */
 export async function POST(request: NextRequest, { params }: Params) {
@@ -35,8 +36,11 @@ export async function POST(request: NextRequest, { params }: Params) {
         const form = await readActionForm(request);
         return markBookOrderShipped(id, String(form.get("courierServiceName") ?? ""), String(form.get("trackingId") ?? ""));
       }
-      case "refund":
-        return markBookOrderRefunded(id);
+      case "refund": {
+        const form = await readActionForm(request);
+        const returned = String(form.get("booksReturned") ?? "");
+        return markBookOrderRefunded(id, undefined, returned === "on" || returned === "true");
+      }
       case "void": {
         const form = await readActionForm(request);
         return voidBookOrder(id, String(form.get("reason") ?? ""));

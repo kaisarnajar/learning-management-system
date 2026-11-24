@@ -79,7 +79,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
     expect(b).toMatchObject({ ok: false, status: 400 });
   });
 
-  it("holds stock from approval, through shipping, and releases it on refund", async () => {
+  it("holds stock from approval and through shipping; refunding the shipped order keeps it gone", async () => {
     const student = await createUser();
     const book = await createBook({ inventoryPurchased: 5, priceInrPaise: 10000 });
     const order = await placeOrder(student.id, [{ bookId: book.id, quantity: 2 }]);
@@ -102,9 +102,13 @@ describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
     });
     expect(await available()).toBe(3);
 
+    // The books are with the customer: the refund must not make them sellable again.
     const refunded = await runAction(() => markBookOrderRefunded(order.id));
     expect(refunded.redirectedTo).toContain("refunded=1");
-    expect(await available()).toBe(5);
+    expect(await available()).toBe(3);
+    expect(await prisma.bookStockMovement.findMany({ where: { bookId: book.id } })).toEqual([
+      expect.objectContaining({ orderId: order.id, delta: -2, reason: expect.stringContaining("without return") }),
+    ]);
     expect(await prisma.bookOrder.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ status: "REFUNDED" });
     const voided = await prisma.paymentRecord.findUniqueOrThrow({ where: { id: record.id } });
     expect(voided.voidedAt).not.toBeNull();
@@ -112,6 +116,28 @@ describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
 
     const types = (await prisma.studentNotification.findMany({ where: { userId: student.id }, orderBy: { createdAt: "asc" } })).map((n) => n.type);
     expect(types).toEqual(["BOOK_ORDER_APPROVED", "BOOK_ORDER_SHIPPED", "BOOK_ORDER_REFUNDED"]);
+  });
+
+  it("refunding returns stock when the order never shipped, or its books came back", async () => {
+    const student = await createUser();
+    const book = await createBook({ inventoryPurchased: 5 });
+    const available = async () => (await getStockLevels(prisma, [book.id])).get(book.id)!.available;
+
+    const notShipped = await placeOrder(student.id, [{ bookId: book.id, quantity: 1 }]);
+    await runAction(() => approveBookOrder(notShipped.id));
+    expect(await available()).toBe(4);
+    await runAction(() => markBookOrderRefunded(notShipped.id, undefined, false));
+    expect(await available()).toBe(5);
+
+    const returned = await placeOrder(student.id, [{ bookId: book.id, quantity: 2 }]);
+    await runAction(() => approveBookOrder(returned.id));
+    await runAction(() => markBookOrderShipped(returned.id, "Speed Post", "TRK9"));
+    expect(await available()).toBe(3);
+    await runAction(() => markBookOrderRefunded(returned.id, undefined, true));
+    expect(await available()).toBe(5);
+    expect(await prisma.bookStockMovement.count()).toBe(0);
+    const audit = await prisma.auditLog.findFirstOrThrow({ where: { entity: "BookOrder", entityId: returned.id, action: "refund" } });
+    expect(audit.after).toMatchObject({ booksReturned: true, booksWrittenOff: 0 });
   });
 
   it("only moves orders along the allowed transitions", async () => {

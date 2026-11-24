@@ -4110,14 +4110,15 @@ paths:
       description: |
         approve: pending to approved (checks and commits stock, records the payment, e-mails the student);
         decline: pending to declined; ship: approved to shipped (body courierServiceName, trackingId);
-        refund: approved or shipped to refunded (the recorded payment is voided);
+        refund: approved or shipped to refunded (the recorded payment is voided; for a shipped order, body
+        booksReturned true puts its books back in stock, and without it they are written off as not returned);
         void: declined or refunded orders leave the lists (kept for audit; body reason, 3+ characters).
         An unknown action is a 404.
       requestBody:
         required: false
         content:
           application/json:
-            schema: { type: object, properties: { courierServiceName: { type: string, description: ship }, trackingId: { type: string, description: ship }, reason: { type: string, minLength: 3, description: void } } }
+            schema: { type: object, properties: { courierServiceName: { type: string, description: ship }, trackingId: { type: string, description: ship }, booksReturned: { type: boolean, default: false, description: "refund of a shipped order: the books came back" }, reason: { type: string, minLength: 3, description: void } } }
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }

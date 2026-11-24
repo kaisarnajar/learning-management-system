@@ -92,7 +92,7 @@ If you intend to use the demo seed script (`npm run db:seed:demo`) to populate t
 |---|---|
 | `npm run dev` | PDF stylesheet, `prisma generate`, then the dev server |
 | `npm run build` | `prisma generate` and `next build` (the `prebuild` hook builds the PDF stylesheet) |
-| `npm run vercel-build` | What Vercel runs: PDF stylesheet, `prisma generate`, `prisma migrate deploy`, `next build` |
+| `npm run vercel-build` | What Vercel runs (`scripts/vercel-build.sh`): PDF stylesheet, `prisma generate`, `prisma migrate deploy` (production deployments only), `next build` |
 | `npm start` | `next start` on a production build |
 | `npm run lint` / `npm run knip` | ESLint / unused files and dependencies |
 | `npm run build:pdf-css` | Compiles the Tailwind stylesheet embedded in generated PDFs into `generated/pdf.css` |
@@ -124,7 +124,7 @@ This application is architected to run on a modern, serverless edge stack. We re
 ### 1. Frontend & Backend: Vercel
 Vercel provides seamless hosting for Next.js App Router applications.
 - **Setup:** Connect your GitHub repository to Vercel.
-- **Build Command:** `npm run vercel-build` (already set in `vercel.json`). It builds the PDF stylesheet, generates the Prisma client, applies pending migrations with `prisma migrate deploy` (additive migrations only; it never runs `db push`) and then runs `next build`.
+- **Build Command:** `npm run vercel-build` (already set in `vercel.json`, implemented in `scripts/vercel-build.sh`). It builds the PDF stylesheet, generates the Prisma client, applies pending migrations with `prisma migrate deploy` (additive migrations only; it never runs `db push`) and then runs `next build`. Migrations run only when `VERCEL_ENV=production`, or when `RUN_MIGRATIONS=true` is set on a staging project with its own database; preview builds never migrate.
 - **Environment:** Copy all variables from your `.env` into Vercel's Environment Variables settings (Vercel's own system variables are set for you).
 - **Branches:** pull requests go into `master`, which Vercel deploys; see `docs/CONTRIBUTING.md`.
 

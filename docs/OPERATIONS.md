@@ -33,6 +33,25 @@ deploy:
    instance); `DIRECT_URL` is the direct URL used only by `prisma migrate`.
    The Prisma client itself has no pool configuration.
 
+### When migrations run on Vercel
+
+`vercel.json` builds with `npm run vercel-build`, i.e. `scripts/vercel-build.sh`.
+It runs `prisma migrate deploy` only when:
+
+- `VERCEL_ENV=production` (deployments of `master`), or
+- `RUN_MIGRATIONS=true` is set explicitly, for a staging project whose
+  `DATABASE_URL`/`DIRECT_URL` point at its own database.
+
+Preview deployments (every other branch) build without migrating, so a
+branch's unreviewed migration can never reach the database a Preview
+environment is configured with. Check what a build would do with
+`VERCEL_ENV=preview bash scripts/vercel-build.sh --dry-run`. After a change
+to this script, confirm the next production build log shows
+"Applying migrations".
+
+Keep Preview's `DATABASE_URL` and `DIRECT_URL` pointed at a Neon branch, never
+at production: Vercel applies new variables to every environment by default.
+
 ## 2. Migration history and the baseline
 
 Until 2026-07-25 production was synchronised with `prisma db push`; after that
@@ -90,8 +109,8 @@ Perform these steps in order. Steps 1–4 are read-only.
    it must now be empty. Run the application against the branch and smoke
    test coupons, cart, blog likes/comments and payment settings.
 6. **Production:** repeat step 4 (resolve any missing historical rows), then
-   deploy. The Vercel build runs `prisma migrate deploy`, which applies the
-   same twenty migrations.
+   deploy. The production Vercel build runs `prisma migrate deploy`, which
+   applies the same twenty migrations.
 7. Record the outcome (timestamp, migrations applied, row counts of
    `PaymentRecord`, `Enrollment`, `User` before and after) in the release
    ticket.

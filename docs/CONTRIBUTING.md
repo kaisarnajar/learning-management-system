@@ -3,6 +3,7 @@
 ## Branches
 
 - **`master` is production.** Vercel deploys it, and its build runs `prisma migrate deploy` against the live database.
+  Preview deployments (any other branch) never run migrations; see `scripts/vercel-build.sh`.
 - **`dev` is the integration branch.** Work lands here first and the full CI pipeline (including the e2e journeys) runs on it.
 - **Pull requests go into `master` only.** Do not open a PR against any other branch, and do not push to `master` directly.
   Work on a feature branch (`feat/…`, `fix/…`, `docs/…`), keep it up to date with `master`, and open the PR from there.

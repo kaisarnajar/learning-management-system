@@ -325,6 +325,33 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     expect(await prisma.coursePaymentSubmission.count({ where: { userId: student.id } })).toBe(1);
   });
 
+  it("the database refuses a second live submission for a billing period", async () => {
+    const student = await createUser();
+    const course = await createCourse();
+    const insert = (label: string, extra: Record<string, unknown> = {}) =>
+      prisma.coursePaymentSubmission.create({
+        data: { userId: student.id, courseId: course.id, label, amountInrPaise: 34900, periodKey: "MONTHLY:2026-05", ...extra },
+      });
+    await insert("Monthly fee — May 2026 (30% Fee Waiver)");
+
+    // A different label (no coupon) does not get past the period index.
+    await expect(insert("Monthly fee — May 2026")).rejects.toMatchObject({ code: "P2002" });
+
+    // Declined, rejected and voided rows do not hold the period; rows without a key are not covered.
+    await insert("Monthly fee — May 2026 (declined)", { status: "rejected", statusEnum: "DECLINED" });
+    await insert("Monthly fee — May 2026 (legacy declined)", { status: "declined" });
+    await insert("Monthly fee — May 2026 (voided)", { deletedAt: new Date() });
+    await insert("Monthly fee — May 2026 (no key)", { periodKey: null });
+    await expect(insert("Monthly fee — May 2026 (again)")).rejects.toMatchObject({ code: "P2002" });
+
+    // Another student, course or period is free.
+    const other = await createUser();
+    await prisma.coursePaymentSubmission.create({
+      data: { userId: other.id, courseId: course.id, label: "Monthly fee — May 2026", amountInrPaise: 34900, periodKey: "MONTHLY:2026-05" },
+    });
+    await insert("Monthly fee — June 2026", { periodKey: "MONTHLY:2026-06" });
+  });
+
   it("matches rows written before the period key existed by their label, ignoring coupon text", async () => {
     const student = await createUser();
     const course = await createCourse();

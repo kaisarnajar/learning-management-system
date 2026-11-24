@@ -10,7 +10,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
-  serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core", "sharp", "firebase-admin"],
+  serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core", "puppeteer", "sharp", "firebase-admin"],
   // The PDF generators read these from disk at runtime; make sure the
   // serverless bundles carry them.
   outputFileTracingIncludes: {

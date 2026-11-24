@@ -1,4 +1,3 @@
-import puppeteer from "puppeteer";
 import puppeteerCore from "puppeteer-core";
 import chromium from "@sparticuz/chromium-min";
 import sharp from "sharp";
@@ -44,6 +43,9 @@ async function launchBrowserWithRetry(maxRetries = 4) {
           headless: true,
         });
       } else {
+        // Full Puppeteer (with its own Chrome) is a devDependency for local
+        // development only; production on Vercel never loads it.
+        const { default: puppeteer } = await import("puppeteer");
         return await puppeteer.launch({
           headless: true,
           args: ["--no-sandbox", "--disable-setuid-sandbox"],

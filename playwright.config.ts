@@ -26,6 +26,7 @@ export const E2E_ENV = {
   AUTH_TRUST_HOST: "true",
   CSP_ENFORCE: "true",
   RATE_LIMIT_DISABLED: "true",
+  E2E_TEST_ROUTES: "true",
 };
 
 export default defineConfig({

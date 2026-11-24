@@ -1204,14 +1204,13 @@ paths:
       tags: [Auth]
       security: []
       description: |
-        Creates an unverified account and e-mails a verification link. The answer is identical (200, same
-        body) when the address already has an account; its owner is told by e-mail instead, so the endpoint
-        does not reveal which addresses are registered.
+        Creates an unverified account, e-mails a verification link and returns a session for it. The session
+        has role USER until the address is verified (whatever staff role the address would carry).
 
-        **Breaking change (2026-11-24):** the response no longer carries tokens or `user`. After a 200, show
-        "check your e-mail", and sign in with `POST /auth/login` once the address is verified (login answers
-        403 `email_not_verified` until then; `POST /auth/resend-verification` sends a new link). A taken
-        address used to answer 400 "An account with this email already exists."; it now answers 200.
+        An address that already has an account answers 400 "An account with this email already exists." and
+        its owner is told by e-mail. Unlike the website's registration, this endpoint therefore reveals which
+        addresses are registered; that is accepted to keep installed apps working, and it is rate-limited per
+        network (429). `verificationRequired` is always true on a 200 (added 2026-11-24, additive).
       requestBody:
         required: true
         content:
@@ -1226,17 +1225,18 @@ paths:
                 acceptPolicies: { type: boolean, const: true }
       responses:
         "200":
-          description: Registered, or the address already had an account (indistinguishable). No session.
+          description: Registered and signed in (unverified, role USER)
           content:
             application/json:
               schema:
-                type: object
-                required: [success, verificationRequired, message]
-                properties:
-                  success: { type: boolean, const: true }
-                  verificationRequired: { type: boolean, const: true }
-                  message: { type: string }
-        "400": { $ref: "#/components/responses/Error" }
+                allOf:
+                  - $ref: "#/components/schemas/Tokens"
+                  - type: object
+                    properties:
+                      verificationRequired: { type: boolean, const: true }
+        "400":
+          description: Invalid details, or the address already has an account ("An account with this email already exists.")
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
         "429": { $ref: "#/components/responses/TooManyRequests" }
   /auth/login:
     post:

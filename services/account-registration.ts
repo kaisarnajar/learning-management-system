@@ -11,17 +11,24 @@ import { buildVerificationUrl, generateVerificationToken } from "@/services/toke
 export const REGISTRATION_MESSAGE =
   "Check your email: we sent a message to that address. If this is a new account, open the link to verify it, then sign in.";
 
+/** The new account's public fields, as a session response shows them. */
+export type RegisteredUser = { id: string; email: string; name: string | null; image: string | null; registrationNumber: string | null };
+
+/** `created: false` means the address already had an account (live or removed) and nothing was written. */
+export type RegistrationResult = { created: true; user: RegisteredUser } | { created: false };
+
 /**
  * Registers an e-mail and password account, or, when the address is taken,
- * tells its owner by e-mail. The caller answers identically either way so the
- * response does not reveal which addresses have accounts: the password is
- * hashed in both cases and the e-mail goes out after the response, so neither
- * the body nor the timing (beyond a few database writes) differs.
+ * tells its owner by e-mail. The password is hashed in both cases and the
+ * e-mail goes out after the response, so a caller that answers identically
+ * either way (the website) reveals nothing through the body or the timing
+ * (beyond a few database writes).
  *
- * Returns the new user's id, or null when no account was created; the caller
- * must not let that difference reach the response.
+ * The mobile API does tell the two apart (a new account gets a session, a
+ * taken address an error) to keep installed apps working; that endpoint is
+ * rate-limited per network.
  */
-export async function registerWithPassword(input: { name?: string | null; email: string; password: string }): Promise<string | null> {
+export async function registerWithPassword(input: { name?: string | null; email: string; password: string }): Promise<RegistrationResult> {
   const { name, email, password } = input;
   const hashedPassword = await hash(password, 12);
 
@@ -29,12 +36,12 @@ export async function registerWithPassword(input: { name?: string | null; email:
   if (existing) {
     // A removed account is not told about anything.
     if (!existing.deletedAt) after(() => notifyExistingOwner(email));
-    return null;
+    return { created: false };
   }
 
-  let userId: string;
+  let user: RegisteredUser;
   try {
-    const user = await prisma.user.create({
+    user = await prisma.user.create({
       data: {
         name: name || null,
         email,
@@ -42,18 +49,17 @@ export async function registerWithPassword(input: { name?: string | null; email:
         policiesAcceptedAt: new Date(),
         policiesAcceptedVersion: CURRENT_POLICIES_VERSION,
       },
-      select: { id: true },
+      select: { id: true, email: true, name: true, image: true, registrationNumber: true },
     });
-    userId = user.id;
   } catch (error) {
     // A concurrent registration of the same address won the insert.
-    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return null;
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") return { created: false };
     throw error;
   }
 
   const { token } = await generateVerificationToken(email);
   after(() => sendVerification(email, buildVerificationUrl(token)));
-  return userId;
+  return { created: true, user };
 }
 
 async function sendVerification(email: string, verificationUrl: string): Promise<void> {

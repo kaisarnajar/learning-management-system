@@ -29,7 +29,7 @@ OpenAPI Generator plugin (`generatorName = "kotlin"`, `library = "jvm-retrofit2"
 
 | Endpoint | Body | Result |
 |---|---|---|
-| `POST /auth/register` | `{ name?, email, password, acceptPolicies: true }` | `{ success, verificationRequired, message }`, no session; a verification e-mail is sent. A taken address gets the same answer (its owner is e-mailed instead). Sign in once verified |
+| `POST /auth/register` | `{ name?, email, password, acceptPolicies: true }` | tokens + `user` (role `USER` until verified) + `verificationRequired: true`; the account starts unverified and a verification e-mail is sent. A taken address gets `400` "An account with this email already exists." and its owner is e-mailed |
 | `POST /auth/login` | `{ email, password }` | tokens + `user`; `403` with `code: "email_not_verified"` until the address is verified |
 | `POST /auth/google` | `{ idToken }` | tokens + `user` |
 | `POST /auth/refresh` | `{ refreshToken }` | a new pair; the presented refresh token is revoked |

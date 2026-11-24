@@ -41,19 +41,29 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
   describe("register", () => {
     const body = { name: "New Student", email: " New.Student@Example.com ", password: "long-enough-1", acceptPolicies: true };
 
-    it("creates an unverified account and e-mails a verification link, without a session", async () => {
+    it("creates an unverified account, e-mails a verification link and returns a token pair", async () => {
       vi.mocked(sendVerificationEmail).mockClear();
       const response = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: body }));
       const data = await jsonOf(response);
 
       expect(response.status).toBe(200);
-      expect(data).toEqual({ success: true, verificationRequired: true, message: REGISTRATION_MESSAGE });
+      expect(data).toMatchObject({
+        success: true,
+        verificationRequired: true,
+        user: { email: "new.student@example.com", name: "New Student", emailVerified: null, role: "USER" },
+      });
+      expect(data.accessToken).toBeTruthy();
+      expect(data.token).toBe(data.accessToken);
+      expect(data.refreshToken).toBeTruthy();
+      expect(data.expiresIn).toBe(3600);
 
       const row = await prisma.user.findUniqueOrThrow({ where: { email: "new.student@example.com" } });
       expect(row.password).not.toBe(body.password);
       expect(row.password).toMatch(/^\$2[aby]\$/);
       expect(row.emailVerified).toBeNull();
-      expect(await prisma.apiRefreshToken.count({ where: { userId: row.id } })).toBe(0);
+      expect(data.user.id).toBe(row.id);
+      expect(await prisma.apiRefreshToken.count({ where: { userId: row.id } })).toBe(1);
+      expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(data.accessToken) }))).status).toBe(200);
       expect(sendVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "new.student@example.com" }));
     });
 
@@ -66,16 +76,17 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       expect((await jsonOf(noPolicies)).error).toMatch(/Terms/);
     });
 
-    it("answers an address that already has an account exactly like a new one, and tells the owner by e-mail", async () => {
-      const fresh = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { ...body, email: "someone.new@example.com" } }));
+    // The mobile contract tells a taken address apart (accepted for this
+    // rate-limited endpoint, review L3) so installed apps keep working.
+    it("refuses an address that already has an account, as installed apps expect, and tells the owner by e-mail", async () => {
       const owner = await createUser({ email: "new.student@example.com", password: "owner-hash" });
       vi.mocked(sendVerificationEmail).mockClear();
       vi.mocked(sendAccountExistsEmail).mockClear();
 
       const duplicate = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: body }));
 
-      expect(duplicate.status).toBe(fresh.status);
-      expect(await jsonOf(duplicate)).toEqual(await jsonOf(fresh));
+      expect(duplicate.status).toBe(400);
+      expect(await jsonOf(duplicate)).toEqual({ success: false, error: "An account with this email already exists." });
       expect(sendAccountExistsEmail).toHaveBeenCalledTimes(1);
       expect(vi.mocked(sendAccountExistsEmail).mock.calls[0]![0]).toMatchObject({ to: "new.student@example.com" });
       expect(sendVerificationEmail).not.toHaveBeenCalled();
@@ -97,18 +108,21 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
 
       expect(fresh.status).toBe(200);
       expect(duplicate.status).toBe(200);
-      expect(await jsonOf(duplicate)).toEqual(await jsonOf(fresh));
+      const freshBody = await jsonOf(fresh);
+      expect(freshBody).toEqual({ success: true, role: "USER", message: REGISTRATION_MESSAGE });
+      expect(await jsonOf(duplicate)).toEqual(freshBody);
       expect(sendAccountExistsEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "web.taken@example.com" }));
     });
 
-    it("tells nobody when the address belongs to a removed account", async () => {
+    it("tells nobody when the address belongs to a removed account, and does not reuse it", async () => {
       await createUser({ email: "removed@example.com", deletedAt: new Date() });
       vi.mocked(sendAccountExistsEmail).mockClear();
 
       const response = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { ...body, email: "removed@example.com" } }));
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(400);
       expect(sendAccountExistsEmail).not.toHaveBeenCalled();
+      expect(await prisma.user.count({ where: { email: "removed@example.com" } })).toBe(1);
     });
 
     it("limits registrations per network", async () => {
@@ -125,14 +139,12 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
   });
 
   describe("staff roles need a verified address", () => {
-    /** Registers the address and opens an API session on the unverified row, as one issued before registration stopped returning sessions. */
     const registerAs = async (email: string) => {
       const response = await register(
         apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "Claimant", email, password: "long-enough-1", acceptPolicies: true } }),
       );
       expect(response.status).toBe(200);
-      const user = await prisma.user.findUniqueOrThrow({ where: { email } });
-      return issueApiSession({ id: user.id, email: user.email, role: "USER" });
+      return jsonOf(response);
     };
     const verify = (email: string) => prisma.user.update({ where: { email }, data: { emailVerified: new Date() } });
 
@@ -163,13 +175,12 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
   });
 
   describe("sessions end when the account is taken back", () => {
-    /** Someone else registers the address and holds an API session on the unverified row (one issued before registration stopped returning sessions). */
+    /** Someone else registers the address and holds the API session registration returned. */
     const registerSquatter = async (email: string) => {
-      await register(
+      const response = await register(
         apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "Squatter", email, password: "long-enough-1", acceptPolicies: true } }),
       );
-      const user = await prisma.user.findUniqueOrThrow({ where: { email } });
-      return issueApiSession({ id: user.id, email: user.email, role: "USER" });
+      return jsonOf(response);
     };
     const refreshWith = (refreshToken: string) => refresh(apiRequest("/api/v1/auth/refresh", { method: "POST", json: { refreshToken } }));
 

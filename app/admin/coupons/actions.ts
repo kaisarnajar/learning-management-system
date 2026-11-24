@@ -1,50 +1,40 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/services/auth-actions";
 import {
   approveWaiverRequest,
+  couponInputFromForm,
+  couponRemovedMessage,
   createCoupon,
   editCoupon,
   rejectWaiverRequest,
   removeCoupon,
   removeWaiverRequest,
-  type CouponInput,
+  revalidateCouponPaths,
+  revalidateWaiverDeletionPaths,
+  WAIVER_REQUEST_DELETED_MESSAGE,
 } from "@/services/coupon-admin-actions";
 
 // Thin adapters: authorise the admin, run the service (services/coupon-admin-actions.ts),
-// revalidate, and answer in the shape the dialogs and the staff API expect.
-
-function couponInput(formData: FormData): CouponInput {
-  return {
-    code: formData.get("code"),
-    percentage: formData.get("percentage"),
-    validFrom: formData.get("validFrom"),
-    validUntil: formData.get("validUntil"),
-    courseId: formData.get("courseId"),
-    gender: formData.get("gender"),
-    isActive: formData.get("isActive") === "true",
-    applyTo: formData.get("applyTo"),
-  };
-}
+// revalidate, and answer in the shape the dialogs expect.
 
 export async function createDefaultCoupon(formData: FormData) {
   await requireAdmin();
 
-  const result = await createCoupon(couponInput(formData));
+  const result = await createCoupon(couponInputFromForm(formData));
   if (!result.ok) return { error: result.error };
 
-  revalidatePath("/admin/coupons");
+  revalidateCouponPaths();
   return { success: true };
 }
 
 export async function updateCoupon(couponId: string, formData: FormData) {
   await requireAdmin();
 
-  const result = await editCoupon(couponId, couponInput(formData));
+  const result = await editCoupon(couponId, couponInputFromForm(formData));
   if (!result.ok) return { error: result.error };
 
-  revalidatePath("/admin/coupons");
+  revalidateCouponPaths();
   return { success: true };
 }
 
@@ -55,12 +45,8 @@ export async function deleteCoupon(couponId: string) {
   const result = await removeCoupon(session, couponId);
   if (!result.ok) return { error: result.error };
 
-  revalidatePath("/admin/coupons");
-  return {
-    success: result.deactivated
-      ? "This coupon has been used, so it was deactivated instead of deleted."
-      : "Coupon deleted successfully.",
-  };
+  revalidateCouponPaths();
+  return { success: couponRemovedMessage(result.deactivated) };
 }
 
 export async function approveCouponRequest(requestId: string, rawPercentage: number, rawValidUntil: string) {
@@ -69,7 +55,7 @@ export async function approveCouponRequest(requestId: string, rawPercentage: num
   const result = await approveWaiverRequest(requestId, rawPercentage, rawValidUntil);
   if (!result.ok) return { error: result.error };
 
-  revalidatePath("/admin/coupons");
+  revalidateCouponPaths();
   return { success: true };
 }
 
@@ -79,7 +65,7 @@ export async function rejectCouponRequest(requestId: string) {
   const result = await rejectWaiverRequest(requestId);
   if (!result.ok) return { error: result.error };
 
-  revalidatePath("/admin/coupons");
+  revalidateCouponPaths();
   return { success: true };
 }
 
@@ -90,9 +76,6 @@ export async function deleteCouponRequest(requestId: string) {
   const result = await removeWaiverRequest(session, requestId);
   if (!result.ok) return { error: result.error };
 
-  revalidatePath("/admin/coupons");
-  revalidatePath("/admin/coupons/finance");
-  revalidatePath("/admin/finance");
-  revalidatePath("/profile/waiver-requests");
-  return { success: "Waiver request deleted." };
+  revalidateWaiverDeletionPaths();
+  return { success: WAIVER_REQUEST_DELETED_MESSAGE };
 }

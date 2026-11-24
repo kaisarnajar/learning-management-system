@@ -1,18 +1,30 @@
 import { NextRequest } from "next/server";
+import { ADMIN_ROLES, readActionForm, staffServiceAction } from "@/services/api-staff";
 import {
-  approveBookOrder,
-  declineBookOrder,
-  markBookOrderRefunded,
-  markBookOrderShipped,
-  voidBookOrder,
-} from "@/app/admin/bookstore/orders/actions";
-import { ADMIN_ROLES, readActionForm, staffAction } from "@/services/api-staff";
+  approveOrder,
+  declineOrder,
+  refundOrder,
+  revalidateOrderPaths,
+  shipOrder,
+  voidOrder,
+  type OrderActionResult,
+} from "@/services/book-order-transitions";
+import { adminReturnUrl } from "@/utils/admin-redirects";
 import { apiError } from "@/utils/api-response";
 
 type Params = { params: Promise<{ id: string; action: string }> };
 
 const ACTIONS = ["approve", "decline", "ship", "refund", "void"] as const;
 type OrderAction = (typeof ACTIONS)[number];
+
+/** The `?<event>=1` the orders page shows a toast for; void has none (the website stays on the page). */
+const EVENTS: Record<OrderAction, string | null> = {
+  approve: "confirmed",
+  decline: "declined",
+  ship: "shipped",
+  refund: "refunded",
+  void: null,
+};
 
 /**
  * A status change from the orders page:
@@ -26,25 +38,36 @@ type OrderAction = (typeof ACTIONS)[number];
 export async function POST(request: NextRequest, { params }: Params) {
   const { id, action } = await params;
   if (!ACTIONS.includes(action as OrderAction)) return apiError("Unknown order action.", 404);
-  return staffAction(request, ADMIN_ROLES, `api/v1/admin/bookstore/orders/[id]/${action}`, async () => {
-    switch (action as OrderAction) {
-      case "approve":
-        return approveBookOrder(id);
-      case "decline":
-        return declineBookOrder(id);
-      case "ship": {
-        const form = await readActionForm(request);
-        return markBookOrderShipped(id, String(form.get("courierServiceName") ?? ""), String(form.get("trackingId") ?? ""));
+  const orderAction = action as OrderAction;
+  return staffServiceAction(
+    request,
+    ADMIN_ROLES,
+    `api/v1/admin/bookstore/orders/[id]/${action}`,
+    async (ctx): Promise<OrderActionResult<{ userId: string; alreadyApproved?: boolean }>> => {
+      switch (orderAction) {
+        case "approve":
+          return approveOrder(id);
+        case "decline":
+          return declineOrder(id);
+        case "ship": {
+          const form = await readActionForm(request);
+          return shipOrder(id, String(form.get("courierServiceName") ?? ""), String(form.get("trackingId") ?? ""));
+        }
+        case "refund": {
+          const form = await readActionForm(request);
+          const returned = String(form.get("booksReturned") ?? "");
+          return refundOrder(ctx.session, id, returned === "on" || returned === "true");
+        }
+        case "void": {
+          const form = await readActionForm(request);
+          return voidOrder(ctx.session, id, String(form.get("reason") ?? ""));
+        }
       }
-      case "refund": {
-        const form = await readActionForm(request);
-        const returned = String(form.get("booksReturned") ?? "");
-        return markBookOrderRefunded(id, undefined, returned === "on" || returned === "true");
-      }
-      case "void": {
-        const form = await readActionForm(request);
-        return voidBookOrder(id, String(form.get("reason") ?? ""));
-      }
-    }
-  });
+    },
+    (result) => {
+      if (!result.alreadyApproved) revalidateOrderPaths(result.userId);
+      const event = EVENTS[orderAction];
+      return event ? { redirect: adminReturnUrl(undefined, "/admin/bookstore/orders", event) } : { result: null };
+    },
+  );
 }

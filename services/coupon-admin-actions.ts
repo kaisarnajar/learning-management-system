@@ -1,5 +1,6 @@
 import { randomInt } from "node:crypto";
 import type { Session } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import { Prisma } from "@prisma/client";
 import { BRAND_CONFIG } from "@/config/brand";
@@ -37,6 +38,42 @@ export type CouponInput = {
   isActive: boolean;
   applyTo?: unknown;
 };
+
+/** The coupon form's fields (the dialogs' FormData, or the staff API's body read as a form). */
+export function couponInputFromForm(formData: FormData): CouponInput {
+  return {
+    code: formData.get("code"),
+    percentage: formData.get("percentage"),
+    validFrom: formData.get("validFrom"),
+    validUntil: formData.get("validUntil"),
+    courseId: formData.get("courseId"),
+    gender: formData.get("gender"),
+    isActive: formData.get("isActive") === "true",
+    applyTo: formData.get("applyTo"),
+  };
+}
+
+/** Cache invalidation after a coupon or waiver request changes. */
+export function revalidateCouponPaths() {
+  revalidatePath("/admin/coupons");
+}
+
+/** Cache invalidation after a waiver request (and its coupons) is deleted. */
+export function revalidateWaiverDeletionPaths() {
+  revalidatePath("/admin/coupons");
+  revalidatePath("/admin/coupons/finance");
+  revalidatePath("/admin/finance");
+  revalidatePath("/profile/waiver-requests");
+}
+
+/** The message the admin sees after deleting a coupon: a used one is only deactivated. */
+export function couponRemovedMessage(deactivated: boolean) {
+  return deactivated
+    ? "This coupon has been used, so it was deactivated instead of deleted."
+    : "Coupon deleted successfully.";
+}
+
+export const WAIVER_REQUEST_DELETED_MESSAGE = "Waiver request deleted.";
 
 const COUPON_CODE_ATTEMPTS = 3;
 

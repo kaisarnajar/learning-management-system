@@ -17,11 +17,14 @@ import { readFlash } from "@/utils/flash";
  * /api/v1/teacher/** for teachers.
  *
  * Reads call the same service functions the admin and teacher pages use.
- * Writes call the website's own server actions (`staffAction`), run as the
- * app user (see services/api-actor.ts), so validation, audit log, e-mails and
- * cache invalidation stay in one place. A server action reports its outcome
- * by returning `{ error }` / `{ success }` or by redirecting with a flash
- * (`?err=` / `?msg=` / `?error=`); both are turned into JSON here.
+ * Payments, coupons and book orders call their services directly
+ * (`staffServiceAction`), which return typed results. The other writes still
+ * call the website's own server actions (`staffAction`), run as the app user
+ * (see services/api-actor.ts), so validation, audit log, e-mails and cache
+ * invalidation stay in one place. A server action reports its outcome by
+ * returning `{ error }` / `{ success }` or by redirecting with a flash
+ * (`?err=` / `?msg=` / `?error=`); both are turned into JSON here. As those
+ * actions move into services, they move to `staffServiceAction`.
  */
 
 export const ADMIN_ROLES = ["ADMIN", "DEVELOPER"] as const;
@@ -148,6 +151,37 @@ export async function staffAction(
       }
     }
     return NextResponse.json({ success: true, result: result ?? null });
+  } catch (error) {
+    const handled = controlFlowResponse(error);
+    if (handled) return handled;
+    console.error(`[${scope}]`, error);
+    return fail("Something went wrong. Please try again.", 500);
+  }
+}
+
+/** The typed result services/* return for a write (payment-approval, coupon-admin-actions, book-order-transitions). */
+type ServiceResult = { ok: true } | { ok: false; error: string; status: number };
+
+/**
+ * POST/PATCH/DELETE handler body that calls a service directly. [run] returns
+ * the service's typed result; a refusal becomes a 400 with its message (the
+ * status installed apps have always seen for a refused staff action), and
+ * [respond] gives the success body (without `success`). The route revalidates
+ * the website's caches in [respond], as the website's own action does.
+ */
+export async function staffServiceAction<R extends ServiceResult>(
+  request: NextRequest,
+  roles: readonly StaffRole[],
+  scope: string,
+  run: (ctx: StaffContext) => Promise<R>,
+  respond: (result: Extract<R, { ok: true }>, ctx: StaffContext) => Record<string, unknown>,
+): Promise<NextResponse> {
+  const { ctx, errorResponse } = await requireStaffApiAuth(request, roles);
+  if (errorResponse) return errorResponse;
+  try {
+    const result = await runAsApiActor(ctx.session, () => run(ctx));
+    if (!result.ok) return fail((result as Extract<R, { ok: false }>).error, 400);
+    return NextResponse.json({ success: true, ...respond(result as Extract<R, { ok: true }>, ctx) });
   } catch (error) {
     const handled = controlFlowResponse(error);
     if (handled) return handled;

@@ -16,6 +16,9 @@ import { GET as teacherStudentAttendance } from "@/app/api/v1/teacher/courses/[i
 import { GET as adminCourse } from "@/app/api/v1/admin/courses/[id]/route";
 import { POST as recordPayment } from "@/app/api/v1/admin/transactions/payments/route";
 import { POST as orderAction } from "@/app/api/v1/admin/bookstore/orders/[id]/[action]/route";
+import { POST as createCouponRoute } from "@/app/api/v1/admin/coupons/route";
+import { DELETE as deleteCouponRoute } from "@/app/api/v1/admin/coupons/[id]/route";
+import { POST as voidPaymentRoute } from "@/app/api/v1/admin/payments/[id]/void/route";
 import { getStockLevels } from "@/services/inventory";
 import { createBook, createCourse, createEnrollment, createTeacher, createUser, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
 import { apiRequest, bearerFor, jsonOf, routeParams, signedInAdmin, signedInStudent, signedInTeacher } from "../helpers/api";
@@ -197,6 +200,75 @@ describe.skipIf(SKIP_WITHOUT_DB)("staff API (/api/v1/admin, /api/v1/teacher)", (
       expect(await available()).toBe(3);
       expect((await refund(returned.id, { booksReturned: true })).status).toBe(200);
       expect(await available()).toBe(4);
+    });
+
+    it("payments, coupons and orders keep the envelopes installed apps read", async () => {
+      const { headers } = await signedInAdmin();
+      const student = await createUser();
+      const course = await createCourse();
+      await createEnrollment(student.id, course.id);
+      const submission = await prisma.coursePaymentSubmission.create({
+        data: { userId: student.id, courseId: course.id, label: "Monthly fee — February 2026", amountInrPaise: 34900, statusEnum: "PENDING_VERIFICATION" },
+      });
+
+      const approved = await approvePayment(
+        apiRequest(`/api/v1/admin/payments/${submission.id}/approve`, { method: "POST", headers }),
+        routeParams({ id: submission.id }),
+      );
+      expect(await jsonOf(approved)).toEqual({ success: true, redirect: "/admin/payments?confirmed=1" });
+
+      const noReason = await voidPaymentRoute(
+        apiRequest(`/api/v1/admin/payments/${submission.id}/void`, { method: "POST", headers, json: {} }),
+        routeParams({ id: submission.id }),
+      );
+      expect(noReason.status).toBe(400);
+      expect(await jsonOf(noReason)).toEqual({ success: false, error: expect.stringContaining("at least 3 characters") });
+
+      const voided = await voidPaymentRoute(
+        apiRequest(`/api/v1/admin/payments/${submission.id}/void`, { method: "POST", headers, json: { reason: "Entered twice" } }),
+        routeParams({ id: submission.id }),
+      );
+      expect(await jsonOf(voided)).toEqual({ success: true, redirect: "/admin/payments?deleted=1" });
+
+      const created = await createCouponRoute(
+        apiRequest("/api/v1/admin/coupons", {
+          method: "POST",
+          headers,
+          json: { code: "SPRING10", percentage: 10, validFrom: "2026-01-01", validUntil: "2026-12-31", courseId: "", gender: "", applyTo: "BOTH", isActive: "true" },
+        }),
+      );
+      expect(await jsonOf(created)).toEqual({ success: true, result: { success: true } });
+      const coupon = await prisma.coupon.findFirstOrThrow({ where: { code: "SPRING10" } });
+
+      const duplicate = await createCouponRoute(
+        apiRequest("/api/v1/admin/coupons", {
+          method: "POST",
+          headers,
+          json: { code: "SPRING10", percentage: 10, validFrom: "2026-01-01", validUntil: "2026-12-31", courseId: "", gender: "", applyTo: "BOTH", isActive: "true" },
+        }),
+      );
+      expect(duplicate.status).toBe(400);
+      expect((await jsonOf(duplicate)).success).toBe(false);
+
+      const deleted = await deleteCouponRoute(apiRequest(`/api/v1/admin/coupons/${coupon.id}`, { method: "DELETE", headers }), routeParams({ id: coupon.id }));
+      expect(await jsonOf(deleted)).toEqual({ success: true, result: { success: "Coupon deleted successfully." } });
+
+      const order = await prisma.bookOrder.create({
+        data: {
+          userId: student.id,
+          status: "DECLINED",
+          totalAmountInrPaise: 10000,
+          upiTransactionId: "UTR12345678",
+          deliveryAddress: "1 Test Street, Srinagar",
+          deliveryPinCode: "190001",
+          deliveryPhoneNumber: "9876543210",
+        },
+      });
+      const voidOrder = await orderAction(
+        apiRequest(`/api/v1/admin/bookstore/orders/${order.id}/void`, { method: "POST", headers, json: { reason: "Duplicate order" } }),
+        routeParams({ id: order.id, action: "void" }),
+      );
+      expect(await jsonOf(voidOrder)).toEqual({ success: true, result: null });
     });
 
     it("record payment: a manual amount is bounded and stored in whole paise", async () => {

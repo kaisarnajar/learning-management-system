@@ -567,6 +567,15 @@ export const waiverRequestSchema = z.object({
 });
 export type WaiverRequestInput = z.infer<typeof waiverRequestSchema>;
 
+const MAX_COPIES_MESSAGE = `You can order at most ${MAX_ORDER_QTY} copies of a book.`;
+
+/** One line per book: repeated lines for the same book are added together. */
+export function mergeBookLines<T extends { bookId: string; quantity: number }>(items: T[]): { bookId: string; quantity: number }[] {
+  const byBook = new Map<string, number>();
+  for (const item of items) byBook.set(item.bookId, (byBook.get(item.bookId) ?? 0) + item.quantity);
+  return [...byBook].map(([bookId, quantity]) => ({ bookId, quantity }));
+}
+
 export const bookstoreCheckoutSchema = z.object({
   items: z.array(
     z.object({
@@ -575,9 +584,12 @@ export const bookstoreCheckoutSchema = z.object({
         .number()
         .int()
         .min(1, "Quantity must be at least 1.")
-        .max(MAX_ORDER_QTY, `You can order at most ${MAX_ORDER_QTY} copies of a book.`),
+        .max(MAX_ORDER_QTY, MAX_COPIES_MESSAGE),
     })
-  ).min(1, "Cart cannot be empty."),
+  ).min(1, "Cart cannot be empty.")
+    // The per-book limit applies to the book, not to each line naming it.
+    .transform(mergeBookLines)
+    .refine((items) => items.every((item) => item.quantity <= MAX_ORDER_QTY), MAX_COPIES_MESSAGE),
   paymentMethod: z.string().min(1, "Payment method is required."),
   upiTransactionId: z.string().trim().min(1, "Transaction / UTR reference is required."),
   deliveryAddress: z.string().trim().min(10, "Delivery address must be at least 10 characters long."),

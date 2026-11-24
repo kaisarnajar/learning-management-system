@@ -571,7 +571,7 @@ components:
       type: object
       required: [items, paymentMethod, upiTransactionId, deliveryAddress, deliveryPinCode, deliveryPhoneNumber]
       properties:
-        items: { type: array, items: { $ref: "#/components/schemas/CartLine" }, description: In multipart, a JSON string }
+        items: { type: array, items: { $ref: "#/components/schemas/CartLine" }, description: "In multipart, a JSON string. Lines naming the same book are merged into one, and the merged quantity is limited to maxBookQuantityPerOrder (20) copies per book: more is a 400" }
         paymentMethod: { type: string }
         upiTransactionId: { type: string }
         deliveryAddress: { type: string, minLength: 10 }

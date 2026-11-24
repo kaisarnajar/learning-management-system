@@ -2,7 +2,8 @@ import type { Book, Prisma, ShippingChargeSlab } from "@prisma/client";
 import type { z } from "zod";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { bookstoreCheckoutSchema } from "@/utils/validations";
+import { bookstoreCheckoutSchema, mergeBookLines } from "@/utils/validations";
+import { MAX_ORDER_QTY } from "@/config/constants/business";
 import { findStockShortages, formatShortages } from "@/services/inventory";
 import { deletePaymentScreenshot, savePaymentScreenshot } from "@/services/payment-upload";
 import { isUploadError } from "@/services/storage";
@@ -98,9 +99,14 @@ export type BookOrderQuote = {
  * to place an order and for the app's checkout preview, so both always agree.
  */
 export async function quoteBookOrder(
-  items: Array<{ bookId: string; quantity: number }>,
+  requested: Array<{ bookId: string; quantity: number }>,
 ): Promise<BookOrderQuote | { ok: false; error: string; status: number }> {
-  const bookIds = [...new Set(items.map((i) => i.bookId))];
+  // Repeated lines for one book count together against the per-book limit.
+  const items = mergeBookLines(requested);
+  if (items.some((item) => item.quantity > MAX_ORDER_QTY)) {
+    return { ok: false, error: `You can order at most ${MAX_ORDER_QTY} copies of a book.`, status: 400 };
+  }
+  const bookIds = items.map((i) => i.bookId);
   const books = await withDbErrorHandling(() => prisma.book.findMany({
     where: { id: { in: bookIds }, published: true },
   }), "Database operation failed");
@@ -185,7 +191,7 @@ export async function createBookOrder(params: {
           notes: input.notes?.trim() || null,
           status: "PENDING_VERIFICATION",
           items: {
-            create: input.items.map((item) => ({
+            create: quote.lines.map((item) => ({
               bookId: item.bookId,
               quantity: item.quantity,
               priceAtPurchaseInrPaise: bookMap.get(item.bookId)!.priceInrPaise,

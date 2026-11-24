@@ -394,6 +394,8 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
 
       expect((await order({ ...valid, upiTransactionId: "UTR10000", items: [{ bookId: book.id, quantity: 5 }] })).status).toBe(409);
       expect((await order({ ...valid, deliveryPinCode: "1" })).status).toBe(400);
+      // Two lines of 20 for one book are 40 copies of it.
+      expect((await order({ ...valid, upiTransactionId: "UTR10001", items: [{ bookId: book.id, quantity: 20 }, { bookId: book.id, quantity: 20 }] })).status).toBe(400);
       expect((await order({})).status).toBe(400);
       expect((await order({ ...valid, items: "not json" })).status).toBe(400);
     });

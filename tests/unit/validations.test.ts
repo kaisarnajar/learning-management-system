@@ -290,6 +290,7 @@ const CASES: Record<string, Cases> = {
       { ...checkout, items: [] },
       { ...checkout, items: [{ bookId: "b1", quantity: 0 }] },
       { ...checkout, items: [{ bookId: "b1", quantity: 999 }] },
+      { ...checkout, items: [{ bookId: "b1", quantity: 20 }, { bookId: "b1", quantity: 20 }] },
       { ...checkout, deliveryPinCode: "12" },
       { ...checkout, deliveryPhoneNumber: "abc" },
       { ...checkout, upiTransactionId: "  " },
@@ -402,6 +403,17 @@ describe("schema transformations and error reporting", () => {
   it("bookstoreCheckoutSchema caps the quantity per book", () => {
     const result = validations.bookstoreCheckoutSchema.safeParse({ ...checkout, items: [{ bookId: "b1", quantity: 21 }] });
     expect(result.error?.issues[0].message).toMatch(/at most 20 copies/);
+  });
+
+  it("bookstoreCheckoutSchema counts repeated lines for one book together", () => {
+    const over = validations.bookstoreCheckoutSchema.safeParse({ ...checkout, items: [{ bookId: "b1", quantity: 20 }, { bookId: "b1", quantity: 20 }] });
+    expect(over.error?.issues[0].message).toMatch(/at most 20 copies/);
+
+    const merged = validations.bookstoreCheckoutSchema.safeParse({
+      ...checkout,
+      items: [{ bookId: "b1", quantity: 5 }, { bookId: "b2", quantity: 1 }, { bookId: "b1", quantity: 5 }],
+    });
+    expect(merged.data?.items).toEqual([{ bookId: "b1", quantity: 10 }, { bookId: "b2", quantity: 1 }]);
   });
 
   it("apiProfileUpdateSchema rejects unknown keys (no mass assignment)", () => {

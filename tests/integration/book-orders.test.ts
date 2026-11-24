@@ -67,6 +67,19 @@ describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
     expect(await prisma.userCartItem.count()).toBe(0);
   });
 
+  it("repeated lines for one book become one line and count against the per-book limit", async () => {
+    const student = await createUser();
+    const book = await createBook({ inventoryPurchased: 100, priceInrPaise: 10000 });
+
+    const over = await createBookOrder({ userId: student.id, input: input([{ bookId: book.id, quantity: 20 }, { bookId: book.id, quantity: 20 }]), screenshotFile: null });
+    expect(over).toMatchObject({ ok: false, status: 400 });
+    expect(await prisma.bookOrder.count()).toBe(0);
+
+    const order = await placeOrder(student.id, [{ bookId: book.id, quantity: 5 }, { bookId: book.id, quantity: 5 }]);
+    expect(order.items).toEqual([expect.objectContaining({ bookId: book.id, quantity: 10 })]);
+    expect(order.totalAmountInrPaise).toBe(100000 + order.shippingChargeInrPaise);
+  });
+
   it("refuses unavailable and unpublished books", async () => {
     const student = await createUser();
     const soldOut = await createBook({ status: "OUT_OF_STOCK" });

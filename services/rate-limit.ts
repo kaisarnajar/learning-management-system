@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
 
@@ -55,11 +56,36 @@ export const RATE_LIMITS = {
 export const RATE_LIMIT_MESSAGE = "Too many attempts. Please wait a few minutes and try again.";
 
 function normalizeKey(value: string): string {
-  return value.trim().toLowerCase().slice(0, 200);
+  return value.trim().toLowerCase();
 }
 
-function bucketKey(rule: RateLimitRule, identifier: string): string {
-  return `rl:${rule.name}:${normalizeKey(identifier)}`;
+/**
+ * The stored key: the rule name, then a SHA-256 of the identifier, so the
+ * table (and Redis) never hold raw e-mail addresses or IPs.
+ */
+export function bucketKey(rule: RateLimitRule, identifier: string): string {
+  const digest = createHash("sha256").update(normalizeKey(identifier)).digest("hex");
+  return `rl:${rule.name}:${digest}`;
+}
+
+/** Longer than every rule's window, so pruning never resets a live bucket. */
+const BUCKET_RETENTION = "1 day";
+/** Share of Postgres hits that also prune old buckets. */
+export const PRUNE_PROBABILITY = 0.01;
+
+/** Deletes Postgres buckets whose window started more than a day ago. Returns how many. */
+export async function pruneRateLimitBuckets(): Promise<number> {
+  return prisma.$executeRaw(Prisma.sql`
+    DELETE FROM "RateLimitBucket" WHERE "windowStart" < NOW() - ${BUCKET_RETENTION}::interval
+  `);
+}
+
+/** About one hit in a hundred prunes, in the background; a failure only logs. */
+function maybePruneBuckets(): void {
+  if (Math.random() >= PRUNE_PROBABILITY) return;
+  pruneRateLimitBuckets().catch((error) => {
+    console.error("[rate-limit] pruning old buckets failed:", error);
+  });
 }
 
 function firstEntry(value: string | null): string | null {
@@ -177,6 +203,7 @@ async function hitPostgres(key: string, rule: RateLimitRule): Promise<number> {
       END
     RETURNING "count"
   `);
+  maybePruneBuckets();
   return Number(rows[0]?.count ?? 1);
 }
 

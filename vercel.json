@@ -3,6 +3,7 @@
   "framework": "nextjs",
   "buildCommand": "npm run vercel-build",
   "crons": [
-    { "path": "/api/cron/email-outbox", "schedule": "0 3 * * *" }
+    { "path": "/api/cron/email-outbox", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/housekeeping", "schedule": "30 3 * * *" }
   ]
 }

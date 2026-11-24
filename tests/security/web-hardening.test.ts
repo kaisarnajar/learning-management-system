@@ -5,7 +5,7 @@ import { NextRequest } from "next/server";
 import { authContinueUrl, getPostLoginPath, isSafeInternalPath, safeInternalPath } from "@/services/auth-redirect";
 import { buildContentSecurityPolicy, CSP_REPORT_PATH, generateNonce, STATIC_SECURITY_HEADERS } from "@/services/security-headers";
 import { POST as cspReport } from "@/app/api/csp-report/route";
-import { checkRateLimit, enforceRateLimit, rateLimit, RATE_LIMITS, recordFailedSignIn, signInAllowed, type RateLimitRule } from "@/services/rate-limit";
+import { bucketKey, checkRateLimit, enforceRateLimit, rateLimit, RATE_LIMITS, recordFailedSignIn, signInAllowed, type RateLimitRule } from "@/services/rate-limit";
 import { prisma } from "@/utils/prisma";
 import nextConfig from "@/next.config";
 import { resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
@@ -300,7 +300,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("rate limiting", () => {
 
       expect(globalThis.fetch).toHaveBeenCalled();
       expect(results.map((r) => r.ok)).toEqual([true, true, true, false]);
-      const bucket = await prisma.rateLimitBucket.findUniqueOrThrow({ where: { key: "rl:test:rule:10.5.5.5" } });
+      const bucket = await prisma.rateLimitBucket.findUniqueOrThrow({ where: { key: bucketKey(RULE, "10.5.5.5") } });
       expect(bucket.count).toBe(4);
     });
 

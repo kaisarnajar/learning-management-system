@@ -143,6 +143,8 @@ export const changePasswordSchema = z
   .object({
     currentPassword: z.string("Enter your current password.").min(1, "Enter your current password."),
     newPassword: newPasswordField("Enter a new password."),
+    /** The calling device's push token, kept when the others are removed. */
+    deviceToken: z.string().trim().max(4096).optional(),
   })
   .refine((v) => v.currentPassword !== v.newPassword, {
     message: "The new password must be different from the current one.",

@@ -1297,10 +1297,14 @@ paths:
   /auth/logout:
     post:
       tags: [Auth]
+      description: |
+        Ends the session of the Bearer access token and/or `refreshToken`. Send `deviceToken` (the FCM token
+        registered with POST /notifications/device-token) so this device stops receiving the account's
+        push notifications; it is removed only from the account that is signing out.
       requestBody:
         content:
           application/json:
-            schema: { type: object, properties: { refreshToken: { type: string } } }
+            schema: { type: object, properties: { refreshToken: { type: string }, deviceToken: { type: string, description: "This device's FCM token" } } }
       responses:
         "200": { $ref: "#/components/responses/Ok" }
   /auth/forgot-password:
@@ -1395,6 +1399,7 @@ paths:
               type: object
               required: [currentPassword, newPassword]
               properties:
+                deviceToken: { type: string, description: "This device's FCM token. The account's other push registrations are removed; without it, all of them are (register again afterwards)" }
                 currentPassword: { type: string }
                 newPassword: { type: string, minLength: 8, description: "At most 72 bytes of UTF-8 (72 ASCII characters, fewer with accented letters or emoji)" }
       responses:
@@ -2007,9 +2012,12 @@ paths:
         content:
           application/json:
             schema: { type: object, required: [token], properties: { token: { type: string }, platform: { type: string, enum: [android, ios, web], default: android } } }
+      description: |
+        Registers this device for push notifications. A token still registered to another account moves to
+        the caller (it used to answer 409). A password reset, e-mail verification or account take-over removes
+        all of an account's registrations; register again after signing in.
       responses:
         "200": { $ref: "#/components/responses/Ok" }
-        "409": { $ref: "#/components/responses/Error" }
     delete:
       tags: [Notifications]
       requestBody:

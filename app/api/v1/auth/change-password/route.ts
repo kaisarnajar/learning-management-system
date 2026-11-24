@@ -9,7 +9,8 @@ import { apiError, apiServerError, readJson } from "@/utils/api-response";
 /**
  * Changes the caller's password: `{ currentPassword, newPassword }`. Every
  * other app session and every website session of the account is signed out;
- * this one stays signed in.
+ * this one stays signed in. The account's push registrations are removed
+ * except `deviceToken`, the calling device's own, when it is sent.
  * Accounts that only use Google have no password to change.
  */
 export async function POST(request: NextRequest) {
@@ -46,6 +47,9 @@ export async function POST(request: NextRequest) {
         data: { revokedAt: now },
       }),
       prisma.passwordResetToken.deleteMany({ where: { email: user.email } }),
+      prisma.deviceToken.deleteMany({
+        where: { userId: user.id, ...(parsed.data.deviceToken ? { token: { not: parsed.data.deviceToken } } : {}) },
+      }),
     ]);
 
     return NextResponse.json({ success: true });

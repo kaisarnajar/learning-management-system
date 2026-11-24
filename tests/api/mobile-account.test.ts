@@ -104,6 +104,21 @@ describe.skipIf(SKIP_WITHOUT_DB)("mobile API: account", () => {
       expect(newLogin.status).toBe(200);
     });
 
+    it("removes the account's other push registrations and keeps the calling device's", async () => {
+      const { user, password } = await newStudentWithPassword();
+      const here = await (await import("@/services/api-auth")).issueApiSession({ id: user.id, email: user.email, role: "USER" });
+      await prisma.deviceToken.createMany({ data: [{ userId: user.id, token: "this-phone" }, { userId: user.id, token: "lost-phone" }] });
+
+      const ok = await changePassword(apiRequest("/x", {
+        method: "POST",
+        headers: bearer(here.accessToken),
+        json: { currentPassword: password, newPassword: "second-password-2", deviceToken: "this-phone" },
+      }));
+      expect(ok.status).toBe(200);
+
+      expect((await prisma.deviceToken.findMany({ where: { userId: user.id }, select: { token: true } })).map((d) => d.token)).toEqual(["this-phone"]);
+    });
+
     it("tells Google-only accounts there is no password to change", async () => {
       const student = await signedInStudent({ password: null });
       const response = await changePassword(apiRequest("/x", { method: "POST", headers: student.headers, json: { currentPassword: "anything", newPassword: "second-password-2" } }));

@@ -173,8 +173,10 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
     };
     const refreshWith = (refreshToken: string) => refresh(apiRequest("/api/v1/auth/refresh", { method: "POST", json: { refreshToken } }));
 
-    it("a password reset revokes every API session", async () => {
+    it("a password reset revokes every API session and forgets the account's devices", async () => {
       const { refreshToken, accessToken } = await registerSquatter("reset.me@example.test");
+      const squatter = await prisma.user.findUniqueOrThrow({ where: { email: "reset.me@example.test" } });
+      await prisma.deviceToken.create({ data: { userId: squatter.id, token: "squatter-phone" } });
       const token = await createPasswordResetToken("reset.me@example.test");
 
       const reset = await resetPassword(apiRequest("/api/auth/reset-password", { method: "POST", json: { token, password: "brand-new-pass-1", confirmPassword: "brand-new-pass-1" } }));
@@ -182,6 +184,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
 
       expect((await refreshWith(refreshToken)).status).toBe(401);
       expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(accessToken) }))).status).toBe(401);
+      expect(await prisma.deviceToken.count({ where: { userId: squatter.id } })).toBe(0);
     });
 
     it("verifying the address revokes the sessions opened before it", async () => {
@@ -630,6 +633,29 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       expect((await me(apiRequest("/api/v1/auth/me", { headers: b.headers }))).status).toBe(401);
 
       expect((await logout(apiRequest("/api/v1/auth/logout", { method: "POST" }))).status).toBe(200);
+    });
+
+    it("logout with a device token removes that device's push registration", async () => {
+      const student = await signedInStudent();
+      await prisma.deviceToken.createMany({ data: [{ userId: student.user.id, token: "this-phone" }, { userId: student.user.id, token: "tablet" }] });
+
+      const response = await post(logout, "/api/v1/auth/logout", { refreshToken: student.tokens.refreshToken, deviceToken: "this-phone" }, student.headers);
+
+      expect(response.status).toBe(200);
+      expect((await prisma.deviceToken.findMany({ where: { userId: student.user.id }, select: { token: true } })).map((d) => d.token)).toEqual(["tablet"]);
+    });
+
+    it("logout with only a refresh token still removes the device, but never another account's registration", async () => {
+      const student = await signedInStudent();
+      const other = await signedInStudent();
+      await prisma.deviceToken.createMany({ data: [{ userId: student.user.id, token: "mine" }, { userId: other.user.id, token: "theirs" }] });
+
+      await post(logout, "/api/v1/auth/logout", { refreshToken: student.tokens.refreshToken, deviceToken: "mine" });
+      await post(logout, "/api/v1/auth/logout", { deviceToken: "theirs" });
+      await post(logout, "/api/v1/auth/logout", { deviceToken: "theirs" }, student.headers);
+
+      expect(await prisma.deviceToken.count({ where: { token: "mine" } })).toBe(0);
+      expect(await prisma.deviceToken.count({ where: { token: "theirs" } })).toBe(1);
     });
 
     it("logging one session out leaves the user's other sessions alone", async () => {

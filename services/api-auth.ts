@@ -164,12 +164,19 @@ async function revokeReusedFamily(row: { userId: string; familyId: string | null
   }
 }
 
-/** Revokes one session by its refresh token (logout). Unknown tokens are ignored. */
-export async function revokeApiSessionByRefreshToken(refreshToken: string): Promise<void> {
+/**
+ * Revokes one session by its refresh token (logout). Unknown tokens are
+ * ignored. Returns the id of the user the token was issued to (even when it
+ * was already revoked or expired), or null for an unknown token.
+ */
+export async function revokeApiSessionByRefreshToken(refreshToken: string): Promise<string | null> {
+  const tokenHash = hashRefreshToken(refreshToken);
   await prisma.apiRefreshToken.updateMany({
-    where: { tokenHash: hashRefreshToken(refreshToken), revokedAt: null },
+    where: { tokenHash, revokedAt: null },
     data: { revokedAt: new Date() },
   });
+  const row = await prisma.apiRefreshToken.findUnique({ where: { tokenHash }, select: { userId: true } });
+  return row?.userId ?? null;
 }
 
 /** Revokes one session by id (the `sid` of an access token). */
@@ -180,12 +187,20 @@ export async function revokeApiSessionById(sessionId: string, userId: string): P
   });
 }
 
-/** Revokes every API session of a user (password change or reset, e-mail verification, take-over of an unverified row, account deletion). */
+/**
+ * Revokes every API session of a user (password reset, e-mail verification,
+ * take-over of an unverified row) and forgets every device registered for
+ * push: a phone whose session just ended must not keep receiving the
+ * account's notifications. A signed-in device registers its token again.
+ */
 export async function revokeAllApiSessions(userId: string): Promise<void> {
-  await prisma.apiRefreshToken.updateMany({
-    where: { userId, revokedAt: null },
-    data: { revokedAt: new Date() },
-  });
+  await prisma.$transaction([
+    prisma.apiRefreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+    prisma.deviceToken.deleteMany({ where: { userId } }),
+  ]);
 }
 
 type AuthenticatedRequest = { user: ApiUserPayload; sessionId: string };

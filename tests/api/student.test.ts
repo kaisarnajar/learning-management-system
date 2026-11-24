@@ -456,6 +456,19 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
       expect((await register({ token: "fcm-2", platform: "symbian" })).status).toBe(400);
     });
 
+    it("moves a token still registered to another account to the account now signed in on the device", async () => {
+      const me = await signedInStudent();
+      const previous = await signedInStudent();
+      await prisma.deviceToken.create({ data: { userId: previous.user.id, token: "shared-phone", platform: "android" } });
+
+      const response = await devicePost(apiRequest("/api/v1/notifications/device-token", { method: "POST", headers: me.headers, json: { token: "shared-phone", platform: "android" } }));
+
+      expect(response.status).toBe(200);
+      const rows = await prisma.deviceToken.findMany({ where: { token: "shared-phone" } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0].userId).toBe(me.user.id);
+    });
+
     it("only unregisters the caller's own tokens", async () => {
       const me = await signedInStudent();
       const other = await signedInStudent();

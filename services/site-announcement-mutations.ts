@@ -1,6 +1,6 @@
 import {
   deleteAnnouncementImageFile,
-  getAnnouncementImageFiles,
+  getAnnouncementImageUploads,
   MAX_ANNOUNCEMENT_IMAGES,
   saveAnnouncementImage,
   validateAnnouncementImage,
@@ -17,7 +17,7 @@ export function getRemoveAnnouncementImageIds(formData: FormData): string[] {
 }
 
 export async function addImagesToAnnouncement(announcementId: string, formData: FormData, existingCount: number) {
-  const files = getAnnouncementImageFiles(formData);
+  const files = getAnnouncementImageUploads(formData);
   if (files.length === 0) return { error: undefined as string | undefined };
 
   if (existingCount + files.length > MAX_ANNOUNCEMENT_IMAGES) {

@@ -1,15 +1,24 @@
-import { FILE_CONFIG } from "@/config/constants/file";
-import { deleteFromR2, IMAGE_MIMES, uploadToR2, validateUpload, type UploadRules } from "@/services/storage";
+import { uploadRulesFor } from "@/services/direct-upload";
+import { finalizeStagedUpload, isStagedUpload, pendingUploadFrom, type PendingUpload } from "@/services/staged-upload";
+import { deleteFromR2, uploadToR2, validateUpload } from "@/services/storage";
 
-const RULES: UploadRules = { allowed: IMAGE_MIMES, maxBytes: FILE_CONFIG.MAX_AVATAR_SIZE_BYTES, label: "Image" };
+const RULES = uploadRulesFor("library-cover");
 
-export function validateLibraryImage(file: File | null): { error?: string } {
-  return validateUpload(file, RULES);
+/** Declared type and size of a form file; staged uploads are checked when they are finalised. */
+export function validateLibraryImage(upload: PendingUpload | null): { error?: string } {
+  if (isStagedUpload(upload)) return {};
+  return validateUpload(upload, RULES);
 }
 
-/** Stores a library cover (bytes are sniffed); throws UploadError when refused. */
-export function saveLibraryImage(libraryItemId: string, file: File): Promise<string> {
-  return uploadToR2("library", libraryItemId, file, RULES);
+/** The cover the form submits: the file (form upload) or a staged key (direct upload). */
+export function getLibraryImageUpload(formData: FormData): PendingUpload | null {
+  return pendingUploadFrom(formData, "image", "library-cover");
+}
+
+/** Stores a library cover (bytes are sniffed; a staged upload is verified and moved); throws UploadError when refused. */
+export async function saveLibraryImage(libraryItemId: string, upload: PendingUpload): Promise<string> {
+  if (isStagedUpload(upload)) return (await finalizeStagedUpload(upload, libraryItemId)).location;
+  return uploadToR2("library", libraryItemId, upload, RULES);
 }
 
 export function deleteLibraryImage(imagePath: string | null | undefined): Promise<void> {

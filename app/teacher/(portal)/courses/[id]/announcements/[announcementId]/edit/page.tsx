@@ -27,6 +27,7 @@ export default async function EditCourseAnnouncementPage({
       backHref={`/teacher/courses/${course.id}/announcements`}
       backLabel="← Back to announcements"
       heading="Edit announcement"
+      courseId={course.id}
       action={updateCourseAnnouncement.bind(null, course.id, announcement.id)}
       submitLabel="Save changes"
       announcement={announcement}

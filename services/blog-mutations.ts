@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import {
   deleteBlogImageFile,
-  getBlogImageFiles,
+  getBlogImageUploads,
   MAX_BLOG_IMAGES,
   saveBlogImage,
   validateBlogImage,
@@ -60,7 +60,7 @@ export function getRemoveImageIds(formData: FormData): string[] {
 }
 
 export async function addImagesToPost(blogPostId: string, formData: FormData, existingCount: number) {
-  const files = getBlogImageFiles(formData);
+  const files = getBlogImageUploads(formData);
   if (files.length === 0) return { error: undefined as string | undefined };
 
   if (existingCount + files.length > MAX_BLOG_IMAGES) {

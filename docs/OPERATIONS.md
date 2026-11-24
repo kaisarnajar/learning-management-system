@@ -154,3 +154,22 @@ release ticket, and apply only after the finance owner has reviewed it.
 - `npm run db:seed:demo` **deletes every row**. It refuses to run unless
   `ALLOW_DEMO_SEED=true` and the database host is listed in
   `SEED_ALLOWED_DB_HOSTS`. Never list the production host.
+
+## 6. Direct uploads to R2
+
+Announcement attachments, blog and site-announcement images, and library and
+book covers are uploaded by the browser straight to R2 with a presigned PUT
+(`/api/uploads`, `services/direct-upload.ts`), so they never pass through a
+Vercel function (4.5 MB body cap). The file lands under `staging/` in the
+private bucket and is checked and moved when the form is submitted.
+
+- **CORS rule (one time, per bucket).** The browser can only PUT once the
+  private bucket allows the site's origin:
+  `npx tsx scripts/configure-r2-cors.ts` prints the rule (dry run);
+  `--apply` sets it, replacing the bucket's existing CORS rules (saved to
+  `scripts/out/` first). Until then, forms fall back to the old form upload
+  for files up to 4 MB in total, and larger files show an error.
+- **Lifecycle rule (recommended).** Files that were uploaded but never
+  submitted stay under `staging/`. In the Cloudflare dashboard, add an object
+  lifecycle rule on the private bucket that deletes the `staging/` prefix
+  after 1 day.

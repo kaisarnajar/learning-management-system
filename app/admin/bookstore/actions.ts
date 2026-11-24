@@ -4,7 +4,7 @@ import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
-import { saveBookImage, validateBookImage, deleteBookImage } from "@/services/bookstore-upload";
+import { saveBookImage, validateBookImage, deleteBookImage, getBookImageUpload } from "@/services/bookstore-upload";
 import { isUploadError } from "@/services/storage";
 import { prisma } from "@/utils/prisma";
 import { resolveBookFeaturedUpdate } from "@/services/bookstore";
@@ -44,8 +44,9 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
     return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
   }
 
-  const imageFile = formData.get("image") as File | null;
-  if (imageFile && imageFile.size > 0) {
+  // A file (form upload) or the key of a direct upload.
+  const imageFile = getBookImageUpload(formData);
+  if (imageFile) {
     const { error } = validateBookImage(imageFile);
     if (error) return { error };
   }
@@ -73,7 +74,7 @@ export async function createBook(formData: FormData): Promise<{ error?: string }
   // again if the row cannot be created.
   let imagePath: string | undefined;
   try {
-    if (imageFile && imageFile.size > 0) {
+    if (imageFile) {
       imagePath = await saveBookImage("book", imageFile);
     }
     await prisma.book.create({
@@ -112,8 +113,9 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
     return { error: parsed.error.issues[0]?.message ?? "Invalid form data." };
   }
 
-  const imageFile = formData.get("image") as File | null;
-  if (imageFile && imageFile.size > 0) {
+  // A file (form upload) or the key of a direct upload.
+  const imageFile = getBookImageUpload(formData);
+  if (imageFile) {
     const { error } = validateBookImage(imageFile);
     if (error) return { error };
   }
@@ -144,7 +146,7 @@ export async function updateBook(bookId: string, formData: FormData): Promise<{ 
   let imagePath: string | undefined | null;
 
   try {
-    if (imageFile && imageFile.size > 0) {
+    if (imageFile) {
       imagePath = await saveBookImage(bookId, imageFile);
     } else if (removeImage) {
       imagePath = null;

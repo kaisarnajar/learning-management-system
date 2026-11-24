@@ -143,6 +143,14 @@ describe("response headers", () => {
     expect(policy).toContain("upgrade-insecure-requests");
   });
 
+  it("lets the browser PUT direct uploads to the account's R2 endpoint only", () => {
+    const directive = (policy: string) => policy.split("; ").find((d) => d.startsWith("connect-src ")) ?? "";
+    vi.stubEnv("R2_ACCOUNT_ID", "abc123def");
+    expect(directive(buildContentSecurityPolicy("n"))).toContain("https://abc123def.r2.cloudflarestorage.com");
+    vi.stubEnv("R2_ACCOUNT_ID", "evil.example.com/x");
+    expect(directive(buildContentSecurityPolicy("n"))).not.toContain("r2.cloudflarestorage.com");
+  });
+
   it("asks browsers to report violations in both modes", async () => {
     for (const mode of [undefined, "true"]) {
       const response = await (await loadMiddleware(mode))(page(), {});

@@ -5,7 +5,8 @@ import { redirect } from "next/navigation";
 import type { Prisma } from "@prisma/client";
 import { createAdminCrudActions, parseFormWith } from "@/services/admin-crud";
 import { resolveLibraryFeaturedUpdate } from "@/services/library";
-import { deleteLibraryImage, saveLibraryImage, validateLibraryImage } from "@/services/library-upload";
+import { deleteLibraryImage, getLibraryImageUpload, saveLibraryImage, validateLibraryImage } from "@/services/library-upload";
+import type { PendingUpload } from "@/services/staged-upload";
 import { prisma } from "@/utils/prisma";
 import { createWithUniqueSlug } from "@/utils/slug";
 import { libraryItemSchema } from "@/utils/validations";
@@ -43,15 +44,18 @@ function revalidateLibraryPaths(id?: string) {
   }
 }
 
-/** The cover image the form uploads, or null; invalid files stop the action with the validation message. */
+/**
+ * The cover image the form uploads (a file, or the key of a direct upload),
+ * or null; invalid files stop the action with the validation message.
+ */
 function uploadedImage(formData: FormData) {
-  const imageFile = formData.get("image") as File | null;
-  if (!imageFile || imageFile.size === 0) return null;
-  const { error } = validateLibraryImage(imageFile);
-  return error ? { error } : { file: imageFile };
+  const upload = getLibraryImageUpload(formData);
+  if (!upload) return null;
+  const { error } = validateLibraryImage(upload);
+  return error ? { error } : { file: upload };
 }
 
-async function saveImage(id: string, file: File) {
+async function saveImage(id: string, file: PendingUpload) {
   try {
     return await saveLibraryImage(id, file);
   } catch (error) {

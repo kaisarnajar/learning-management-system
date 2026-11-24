@@ -1,23 +1,27 @@
-import { MAX_BLOG_IMAGE_BYTES } from "@/services/blog-limits";
-import { deleteFromR2, IMAGE_MIMES, uploadToR2, validateUpload, type UploadRules } from "@/services/storage";
+import { uploadRulesFor } from "@/services/direct-upload";
+import { finalizeStagedUpload, isStagedUpload, pendingUploadsFrom, type PendingUpload } from "@/services/staged-upload";
+import { deleteFromR2, uploadToR2, validateUpload } from "@/services/storage";
 
 export { MAX_BLOG_IMAGES, MAX_BLOG_IMAGE_BYTES } from "@/services/blog-limits";
 
-const RULES: UploadRules = { allowed: IMAGE_MIMES, maxBytes: MAX_BLOG_IMAGE_BYTES, label: "Each image" };
+const RULES = uploadRulesFor("blog-image");
 
-export function validateBlogImage(file: File): { error?: string } {
-  if (!file || file.size === 0) return { error: "Empty file." };
-  return validateUpload(file, RULES);
+/** Declared type and size of a form file; staged uploads are checked when they are finalised. */
+export function validateBlogImage(upload: PendingUpload): { error?: string } {
+  if (isStagedUpload(upload)) return {};
+  if (!upload || upload.size === 0) return { error: "Empty file." };
+  return validateUpload(upload, RULES);
 }
 
-export function getBlogImageFiles(formData: FormData): File[] {
-  const files = formData.getAll("images");
-  return files.filter((f): f is File => f instanceof File && f.size > 0);
+/** The images a blog form submits: files (form upload) and staged keys (direct upload). */
+export function getBlogImageUploads(formData: FormData): PendingUpload[] {
+  return pendingUploadsFrom(formData, "images", "blog-image");
 }
 
-/** Stores a blog image (bytes are sniffed); throws UploadError when refused. */
-export function saveBlogImage(blogPostId: string, file: File): Promise<string> {
-  return uploadToR2("blogs", blogPostId, file, RULES);
+/** Stores a blog image (bytes are sniffed; a staged upload is verified and moved); throws UploadError when refused. */
+export async function saveBlogImage(blogPostId: string, upload: PendingUpload): Promise<string> {
+  if (isStagedUpload(upload)) return (await finalizeStagedUpload(upload, blogPostId)).location;
+  return uploadToR2("blogs", blogPostId, upload, RULES);
 }
 
 export function deleteBlogImageFile(imagePath: string | null | undefined): Promise<void> {

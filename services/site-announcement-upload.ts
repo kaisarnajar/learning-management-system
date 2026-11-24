@@ -1,24 +1,28 @@
-import { FILE_CONFIG } from "@/config/constants/file";
-import { deleteFromR2, IMAGE_MIMES, uploadToR2, validateUpload, type UploadRules } from "@/services/storage";
+import { uploadRulesFor } from "@/services/direct-upload";
+import { finalizeStagedUpload, isStagedUpload, pendingUploadsFrom, type PendingUpload } from "@/services/staged-upload";
+import { deleteFromR2, uploadToR2, validateUpload } from "@/services/storage";
 
-export const MAX_ANNOUNCEMENT_IMAGES = 5;
-export const MAX_ANNOUNCEMENT_IMAGE_BYTES = FILE_CONFIG.MAX_IMAGE_SIZE_BYTES;
+export { MAX_ANNOUNCEMENT_IMAGES } from "@/services/site-announcement-limits";
 
-const RULES: UploadRules = { allowed: IMAGE_MIMES, maxBytes: MAX_ANNOUNCEMENT_IMAGE_BYTES, label: "Each image" };
+const RULES = uploadRulesFor("site-announcement-image");
+export const MAX_ANNOUNCEMENT_IMAGE_BYTES = RULES.maxBytes;
 
-export function validateAnnouncementImage(file: File): { error?: string } {
-  if (!file || file.size === 0) return { error: "Empty file." };
-  return validateUpload(file, RULES);
+/** Declared type and size of a form file; staged uploads are checked when they are finalised. */
+export function validateAnnouncementImage(upload: PendingUpload): { error?: string } {
+  if (isStagedUpload(upload)) return {};
+  if (!upload || upload.size === 0) return { error: "Empty file." };
+  return validateUpload(upload, RULES);
 }
 
-export function getAnnouncementImageFiles(formData: FormData): File[] {
-  const files = formData.getAll("images");
-  return files.filter((f): f is File => f instanceof File && f.size > 0);
+/** The images an announcement form submits: files (form upload) and staged keys (direct upload). */
+export function getAnnouncementImageUploads(formData: FormData): PendingUpload[] {
+  return pendingUploadsFrom(formData, "images", "site-announcement-image");
 }
 
-/** Stores a site-announcement image (bytes are sniffed); throws UploadError when refused. */
-export function saveAnnouncementImage(announcementId: string, file: File): Promise<string> {
-  return uploadToR2("announcements", announcementId, file, RULES);
+/** Stores a site-announcement image (bytes are sniffed; a staged upload is verified and moved); throws UploadError when refused. */
+export async function saveAnnouncementImage(announcementId: string, upload: PendingUpload): Promise<string> {
+  if (isStagedUpload(upload)) return (await finalizeStagedUpload(upload, announcementId)).location;
+  return uploadToR2("announcements", announcementId, upload, RULES);
 }
 
 export function deleteAnnouncementImageFile(imagePath: string | null | undefined): Promise<void> {

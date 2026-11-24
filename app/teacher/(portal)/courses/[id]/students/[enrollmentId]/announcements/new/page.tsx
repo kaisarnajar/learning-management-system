@@ -27,6 +27,7 @@ export default async function NewStudentCourseAnnouncementPage({
       backLabel="← Back to messages"
       heading={`Message for ${studentName}`}
       description="Only this student will see this announcement (e.g. exam score, assignment feedback)."
+      courseId={course.id}
       action={createStudentCourseAnnouncement.bind(null, course.id, enrollment.id)}
       submitLabel="Send message"
       defaultCategory="EXAMS_TESTS"

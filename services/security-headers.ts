@@ -30,6 +30,11 @@ export function buildContentSecurityPolicy(nonce: string, options?: { enforce?: 
   const imgSources = ["'self'", "data:", "blob:", "https://*.googleusercontent.com", "https://www.googletagmanager.com"];
   if (r2Host) imgSources.push(`https://${r2Host}`);
 
+  // Direct uploads PUT files to the R2 S3 endpoint (services/direct-upload.ts).
+  const connectSources = ["'self'", "https://www.google-analytics.com", "https://*.google-analytics.com", "https://vitals.vercel-insights.com"];
+  const r2AccountId = process.env.R2_ACCOUNT_ID?.trim();
+  if (r2AccountId && /^[A-Za-z0-9]+$/.test(r2AccountId)) connectSources.push(`https://${r2AccountId}.r2.cloudflarestorage.com`);
+
   const scriptSources = ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", "https://www.googletagmanager.com"];
   if (isDev) scriptSources.push("'unsafe-eval'");
 
@@ -40,7 +45,7 @@ export function buildContentSecurityPolicy(nonce: string, options?: { enforce?: 
     "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     "img-src": imgSources,
     "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
-    "connect-src": ["'self'", "https://www.google-analytics.com", "https://*.google-analytics.com", "https://vitals.vercel-insights.com"],
+    "connect-src": connectSources,
     // 'self' for the in-app PDF previews; Google Maps for the About page embed.
     "frame-src": ["'self'", "https://www.google.com", "https://maps.google.com"],
     // Receipts, certificates and cards are previewed in same-origin iframes.

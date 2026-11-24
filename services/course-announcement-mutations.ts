@@ -10,6 +10,7 @@ import { prisma } from "@/utils/prisma";
 import { courseAnnouncementSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { isUploadError } from "@/services/storage";
+import { pendingUploadFrom, type PendingUpload } from "@/services/staged-upload";
 
 export type ParsedCourseAnnouncement = z.infer<typeof courseAnnouncementSchema>;
 
@@ -35,14 +36,13 @@ export function parseCourseAnnouncementFormOrError(formData: FormData):
   return { ok: true, data: parsed.data };
 }
 
-export function getCourseAnnouncementAttachmentFile(formData: FormData): File | null {
-  const raw = formData.get("attachment");
-  if (raw instanceof File && raw.size > 0) return raw;
-  return null;
+/** The attachment the form submits: the file (form upload, mobile API) or a staged key (direct upload). */
+export function getCourseAnnouncementAttachmentFile(formData: FormData): PendingUpload | null {
+  return pendingUploadFrom(formData, "attachment", "course-announcement-attachment");
 }
 
 export function validateCreateCourseAnnouncementAttachment(formData: FormData):
-  | { ok: true; upload: File | null }
+  | { ok: true; upload: PendingUpload | null }
   | { ok: false; error: string } {
   const upload = getCourseAnnouncementAttachmentFile(formData);
   if (!upload) {
@@ -119,7 +119,7 @@ export async function createCourseAnnouncementRecord(params: {
   authorName: string;
   postedByAdmin: boolean;
   data: ParsedCourseAnnouncement;
-  upload: File | null;
+  upload: PendingUpload | null;
 }) {
   // Upload first so the row is written once, with its attachment; if the row
   // cannot be created the object is removed again.

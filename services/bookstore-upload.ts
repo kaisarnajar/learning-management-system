@@ -1,15 +1,24 @@
-import { FILE_CONFIG } from "@/config/constants/file";
-import { deleteFromR2, IMAGE_MIMES, uploadToR2, validateUpload, type UploadRules } from "@/services/storage";
+import { uploadRulesFor } from "@/services/direct-upload";
+import { finalizeStagedUpload, isStagedUpload, pendingUploadFrom, type PendingUpload } from "@/services/staged-upload";
+import { deleteFromR2, uploadToR2, validateUpload } from "@/services/storage";
 
-const RULES: UploadRules = { allowed: IMAGE_MIMES, maxBytes: FILE_CONFIG.MAX_AVATAR_SIZE_BYTES, label: "Image" };
+const RULES = uploadRulesFor("book-cover");
 
-export function validateBookImage(file: File | null): { error?: string } {
-  return validateUpload(file, RULES);
+/** Declared type and size of a form file; staged uploads are checked when they are finalised. */
+export function validateBookImage(upload: PendingUpload | null): { error?: string } {
+  if (isStagedUpload(upload)) return {};
+  return validateUpload(upload, RULES);
 }
 
-/** Stores a book cover (bytes are sniffed); throws UploadError when refused. */
-export function saveBookImage(bookId: string, file: File): Promise<string> {
-  return uploadToR2("books", bookId, file, RULES);
+/** The cover the form submits: the file (form upload) or a staged key (direct upload). */
+export function getBookImageUpload(formData: FormData): PendingUpload | null {
+  return pendingUploadFrom(formData, "image", "book-cover");
+}
+
+/** Stores a book cover (bytes are sniffed; a staged upload is verified and moved); throws UploadError when refused. */
+export async function saveBookImage(bookId: string, upload: PendingUpload): Promise<string> {
+  if (isStagedUpload(upload)) return (await finalizeStagedUpload(upload, bookId)).location;
+  return uploadToR2("books", bookId, upload, RULES);
 }
 
 export function deleteBookImage(imagePath: string | null | undefined): Promise<void> {

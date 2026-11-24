@@ -1,10 +1,13 @@
-import { ANNOUNCEMENT_MAX_UPLOAD_BYTES } from "@/services/announcements";
-import { ATTACHMENT_MIMES, deleteFromR2, uploadPrivateToR2, validateUpload, type UploadRules } from "@/services/storage";
+import { uploadRulesFor } from "@/services/direct-upload";
+import { finalizeStagedUpload, isStagedUpload, type PendingUpload } from "@/services/staged-upload";
+import { deleteFromR2, uploadPrivateToR2, validateUpload } from "@/services/storage";
 
-const RULES: UploadRules = { allowed: ATTACHMENT_MIMES, maxBytes: ANNOUNCEMENT_MAX_UPLOAD_BYTES, label: "Attachment" };
+const RULES = uploadRulesFor("course-announcement-attachment");
 
-export function validateAnnouncementAttachment(file: File | null): { error?: string } {
-  return validateUpload(file, RULES);
+/** Declared type and size of a form file; staged uploads are checked when they are finalised. */
+export function validateAnnouncementAttachment(upload: PendingUpload | null): { error?: string } {
+  if (isStagedUpload(upload)) return {};
+  return validateUpload(upload, RULES);
 }
 
 function sanitizeFilename(name: string): string {
@@ -13,16 +16,20 @@ function sanitizeFilename(name: string): string {
 }
 
 /**
- * Stores a course-announcement attachment privately (bytes are sniffed);
- * the returned path is served through /api/files after an ownership check.
- * Throws UploadError when refused.
+ * Stores a course-announcement attachment privately (bytes are sniffed; a
+ * staged upload is verified and moved); the returned path is served through
+ * /api/files after an ownership check. Throws UploadError when refused.
  */
 export async function saveAnnouncementAttachment(
   announcementId: string,
-  file: File,
+  upload: PendingUpload,
 ): Promise<{ attachmentPath: string; attachmentName: string }> {
-  const attachmentPath = await uploadPrivateToR2("announcements", announcementId, file, RULES);
-  return { attachmentPath, attachmentName: sanitizeFilename(file.name) };
+  if (isStagedUpload(upload)) {
+    const { location } = await finalizeStagedUpload(upload, announcementId);
+    return { attachmentPath: location, attachmentName: sanitizeFilename(upload.name ?? "") };
+  }
+  const attachmentPath = await uploadPrivateToR2("announcements", announcementId, upload, RULES);
+  return { attachmentPath, attachmentName: sanitizeFilename(upload.name) };
 }
 
 export function deleteAnnouncementAttachment(attachmentPath: string | null | undefined): Promise<void> {

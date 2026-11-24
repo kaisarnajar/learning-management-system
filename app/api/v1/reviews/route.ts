@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
 import { studentReviewSchema } from "@/utils/validations";
+import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -31,7 +32,8 @@ export async function POST(request: NextRequest) {
   if (errorResponse) return errorResponse;
 
   try {
-    const body = await request.json();
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const parsed = studentReviewSchema.safeParse({
       quote: body?.quote,
       course: body?.course ?? "",

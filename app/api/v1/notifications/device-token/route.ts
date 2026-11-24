@@ -2,13 +2,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
 import { devicePlatformData, devicePlatformFromText } from "@/services/status-compat";
+import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function POST(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
   if (errorResponse) return errorResponse;
 
   try {
-    const body = await request.json();
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const token = typeof body.token === "string" ? body.token.trim() : "";
     const rawPlatform = typeof body.platform === "string" && body.platform.trim() ? body.platform : "android";
     const platform = devicePlatformFromText(rawPlatform);
@@ -63,7 +65,8 @@ export async function DELETE(request: NextRequest) {
   if (errorResponse) return errorResponse;
 
   try {
-    const body = await request.json();
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const token = typeof body.token === "string" ? body.token.trim() : "";
 
     if (!token) {

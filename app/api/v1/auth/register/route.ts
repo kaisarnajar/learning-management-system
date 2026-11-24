@@ -3,6 +3,7 @@ import { registerSchema } from "@/utils/validations";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 import { issueApiSession } from "@/services/api-auth";
 import { registerWithPassword } from "@/services/account-registration";
+import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 /**
  * Creates an unverified account, e-mails a verification link and signs the
@@ -22,7 +23,9 @@ export async function POST(request: NextRequest) {
   if (limited) return limited;
 
   try {
-    const parsed = registerSchema.safeParse(await request.json());
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
+    const parsed = registerSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
         { success: false, error: parsed.error.issues[0]?.message ?? "Invalid registration details." },

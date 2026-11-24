@@ -4,6 +4,7 @@ import { processMonthlyPayment, processEnrollmentPayment } from "@/services/paym
 import { isUpiConfigured } from "@/services/upi";
 import { paymentTypeFromText } from "@/services/status-compat";
 import { validatePaymentScreenshot } from "@/services/payment-upload";
+import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 import { enrollmentPaymentSubmitSchema, monthlyPaymentSubmitSchema } from "@/utils/validations";
 
 export async function POST(request: NextRequest) {
@@ -34,7 +35,9 @@ export async function POST(request: NextRequest) {
         screenshotFile = file;
       }
     } else {
-      raw = (await request.json()) ?? {};
+      const body = await readJson(request);
+      if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
+      raw = body;
     }
 
     const courseId = typeof raw.courseId === "string" ? raw.courseId : "";

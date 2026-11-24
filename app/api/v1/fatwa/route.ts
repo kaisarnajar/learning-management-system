@@ -5,6 +5,7 @@ import { fatwaQuestionSchema } from "@/utils/validations";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { toPublicFatwaDto } from "@/services/api-dto";
+import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -39,7 +40,8 @@ export async function POST(request: NextRequest) {
   if (limited) return limited;
 
   try {
-    const body = await request.json();
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const parsed = fatwaQuestionSchema.safeParse({
       title: body?.title,
       question: body?.question,

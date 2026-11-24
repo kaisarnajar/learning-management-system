@@ -3,10 +3,12 @@ import { issueApiSession } from "@/services/api-auth";
 import { authenticateCredentials } from "@/services/credentials";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { getClientIp, RATE_LIMIT_MESSAGE } from "@/services/rate-limit";
+import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const email = typeof body.email === "string" ? body.email.toLowerCase().trim() : "";
     const password = typeof body.password === "string" ? body.password : "";
 

@@ -4,6 +4,7 @@ import { sendPasswordResetEmail } from "@/services/email";
 import { buildPasswordResetUrl, createPasswordResetToken } from "@/services/password-reset";
 import { forgotPasswordSchema } from "@/utils/validations";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
+import { INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 const GENERIC_SUCCESS =
   "If an account with that email exists and uses a password, we sent reset instructions. Please check your Inbox. If you don't see it, check your Spam/Junk folder as well.";
@@ -13,7 +14,8 @@ export async function POST(request: Request) {
   if (limitedByIp) return limitedByIp;
 
   try {
-    const body = await request.json();
+    const body = await readJson(request);
+    if (!body) return NextResponse.json({ error: INVALID_JSON_MESSAGE }, { status: 400 });
     const parsed = forgotPasswordSchema.safeParse(body);
 
     if (!parsed.success) {

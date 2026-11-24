@@ -14,6 +14,9 @@ export function apiServerError(scope: string, cause: unknown, message: string): 
   return apiError(message, 500);
 }
 
+/** The 400 answer for a body that is missing, malformed or not a JSON object. */
+export const INVALID_JSON_MESSAGE = "The request body must be a JSON object.";
+
 /** Reads a JSON body, or null when it is missing or malformed. */
 export async function readJson(request: Request): Promise<Record<string, unknown> | null> {
   const body = await request.json().catch(() => null);

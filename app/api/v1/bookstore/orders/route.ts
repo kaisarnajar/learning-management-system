@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth, requireVerifiedEmail } from "@/services/api-auth";
 import { getBookOrdersForUser } from "@/services/bookstore";
 import { validatePaymentScreenshot } from "@/services/payment-upload";
+import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 import { bookstoreCheckoutSchema } from "@/utils/validations";
 import { createBookOrder } from "@/services/book-orders";
 
@@ -55,14 +56,16 @@ export async function POST(request: NextRequest) {
       expectedTotalPaise = formData.get("expectedTotalPaise");
       screenshotFile = formData.get("screenshot") as File | null;
     } else {
-      const bodyJson = await request.json();
-      rawItems = typeof bodyJson.items === "string" ? bodyJson.items : JSON.stringify(bodyJson.items);
-      paymentMethod = bodyJson.paymentMethod;
-      upiTransactionId = bodyJson.upiTransactionId;
-      deliveryAddress = bodyJson.deliveryAddress;
-      deliveryPinCode = bodyJson.deliveryPinCode;
-      deliveryPhoneNumber = bodyJson.deliveryPhoneNumber;
-      notes = bodyJson.notes || null;
+      const bodyJson = await readJson(request);
+      if (!bodyJson) return apiError(INVALID_JSON_MESSAGE, 400);
+      // Passed on as sent; bookstoreCheckoutSchema checks the types.
+      rawItems = typeof bodyJson.items === "string" ? bodyJson.items : (JSON.stringify(bodyJson.items) ?? null);
+      paymentMethod = bodyJson.paymentMethod as string | null;
+      upiTransactionId = bodyJson.upiTransactionId as string | null;
+      deliveryAddress = bodyJson.deliveryAddress as string | null;
+      deliveryPinCode = bodyJson.deliveryPinCode as string | null;
+      deliveryPhoneNumber = bodyJson.deliveryPhoneNumber as string | null;
+      notes = (bodyJson.notes as string | null) || null;
       expectedTotalPaise = bodyJson.expectedTotalPaise;
     }
 

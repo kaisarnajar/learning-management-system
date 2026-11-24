@@ -3,6 +3,7 @@ import { requireStudentApiAuth, requireVerifiedEmail } from "@/services/api-auth
 import { toEnrollmentDto } from "@/services/api-dto";
 import { prisma } from "@/utils/prisma";
 import { requestEnrollment } from "@/services/enrollments";
+import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -42,7 +43,8 @@ export async function POST(request: NextRequest) {
   if (unverified) return unverified;
 
   try {
-    const body = await request.json();
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const courseId = typeof body.courseId === "string" ? body.courseId.trim() : "";
 
     if (!courseId) {

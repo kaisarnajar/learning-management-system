@@ -5,6 +5,7 @@ import { issueApiSession, revokeAllApiSessions } from "@/services/api-auth";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
+import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
 
@@ -50,7 +51,8 @@ export async function POST(request: NextRequest) {
   if (limited) return limited;
 
   try {
-    const body = await request.json();
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const idToken = typeof body.idToken === "string" ? body.idToken : (typeof body.token === "string" ? body.token : "");
 
     if (!idToken) {

@@ -5,10 +5,12 @@ import { revokeAllApiSessions } from "@/services/api-auth";
 import { consumePasswordResetToken } from "@/services/password-reset";
 import { prisma } from "@/utils/prisma";
 import { resetPasswordSchema } from "@/utils/validations";
+import { INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function POST(request: Request) {
   try {
-    const body = await request.json();
+    const body = await readJson(request);
+    if (!body) return NextResponse.json({ error: INVALID_JSON_MESSAGE }, { status: 400 });
     const parsed = resetPasswordSchema.safeParse(body);
 
     if (!parsed.success) {

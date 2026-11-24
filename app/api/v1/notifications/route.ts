@@ -7,6 +7,7 @@ import {
   markNotificationRead,
 } from "@/services/notifications";
 import { parseApiPagination } from "@/utils/api-pagination";
+import { apiError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -44,8 +45,10 @@ export async function PATCH(request: NextRequest) {
   if (errorResponse) return errorResponse;
 
   try {
-    const body = await request.json();
-    const { notificationId, markAllRead } = body;
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
+    const { markAllRead } = body;
+    const notificationId = typeof body.notificationId === "string" ? body.notificationId : "";
 
     if (markAllRead) {
       await markAllNotificationsRead(user.id);

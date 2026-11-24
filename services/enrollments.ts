@@ -124,13 +124,6 @@ export async function getUserCourseEnrollmentMap(userId: string) {
   return new Map(rows.map((row) => [row.courseId, row]));
 }
 
-export async function getUserEnrollments(userId: string) {
-  return withDbErrorHandling(() => prisma.enrollment.findMany({
-      where: { userId },
-      orderBy: { createdAt: "desc" },
-    }), "Database operation failed");
-}
-
 export type UserEnrollmentWithCourse = Prisma.EnrollmentGetPayload<{
   include: { course: { include: { teacher: true } } };
 }>;
@@ -165,24 +158,6 @@ export function enrollmentStatusClass(status: string) {
   if (status === AWAITING_ENROLLMENT_FEE) return "bg-warning-bg text-warning-text";
   if (status === REJECTED_ENROLLMENT) return "bg-destructive-bg text-destructive-text";
   return "bg-surface-muted-hover text-muted";
-}
-
-export async function getEnrollmentsForCoursePaginated(
-  courseId: string,
-  page: number,
-  pageSize: number,
-): Promise<PaginatedResult<CourseEnrollmentWithUser>> {
-  noStore();
-  const where = { courseId };
-  return paginateQuery<CourseEnrollmentWithUser>(prisma.enrollment, {
-    where,
-    orderBy: { rollNumber: { sort: "asc", nulls: "last" } },
-    include: {
-      user: {
-        select: { id: true, name: true, email: true },
-      },
-    },
-  }, page, pageSize);
 }
 
 /** The statuses that grant access to course content and appear on teacher rosters (for `statusEnum` where-clauses). */
@@ -324,14 +299,6 @@ export async function getPendingEnrollmentApprovalCount(): Promise<number> {
       where: { statusEnum: "PENDING_APPROVAL" },
     }), "Database operation failed");
 }
-
-export async function getAwaitingEnrollmentFeeCount(): Promise<number> {
-  noStore();
-  return withDbErrorHandling(() => prisma.enrollment.count({
-      where: { statusEnum: "AWAITING_ENROLLMENT_FEE" },
-    }), "Database operation failed");
-}
-
 
 /**
  * Enrollments whose attendance and grades staff may look at: approved

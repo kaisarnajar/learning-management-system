@@ -75,10 +75,6 @@ export function getSender(): { address: string; display: string } {
   return { address, display };
 }
 
-export function getSenderEmail(): string {
-  return getSender().address;
-}
-
 function getReplyTo(): string {
   const raw = process.env.EMAIL_REPLY_TO?.trim();
   if (raw) return stripEnvQuotes(raw);

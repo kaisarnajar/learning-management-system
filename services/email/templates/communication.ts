@@ -172,10 +172,6 @@ export type CourseAnnouncementEmailParams = NotificationEmailBaseParams & {
   unsubscribeUrl: string;
 };
 
-export async function sendCourseAnnouncementEmail(params: CourseAnnouncementEmailParams) {
-  return deliverMail(buildCourseAnnouncementEmail(params));
-}
-
 /** The rendered message, for sending now or queueing (services/email-outbox.ts). */
 export function buildCourseAnnouncementEmail(params: CourseAnnouncementEmailParams): DeliverMailParams {
   const { to, studentName, courseTitle, announcementTitle, announcementBody, announcementUrl, unsubscribeUrl } = params;
@@ -263,10 +259,6 @@ export type SiteAnnouncementEmailParams = NotificationEmailBaseParams & {
   /** Per-recipient opt-out link (services/email-unsubscribe.ts). */
   unsubscribeUrl: string;
 };
-
-export async function sendSiteAnnouncementEmail(params: SiteAnnouncementEmailParams) {
-  return deliverMail(buildSiteAnnouncementEmail(params));
-}
 
 /** The rendered message, for sending now or queueing (services/email-outbox.ts). */
 export function buildSiteAnnouncementEmail(params: SiteAnnouncementEmailParams): DeliverMailParams {

@@ -177,10 +177,6 @@ export async function uploadToR2(prefix: StoragePrefix, idPrefix: string, file: 
 export const PRIVATE_FILE_ROUTE = "/api/files/";
 export const PRIVATE_URL_TTL_SECONDS = 5 * 60;
 
-export function isPrivateFilePath(path: string | null | undefined): boolean {
-  return Boolean(path && path.startsWith(PRIVATE_FILE_ROUTE));
-}
-
 /** The private object key for an app path (/api/files/private/<prefix>/<object>), or null. */
 export function privateKeyFromPath(path: string | null | undefined): string | null {
   if (!path || !path.startsWith(PRIVATE_FILE_ROUTE)) return null;
@@ -281,11 +277,6 @@ export function ownedProfileImageKey(userId: string, urlOrPath: string | null | 
   return new RegExp(`^uploads/profiles/${escapedId}-[A-Za-z0-9-]+\\.(jpg|png|webp|gif)$`).test(key) ? key : null;
 }
 
-/** Best-effort delete; never throws (a leftover object is logged, not fatal). */
-export async function deleteFromR2(prefix: StoragePrefix, urlOrPath: string | null | undefined): Promise<void> {
-  await deleteR2Object(r2KeyFromUrl(prefix, urlOrPath));
-}
-
 /** Best-effort delete of a resolved bucket/key; never throws. */
 export async function deleteR2Object(target: { bucket: string; key: string } | null): Promise<void> {
   if (!target) return;
@@ -294,9 +285,4 @@ export async function deleteR2Object(target: { bucket: string; key: string } | n
   } catch (error) {
     console.error(`[storage] Failed to delete ${target.key} from R2:`, error);
   }
-}
-
-/** Deletes several objects, best effort, in parallel. */
-export async function deleteManyFromR2(prefix: StoragePrefix, urls: Array<string | null | undefined>): Promise<void> {
-  await Promise.all(urls.map((url) => deleteFromR2(prefix, url)));
 }

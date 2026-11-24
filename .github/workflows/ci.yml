@@ -71,6 +71,10 @@ jobs:
         # New violations fail; the pre-existing ones are recorded in eslint-suppressions.json.
         run: npx eslint . --ignore-pattern ".claude/**"
 
+      - name: Unused files, exports and dependencies
+        # knip.jsonc explains each entry it ignores.
+        run: npm run knip
+
       - name: Build the application
         # Catches build-only failures (route segment config, server/client
         # boundaries, prerender errors) before merge, not after.

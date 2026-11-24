@@ -177,10 +177,22 @@ const EMAIL_MODULES: Array<[string, Record<string, unknown>]> = [
   ["finance", finance],
 ];
 
+// Senders deliver at once; builders (`build*Email`) render a message that is queued in the
+// e-mail outbox and sent later (announcements), so they are checked on what they render.
 const SENDERS = EMAIL_MODULES.flatMap(([moduleName, exports]) =>
-  Object.entries(exports)
-    .filter(([name, value]) => name.startsWith("send") && typeof value === "function")
-    .map(([name, fn]) => [`${moduleName}/${name}`, fn as (params: unknown) => Promise<unknown>] as const),
+  Object.entries(exports).flatMap(([name, value]) => {
+    if (typeof value !== "function") return [];
+    if (name.startsWith("send")) return [[`${moduleName}/${name}`, value as (params: unknown) => Promise<unknown>] as const];
+    if (/^build\w+Email$/.test(name)) {
+      const build = value as (params: unknown) => { html: string; subject: string };
+      const queue = async (params: unknown) => {
+        const { html, subject } = build(params);
+        sent.messages.push({ html, subject });
+      };
+      return [[`${moduleName}/${name}`, queue] as const];
+    }
+    return [];
+  }),
 );
 
 /** Params where every user-text field (including those of list items) is the payload and every `*Url` field is a safe link. */
@@ -206,7 +218,7 @@ describe("e-mail templates escape user-controlled text", () => {
     sent.messages.length = 0;
   });
 
-  it("covers every sender in the template modules", () => {
+  it("covers every sender and builder in the template modules", () => {
     expect(SENDERS.length).toBeGreaterThanOrEqual(20);
   });
 

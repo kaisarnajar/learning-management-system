@@ -24,10 +24,6 @@ import { ANNOUNCEMENT_CATEGORIES, announcementCategoryLabels } from "@/config/an
 export { ANNOUNCEMENT_CATEGORIES, announcementCategoryLabels };
 export const ANNOUNCEMENT_MAX_UPLOAD_BYTES = FILE_CONFIG.MAX_ATTACHMENT_SIZE_BYTES;
 
-export function isAnnouncementAttachmentTooLarge(fileSizeBytes: number): boolean {
-  return fileSizeBytes > ANNOUNCEMENT_MAX_UPLOAD_BYTES;
-}
-
 export const announcementCategoryStyles: Record<AnnouncementCategory, string> = {
   EXAMS_TESTS: "bg-destructive-bg text-destructive-text",
   ASSIGNMENTS_HOMEWORK: "bg-warning-bg text-warning-text",

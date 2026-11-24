@@ -1,0 +1,23 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema-jsonc.json",
+  "entry": [
+    "app/**/{page,layout,loading,error,not-found,route,default,global-error}.{js,jsx,ts,tsx}",
+    "prisma/seed*.ts",
+    // Run by hand or from the shell scripts in scripts/ (e.g. check-page-auth.sh runs lib/page-auth-guard.mjs).
+    "scripts/**/*.{ts,mjs}"
+  ],
+  "project": [
+    "**/*.{ts,tsx,mjs}"
+  ],
+  // Sample pages the page-auth checker must accept or reject; its tests pass the folder as a root, nothing imports them.
+  "ignoreFiles": [
+    "scripts/__fixtures__/**"
+  ],
+  "ignoreExportsUsedInFile": true,
+  "ignoreDependencies": [
+    // Loaded by CSS (`@import "tailwindcss"` in app/globals.css), which knip does not parse.
+    "tailwindcss",
+    // Tailwind 3 CLI for the PDF stylesheet, run by path from scripts/build-pdf-css.sh.
+    "tailwindcss-v3"
+  ]
+}

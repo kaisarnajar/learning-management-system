@@ -85,10 +85,6 @@ export const UPLOAD_KIND_DEFINITIONS: { [K in StoredUploadKind]: K extends Uploa
   },
 };
 
-export function uploadRulesFor(kind: StoredUploadKind): UploadRules {
-  return UPLOAD_KIND_DEFINITIONS[kind].rules;
-}
-
 /**
  * The bucket and key of a stored file of `kind`, or null when the URL/path is
  * not ours, not of that visibility, or outside the kind's current and legacy

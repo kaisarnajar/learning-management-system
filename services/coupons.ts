@@ -245,8 +245,3 @@ export async function releaseCouponTx(tx: Prisma.TransactionClient, userId: stri
   });
   return released.count > 0;
 }
-
-export async function recordCouponUsage(userId: string, couponId: string) {
-  await prisma.$transaction((tx) => recordCouponUsageTx(tx, userId, couponId));
-}
-

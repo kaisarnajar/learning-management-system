@@ -94,7 +94,7 @@ If you intend to use the demo seed script (`npm run db:seed:demo`) to populate t
 | `npm run build` | `prisma generate` and `next build` (the `prebuild` hook builds the PDF stylesheet) |
 | `npm run vercel-build` | What Vercel runs (`scripts/vercel-build.sh`): PDF stylesheet, `prisma generate`, `prisma migrate deploy` (production deployments only), `next build` |
 | `npm start` | `next start` on a production build |
-| `npm run lint` / `npm run knip` | ESLint / unused files and dependencies |
+| `npm run lint` / `npm run knip` | ESLint / unused files, exports and dependencies (run in CI) |
 | `npm run build:pdf-css` | Compiles the Tailwind stylesheet embedded in generated PDFs into `generated/pdf.css` |
 | `npm run db:drift` | Fails if `prisma/migrations` and `prisma/schema.prisma` describe different databases (set `SHADOW_DATABASE_URL` for the authoritative check) |
 | `npm run db:safety` | Fails if a migration contains destructive SQL (`DROP`, `TRUNCATE`, column type changes, ...) |

@@ -2,39 +2,6 @@ import { BRAND_CONFIG } from "@/config/brand";
 import { getBlogExcerpt, stripHtml } from "@/utils/html";
 
 /**
- * Organization Schema generator (EducationalOrganization)
- */
-export function getOrganizationSchema() {
-  const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
-  const logoUrl = BRAND_CONFIG.assets.logoUrl.startsWith("http")
-    ? BRAND_CONFIG.assets.logoUrl
-    : `${baseUrl}${BRAND_CONFIG.assets.logoUrl}`;
-
-  return {
-    "@context": "https://schema.org",
-    "@type": "EducationalOrganization",
-    name: BRAND_CONFIG.name,
-    alternateName: BRAND_CONFIG.shortName,
-    url: baseUrl,
-    logo: logoUrl,
-    description: BRAND_CONFIG.seo.defaultDescription,
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: BRAND_CONFIG.contact.address,
-      addressCountry: "IN",
-    },
-    contactPoint: {
-      "@type": "ContactPoint",
-      telephone: BRAND_CONFIG.contact.phone,
-      contactType: "customer service",
-      email: BRAND_CONFIG.contact.email,
-      availableLanguage: ["English", "Urdu", "Arabic"],
-    },
-    sameAs: Object.values(BRAND_CONFIG.social).filter(Boolean),
-  };
-}
-
-/**
  * Course Schema generator
  */
 export interface CourseSchemaParams {

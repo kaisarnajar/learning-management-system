@@ -5,16 +5,6 @@ import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
 
-export type StudentSortOption =
-  | "regNo_asc"
-  | "regNo_desc"
-  | "name_asc"
-  | "name_desc"
-  | "date_asc"
-  | "date_desc"
-  | "email_asc"
-  | "email_desc";
-
 export function getStudentOrderBy(sort?: string): Prisma.UserOrderByWithRelationInput[] {
   switch (sort) {
     case "regNo_desc":

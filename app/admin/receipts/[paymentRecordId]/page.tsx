@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/services/auth-actions";
-import { prisma } from "@/utils/prisma";
+import { getPaymentRecordById } from "@/services/payments";
 import { ReceiptPreview } from "@/components/payment/ReceiptPreview";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -13,13 +13,7 @@ export default async function AdminReceiptPreviewPage({ params }: PageProps) {
   const { paymentRecordId } = await params;
 
   // Verify payment record exists and has receipt generated
-  const record = await prisma.paymentRecord.findUnique({
-    where: { id: paymentRecordId },
-    select: {
-      id: true,
-      receiptGeneratedAt: true,
-    },
-  });
+  const record = await getPaymentRecordById(paymentRecordId);
 
   if (!record || !record.receiptGeneratedAt) {
     notFound();

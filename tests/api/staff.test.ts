@@ -9,6 +9,8 @@ import { GET as teacherCourses } from "@/app/api/v1/teacher/courses/route";
 import { GET as teacherCourse } from "@/app/api/v1/teacher/courses/[id]/route";
 import { POST as teacherAnnounce } from "@/app/api/v1/teacher/courses/[id]/announcements/route";
 import { POST as teacherGrade } from "@/app/api/v1/teacher/courses/[id]/grades/route";
+import { GET as teacherFatwa } from "@/app/api/v1/teacher/fatwa/[id]/route";
+import { POST as teacherFatwaAnswer } from "@/app/api/v1/teacher/fatwa/[id]/answer/route";
 import { GET as teacherStudentGrades } from "@/app/api/v1/teacher/courses/[id]/grades/student/[enrollmentId]/route";
 import { GET as teacherStudentAttendance } from "@/app/api/v1/teacher/courses/[id]/attendance/student/[enrollmentId]/route";
 import { GET as adminCourse } from "@/app/api/v1/admin/courses/[id]/route";
@@ -280,6 +282,35 @@ describe.skipIf(SKIP_WITHOUT_DB)("staff API (/api/v1/admin, /api/v1/teacher)", (
       const foreign = await post([{ enrollmentId: outsider.id, marksObtained: 10 }]);
       expect(foreign.status).toBe(400);
       expect(await prisma.courseGradeRecord.count({ where: { enrollmentId: outsider.id } })).toBe(0);
+    });
+
+    it("fatwa: a teacher can't change an answer under review or published (L10)", async () => {
+      const me = await signedInTeacher();
+      const answer = "<p>The original answer, long enough to be valid.</p>";
+      const base = { askerName: "Asker", askerEmail: "asker@example.test", category: "Salah", title: "A question", question: "What is the ruling?" };
+      const published = await prisma.fatwaQuestion.create({ data: { ...base, answer, answeredById: me.user.id, answeredAt: new Date(), approvalStatus: "APPROVED" } });
+      const underReview = await prisma.fatwaQuestion.create({ data: { ...base, answer, answeredById: me.user.id, approvalStatus: "PENDING" } });
+      const rejected = await prisma.fatwaQuestion.create({ data: { ...base, answer, answeredById: me.user.id, approvalStatus: "REJECTED" } });
+      const open = await prisma.fatwaQuestion.create({ data: { ...base, approvalStatus: "APPROVED" } });
+
+      const submit = (id: string) =>
+        teacherFatwaAnswer(
+          apiRequest(`/api/v1/teacher/fatwa/${id}/answer`, { method: "POST", headers: me.headers, json: { answer: "<p>A rewritten answer that is long enough.</p>" } }),
+          routeParams({ id }),
+        );
+
+      for (const question of [published, underReview]) {
+        const detail = await jsonOf(await teacherFatwa(apiRequest(`/api/v1/teacher/fatwa/${question.id}`, { headers: me.headers }), routeParams({ id: question.id })));
+        expect(detail.question.canEdit).toBe(false);
+        const response = await submit(question.id);
+        expect(response.status).toBe(400);
+        expect(await prisma.fatwaQuestion.findUniqueOrThrow({ where: { id: question.id } })).toMatchObject({ answer, approvalStatus: question.approvalStatus });
+      }
+
+      for (const question of [rejected, open]) {
+        expect((await submit(question.id)).status).toBe(200);
+        expect(await prisma.fatwaQuestion.findUniqueOrThrow({ where: { id: question.id } })).toMatchObject({ approvalStatus: "PENDING", answeredById: me.user.id });
+      }
     });
 
     it("student reports: a teacher sees approved students only, current or finished (L11)", async () => {

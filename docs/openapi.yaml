@@ -4689,6 +4689,7 @@ paths:
     post:
       tags: ["Teacher: Fatwa"]
       summary: Saves the teacher's answer and submits it for admin approval
+      description: 400 when the answer is awaiting review or already published (`canEdit` false on the question).
       requestBody:
         required: true
         content:

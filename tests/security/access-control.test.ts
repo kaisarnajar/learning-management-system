@@ -8,8 +8,9 @@ import {
   saveCourseGrade,
 } from "@/app/actions/grades";
 import { deleteCourseAttendance, getAttendanceRecordsForDate, saveCourseAttendance } from "@/app/actions/attendance";
+import { submitTeacherFatwaAnswer } from "@/app/teacher/(portal)/fatwa/actions";
 import { PUT as updateMe } from "@/app/api/v1/auth/me/route";
-import { createCourse, createEnrollment, createTeacher, createUser, resetDb, sessionFor, SKIP_WITHOUT_DB } from "../helpers/db";
+import { createCourse, createEnrollment, createTeacher, createUser, resetDb, runAction, sessionFor, SKIP_WITHOUT_DB } from "../helpers/db";
 import { apiRequest, signedInStudent } from "../helpers/api";
 
 /** Two teachers, each with a course, a student, a grade card and an attendance day. */
@@ -172,6 +173,29 @@ describe.skipIf(SKIP_WITHOUT_DB)("teacher authorisation: grades and attendance s
     expect(await getGradeRecordsForGradeId(b.course.id, b.grade.id)).toMatchObject({ id: b.grade.id });
     await deleteCourseGrade(b.course.id, b.grade.id);
     expect(await prisma.courseGrade.count({ where: { id: b.grade.id } })).toBe(0);
+  });
+});
+
+describe.skipIf(SKIP_WITHOUT_DB)("fatwa answers: a teacher can't rewrite an answer under review or published (L10)", () => {
+  beforeEach(resetDb);
+
+  it("refuses the website action and leaves the answer as it was", async () => {
+    const user = await createUser({ email: "mufti@example.test" });
+    await createTeacher({ email: user.email, userId: user.id });
+    actAs(user, "TEACHER");
+    const answer = "<p>The published answer, long enough to be valid.</p>";
+    const base = { askerName: "Asker", askerEmail: "asker@example.test", category: "Salah", title: "A question", question: "What is the ruling?", answer, answeredById: user.id };
+
+    for (const approvalStatus of ["APPROVED", "PENDING"] as const) {
+      const question = await prisma.fatwaQuestion.create({ data: { ...base, approvalStatus } });
+      const form = new FormData();
+      form.set("answer", "<p>A rewritten answer that is long enough.</p>");
+
+      const { redirectedTo } = await runAction(() => submitTeacherFatwaAnswer(question.id, form));
+
+      expect(redirectedTo).toContain("error=");
+      expect(await prisma.fatwaQuestion.findUniqueOrThrow({ where: { id: question.id } })).toMatchObject({ answer, approvalStatus });
+    }
   });
 });
 

@@ -11,6 +11,7 @@ import { sanitizeRichText } from "@/services/rich-text";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { BRAND_CONFIG } from "@/config/brand";
 import { revalidatePublicContent } from "@/services/public-cache";
+import { FATWA_ANSWER_EDITABLE_WHERE, isFatwaAnswerLocked } from "@/services/fatwa";
 
 export async function submitTeacherFatwaAnswer(id: string, formData: FormData) {
   const { session, teacher } = await requireTeacher();
@@ -33,17 +34,27 @@ export async function submitTeacherFatwaAnswer(id: string, formData: FormData) {
     redirect(`/teacher/fatwa/${id}?error=${encodeURIComponent("This question is already being answered by someone else.")}`);
   }
 
-  // Determine if we need to email admin (only on first submit or if it was rejected and now resubmitted)
-  const isNewSubmission = existing.approvalStatus !== "PENDING";
+  const lockedMessage = "This answer is awaiting review or already published and can't be changed.";
+  if (isFatwaAnswerLocked(existing)) {
+    redirect(`/teacher/fatwa/${id}?error=${encodeURIComponent(lockedMessage)}`);
+  }
 
-  await withDbErrorHandling(() => prisma.fatwaQuestion.update({
-      where: { id },
+  // Re-checked in the write, so an approval that lands meanwhile is not undone.
+  const updated = await withDbErrorHandling(() => prisma.fatwaQuestion.updateMany({
+      where: {
+        id,
+        ...FATWA_ANSWER_EDITABLE_WHERE,
+        OR: [{ answer: null }, { answeredById: session.user.id }],
+      },
       data: {
         answer: parsed.data.answer,
         answeredById: session.user.id,
         approvalStatus: "PENDING",
       },
     }), "Database operation failed");
+  if (updated.count === 0) {
+    redirect(`/teacher/fatwa/${id}?error=${encodeURIComponent(lockedMessage)}`);
+  }
 
   revalidatePath("/");
 
@@ -56,15 +67,15 @@ export async function submitTeacherFatwaAnswer(id: string, formData: FormData) {
   revalidatePath("/teacher/fatwa");
   revalidatePath(`/teacher/fatwa/${id}`);
 
-  if (isNewSubmission) {
-    const adminReviewUrl = `${process.env.NEXT_PUBLIC_APP_URL || BRAND_CONFIG.websiteUrl}/admin/fatwa/${id}`;
-    // Notify admins after the response; the teacher's save must not wait on SMTP.
-    after(() => sendFatwaSubmissionAdminEmail({
-      teacherName: teacher.name,
-      questionTitle: existing.title,
-      adminReviewUrl,
-    }));
-  }
+  // Only a first answer or a resubmission after rejection gets this far, and
+  // either one asks an admin to review it. Notify after the response; the
+  // teacher's save must not wait on SMTP.
+  const adminReviewUrl = `${process.env.NEXT_PUBLIC_APP_URL || BRAND_CONFIG.websiteUrl}/admin/fatwa/${id}`;
+  after(() => sendFatwaSubmissionAdminEmail({
+    teacherName: teacher.name,
+    questionTitle: existing.title,
+    adminReviewUrl,
+  }));
 
   redirect(`/teacher/fatwa/${id}?saved=1`);
 }

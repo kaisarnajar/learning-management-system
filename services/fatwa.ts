@@ -7,6 +7,19 @@ import { withDbErrorHandling } from "@/utils/db-error";
 import { getAppBaseUrl } from "@/services/password-reset";
 import { cache } from "react";
 
+/**
+ * A teacher cannot change an answer while it awaits review or once it is
+ * published: saving would resubmit it and take it off the public site.
+ */
+export function isFatwaAnswerLocked(question: Pick<FatwaQuestion, "approvalStatus" | "answer">): boolean {
+  return question.approvalStatus === "PENDING" || (question.approvalStatus === "APPROVED" && Boolean(question.answer));
+}
+
+/** The database form of the opposite of `isFatwaAnswerLocked`, for a guarded update. */
+export const FATWA_ANSWER_EDITABLE_WHERE = {
+  NOT: { OR: [{ approvalStatus: "PENDING" as const }, { approvalStatus: "APPROVED" as const, answer: { not: null } }] },
+};
+
 /** Admin-only search: may match asker name and e-mail. */
 function fatwaAdminSearchWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;

@@ -45,7 +45,9 @@ export async function GET(request: NextRequest) {
  * the token as a form field.
  */
 export async function POST(request: NextRequest) {
-  const limited = await enforceRateLimit(RATE_LIMITS.FORGOT_PASSWORD_IP, getClientIp(request.headers), {
+  // Its own bucket: a mail client unsubscribing a whole office must not use
+  // up the network's password-reset requests.
+  const limited = await enforceRateLimit(RATE_LIMITS.UNSUBSCRIBE_IP, getClientIp(request.headers), {
     error: "Too many requests. Please try again later.",
   });
   if (limited) return limited;

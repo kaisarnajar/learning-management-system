@@ -384,14 +384,14 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       expect(await jsonOf(response)).toMatchObject({ code: "email_not_verified" });
     });
 
-    it("requires both fields and throttles repeated attempts for one address", async () => {
+    it("requires both fields and throttles repeated failures for one address from one network", async () => {
       expect((await login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: "a@example.test" } }))).status).toBe(400);
       expect((await login(apiRequest("/api/v1/auth/login", { method: "POST", json: {} }))).status).toBe(400);
 
       const { user } = await createPasswordUser();
       const statuses: number[] = [];
       for (let i = 0; i < 6; i++) {
-        const response = await login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: user.email, password: "nope-nope-1" } }));
+        const response = await login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: user.email, password: "nope-nope-1" }, ip: "10.99.0.1" }));
         statuses.push(response.status);
       }
       expect(statuses).toEqual([401, 401, 401, 401, 401, 429]);

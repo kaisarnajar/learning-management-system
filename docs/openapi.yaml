@@ -1242,6 +1242,10 @@ paths:
     post:
       tags: [Auth]
       security: []
+      description: >-
+        Only failed attempts count toward the per-address limit (5 per 15 minutes),
+        and they count per network, so failures elsewhere never block this device.
+        A network is also limited in how many attempts it sends overall (429).
       requestBody:
         required: true
         content:
@@ -1390,7 +1394,9 @@ paths:
   /auth/change-password:
     post:
       tags: [Account]
-      description: Every other app session and every website session of the account is signed out; the calling session stays signed in.
+      description: >-
+        Every other app session and every website session of the account is signed out; the calling session stays signed in.
+        Attempts are limited per account (429) separately from sign-in, so a wrong current password never uses up sign-in attempts.
       requestBody:
         required: true
         content:

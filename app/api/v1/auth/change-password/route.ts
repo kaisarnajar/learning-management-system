@@ -17,7 +17,9 @@ export async function POST(request: NextRequest) {
   const { user, sessionId, errorResponse } = await requireStudentApiAuth(request);
   if (errorResponse) return errorResponse;
 
-  const limited = await enforceRateLimit(RATE_LIMITS.LOGIN, user.email, {
+  // Its own bucket, keyed on the account: guessing the current password here
+  // must not use up the owner's sign-in attempts, nor theirs this.
+  const limited = await enforceRateLimit(RATE_LIMITS.CHANGE_PASSWORD, user.id, {
     success: false,
     error: "Too many attempts. Please wait a few minutes and try again.",
   });

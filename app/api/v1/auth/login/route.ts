@@ -4,7 +4,7 @@ import { issueApiSession } from "@/services/api-auth";
 import { verifyPassword } from "@/services/password";
 import { LOGIN_PASSWORD_MAX_LENGTH } from "@/utils/validations";
 import { resolveUserRole } from "@/services/teacher-auth";
-import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
+import { getClientIp, RATE_LIMIT_MESSAGE, recordFailedSignIn, signInAllowed } from "@/services/rate-limit";
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,10 +23,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid email or password." }, { status: 401 });
     }
 
-    const limited =
-      (await enforceRateLimit(RATE_LIMITS.LOGIN, email, { success: false, error: "Too many attempts. Please wait a few minutes and try again." })) ??
-      (await enforceRateLimit(RATE_LIMITS.LOGIN_IP, getClientIp(request.headers), { success: false, error: "Too many attempts. Please wait a few minutes and try again." }));
-    if (limited) return limited;
+    // Only failed attempts count against the address, and only from the
+    // network they came from, so nobody can lock someone else out.
+    const ip = getClientIp(request.headers);
+    const allowed = await signInAllowed(email, ip);
+    if (!allowed.ok) {
+      return NextResponse.json(
+        { success: false, error: RATE_LIMIT_MESSAGE },
+        { status: 429, headers: { "Retry-After": String(allowed.retryAfterSeconds) } },
+      );
+    }
 
     const user = await prisma.user.findUnique({
       where: { email },
@@ -46,6 +52,7 @@ export async function POST(request: NextRequest) {
     // wrong password, so the timing does not reveal which addresses exist.
     const validPassword = await verifyPassword(password, user?.deletedAt ? null : user?.password);
     if (!user || !validPassword) {
+      await recordFailedSignIn(email, ip);
       return NextResponse.json(
         { success: false, error: "Invalid email or password." },
         { status: 401 }

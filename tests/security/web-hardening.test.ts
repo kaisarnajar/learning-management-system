@@ -5,7 +5,7 @@ import { NextRequest } from "next/server";
 import { authContinueUrl, getPostLoginPath, isSafeInternalPath, safeInternalPath } from "@/services/auth-redirect";
 import { buildContentSecurityPolicy, CSP_REPORT_PATH, generateNonce, STATIC_SECURITY_HEADERS } from "@/services/security-headers";
 import { POST as cspReport } from "@/app/api/csp-report/route";
-import { enforceRateLimit, rateLimit, RATE_LIMITS, type RateLimitRule } from "@/services/rate-limit";
+import { checkRateLimit, enforceRateLimit, rateLimit, RATE_LIMITS, recordFailedSignIn, signInAllowed, type RateLimitRule } from "@/services/rate-limit";
 import { prisma } from "@/utils/prisma";
 import nextConfig from "@/next.config";
 import { resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
@@ -261,6 +261,26 @@ describe.skipIf(SKIP_WITHOUT_DB)("rate limiting", () => {
     expect(results.filter((r) => r.ok)).toHaveLength(3);
   });
 
+  it("checking a limit counts nothing", async () => {
+    for (let i = 0; i < 5; i++) expect((await checkRateLimit(RULE, "10.10.10.10")).ok).toBe(true);
+    expect(await prisma.rateLimitBucket.count()).toBe(0);
+
+    for (let i = 0; i < 3; i++) await rateLimit(RULE, "10.10.10.10");
+    expect(await checkRateLimit(RULE, "10.10.10.10")).toEqual({ ok: false, remaining: 0, retryAfterSeconds: 60 });
+
+    await prisma.$executeRawUnsafe(`UPDATE "RateLimitBucket" SET "windowStart" = NOW() - INTERVAL '2 minutes'`);
+    expect((await checkRateLimit(RULE, "10.10.10.10")).ok).toBe(true);
+  });
+
+  it("only recorded sign-in failures lock an address, and only on their network", async () => {
+    for (let i = 0; i < RATE_LIMITS.LOGIN_FAILURE.limit; i++) {
+      expect((await signInAllowed("someone@example.com", "10.11.0.1")).ok).toBe(true);
+      await recordFailedSignIn("Someone@Example.com", "10.11.0.1");
+    }
+    expect((await signInAllowed("someone@example.com", "10.11.0.1")).ok).toBe(false);
+    expect((await signInAllowed("someone@example.com", "10.11.0.2")).ok).toBe(true);
+  });
+
   describe("when a backend fails", () => {
     beforeEach(() => {
       // A mock endpoint: fetch is stubbed, nothing leaves the machine.
@@ -287,8 +307,10 @@ describe.skipIf(SKIP_WITHOUT_DB)("rate limiting", () => {
     it("with both down, sign-in is refused with 429 and other rules let the request through", async () => {
       vi.spyOn(prisma, "$queryRaw").mockRejectedValue(new Error("postgres unreachable"));
 
-      const login = await enforceRateLimit(RATE_LIMITS.LOGIN, "someone@example.com");
+      const login = await enforceRateLimit(RATE_LIMITS.LOGIN_FAILURE, "someone@example.com");
       expect(login?.status).toBe(429);
+      expect((await checkRateLimit(RATE_LIMITS.LOGIN_FAILURE, "10.6.6.6|someone@example.com")).ok).toBe(false);
+      expect((await signInAllowed("someone@example.com", "10.6.6.6")).ok).toBe(false);
       expect(Number(login?.headers.get("retry-after"))).toBeGreaterThan(0);
       expect((await rateLimit(RATE_LIMITS.LOGIN_IP, "10.6.6.6")).ok).toBe(false);
 
@@ -365,7 +387,8 @@ describe.skipIf(SKIP_WITHOUT_DB)("rate limiting", () => {
   });
 
   it("protects the login, registration and password-reset flows with real limits", () => {
-    expect(RATE_LIMITS.LOGIN.limit).toBeLessThanOrEqual(10);
+    expect(RATE_LIMITS.LOGIN_FAILURE.limit).toBeLessThanOrEqual(10);
+    expect(RATE_LIMITS.CHANGE_PASSWORD.limit).toBeLessThanOrEqual(10);
     expect(RATE_LIMITS.REGISTER_IP.limit).toBeLessThanOrEqual(10);
     expect(RATE_LIMITS.FORGOT_PASSWORD_EMAIL.limit).toBeLessThanOrEqual(5);
     expect(RATE_LIMITS.DOCUMENT_USER.limit).toBeGreaterThan(0);

@@ -5,7 +5,7 @@ import { prisma } from "@/utils/prisma";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { createAuthAdapter } from "@/services/auth-adapter";
-import { getClientIp, rateLimit, RATE_LIMITS } from "@/services/rate-limit";
+import { getClientIp, recordFailedSignIn, signInAllowed } from "@/services/rate-limit";
 import { getApiActorSession } from "@/services/api-actor";
 import { googleSignInCallback } from "@/services/google-link";
 import { authJwtCallback } from "@/services/auth-jwt";
@@ -34,13 +34,10 @@ const nextAuth = NextAuth({
 
         const email = String(credentials.email).toLowerCase().trim();
 
-        // Brute-force protection: per e-mail and per client IP.
+        // Brute-force protection: failed attempts per address and network,
+        // and every attempt per network.
         const ip = getClientIp(request.headers);
-        const [byEmail, byIp] = await Promise.all([
-          rateLimit(RATE_LIMITS.LOGIN, email),
-          rateLimit(RATE_LIMITS.LOGIN_IP, ip),
-        ]);
-        if (!byEmail.ok || !byIp.ok) {
+        if (!(await signInAllowed(email, ip)).ok) {
           console.warn(`[auth] Login rate limit hit for ${email} from ${ip}`);
           return null;
         }
@@ -49,7 +46,10 @@ const nextAuth = NextAuth({
         // An unknown or password-less account costs the same bcrypt work as a
         // wrong password, so the timing does not reveal which addresses exist.
         const valid = await verifyPassword(String(credentials.password), user?.deletedAt ? null : user?.password);
-        if (!user || !valid) return null;
+        if (!user || !valid) {
+          await recordFailedSignIn(email, ip);
+          return null;
+        }
 
         // An unverified address cannot sign in with a password: until the
         // owner confirms the mailbox, nobody can prove the account is theirs.

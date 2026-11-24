@@ -3,7 +3,7 @@
 #   1. every variable read with process.env.NAME must be listed in .env.example
 #      (active, or commented out as `# NAME=...`);
 #   2. every variable listed in .env.example must be read somewhere.
-# NODE_ENV and CI are set by the tooling and are not listed.
+# NODE_ENV, CI and NEXT_PHASE are set by the tooling and are not listed.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -13,7 +13,7 @@ SOURCES=(app services utils config components prisma scripts middleware.ts next.
 TOOLING_ONLY=(DIRECT_URL DATABASE_URL_TEST SHADOW_DATABASE_URL)
 
 in_code="$(grep -rhoE 'process\.env\.[A-Z][A-Z0-9_]*' "${SOURCES[@]}" --include='*.ts' --include='*.tsx' --include='*.mjs' --include='*.js' \
-  | sed 's/^process\.env\.//' | grep -vxE 'NODE_ENV|CI' | sort -u)"
+  | sed 's/^process\.env\.//' | grep -vxE 'NODE_ENV|CI|NEXT_PHASE' | sort -u)"
 in_example="$(grep -hoE '^#? ?[A-Z][A-Z0-9_]*=' .env.example | sed -E 's/^#? ?//; s/=$//' | sort -u)"
 
 status=0

@@ -4,6 +4,8 @@ import { prisma } from "@/utils/prisma";
 import { deleteCourse } from "@/app/admin/courses/actions";
 import { deleteTeacherById } from "@/app/admin/teachers/actions";
 import { deleteStudentUser } from "@/app/admin/students/actions";
+import { issueApiSession, rotateApiSession } from "@/services/api-auth";
+import { generateVerificationToken } from "@/services/tokens";
 import { deleteBook } from "@/app/admin/bookstore/actions";
 import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
 import {
@@ -138,6 +140,18 @@ describe.skipIf(SKIP_WITHOUT_DB)("delete guards", () => {
       const paid = await createUser();
       await prisma.paymentRecord.create({ data: { userId: paid.id, amountInrPaise: 100, paidAt: new Date() } });
       expect((await deleteStudentUser(paid.id)).error).toContain("payment records");
+    });
+
+    it("ends the student's app sessions and drops their e-mail tokens", async () => {
+      const student = await createUser({ email: "app-user@example.test" });
+      const { refreshToken } = await issueApiSession({ id: student.id, email: student.email, role: "USER" });
+      await generateVerificationToken(student.email);
+
+      expect((await deleteStudentUser(student.id)).success).toBeTruthy();
+
+      expect(await prisma.apiRefreshToken.count({ where: { userId: student.id, revokedAt: null } })).toBe(0);
+      expect(await rotateApiSession(refreshToken)).toBeNull();
+      expect(await prisma.verificationToken.count({ where: { identifier: "app-user@example.test" } })).toBe(0);
     });
 
     it("refuses admin and teacher accounts", async () => {

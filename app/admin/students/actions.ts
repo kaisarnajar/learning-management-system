@@ -80,6 +80,10 @@ export async function deleteStudentUser(id: string): Promise<{ error?: string; s
     await tx.account.deleteMany({ where: { userId: id } });
     await tx.deviceToken.deleteMany({ where: { userId: id } });
     await tx.passwordResetToken.deleteMany({ where: { email: user.email } });
+    await tx.verificationToken.deleteMany({ where: { identifier: user.email } });
+    // The mobile app's refresh tokens would otherwise keep minting access
+    // tokens for the removed account.
+    await tx.apiRefreshToken.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
     await tx.user.update({
       where: { id },
       data: { deletedAt: new Date(), email: anonymisedEmail, password: null, image: null },

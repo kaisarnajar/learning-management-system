@@ -14,11 +14,6 @@
       "count": 1
     }
   },
-  "services/auth.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
   "services/courses.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1

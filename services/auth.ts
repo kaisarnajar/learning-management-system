@@ -1,11 +1,10 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/services/auth.config";
 import { prisma } from "@/utils/prisma";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { CURRENT_POLICIES_VERSION } from "@/config/constants";
+import { createAuthAdapter } from "@/services/auth-adapter";
 import { getClientIp, rateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { getApiActorSession } from "@/services/api-actor";
 import { googleSignInCallback } from "@/services/google-link";
@@ -18,21 +17,9 @@ class EmailNotVerifiedError extends CredentialsSignin {
   code = "email_not_verified";
 }
 
-const prismaAdapter = PrismaAdapter(prisma);
-const originalCreateUser = prismaAdapter.createUser;
-if (originalCreateUser) {
-  prismaAdapter.createUser = async (user) => {
-    return originalCreateUser({
-      ...user,
-      policiesAcceptedAt: new Date(),
-      policiesAcceptedVersion: CURRENT_POLICIES_VERSION,
-    } as any);
-  };
-}
-
 const nextAuth = NextAuth({
   ...authConfig,
-  adapter: prismaAdapter,
+  adapter: createAuthAdapter(prisma),
   providers: [
     ...authConfig.providers,
     Credentials({

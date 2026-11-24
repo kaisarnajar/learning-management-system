@@ -3,7 +3,8 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { NextRequest } from "next/server";
 import { authContinueUrl, getPostLoginPath, isSafeInternalPath, safeInternalPath } from "@/services/auth-redirect";
-import { buildContentSecurityPolicy, generateNonce, STATIC_SECURITY_HEADERS } from "@/services/security-headers";
+import { buildContentSecurityPolicy, CSP_REPORT_PATH, generateNonce, STATIC_SECURITY_HEADERS } from "@/services/security-headers";
+import { POST as cspReport } from "@/app/api/csp-report/route";
 import { enforceRateLimit, rateLimit, RATE_LIMITS, type RateLimitRule } from "@/services/rate-limit";
 import { prisma } from "@/utils/prisma";
 import nextConfig from "@/next.config";
@@ -142,6 +143,28 @@ describe("response headers", () => {
     expect(policy).toContain("upgrade-insecure-requests");
   });
 
+  it("asks browsers to report violations in both modes", async () => {
+    for (const mode of [undefined, "true"]) {
+      const response = await (await loadMiddleware(mode))(page(), {});
+      const policy =
+        response.headers.get("content-security-policy") ?? response.headers.get("content-security-policy-report-only") ?? "";
+      const directives = policy.split("; ");
+      expect(directives).toContain(`report-uri ${CSP_REPORT_PATH}`);
+      expect(directives).toContain("report-to csp-endpoint");
+      expect(response.headers.get("reporting-endpoints")).toBe(`csp-endpoint="${CSP_REPORT_PATH}"`);
+    }
+  });
+
+  it("upgrades insecure requests in production only when the policy is enforced", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+
+    const enforced = await (await loadMiddleware("true"))(page(), {});
+    expect(enforced.headers.get("content-security-policy")?.split("; ")).toContain("upgrade-insecure-requests");
+
+    const reportOnly = await (await loadMiddleware())(page(), {});
+    expect(reportOnly.headers.get("content-security-policy-report-only")).not.toContain("upgrade-insecure-requests");
+  });
+
   it("generates unpredictable nonces", () => {
     const nonces = new Set(Array.from({ length: 50 }, () => generateNonce()));
     expect(nonces.size).toBe(50);
@@ -271,6 +294,73 @@ describe.skipIf(SKIP_WITHOUT_DB)("rate limiting", () => {
 
       expect(await enforceRateLimit(RATE_LIMITS.CONTACT_IP, "10.6.6.6")).toBeNull();
       expect((await rateLimit(RULE, "10.6.6.6")).ok).toBe(true);
+    });
+  });
+
+  describe("the CSP report endpoint", () => {
+    const report = (body: string, contentType: string, ip = "10.7.7.7") =>
+      cspReport(
+        new NextRequest(new URL(CSP_REPORT_PATH, "http://localhost:3000"), {
+          method: "POST",
+          body,
+          headers: { "content-type": contentType, "x-real-ip": ip },
+        }),
+      );
+    beforeEach(() => {
+      vi.spyOn(console, "warn").mockImplementation(() => {});
+    });
+    afterEach(() => vi.restoreAllMocks());
+    const logged = () => vi.mocked(console.warn).mock.calls.map((call) => String(call[1]));
+
+    it("accepts a report-uri report (application/csp-report) and logs only a summary", async () => {
+      const response = await report(
+        JSON.stringify({
+          "csp-report": {
+            "document-uri": "https://academy.example/reset-password?token=secret-token",
+            "violated-directive": "script-src-elem",
+            "effective-directive": "script-src-elem",
+            "blocked-uri": "https://evil.example/x.js?session=abc",
+            "original-policy": "default-src 'self'",
+          },
+        }),
+        "application/csp-report",
+      );
+
+      expect(response.status).toBe(204);
+      expect(await response.text()).toBe("");
+      expect(logged()).toEqual([JSON.stringify({ directive: "script-src-elem", blocked: "https://evil.example", page: "/reset-password", disposition: "" })]);
+      expect(logged().join()).not.toMatch(/secret-token|session=abc|original-policy/);
+    });
+
+    it("accepts Reporting API reports (application/reports+json)", async () => {
+      const response = await report(
+        JSON.stringify([
+          { type: "csp-violation", body: { documentURL: "https://academy.example/courses", effectiveDirective: "img-src", blockedURL: "data", disposition: "report" } },
+          { type: "deprecation", body: { id: "x" } },
+        ]),
+        "application/reports+json",
+      );
+
+      expect(response.status).toBe(204);
+      expect(logged()).toEqual([JSON.stringify({ directive: "img-src", blocked: "data", page: "/courses", disposition: "report" })]);
+    });
+
+    it("ignores a malformed or oversized body, still with 204, and stores nothing", async () => {
+      const before = await prisma.rateLimitBucket.count();
+      expect((await report("not json", "application/csp-report")).status).toBe(204);
+      expect((await report(JSON.stringify({ "csp-report": { x: "y".repeat(20_000) } }), "application/csp-report")).status).toBe(204);
+      expect(logged()).toEqual([]);
+      // Only the rate-limit counter for this network was written.
+      expect(await prisma.rateLimitBucket.count()).toBe(before + 1);
+    });
+
+    it("is rate-limited per network", async () => {
+      const statuses: number[] = [];
+      for (let i = 0; i < RATE_LIMITS.CSP_REPORT_IP.limit + 1; i++) statuses.push((await report("{}", "application/csp-report", "10.8.8.8")).status);
+
+      expect(statuses.slice(0, -1).every((status) => status === 204)).toBe(true);
+      expect(statuses.at(-1)).toBe(429);
+      expect((await report("{}", "application/csp-report", "10.9.9.9")).status).toBe(204);
     });
   });
 

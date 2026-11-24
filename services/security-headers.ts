@@ -5,7 +5,18 @@
  * The policy is emitted as Report-Only unless the CSP_ENFORCE environment
  * variable is "true" (see middleware.ts and docs/TESTING.md); CI runs the
  * end-to-end journeys with it enabled before production is switched over.
+ * Either way, violations are reported to CSP_REPORT_PATH: `report-uri` for
+ * browsers without the Reporting API, `report-to` (with the
+ * Reporting-Endpoints response header) for those with it.
  */
+
+/** Where browsers send CSP violation reports (app/api/csp-report/route.ts). */
+export const CSP_REPORT_PATH = "/api/csp-report";
+/** The Reporting API group name used by `report-to`. */
+export const CSP_REPORT_GROUP = "csp-endpoint";
+/** Value of the Reporting-Endpoints response header that defines CSP_REPORT_GROUP. */
+export const REPORTING_ENDPOINTS_HEADER = `${CSP_REPORT_GROUP}="${CSP_REPORT_PATH}"`;
+
 export function buildContentSecurityPolicy(nonce: string, options?: { enforce?: boolean }): string {
   const isDev = process.env.NODE_ENV !== "production";
   const r2Host = (() => {
@@ -39,6 +50,8 @@ export function buildContentSecurityPolicy(nonce: string, options?: { enforce?: 
     "form-action": ["'self'"],
     "worker-src": ["'self'"],
     "manifest-src": ["'self'"],
+    "report-uri": [CSP_REPORT_PATH],
+    "report-to": [CSP_REPORT_GROUP],
   };
   if (options?.enforce && !isDev) {
     directives["upgrade-insecure-requests"] = [];

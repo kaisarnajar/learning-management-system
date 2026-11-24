@@ -1,7 +1,7 @@
 import NextAuth, { type NextAuthRequest } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 import { authConfig } from "@/services/auth.config";
-import { buildContentSecurityPolicy, generateNonce } from "@/services/security-headers";
+import { buildContentSecurityPolicy, generateNonce, REPORTING_ENDPOINTS_HEADER } from "@/services/security-headers";
 
 // Edge-safe Auth.js instance (no adapter, no Prisma): its `authorized`
 // callback in auth.config.ts gates /admin, /developer, /teacher and /profile
@@ -70,7 +70,8 @@ function handleApiV1(request: NextRequest): NextResponse {
  */
 function withContentSecurityPolicy(request: NextRequest): NextResponse {
   const nonce = generateNonce();
-  const csp = buildContentSecurityPolicy(nonce);
+  // Enforce mode also upgrades insecure requests; report-only cannot.
+  const csp = buildContentSecurityPolicy(nonce, { enforce: CSP_ENFORCE });
   const headerName = CSP_ENFORCE ? "Content-Security-Policy" : "Content-Security-Policy-Report-Only";
 
   const requestHeaders = new Headers(request.headers);
@@ -79,6 +80,7 @@ function withContentSecurityPolicy(request: NextRequest): NextResponse {
 
   const response = NextResponse.next({ request: { headers: requestHeaders } });
   response.headers.set(headerName, csp);
+  response.headers.set("Reporting-Endpoints", REPORTING_ENDPOINTS_HEADER);
   return response;
 }
 

@@ -53,7 +53,7 @@ whose hash is stored in `ApiRefreshToken`. Each request checks the session row, 
 send no `Origin` header and need no CORS entry.
 
 **Other controls.** A nonce-based Content-Security-Policy (report-only until `CSP_ENFORCE=true`, built in
-`services/security-headers.ts`); rate limiting (`services/rate-limit.ts`, Upstash Redis when configured, otherwise a
+`services/security-headers.ts`, violations reported to `/api/csp-report`); rate limiting (`services/rate-limit.ts`, Upstash Redis when configured, otherwise a
 Postgres table, failing open if the backend is down); `sanitize-html` for rich text; HTML escaping in e-mail and PDF
 templates; private files served through `/api/files` after an authorization check.
 

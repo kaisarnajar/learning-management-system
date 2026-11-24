@@ -46,9 +46,14 @@ The nonce-based CSP is sent as `Content-Security-Policy-Report-Only` by default 
 
 1. CI runs the e2e journeys with `CSP_ENFORCE=true`, so a page that needs an inline script or an
    un-allow-listed origin fails the pipeline.
-2. When the suite has stayed green, set `CSP_ENFORCE=true` in the Vercel project environment. Roll back by
-   setting it to `false` and redeploying; no code change is involved.
+2. In both modes, browsers report violations to `POST /api/csp-report` (`report-uri`, plus `report-to` with a
+   `Reporting-Endpoints` header). The route is rate-limited per network, stores nothing and answers 204; it logs
+   one `[csp-report]` line per violation with the directive, the blocked origin and the page path (never a query
+   string). Watch those lines in the Vercel logs for about a week of production traffic.
+3. When the suite has stayed green and the logs show no unexpected violations, set `CSP_ENFORCE=true` in the
+   Vercel project environment. Enforce mode also adds `upgrade-insecure-requests`. Roll back by setting it to
+   `false` and redeploying; no code change is involved.
 
 `tests/security/web-hardening.test.ts` pins both modes (report-only by default, enforcing only for the exact
-value `true`), a fresh nonce per request, and the absence of `unsafe-inline`/`unsafe-eval` for scripts in
-production.
+value `true`), a fresh nonce per request, the report directives in both modes, `upgrade-insecure-requests` only
+when enforcing, the report endpoint, and the absence of `unsafe-inline`/`unsafe-eval` for scripts in production.

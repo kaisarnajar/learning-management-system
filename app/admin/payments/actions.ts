@@ -13,6 +13,7 @@ import {
   paymentTypeWrite,
   submissionStatusData,
   submissionStatusOf,
+  SUBMISSION_STATUS_TEXT,
 } from "@/services/status-compat";
 import { prisma } from "@/utils/prisma";
 import { ENROLLMENT_STATUS } from "@/config/constants/business";
@@ -21,6 +22,10 @@ import { notifyPaymentApproved, revalidateNotificationPaths } from "@/services/n
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getAppBaseUrl } from "@/services/password-reset";
 import { normalizeReason, softDeleteSubmissionTx, voidPaymentRecordTx, VoidError } from "@/services/payment-voiding";
+import { assignRollNumberTx } from "@/services/roll-numbers";
+
+/** Rolls an approval back when the enrollment stopped awaiting its fee mid-way. */
+class EnrollmentNotAwaitingFeeError extends Error {}
 
 function revalidatePaymentPaths(userId: string, courseId?: string | null) {
   const paths = [
@@ -83,7 +88,30 @@ export async function confirmMonthlyPayment(
     return { error: "Course not found." };
   }
 
-  await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
+  const approve = () => prisma.$transaction(async (tx) => {
+    // Claim the submission first. A double click, or the website and the app
+    // at once, both get here; only the one whose update moves the row out of
+    // PENDING_VERIFICATION creates the payment record.
+    const claimed = await tx.coursePaymentSubmission.updateMany({
+      where: { id: submissionId, status: SUBMISSION_STATUS_TEXT.PENDING_VERIFICATION, deletedAt: null },
+      data: submissionStatusData("APPROVED"),
+    });
+    if (claimed.count === 0) return "already-processed" as const;
+
+    if (isEnrollmentFee && course) {
+      const moved = await tx.enrollment.updateMany({
+        where: {
+          userId: submission.userId,
+          courseId: submission.courseId,
+          status: ENROLLMENT_STATUS.AWAITING_FEE,
+        },
+        data: enrollmentStatusData(getRosterEnrollmentStatusForCourse(course.status)),
+      });
+      // The enrollment left AWAITING_ENROLLMENT_FEE since the check above:
+      // roll the claim back rather than record income for nothing.
+      if (moved.count === 0) throw new EnrollmentNotAwaitingFeeError();
+    }
+
     const record = await tx.paymentRecord.create({
       data: {
         userId: submission.userId,
@@ -97,34 +125,40 @@ export async function confirmMonthlyPayment(
 
     await tx.coursePaymentSubmission.update({
       where: { id: submissionId },
-      data: {
-        ...submissionStatusData("APPROVED"),
-        paymentRecordId: record.id,
-      },
+      data: { paymentRecordId: record.id },
     });
 
-      if (isEnrollmentFee && course) {
-        await tx.enrollment.updateMany({
-          where: {
-            userId: submission.userId,
-            courseId: submission.courseId,
-            status: ENROLLMENT_STATUS.AWAITING_FEE,
-          },
-          data: enrollmentStatusData(getRosterEnrollmentStatusForCourse(course.status)),
-        });
-      }
-    }), "Database operation failed");
-
     if (isEnrollmentFee && course && getRosterEnrollmentStatusForCourse(course.status) === "ACTIVE") {
-      const enrollment = await prisma.enrollment.findUnique({
+      const enrollment = await tx.enrollment.findUnique({
         where: { userId_courseId: { userId: submission.userId, courseId: submission.courseId } },
         select: { id: true },
       });
-      if (enrollment) {
-        const { assignRollNumber } = await import("@/services/roll-numbers");
-        await assignRollNumber(enrollment.id, submission.courseId);
-      }
+      if (enrollment) await assignRollNumberTx(tx, enrollment.id, submission.courseId);
     }
+    return "approved" as const;
+  });
+
+  const outcome = await withDbErrorHandling(
+    () => approve().catch((error: unknown) => {
+      if (error instanceof EnrollmentNotAwaitingFeeError) return "not-awaiting-fee" as const;
+      throw error;
+    }),
+    "Database operation failed",
+  );
+
+  if (outcome === "not-awaiting-fee") {
+    return { error: "Enrollment is not awaiting an enrollment fee payment." };
+  }
+
+  if (outcome === "already-processed") {
+    // Someone else decided it in the meantime: an approval is the same
+    // outcome, anything else is reported.
+    const current = await prisma.coursePaymentSubmission.findUnique({ where: { id: submissionId }, select: { status: true, statusEnum: true } });
+    if (current && submissionStatusOf(current) === "APPROVED") {
+      redirect(adminReturnUrl(returnTo, "/admin/payments", "confirmed"));
+    }
+    return { error: "This payment has already been processed." };
+  }
 
   if (course) {
     await notifyPaymentApproved({
@@ -165,8 +199,10 @@ export async function declineMonthlyPayment(
     return { error: "Course not found." };
   }
 
-  await withDbErrorHandling(() => prisma.coursePaymentSubmission.update({
-      where: { id: submissionId },
+  // The same guarded claim as approval: a decline that loses the race to an
+  // approval (or to another decline) changes nothing.
+  const claimed = await withDbErrorHandling(() => prisma.coursePaymentSubmission.updateMany({
+      where: { id: submissionId, status: SUBMISSION_STATUS_TEXT.PENDING_VERIFICATION, deletedAt: null },
       data: {
         ...submissionStatusData("DECLINED"),
         upiTransactionId: null,
@@ -175,6 +211,9 @@ export async function declineMonthlyPayment(
         paymentMethodEnum: null,
       },
     }), "Database operation failed");
+  if (claimed.count === 0) {
+    return { error: "This payment has already been processed." };
+  }
 
   const base = getAppBaseUrl();
   const paymentUrl =

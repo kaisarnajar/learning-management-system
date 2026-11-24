@@ -90,6 +90,68 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     expect(await prisma.paymentRecord.count({ where: { userId: student.id } })).toBe(1);
   });
 
+  it("two simultaneous approvals create one payment record and one roll number", async () => {
+    await loginAsAdmin();
+    const student = await createUser();
+    const course = await createCourse();
+    await processEnrollmentPayment(student.id, course.id, "upi", "UTR2100001", null);
+    const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
+
+    const results = await Promise.all([
+      runAction(() => confirmMonthlyPayment(submission.id)),
+      runAction(() => confirmMonthlyPayment(submission.id)),
+    ]);
+
+    for (const result of results) expect(result.redirectedTo).toContain("confirmed=1");
+    expect(await prisma.paymentRecord.count({ where: { userId: student.id } })).toBe(1);
+    const approved = await prisma.coursePaymentSubmission.findUniqueOrThrow({ where: { id: submission.id } });
+    expect(approved.statusEnum).toBe("APPROVED");
+    expect(approved.paymentRecordId).toBe((await prisma.paymentRecord.findFirstOrThrow({ where: { userId: student.id } })).id);
+    const enrollment = await prisma.enrollment.findUniqueOrThrow({ where: { userId_courseId: { userId: student.id, courseId: course.id } } });
+    expect(enrollment).toMatchObject({ statusEnum: "ACTIVE", rollNumber: 1 });
+  });
+
+  it("an approval racing a decline ends in one consistent outcome", async () => {
+    await loginAsAdmin();
+    for (let round = 0; round < 5; round++) {
+      const student = await createUser();
+      const course = await createCourse();
+      await processEnrollmentPayment(student.id, course.id, "upi", `UTR22000${round}1`, null);
+      const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
+
+      await Promise.all([
+        runAction(() => confirmMonthlyPayment(submission.id)),
+        runAction(() => declineMonthlyPayment(submission.id)),
+      ]);
+
+      const final = await prisma.coursePaymentSubmission.findUniqueOrThrow({ where: { id: submission.id } });
+      const records = await prisma.paymentRecord.count({ where: { userId: student.id } });
+      const enrollment = await prisma.enrollment.findUniqueOrThrow({ where: { userId_courseId: { userId: student.id, courseId: course.id } } });
+      if (final.statusEnum === "APPROVED") {
+        expect(records).toBe(1);
+        expect(final.paymentRecordId).not.toBeNull();
+        expect(enrollment.statusEnum).toBe("ACTIVE");
+      } else {
+        expect(final.statusEnum).toBe("DECLINED");
+        expect(records).toBe(0);
+        expect(final.paymentRecordId).toBeNull();
+        expect(enrollment.statusEnum).toBe("AWAITING_ENROLLMENT_FEE");
+      }
+    }
+  });
+
+  it("refuses to decline a payment that has been approved", async () => {
+    await loginAsAdmin();
+    const student = await createUser();
+    const course = await createCourse();
+    await processEnrollmentPayment(student.id, course.id, "upi", "UTR2300001", null);
+    const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
+    await runAction(() => confirmMonthlyPayment(submission.id));
+
+    expect((await runAction(() => declineMonthlyPayment(submission.id))).value).toEqual({ error: "Only pending payments can be declined." });
+    expect((await prisma.coursePaymentSubmission.findUniqueOrThrow({ where: { id: submission.id } })).statusEnum).toBe("APPROVED");
+  });
+
   it("splits GST out of the receipt when the academy includes it, and numbers receipts sequentially", async () => {
     await loginAsAdmin();
     await setPaymentSettings({ includeGstByDefault: true });

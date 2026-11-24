@@ -50,7 +50,7 @@ import {
 } from "@/services/course-announcement-actions";
 import { courseStatusLabel } from "@/services/course-status";
 import { getCourseById } from "@/services/courses";
-import { isEnrollmentInCourse } from "@/services/enrollments";
+import { CLASS_MEMBER_STATUSES, isEnrollmentInCourse } from "@/services/enrollments";
 import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { formatRollNumber } from "@/services/roll-numbers";
 import { STUDENT_CARDS, type StudentCardKind } from "@/services/student-cards";
@@ -324,7 +324,8 @@ export function deleteAttendanceDay(request: NextRequest, portal: CoursePortal, 
 
 async function requireEnrollmentInCourse(ctx: StaffContext, courseId: string, enrollmentId: string) {
   const course = await requireManagedCourse(ctx, courseId);
-  if (!(await isEnrollmentInCourse(enrollmentId, course.id))) notFound();
+  // Applicants who were never approved have no class record to show.
+  if (!(await isEnrollmentInCourse(enrollmentId, course.id, { statuses: CLASS_MEMBER_STATUSES }))) notFound();
   return course;
 }
 

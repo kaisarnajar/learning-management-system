@@ -9,6 +9,8 @@ import { GET as teacherCourses } from "@/app/api/v1/teacher/courses/route";
 import { GET as teacherCourse } from "@/app/api/v1/teacher/courses/[id]/route";
 import { POST as teacherAnnounce } from "@/app/api/v1/teacher/courses/[id]/announcements/route";
 import { POST as teacherGrade } from "@/app/api/v1/teacher/courses/[id]/grades/route";
+import { GET as teacherStudentGrades } from "@/app/api/v1/teacher/courses/[id]/grades/student/[enrollmentId]/route";
+import { GET as teacherStudentAttendance } from "@/app/api/v1/teacher/courses/[id]/attendance/student/[enrollmentId]/route";
 import { GET as adminCourse } from "@/app/api/v1/admin/courses/[id]/route";
 import { POST as recordPayment } from "@/app/api/v1/admin/transactions/payments/route";
 import { POST as orderAction } from "@/app/api/v1/admin/bookstore/orders/[id]/[action]/route";
@@ -278,6 +280,44 @@ describe.skipIf(SKIP_WITHOUT_DB)("staff API (/api/v1/admin, /api/v1/teacher)", (
       const foreign = await post([{ enrollmentId: outsider.id, marksObtained: 10 }]);
       expect(foreign.status).toBe(400);
       expect(await prisma.courseGradeRecord.count({ where: { enrollmentId: outsider.id } })).toBe(0);
+    });
+
+    it("student reports: a teacher sees approved students only, current or finished (L11)", async () => {
+      const me = await signedInTeacher();
+      const course = await createCourse({ teacherId: me.teacher.id });
+      const active = await createEnrollment((await createUser()).id, course.id);
+      const finished = await createEnrollment((await createUser()).id, course.id, { status: "completed", statusEnum: "COMPLETED" });
+      const applicant = await createEnrollment((await createUser()).id, course.id, { status: "pending_approval", statusEnum: "PENDING_APPROVAL" });
+      const rejected = await createEnrollment((await createUser()).id, course.id, { status: "rejected", statusEnum: "REJECTED" });
+
+      const statusOf = async (enrollmentId: string) => {
+        const params = routeParams({ id: course.id, enrollmentId });
+        const grades = await teacherStudentGrades(apiRequest(`/api/v1/teacher/courses/${course.id}/grades/student/${enrollmentId}`, { headers: me.headers }), params);
+        const attendance = await teacherStudentAttendance(apiRequest(`/api/v1/teacher/courses/${course.id}/attendance/student/${enrollmentId}`, { headers: me.headers }), params);
+        return [grades.status, attendance.status];
+      };
+
+      expect(await statusOf(active.id)).toEqual([200, 200]);
+      expect(await statusOf(finished.id)).toEqual([200, 200]);
+      expect(await statusOf(applicant.id)).toEqual([404, 404]);
+      expect(await statusOf(rejected.id)).toEqual([404, 404]);
+    });
+
+    it("grades: a teacher cannot grade an applicant who is not yet approved (L11)", async () => {
+      const me = await signedInTeacher();
+      const course = await createCourse({ teacherId: me.teacher.id });
+      const applicant = await createEnrollment((await createUser()).id, course.id, { status: "pending_approval", statusEnum: "PENDING_APPROVAL" });
+
+      const response = await teacherGrade(
+        apiRequest(`/api/v1/teacher/courses/${course.id}/grades`, {
+          method: "POST",
+          headers: me.headers,
+          json: { title: "Unit test 1", date: "2026-05-04", maxMarks: 50, records: [{ enrollmentId: applicant.id, marksObtained: 10 }] },
+        }),
+        routeParams({ id: course.id }),
+      );
+      expect(response.status).toBe(400);
+      expect(await prisma.courseGradeRecord.count({ where: { enrollmentId: applicant.id } })).toBe(0);
     });
   });
 });

@@ -363,6 +363,7 @@ components:
           schema: { $ref: "#/components/schemas/AnnouncementForm" }
     AttendanceSave:
       required: true
+      description: Every enrollmentId must be an active student of the course (400 otherwise).
       content:
         application/json:
           schema:
@@ -379,6 +380,7 @@ components:
                     isPresent: { type: boolean }
     GradeCard:
       required: true
+      description: Every enrollmentId must be an active student of the course (400 otherwise).
       content:
         application/json:
           schema: { $ref: "#/components/schemas/GradeCardInput" }
@@ -2592,6 +2594,7 @@ paths:
     get:
       tags: ["Admin: Courses"]
       summary: A student's attendance report
+      description: Only for an approved student, current or completed; 404 for an applicant or a rejected enrollment.
       parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
       responses:
         "200": { $ref: "#/components/responses/StudentAttendance" }
@@ -2663,6 +2666,7 @@ paths:
     get:
       tags: ["Admin: Courses"]
       summary: A student's grade report
+      description: Only for an approved student, current or completed; 404 for an applicant or a rejected enrollment.
       parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
       responses:
         "200": { $ref: "#/components/responses/StudentGrades" }
@@ -4498,6 +4502,7 @@ paths:
     get:
       tags: ["Teacher: Courses"]
       summary: A student's attendance report
+      description: Only for an approved student, current or completed; 404 for an applicant or a rejected enrollment.
       parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
       responses:
         "200": { $ref: "#/components/responses/StudentAttendance" }
@@ -4569,6 +4574,7 @@ paths:
     get:
       tags: ["Teacher: Courses"]
       summary: A student's grade report
+      description: Only for an approved student, current or completed; 404 for an applicant or a rejected enrollment.
       parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
       responses:
         "200": { $ref: "#/components/responses/StudentGrades" }

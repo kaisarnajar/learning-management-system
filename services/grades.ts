@@ -77,8 +77,10 @@ export async function getEnrolledStudentsForGradesFromDb(courseId: string) {
 }
 
 /**
- * Ensures every enrollment id in `records` belongs to `courseId`. Callers
- * authorise on the course, so an id from another course must be rejected.
+ * Ensures every enrollment id in `records` is an active enrollment of
+ * `courseId`. Callers authorise on the course, so an id from another course
+ * must be rejected, and so must a student who is not (or no longer) in the
+ * class: a pending applicant, a rejected one or a finished one.
  */
 async function assertEnrollmentsBelongToCourse(
   tx: Pick<typeof prisma, "enrollment">,
@@ -88,11 +90,11 @@ async function assertEnrollmentsBelongToCourse(
   const unique = [...new Set(enrollmentIds)];
   if (unique.length === 0) return;
   const found = await tx.enrollment.findMany({
-    where: { courseId, id: { in: unique } },
+    where: { courseId, id: { in: unique }, status: ENROLLMENT_STATUS.ACTIVE },
     select: { id: true },
   });
   if (found.length !== unique.length) {
-    throw new Error("One or more students do not belong to this course.");
+    throw new Error("One or more students are not active in this course.");
   }
 }
 

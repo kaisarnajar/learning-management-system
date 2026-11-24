@@ -291,10 +291,26 @@ export async function getAwaitingEnrollmentFeeCount(): Promise<number> {
 }
 
 
-/** Whether [enrollmentId] is an enrollment (in any status) of [courseId]. */
-export async function isEnrollmentInCourse(enrollmentId: string, courseId: string): Promise<boolean> {
+type EnrollmentStatusText = (typeof ENROLLMENT_STATUS)[keyof typeof ENROLLMENT_STATUS];
+
+/**
+ * Enrollments whose attendance and grades staff may look at: approved
+ * students, current or finished. Pending or rejected applicants are not part
+ * of the class.
+ */
+export const CLASS_MEMBER_STATUSES: readonly EnrollmentStatusText[] = [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.COMPLETED];
+
+/**
+ * Whether [enrollmentId] is an enrollment of [courseId]; with `statuses`, only
+ * when it is in one of them.
+ */
+export async function isEnrollmentInCourse(
+  enrollmentId: string,
+  courseId: string,
+  options: { statuses?: readonly EnrollmentStatusText[] } = {},
+): Promise<boolean> {
   const found = await withDbErrorHandling(() => prisma.enrollment.findFirst({
-      where: { id: enrollmentId, courseId },
+      where: { id: enrollmentId, courseId, ...(options.statuses ? { status: { in: [...options.statuses] } } : {}) },
       select: { id: true },
     }), "Database operation failed");
   return Boolean(found);

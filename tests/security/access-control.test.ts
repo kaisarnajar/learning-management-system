@@ -129,6 +129,21 @@ describe.skipIf(SKIP_WITHOUT_DB)("teacher authorisation: grades and attendance s
     expect(await prisma.courseAttendanceRecord.findFirstOrThrow({ where: { enrollmentId: b.enrollment.id } })).toMatchObject({ isPresent: true });
   });
 
+  it("cannot grade or mark a student who is not active in the course (L11)", async () => {
+    const { a } = await twoClassrooms();
+    const applicant = await createEnrollment((await createUser()).id, a.course.id, { status: "pending_approval", statusEnum: "PENDING_APPROVAL", rollNumber: null });
+    const finished = await createEnrollment((await createUser()).id, a.course.id, { status: "completed", statusEnum: "COMPLETED", rollNumber: 2 });
+    actAs(a.user, "TEACHER");
+
+    for (const enrollment of [applicant, finished]) {
+      const result = await saveCourseGrade(a.grade.id, a.course.id, "Exam a", new Date("2026-03-05"), 50, [{ enrollmentId: enrollment.id, marksObtained: 30 }]);
+      expect(result.error).toBe("Failed to save grades");
+      await expect(saveCourseAttendance(a.course.id, a.day, [{ enrollmentId: enrollment.id, isPresent: true }])).rejects.toThrow("Failed to save attendance");
+      expect(await prisma.courseGradeRecord.count({ where: { enrollmentId: enrollment.id } })).toBe(0);
+      expect(await prisma.courseAttendanceRecord.count({ where: { enrollmentId: enrollment.id } })).toBe(0);
+    }
+  });
+
   it("validates grade input on the server (negative, above maximum, NaN, duplicates)", async () => {
     const { a } = await twoClassrooms();
     actAs(a.user, "TEACHER");

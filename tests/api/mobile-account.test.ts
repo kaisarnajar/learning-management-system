@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "bcryptjs";
+import { NextRequest } from "next/server";
 import { prisma } from "@/utils/prisma";
 import { DELETE as deleteMe, GET as me, PUT as updateMe } from "@/app/api/v1/auth/me/route";
 import { DELETE as removePhoto, POST as uploadPhoto } from "@/app/api/v1/auth/me/photo/route";
@@ -80,6 +81,24 @@ describe.skipIf(SKIP_WITHOUT_DB)("mobile API: account", () => {
       const female = await signedInStudent({ gender: "FEMALE" });
       const refused = await uploadPhoto(apiRequest("/api/v1/auth/me/photo", { method: "POST", headers: female.headers, body: form }));
       expect(refused.status).toBe(400);
+    });
+
+    it("answers 413 for an oversize Content-Length without reading the body", async () => {
+      const male = await signedInStudent({ gender: "MALE" });
+      let pulled = false;
+      const body = new ReadableStream({ pull(controller) { pulled = true; controller.close(); } }, { highWaterMark: 0 });
+      const request = new NextRequest(new URL("/api/v1/auth/me/photo", "http://localhost:3000"), {
+        method: "POST",
+        headers: { ...male.headers, "content-type": "multipart/form-data; boundary=x", "content-length": String(50 * 1024 * 1024), "x-forwarded-for": "10.9.9.9" },
+        body,
+        duplex: "half",
+      } as unknown as ConstructorParameters<typeof NextRequest>[1]);
+
+      const response = await uploadPhoto(request);
+      expect(response.status).toBe(413);
+      expect((await jsonOf(response)).error).toMatch(/2 MB or smaller/);
+      expect(pulled).toBe(false);
+      expect(request.bodyUsed).toBe(false);
     });
   });
 

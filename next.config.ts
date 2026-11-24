@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { MAX_BLOG_IMAGE_BYTES, MAX_BLOG_IMAGES } from "./services/blog-limits";
+import { FORM_UPLOAD_FALLBACK_MAX_BYTES } from "./config/constants/direct-upload";
 import { STATIC_SECURITY_HEADERS } from "./services/security-headers";
 
 const r2Domain = process.env.R2_PUBLIC_URL 
@@ -19,8 +19,11 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     serverActions: {
-      // Default is 1 MB; blog images allow up to 5 MB each (max 10 per post).
-      bodySizeLimit: MAX_BLOG_IMAGES * MAX_BLOG_IMAGE_BYTES,
+      // Large files go straight to R2 (services/direct-upload.ts). Form
+      // uploads remain for payment screenshots and profile photos (2 MB) and
+      // as the fallback for files up to 4 MB in total, plus the other fields;
+      // Vercel refuses bodies over 4.5 MB in any case.
+      bodySizeLimit: FORM_UPLOAD_FALLBACK_MAX_BYTES + 512 * 1024,
     },
   },
   images: {

@@ -1393,6 +1393,7 @@ paths:
       responses:
         "200": { description: Stored, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, image: { type: string } } } } } }
         "400": { $ref: "#/components/responses/Error" }
+        "413": { description: "Content-Length is over 2 MB plus 64 KB of multipart framing; the body is not read", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
     delete:
       tags: [Account]
       responses:

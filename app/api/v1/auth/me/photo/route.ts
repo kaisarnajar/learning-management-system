@@ -5,8 +5,18 @@ import { deleteProfileImage, saveProfileImage, validateProfileImage } from "@/se
 import { isUploadError } from "@/services/storage";
 import { prisma } from "@/utils/prisma";
 import { apiError, apiServerError } from "@/utils/api-response";
+import { FILE_CONFIG } from "@/config/constants/file";
 
 const MALE_AVATAR = "/assets/male_icon.png";
+
+/** The photo limit plus room for the multipart framing; anything larger is refused unread. */
+const MAX_PHOTO_REQUEST_BYTES = FILE_CONFIG.MAX_AVATAR_SIZE_BYTES + 64 * 1024;
+
+/** True when the declared body size is over the limit (a missing header is left to the platform cap). */
+function declaresTooLarge(request: NextRequest): boolean {
+  const declared = Number(request.headers.get("content-length"));
+  return Number.isFinite(declared) && declared > MAX_PHOTO_REQUEST_BYTES;
+}
 
 async function currentImage(userId: string) {
   return prisma.user.findUnique({ where: { id: userId }, select: { image: true, gender: true } });
@@ -20,11 +30,13 @@ function isUploaded(image: string | null | undefined): image is string {
  * Uploads a profile photo: multipart/form-data with an `image` file (JPEG,
  * PNG or WebP, checked by content). As on the website, female profiles use
  * the default avatar and cannot upload a photo. The previous upload is
- * removed only after the profile points at the new one.
+ * removed only after the profile points at the new one. A request whose
+ * Content-Length is over MAX_PHOTO_REQUEST_BYTES gets 413 before its body is read.
  */
 export async function POST(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
   if (errorResponse) return errorResponse;
+  if (declaresTooLarge(request)) return apiError("The photo must be 2 MB or smaller.", 413);
 
   try {
     const profile = await currentImage(user.id);

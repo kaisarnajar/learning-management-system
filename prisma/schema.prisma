@@ -1013,6 +1013,25 @@ model RateLimitBucket {
   @@index([windowStart])
 }
 
+/// Bulk e-mail waiting to be sent (services/email-outbox.ts). Announcements
+/// enqueue one row per recipient; app/api/cron/email-outbox sends batches,
+/// retrying a failed row up to a fixed number of attempts.
+model EmailOutbox {
+  id                 String    @id @default(cuid())
+  to                 String
+  subject            String
+  html               String
+  text               String
+  listUnsubscribeUrl String?
+  attempts           Int       @default(0)
+  claimedAt          DateTime?
+  sentAt             DateTime?
+  lastError          String?
+  createdAt          DateTime  @default(now())
+
+  @@index([sentAt, createdAt])
+}
+
 /**
  * Per-financial-year counters for sequential invoice/certificate numbers
  * (services/document-numbers.ts). Allocated with an atomic upsert.

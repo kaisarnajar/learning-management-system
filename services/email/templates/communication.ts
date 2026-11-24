@@ -1,5 +1,5 @@
 import { escapeHtml } from "../layout";
-import { deliverMail, EmailSendResult, NotificationEmailBaseParams } from "../core";
+import { deliverMail, type DeliverMailParams, EmailSendResult, NotificationEmailBaseParams } from "../core";
 import { buildHtmlEmail } from "../layout";
 import { EmailGreeting, EmailButton, EmailFallbackLink, EmailAlert, EmailHeading } from "../components";
 import { BRAND_CONFIG } from "@/config/brand";
@@ -163,16 +163,21 @@ export async function sendContactInquiryReplyEmail(
   return deliverMail({ to, subject, text, html, preview: reply.slice(0, 100) });
 }
 
-export async function sendCourseAnnouncementEmail(
-  params: NotificationEmailBaseParams & {
-    courseTitle: string;
-    announcementTitle: string;
-    announcementBody: string;
-    announcementUrl: string;
-    /** Per-recipient opt-out link (services/email-unsubscribe.ts). */
-    unsubscribeUrl: string;
-  },
-) {
+export type CourseAnnouncementEmailParams = NotificationEmailBaseParams & {
+  courseTitle: string;
+  announcementTitle: string;
+  announcementBody: string;
+  announcementUrl: string;
+  /** Per-recipient opt-out link (services/email-unsubscribe.ts). */
+  unsubscribeUrl: string;
+};
+
+export async function sendCourseAnnouncementEmail(params: CourseAnnouncementEmailParams) {
+  return deliverMail(buildCourseAnnouncementEmail(params));
+}
+
+/** The rendered message, for sending now or queueing (services/email-outbox.ts). */
+export function buildCourseAnnouncementEmail(params: CourseAnnouncementEmailParams): DeliverMailParams {
   const { to, studentName, courseTitle, announcementTitle, announcementBody, announcementUrl, unsubscribeUrl } = params;
   const displayName = studentName || "Student";
   const subject = `${courseTitle} — ${announcementTitle}`;
@@ -200,14 +205,14 @@ export async function sendCourseAnnouncementEmail(
 
   const html = buildHtmlEmail({ previewText: preview, bodyHtml, unsubscribeUrl });
 
-  return deliverMail({
+  return {
     to,
     subject,
     text,
     html,
     preview: announcementBody.slice(0, 100),
     listUnsubscribeUrl: unsubscribeUrl,
-  });
+  };
 }
 
 export async function sendPersonalMessageEmail(
@@ -251,15 +256,20 @@ export async function sendPersonalMessageEmail(
   return deliverMail({ to, subject, text, html, preview: messageBody.slice(0, 100) });
 }
 
-export async function sendSiteAnnouncementEmail(
-  params: NotificationEmailBaseParams & {
-    announcementTitle: string;
-    announcementBody: string;
-    announcementUrl: string;
-    /** Per-recipient opt-out link (services/email-unsubscribe.ts). */
-    unsubscribeUrl: string;
-  },
-) {
+export type SiteAnnouncementEmailParams = NotificationEmailBaseParams & {
+  announcementTitle: string;
+  announcementBody: string;
+  announcementUrl: string;
+  /** Per-recipient opt-out link (services/email-unsubscribe.ts). */
+  unsubscribeUrl: string;
+};
+
+export async function sendSiteAnnouncementEmail(params: SiteAnnouncementEmailParams) {
+  return deliverMail(buildSiteAnnouncementEmail(params));
+}
+
+/** The rendered message, for sending now or queueing (services/email-outbox.ts). */
+export function buildSiteAnnouncementEmail(params: SiteAnnouncementEmailParams): DeliverMailParams {
   const { to, studentName, announcementTitle, announcementBody, announcementUrl, unsubscribeUrl } = params;
   const displayName = studentName || "Student";
   const subject = `Announcement: ${announcementTitle}`;
@@ -285,12 +295,12 @@ export async function sendSiteAnnouncementEmail(
 
   const html = buildHtmlEmail({ previewText: preview, bodyHtml, unsubscribeUrl });
 
-  return deliverMail({
+  return {
     to,
     subject,
     text,
     html,
     preview: announcementBody.slice(0, 100),
     listUnsubscribeUrl: unsubscribeUrl,
-  });
+  };
 }

@@ -10,7 +10,6 @@ import {
   notifyEnrolledStudentsOfCourseAnnouncement,
   notifyPaymentApproved,
 } from "@/services/notifications";
-import { sendCourseAnnouncementEmail } from "@/services/email";
 import { createCourse, createEnrollment, createTeacher, createUser, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
 
 describe.skipIf(SKIP_WITHOUT_DB)("notification fan-out and de-duplication", () => {
@@ -110,22 +109,18 @@ describe.skipIf(SKIP_WITHOUT_DB)("notification fan-out and de-duplication", () =
     expect(recipients).toEqual([active.id, completed.id].sort());
   });
 
-  it("loads a large course audience in one query and e-mails each opted-in student once", async () => {
+  it("loads a large course audience in one query and queues one e-mail per opted-in student", async () => {
     const course = await createCourse();
     const students = await Promise.all(Array.from({ length: 50 }, () => createUser()));
     await prisma.user.update({ where: { id: students[0].id }, data: { announcementEmailsOptOut: true } });
     for (const student of students) await createEnrollment(student.id, course.id);
 
-    const sendMock = vi.mocked(sendCourseAnnouncementEmail);
-    sendMock.mockClear();
     const findUnique = vi.spyOn(prisma.user, "findUnique");
     const findMany = vi.spyOn(prisma.user, "findMany");
     try {
       await notifyEnrolledStudentsOfCourseAnnouncement({
         courseId: course.id, courseTitle: course.title, announcementId: "ann-50", title: "Holiday", body: "No class Monday",
       });
-      await vi.waitFor(() => expect(sendMock).toHaveBeenCalledTimes(49), { timeout: 10_000 });
-
       expect(findMany).toHaveBeenCalledTimes(1);
       expect(findUnique).not.toHaveBeenCalled();
     } finally {
@@ -133,8 +128,9 @@ describe.skipIf(SKIP_WITHOUT_DB)("notification fan-out and de-duplication", () =
       findMany.mockRestore();
     }
 
-    const sentTo = sendMock.mock.calls.map(([args]) => args.to).sort();
-    expect(sentTo).toEqual(students.slice(1).map((s) => s.email).sort());
+    const queued = await prisma.emailOutbox.findMany({ select: { to: true, subject: true, listUnsubscribeUrl: true } });
+    expect(queued.map((row) => row.to).sort()).toEqual(students.slice(1).map((s) => s.email).sort());
+    expect(queued.every((row) => row.subject === `${course.title} — Holiday` && row.listUnsubscribeUrl)).toBe(true);
     expect(await prisma.studentNotification.count()).toBe(50);
   });
 

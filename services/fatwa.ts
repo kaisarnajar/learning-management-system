@@ -14,6 +14,20 @@ export { BASE_CATEGORIES, FATWA_CATEGORIES, FATWA_CATEGORY_OPTIONS, getFatwaCate
 export type { FatwaCategory };
 
 /**
+ * Name and e-mail of the account that answered a fatwa, for the courtesy
+ * e-mail sent after a review. A failed lookup is logged and answers null, so
+ * the review itself (already saved) is never affected.
+ */
+export async function findFatwaAnswererContact(userId: string): Promise<{ email: string; name: string | null } | null> {
+  return prisma.user
+    .findUnique({ where: { id: userId }, select: { email: true, name: true } })
+    .catch((error: unknown) => {
+      console.error(`[fatwa] Could not look up answering user ${userId}:`, error);
+      return null;
+    });
+}
+
+/**
  * A teacher cannot change an answer while it awaits review or once it is
  * published: saving would resubmit it and take it off the public site.
  */

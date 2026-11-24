@@ -6,7 +6,7 @@ import { createAdminCrudActions, parseFormWith } from "@/services/admin-crud";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { requireAdmin } from "@/services/auth-actions";
-import { getFatwaPublicUrl, resolveFatwaFeaturedUpdate } from "@/services/fatwa";
+import { findFatwaAnswererContact, getFatwaPublicUrl, resolveFatwaFeaturedUpdate } from "@/services/fatwa";
 import { sendFatwaAnswerEmail, sendFatwaStatusTeacherEmail, type EmailSendResult } from "@/services/email";
 import { prisma } from "@/utils/prisma";
 import { fatwaAnswerSchema } from "@/utils/validations";
@@ -59,7 +59,7 @@ const crud = createAdminCrudActions({
       if (existing.answeredById) {
         const teacherId = existing.answeredById;
         after(async () => {
-          const teacherUser = await prisma.user.findUnique({ where: { id: teacherId } }).catch(() => null);
+          const teacherUser = await findFatwaAnswererContact(teacherId);
           if (teacherUser?.email) {
             await sendFatwaStatusTeacherEmail({
               to: teacherUser.email,
@@ -144,7 +144,7 @@ export async function answerFatwaQuestion(id: string, formData: FormData) {
     // Courtesy mail to the teacher: sent after the response, never on its critical path.
     const teacherId = existing.answeredById;
     after(async () => {
-      const teacherUser = await prisma.user.findUnique({ where: { id: teacherId } }).catch(() => null);
+      const teacherUser = await findFatwaAnswererContact(teacherId);
       if (teacherUser?.email) {
         await sendFatwaStatusTeacherEmail({
           to: teacherUser.email,

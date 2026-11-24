@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import { FORM_UPLOAD_FALLBACK_MAX_BYTES } from "./config/constants/direct-upload";
 import { imageRemotePatterns } from "./config/image-remote-patterns";
+import { PDF_ASSET_FILES, PDF_ASSET_ROUTE_GLOBS } from "./config/pdf-asset-routes";
 import { STATIC_SECURITY_HEADERS } from "./services/security-headers";
 
 // Warn only for a production build or server; dev and tests often run without R2.
@@ -15,11 +16,9 @@ const nextConfig: NextConfig = {
   },
   // exceljs (finance export) is loaded from node_modules as in the tests rather than bundled.
   serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core", "puppeteer", "sharp", "firebase-admin", "exceljs"],
-  // The PDF generators read these from disk at runtime; make sure the
-  // serverless bundles carry them.
-  outputFileTracingIncludes: {
-    "/**/*": ["./public/assets/**/*", "./public/fonts/**/*", "./generated/**/*"],
-  },
+  // The PDF generators read fonts, images and generated/pdf.css from disk at
+  // runtime: only the routes that can render a PDF carry them.
+  outputFileTracingIncludes: Object.fromEntries(PDF_ASSET_ROUTE_GLOBS.map((glob) => [glob, PDF_ASSET_FILES])),
   experimental: {
     serverActions: {
       // Large files go straight to R2 (services/direct-upload.ts). Form

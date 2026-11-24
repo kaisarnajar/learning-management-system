@@ -6,6 +6,7 @@ import { getCourseById } from "@/services/courses";
 import { getCertificatePdf } from "@/services/documents";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { pdfResponse } from "@/utils/pdf-response";
 
 // Chromium cold start plus rendering can exceed the default function timeout.
 export const maxDuration = 60;
@@ -51,14 +52,7 @@ export async function GET(
     // Chromium only for enrollments without one.
     const { pdf: pdfBuffer, filename } = await getCertificatePdf(enrollment, course.title);
 
-    return new NextResponse(new Uint8Array(pdfBuffer), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `${inline ? "inline" : "attachment"}; filename="${filename}"`,
-        "Cache-Control": "private, no-cache",
-      },
-    });
+    return pdfResponse(pdfBuffer, filename, { inline });
   } catch (error) {
     const err = error as Error;
     console.error("PDF Generation Error:", err.stack || err);

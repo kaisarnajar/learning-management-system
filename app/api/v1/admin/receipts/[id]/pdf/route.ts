@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { notFound } from "next/navigation";
 import { ADMIN_ROLES, staffRead } from "@/services/api-staff";
 import { getReceiptPdf } from "@/services/documents";
 import { getPaymentRecordById } from "@/services/payments";
 import { apiError } from "@/utils/api-response";
+import { pdfResponse } from "@/utils/pdf-response";
 
 // Chromium cold start plus rendering can exceed the default function timeout.
 export const maxDuration = 60;
@@ -18,8 +19,6 @@ export async function GET(request: NextRequest, { params }: Params) {
     if (!record || record.voidedAt) notFound();
     if (!record.receiptGeneratedAt || !record.invoiceNumber) return apiError("Receipt has not been generated yet.", 409);
     const { pdf, filename } = await getReceiptPdf(record);
-    return new NextResponse(new Uint8Array(pdf), {
-      headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${filename}"`, "Cache-Control": "private, no-store" },
-    });
+    return pdfResponse(pdf, filename, { inline: true });
   });
 }

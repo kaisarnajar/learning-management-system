@@ -4,7 +4,7 @@ import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { isAdminSession } from "@/services/admin";
-import { contentDisposition } from "@/utils/filename";
+import { pdfResponse } from "@/utils/pdf-response";
 import { STUDENT_CARDS, isStudentCardKind } from "@/services/student-cards";
 
 // Chromium cold start plus rendering can exceed the default function timeout.
@@ -56,14 +56,7 @@ export async function GET(
     const pdfBuffer = await card.generatePdf(enrollmentId);
     const displayName = `${card.label} ${enrollment.user.name || "Student"}`;
 
-    return new NextResponse(new Uint8Array(pdfBuffer), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": contentDisposition(inline ? "inline" : "attachment", displayName, "pdf"),
-        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-      },
-    });
+    return pdfResponse(pdfBuffer, displayName, { inline });
   } catch (error) {
     console.error(`${card.label} API generation error:`, error);
     return NextResponse.json({ error: `Failed to generate ${card.label} PDF.` }, { status: 500 });

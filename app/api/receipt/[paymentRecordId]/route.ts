@@ -4,6 +4,7 @@ import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { isAdminSession } from "@/services/admin";
 import { getReceiptPdf } from "@/services/documents";
 import { getPaymentRecordById } from "@/services/payments";
+import { pdfResponse } from "@/utils/pdf-response";
 
 // Chromium cold start plus rendering can exceed the default function timeout.
 export const maxDuration = 60;
@@ -42,14 +43,7 @@ export async function GET(
     // only for records without one.
     const { pdf: pdfBuffer, filename } = await getReceiptPdf(record);
 
-    return new NextResponse(new Uint8Array(pdfBuffer), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `inline; filename="${filename}"`,
-        "Cache-Control": "private, no-cache",
-      },
-    });
+    return pdfResponse(pdfBuffer, filename, { inline: true });
   } catch (error) {
     const err = error as Error;
     console.error("PDF Generation Error:", err.stack || err);

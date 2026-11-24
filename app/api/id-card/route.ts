@@ -5,7 +5,8 @@ import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { generateIdCardPdf } from "@/utils/id-card-html";
 import { isAdminSession } from "@/services/admin";
-import { contentDisposition } from "@/utils/filename";
+import { isUserProfileComplete } from "@/services/profile";
+import { pdfResponse } from "@/utils/pdf-response";
 
 // Chromium cold start plus rendering can exceed the default function timeout.
 export const maxDuration = 60;
@@ -38,16 +39,16 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: "User not found." }, { status: 404 });
   }
 
-  const pdfBuffer = await generateIdCardPdf(user);
+  // The same rule as the staff API: an ID card needs the details printed on it.
+  if (!(await isUserProfileComplete(user.id))) {
+    return NextResponse.json({ error: "The student must complete their profile first." }, { status: 409 });
+  }
 
-  const displayName = `ID Card ${user.name || "Student"}`;
-
-  return new NextResponse(new Uint8Array(pdfBuffer), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": contentDisposition(inline ? "inline" : "attachment", displayName, "pdf"),
-      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-    },
-  });
+  try {
+    const pdfBuffer = await generateIdCardPdf(user);
+    return pdfResponse(pdfBuffer, `ID Card ${user.name?.trim() || "Student"}`, { inline });
+  } catch (error) {
+    console.error("[api/id-card] PDF generation error:", error);
+    return NextResponse.json({ error: "Failed to generate the ID card." }, { status: 500 });
+  }
 }

@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { getReceiptPdf } from "@/services/documents";
 import { getPaymentRecordById } from "@/services/payments";
 import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { apiError } from "@/utils/api-response";
+import { pdfResponse } from "@/utils/pdf-response";
 
 // Chromium cold start plus rendering can exceed the default function timeout.
 export const maxDuration = 60;
@@ -27,14 +28,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   try {
     const { pdf, filename } = await getReceiptPdf(record);
-    return new NextResponse(new Uint8Array(pdf), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${filename}"`,
-        "Cache-Control": "private, no-store",
-      },
-    });
+    return pdfResponse(pdf, filename);
   } catch (error) {
     console.error("[api/v1/payments/[id]/receipt]", error);
     return apiError("Failed to generate the receipt.", 500);

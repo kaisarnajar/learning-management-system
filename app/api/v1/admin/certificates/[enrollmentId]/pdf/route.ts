@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { notFound } from "next/navigation";
 import { ADMIN_ROLES, staffRead } from "@/services/api-staff";
 import { getCertificateEnrollment } from "@/services/certificates-admin";
 import { getCertificatePdf } from "@/services/documents";
 import { RATE_LIMIT_MESSAGE, RATE_LIMITS, rateLimit } from "@/services/rate-limit";
 import { apiError } from "@/utils/api-response";
+import { pdfResponse } from "@/utils/pdf-response";
 
 // Chromium cold start plus rendering can exceed the default function timeout.
 export const maxDuration = 60;
@@ -22,8 +23,6 @@ export async function GET(request: NextRequest, { params }: Params) {
       return apiError("Certificate has not been generated yet.", 400);
     }
     const { pdf, filename } = await getCertificatePdf(enrollment, enrollment.course.title);
-    return new NextResponse(new Uint8Array(pdf), {
-      headers: { "Content-Type": "application/pdf", "Content-Disposition": `inline; filename="${filename}"`, "Cache-Control": "private, no-store" },
-    });
+    return pdfResponse(pdf, filename, { inline: true });
   });
 }

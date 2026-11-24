@@ -58,7 +58,7 @@ import { getTeacherCourseForPortal, getTeacherEnrollmentInCourse } from "@/servi
 import { apiError, readJson } from "@/utils/api-response";
 import { formatCalendarDate, toDateInputValue } from "@/utils/calendar-date";
 import { isDbError } from "@/utils/db-error";
-import { contentDisposition } from "@/utils/filename";
+import { pdfResponse } from "@/utils/pdf-response";
 import { GRID_PAGE_SIZE } from "@/utils/pagination";
 
 /**
@@ -479,13 +479,7 @@ export function studentCardPdf(request: NextRequest, courseId: string, enrollmen
     const card = STUDENT_CARDS[kind];
     const report = kind === "grade" ? await getStudentGradeReport(enrollmentId) : await getStudentAttendanceReport(enrollmentId);
     const pdf = await card.generatePdf(enrollmentId);
-    return new NextResponse(new Uint8Array(pdf), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": contentDisposition("inline", `${card.label} ${report.enrollment.user.name || "Student"}`, "pdf"),
-        "Cache-Control": "private, no-store",
-      },
-    });
+    return pdfResponse(pdf, `${card.label} ${report.enrollment.user.name?.trim() || "Student"}`, { inline: true });
   });
 }
 

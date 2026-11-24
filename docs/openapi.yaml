@@ -168,6 +168,10 @@ components:
           schema: { $ref: "#/components/schemas/StaffWrite" }
     Pdf:
       description: The PDF
+      headers:
+        Content-Disposition:
+          description: An ASCII `filename` plus an RFC 5987 `filename*` with the full UTF-8 name (e.g. a student's name in Urdu). Prefer `filename*`.
+          schema: { type: string }
       content:
         application/pdf:
           schema: { type: string, format: binary }
@@ -1904,7 +1908,7 @@ paths:
       tags: [Payments]
       parameters: [{ $ref: "#/components/parameters/Id" }]
       responses:
-        "200": { description: The receipt, content: { application/pdf: { schema: { type: string, format: binary } } } }
+        "200": { $ref: "#/components/responses/Pdf" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { description: Not issued yet, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "429": { $ref: "#/components/responses/TooManyRequests" }

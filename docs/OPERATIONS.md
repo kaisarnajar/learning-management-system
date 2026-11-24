@@ -24,8 +24,21 @@ deploy:
 3. **Expand / contract for type changes.** Add a new nullable column, backfill
    it with a dry-run script, switch the code to read the new column with a
    fallback, and drop the old column only in a later release.
-4. **Foreign keys are added `NOT VALID` and validated separately**; indexes are
-   created `CONCURRENTLY`.
+4. **Foreign keys and `CHECK` constraints are added `NOT VALID`, and the
+   `VALIDATE CONSTRAINT` goes in a separate, later migration.** Prisma sends
+   each `migration.sql` to Postgres as one multi-statement command, which runs
+   as a single (implicit) transaction. A `VALIDATE` in the same file as its
+   `ADD CONSTRAINT … NOT VALID` therefore keeps the `ADD`'s lock (`SHARE ROW
+   EXCLUSIVE` on both tables of a foreign key, `ACCESS EXCLUSIVE` for a
+   `CHECK`) for the whole validation scan, which is exactly what `NOT VALID`
+   is meant to avoid. In its own migration, `VALIDATE` takes only `SHARE
+   UPDATE EXCLUSIVE`, so reads and writes carry on while it scans. If the
+   validation fails (an orphan or a bad row), only that migration fails; fix
+   the data and deploy again. Earlier migrations that validate in the same
+   file (e.g. `20261103001000_course_relations`) are already applied and stay
+   as they are. For the same reason `CREATE INDEX CONCURRENTLY` cannot run
+   inside a migration with other statements; at this database's size plain
+   `CREATE INDEX` is used, rehearsed on a Neon branch first (rule 6).
 5. **Data scripts are dry-run by default** (`scripts/*.ts` print a report and
    exit unless `--apply` is passed) and snapshot the rows they touch.
 6. **Rehearse on a Neon branch of production** before any release that contains

@@ -20,7 +20,8 @@ import {
   notifyEnrolledStudentsOfCourseAnnouncement,
   notifyStudentOfPersonalMessage,
 } from "@/services/notifications";
-import { getTeacherCourseForPortal, getTeacherEnrollmentInCourse } from "@/services/teacher-portal";
+import { getTeacherEnrollmentInCourse } from "@/services/teacher-portal";
+import { courseAccessFor } from "@/services/course-authorization";
 import { isUploadError } from "@/services/storage";
 
 function redirectWithError(path: string, error: string): never {
@@ -32,12 +33,12 @@ function redirectWithSuccess(path: string, query: "posted" | "saved" | "deleted"
 }
 
 async function requireTeacherCourse(courseId: string) {
-  const { teacher } = await requireTeacher();
-  const course = await getTeacherCourseForPortal(teacher.id, courseId);
-  if (!course) {
+  const { session, teacher } = await requireTeacher();
+  const access = await courseAccessFor({ user: { ...session.user, teacherId: teacher.id } }, courseId, { write: true });
+  if (access?.as !== "teacher") {
     redirect("/teacher");
   }
-  return { teacher, course };
+  return { teacher, course: access.course };
 }
 
 async function requireTeacherEnrollment(courseId: string, enrollmentId: string) {

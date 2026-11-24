@@ -1,28 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/services/auth";
 import { authenticateApiRequest } from "@/services/api-auth";
+import type { Session } from "next-auth";
 import { isAdminSession } from "@/services/admin";
+import { managesCourseTaughtBy, type CourseActor } from "@/services/course-authorization";
 import { APPROVED_ENROLLMENT_STATUSES } from "@/services/enrollments";
 import { presignPrivateObject, PRIVATE_FILE_ROUTE, privateKeyFromPath } from "@/services/storage";
 import { prisma } from "@/utils/prisma";
 
 export const dynamic = "force-dynamic";
 
-type Viewer = { userId: string; isAdmin: boolean; teacherId: string | null };
+type Viewer = { userId: string; isAdmin: boolean; actor: CourseActor };
 
 /** The signed-in viewer, from the web session or an API Bearer token. */
 async function resolveViewer(request: NextRequest): Promise<Viewer | null> {
   const session = await auth();
   if (session?.user?.id) {
-    return { userId: session.user.id, isAdmin: isAdminSession(session), teacherId: session.user.teacherId ?? null };
+    return { userId: session.user.id, isAdmin: isAdminSession(session), actor: session };
   }
   if (!request.headers.get("authorization")) return null;
   const { user } = await authenticateApiRequest(request);
   if (!user) return null;
-  const teacher = user.role === "TEACHER"
-    ? await prisma.teacher.findFirst({ where: { OR: [{ userId: user.id }, { email: user.email.trim().toLowerCase() }] }, select: { id: true } })
-    : null;
-  return { userId: user.id, isAdmin: user.role === "ADMIN" || user.role === "DEVELOPER", teacherId: teacher?.id ?? null };
+  const actor: CourseActor = { user: { id: user.id, email: user.email, name: user.name ?? null, role: user.role as Session["user"]["role"] } };
+  return { userId: user.id, isAdmin: user.role === "ADMIN" || user.role === "DEVELOPER", actor };
 }
 
 async function canViewAnnouncementAttachment(viewer: Viewer, path: string): Promise<{ ok: boolean; name?: string }> {
@@ -37,12 +37,9 @@ async function canViewAnnouncementAttachment(viewer: Viewer, path: string): Prom
   });
   if (!announcement) return { ok: false };
   const name = announcement.attachmentName ?? undefined;
-  if (viewer.isAdmin) return { ok: true, name };
-  // Only the course's current teacher: an author who has since left the
-  // course loses access with everything else about it.
-  if (viewer.teacherId && announcement.course.teacherId === viewer.teacherId) {
-    return { ok: true, name };
-  }
+  // Admins, and only the course's current teacher: an author who has since
+  // left the course loses access with everything else about it.
+  if (await managesCourseTaughtBy(viewer.actor, announcement.course.teacherId)) return { ok: true, name };
   const enrollment = await prisma.enrollment.findFirst({
     where: { userId: viewer.userId, courseId: announcement.courseId, status: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
     select: { id: true },

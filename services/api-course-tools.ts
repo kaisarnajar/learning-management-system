@@ -45,13 +45,13 @@ import {
   saveCourseAttendance,
   saveCourseGrade,
 } from "@/services/course-records";
+import { courseAccessFor } from "@/services/course-authorization";
 import { courseStatusLabel } from "@/services/course-status";
-import { getCourseById } from "@/services/courses";
 import { CLASS_MEMBER_STATUSES, isEnrollmentInCourse } from "@/services/enrollments";
 import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { formatRollNumber } from "@/services/roll-numbers";
 import { sendStudentCardEmailAsAdmin, STUDENT_CARDS, type StudentCardKind } from "@/services/student-cards";
-import { getTeacherCourseForPortal, getTeacherEnrollmentInCourse } from "@/services/teacher-portal";
+import { getTeacherEnrollmentInCourse } from "@/services/teacher-portal";
 import { apiError, readJson } from "@/utils/api-response";
 import { formatCalendarDate, toDateInputValue } from "@/utils/calendar-date";
 import { isDbError } from "@/utils/db-error";
@@ -75,9 +75,9 @@ export function portalRoles(portal: CoursePortal) {
 
 /** The course when the caller may manage it (any course for admins, an assigned one for teachers); 404 otherwise. */
 export async function requireManagedCourse(ctx: StaffContext, courseId: string) {
-  const course = ctx.teacherId ? await getTeacherCourseForPortal(ctx.teacherId, courseId) : await getCourseById(courseId);
-  if (!course) notFound();
-  return course;
+  const access = await courseAccessFor(ctx.session, courseId, { write: true });
+  if (!access) notFound();
+  return access.course;
 }
 
 /** The course's header as both portals' course layouts show it. */

@@ -15,7 +15,12 @@ deploy:
 2. **No destructive DDL.** No `DROP TABLE`, `DROP COLUMN`, `TRUNCATE`,
    `ALTER COLUMN … TYPE`, `prisma db push`, `--accept-data-loss`.
    `npm run db:safety` rejects such statements in any migration newer than the
-   baseline and runs in CI.
+   baseline and runs in CI. It also rejects `DROP CONSTRAINT/TYPE/SCHEMA`,
+   `DROP INDEX` (unless the migration recreates that index), `RENAME`,
+   `SET NOT NULL`, and `UPDATE`/`DELETE` without a real `WHERE`, including SQL
+   built for `EXECUTE` inside `DO` blocks. A statement that is safe in context
+   (e.g. a constraint swapped for a stricter one) carries
+   `-- safety: allow <reason>` on the line before it.
 3. **Expand / contract for type changes.** Add a new nullable column, backfill
    it with a dry-run script, switch the code to read the new column with a
    fallback, and drop the old column only in a later release.

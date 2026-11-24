@@ -20,7 +20,8 @@ The production database is live, so migrations are additive and guarded (see `do
 
 - Use `IF NOT EXISTS` / duplicate-object guards; give every new `NOT NULL` column a default.
 - No `DROP TABLE/COLUMN`, `TRUNCATE`, `ALTER COLUMN … TYPE`, `prisma db push` or `--accept-data-loss`.
-  `npm run db:safety` rejects these in CI.
+  `npm run db:safety` rejects these in CI, along with `DROP CONSTRAINT/TYPE/SCHEMA/INDEX`, `RENAME`, `SET NOT NULL`
+  and `UPDATE`/`DELETE` without `WHERE` (mark a reviewed statement with `-- safety: allow <reason>`).
 - Never run `prisma migrate dev`, `migrate reset`, `db push` or the demo seed against anything but a disposable local database.
 - `npm run db:drift` must report no drift between `prisma/migrations` and `prisma/schema.prisma`.
 

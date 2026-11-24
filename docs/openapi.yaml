@@ -3823,7 +3823,8 @@ paths:
       tags: ["Admin: Certificates"]
       summary: Generates a certificate
       description: |
-        Answers `result.certificateNumber`.
+        Answers `result.certificateNumber`. COMPLETION needs a COMPLETED enrollment, APPRECIATION an
+        ACTIVE or COMPLETED one; any other enrollment is refused with 400 and no number is used.
       requestBody:
         required: true
         content:
@@ -3837,9 +3838,15 @@ paths:
   /admin/certificates/eligible:
     get:
       tags: ["Admin: Certificates"]
-      summary: Enrollments without a certificate, for the generate form
+      summary: Active or completed enrollments without a certificate (students not deleted), for the generate form, one page at a time
+      description: A Certificate of Completion needs a COMPLETED enrollment; a Certificate of Appreciation an ACTIVE or COMPLETED one.
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 50 } }
+        - { $ref: "#/components/parameters/Q" }
+        - { name: courseId, in: query, description: Only this course's enrollments, schema: { type: string } }
       responses:
-        "200": { description: Enrollments, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, enrollments: { type: array, items: { type: object, properties: { id: { type: string, description: Enrollment id }, user: { type: object, properties: { name: { type: [string, "null"] }, email: { type: string } } }, course: { type: object, properties: { id: { type: string }, title: { type: string } } } } } } } } } } }
+        "200": { description: Enrollments, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, enrollments: { type: array, items: { type: object, properties: { id: { type: string, description: Enrollment id }, status: { type: [string, "null"], enum: [ACTIVE, COMPLETED, null] }, user: { type: object, properties: { name: { type: [string, "null"] }, email: { type: string } } }, course: { type: object, properties: { id: { type: string }, title: { type: string } } } } } }, totalCount: { type: integer }, page: { type: integer }, pageSize: { type: integer } } } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
   /admin/certificates/{enrollmentId}:

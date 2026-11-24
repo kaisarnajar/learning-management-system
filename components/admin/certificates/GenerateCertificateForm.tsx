@@ -9,6 +9,7 @@ import { useToast } from "@/components/shared/ToastProvider";
 
 type EnrollmentItem = {
   id: string;
+  status: string | null;
   user: {
     name: string | null;
     email: string;
@@ -20,30 +21,25 @@ type EnrollmentItem = {
 };
 
 type GenerateCertificateFormProps = {
+  /** Courses with at least one enrollment awaiting a certificate. */
+  courses: { id: string; title: string }[];
+  selectedCourseId: string;
+  /** One page of the selected course's enrollments awaiting a certificate. */
   enrollments: EnrollmentItem[];
 };
 
-export function GenerateCertificateForm({ enrollments }: GenerateCertificateFormProps) {
+export function GenerateCertificateForm({ courses, selectedCourseId, enrollments }: GenerateCertificateFormProps) {
   const router = useRouter();
   const { addToast } = useToast();
   const [isPending, startTransition] = useTransition();
 
-  const [selectedCourseId, setSelectedCourseId] = useState("");
   const [enrollmentId, setEnrollmentId] = useState("");
   const [type, setType] = useState<"APPRECIATION" | "COMPLETION">("APPRECIATION");
   const [grade, setGrade] = useState<number | "">("");
   const [error, setError] = useState<string | null>(null);
 
-  // Extract unique courses list from the enrollments
-  const coursesMap = new Map<string, string>();
-  enrollments.forEach((env) => {
-    if (env.course.id) {
-      coursesMap.set(env.course.id, env.course.title);
-    }
-  });
-  const availableCourses = Array.from(coursesMap.entries()).map(([id, title]) => ({ id, title }));
-
-  const filteredEnrollments = enrollments.filter((env) => env.course.id === selectedCourseId);
+  const selected = enrollments.find((env) => env.id === enrollmentId);
+  const completionAllowed = !selected || selected.status === "COMPLETED";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,15 +82,15 @@ export function GenerateCertificateForm({ enrollments }: GenerateCertificateForm
           id="courseId"
           value={selectedCourseId}
           onChange={(e) => {
-            setSelectedCourseId(e.target.value);
-            setEnrollmentId("");
+            const courseId = e.target.value;
+            router.push(courseId ? `/admin/certificates/new?courseId=${encodeURIComponent(courseId)}` : "/admin/certificates/new");
           }}
           className={`${inputClassName} mt-1 w-full bg-background`}
           disabled={isPending}
           required
         >
           <option value="">-- Choose course --</option>
-          {availableCourses.map((c) => (
+          {courses.map((c) => (
             <option key={c.id} value={c.id}>
               {c.title}
             </option>
@@ -109,26 +105,31 @@ export function GenerateCertificateForm({ enrollments }: GenerateCertificateForm
         <select
           id="enrollmentId"
           value={enrollmentId}
-          onChange={(e) => setEnrollmentId(e.target.value)}
+          onChange={(e) => {
+            setEnrollmentId(e.target.value);
+            const next = enrollments.find((env) => env.id === e.target.value);
+            if (next && next.status !== "COMPLETED") setType("APPRECIATION");
+          }}
           className={`${inputClassName} mt-1 w-full bg-background`}
           disabled={isPending || !selectedCourseId}
           required
         >
           <option value="">-- Choose student --</option>
-          {filteredEnrollments.map((env) => (
+          {enrollments.map((env) => (
             <option key={env.id} value={env.id}>
               {env.user.name || env.user.email}
+              {env.status === "COMPLETED" ? " (completed)" : ""}
             </option>
           ))}
         </select>
-        {selectedCourseId && filteredEnrollments.length === 0 && (
+        {selectedCourseId && enrollments.length === 0 && (
           <p className="mt-2 text-xs text-muted">
-            All students in this course already have certificates generated.
+            No students in this course match, or all of them already have certificates.
           </p>
         )}
-        {enrollments.length === 0 && (
+        {courses.length === 0 && (
           <p className="mt-2 text-xs text-muted">
-            All active students currently have certificates generated. No pending enrollments.
+            All active and completed students currently have certificates generated. No pending enrollments.
           </p>
         )}
       </div>
@@ -146,8 +147,13 @@ export function GenerateCertificateForm({ enrollments }: GenerateCertificateForm
           required
         >
           <option value="APPRECIATION">Certificate of Appreciation</option>
-          <option value="COMPLETION">Certificate of Completion</option>
+          <option value="COMPLETION" disabled={!completionAllowed}>Certificate of Completion</option>
         </select>
+        {!completionAllowed && (
+          <p className="mt-2 text-xs text-muted">
+            A Certificate of Completion needs a completed enrollment.
+          </p>
+        )}
       </div>
 
       {type === "COMPLETION" && (

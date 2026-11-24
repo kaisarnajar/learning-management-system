@@ -4,6 +4,9 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/paginat
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr, type TextSearchWhere } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
+import type { EnrollmentStatus, Prisma } from "@prisma/client";
+import { ENROLLMENT_STATUS } from "@/config/constants/business";
+import { enrollmentStatusOf } from "@/services/status-compat";
 
 async function certificateSearchWhere(searchQuery?: string): Promise<TextSearchWhere | undefined> {
   if (!searchQuery) return undefined;
@@ -94,22 +97,71 @@ export async function getGeneratedCertificatesPaginated(
 
 export type CertificateCandidate = {
   id: string;
+  status: EnrollmentStatus | null;
   user: { name: string | null; email: string };
   course: { id: string; title: string };
 };
 
-/** Enrollments without a certificate yet, for /admin/certificates/new (by student name). */
-export async function getEnrollmentsAwaitingCertificate(): Promise<CertificateCandidate[]> {
+/**
+ * Enrollments a certificate can be issued for: none issued yet, the
+ * enrollment ACTIVE (appreciation) or COMPLETED (completion; checked when
+ * generating), and the student's account not deleted.
+ */
+const CERTIFIABLE_WHERE = {
+  certificateGeneratedAt: null,
+  status: { in: [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.COMPLETED] },
+  user: { deletedAt: null },
+} satisfies Prisma.EnrollmentWhereInput;
+
+/** Courses with at least one enrollment awaiting a certificate, for the generate form's course choice. */
+export async function getCoursesAwaitingCertificates(): Promise<{ id: string; title: string }[]> {
   noStore();
-  const enrollments = await withDbErrorHandling(() => prisma.enrollment.findMany({
-    where: { certificateGeneratedAt: null },
-    include: {
-      user: { select: { name: true, email: true } },
-      course: { select: { id: true, title: true } },
-    },
-    orderBy: [{ user: { name: "asc" } }],
-  }), "Failed to fetch enrollments");
-  return enrollments.map((e) => ({ id: e.id, user: e.user, course: e.course }));
+  return withDbErrorHandling(async () => {
+    const groups = await prisma.enrollment.groupBy({ by: ["courseId"], where: CERTIFIABLE_WHERE });
+    if (groups.length === 0) return [];
+    return prisma.course.findMany({
+      where: { id: { in: groups.map((g) => g.courseId) } },
+      select: { id: true, title: true },
+      orderBy: { title: "asc" },
+    });
+  }, "Failed to fetch courses");
+}
+
+/**
+ * Enrollments awaiting a certificate (see CERTIFIABLE_WHERE), one page at a
+ * time, optionally for one course and matching a student name or e-mail,
+ * for /admin/certificates/new and the staff API.
+ */
+export async function getEnrollmentsAwaitingCertificatePaginated(
+  page: number,
+  pageSize: number,
+  filters: { courseId?: string; searchQuery?: string } = {},
+): Promise<PaginatedResult<CertificateCandidate>> {
+  noStore();
+  return withDbErrorHandling(async () => {
+    const base: TextSearchWhere = { ...CERTIFIABLE_WHERE, ...(filters.courseId ? { courseId: filters.courseId } : {}) };
+    const search = filters.searchQuery ? buildSearchOr([], [{ relation: "user", fields: ["name", "email"] }], filters.searchQuery) : undefined;
+    const where = andWhere(base, search) as Prisma.EnrollmentWhereInput;
+
+    const totalCount = await prisma.enrollment.count({ where });
+    const safePage = clampPage(page, totalCount, pageSize);
+    const enrollments = await prisma.enrollment.findMany({
+      where,
+      select: {
+        id: true,
+        status: true,
+        statusEnum: true,
+        user: { select: { name: true, email: true } },
+        course: { select: { id: true, title: true } },
+      },
+      orderBy: [{ user: { name: "asc" } }, { id: "asc" }],
+      ...paginationArgs(safePage, pageSize),
+    });
+    return {
+      items: enrollments.map((e) => ({ id: e.id, status: enrollmentStatusOf(e), user: e.user, course: e.course })),
+      totalCount,
+    };
+  }, "Failed to fetch enrollments");
 }
 
 /** One enrollment with what its certificate shows (student, course, number, type, grade), or null. */

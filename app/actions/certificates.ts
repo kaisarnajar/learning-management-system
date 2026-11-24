@@ -9,9 +9,26 @@ import { sendCertificateEmail } from "@/services/email";
 import { getCourseById } from "@/services/courses";
 import { allocateDocumentNumber } from "@/services/document-numbers";
 import { deleteStoredCertificatePdf, getCertificatePdf, storeCertificatePdf } from "@/services/documents";
-import { certificateTypeData } from "@/services/status-compat";
+import { certificateTypeData, enrollmentStatusOf } from "@/services/status-compat";
+import { ENROLLMENT_STATUS } from "@/config/constants/business";
 import { recordAudit } from "@/services/audit";
-import type { CertificateType } from "@prisma/client";
+import type { CertificateType, EnrollmentStatus } from "@prisma/client";
+
+/** Completion needs a completed enrollment; appreciation an active or completed one. */
+const CERTIFIABLE_STATUSES: Record<CertificateType, EnrollmentStatus[]> = {
+  COMPLETION: ["COMPLETED"],
+  APPRECIATION: ["ACTIVE", "COMPLETED"],
+};
+const STATUS_TEXT: Partial<Record<EnrollmentStatus, string>> = {
+  ACTIVE: ENROLLMENT_STATUS.ACTIVE,
+  COMPLETED: ENROLLMENT_STATUS.COMPLETED,
+};
+
+function notCertifiableMessage(certificateType: CertificateType) {
+  return certificateType === "COMPLETION"
+    ? "A Certificate of Completion can only be issued once the enrollment is completed."
+    : "A certificate can only be issued for an active or completed enrollment.";
+}
 
 export async function generateCertificate(enrollmentId: string, certificateType: CertificateType, certificateGrade?: number) {
   const session = await auth();
@@ -32,6 +49,16 @@ export async function generateCertificate(enrollmentId: string, certificateType:
 
   if (enrollment.certificateGeneratedAt) {
     return { error: "Certificate has already been generated." };
+  }
+
+  // Checked before a number is allocated, and again by the guarded update.
+  const allowed = CERTIFIABLE_STATUSES[certificateType];
+  if (!allowed) {
+    return { error: "Choose a certificate type." };
+  }
+  const status = enrollmentStatusOf(enrollment);
+  if (!status || !allowed.includes(status)) {
+    return { error: notCertifiableMessage(certificateType) };
   }
 
   if (certificateType === "COMPLETION") {
@@ -56,7 +83,11 @@ export async function generateCertificate(enrollmentId: string, certificateType:
       const reused = enrollment.certificateNumber;
       const number = reused ?? (await allocateDocumentNumber(tx, "certificate"));
       const updated = await tx.enrollment.updateMany({
-        where: { id: enrollmentId, certificateGeneratedAt: null },
+        where: {
+          id: enrollmentId,
+          certificateGeneratedAt: null,
+          status: { in: allowed.map((s) => STATUS_TEXT[s]!) },
+        },
         data: {
           certificateGeneratedAt: new Date(),
           certificateNumber: number,
@@ -79,7 +110,9 @@ export async function generateCertificate(enrollmentId: string, certificateType:
     });
   } catch (error) {
     if (error instanceof Error && error.message === "ALREADY_GENERATED") {
-      return { error: "Certificate has already been generated." };
+      // Lost to a concurrent generation, or the enrollment's status changed meanwhile.
+      const current = await prisma.enrollment.findUnique({ where: { id: enrollmentId }, select: { certificateGeneratedAt: true } });
+      return { error: current?.certificateGeneratedAt ? "Certificate has already been generated." : notCertifiableMessage(certificateType) };
     }
     throw error;
   }

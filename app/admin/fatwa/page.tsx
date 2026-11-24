@@ -4,7 +4,7 @@ import { TableSkeleton } from "@/components/shared/TableSkeleton";
 import { TabPills } from "@/components/shared/TabPills";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteFatwaQuestion as deleteFatwa } from "@/app/admin/fatwa/actions";
-import { getAllFatwaQuestionsPaginated, type FatwaAdminFilter } from "@/services/fatwa";
+import { fatwaStatusClass, fatwaStatusLabel, getAllFatwaQuestionsPaginated, type FatwaAdminFilter } from "@/services/fatwa";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
@@ -17,19 +17,6 @@ function filterHref(filter: FatwaAdminFilter | undefined, q?: string) {
   return qs ? `/admin/fatwa?${qs}` : "/admin/fatwa";
 }
 
-function statusLabel(q: { answer: string | null; approvalStatus: string }) {
-  if (q.approvalStatus === "PENDING") return "Pending Review";
-  if (q.approvalStatus === "REJECTED") return "Rejected";
-  if (q.approvalStatus === "APPROVED" && q.answer) return "Answered";
-  return "Unanswered";
-}
-
-function statusClass(q: { answer: string | null; approvalStatus: string }) {
-  if (q.approvalStatus === "PENDING") return "bg-warning-bg text-warning-text";
-  if (q.approvalStatus === "REJECTED") return "bg-destructive-bg text-destructive-text";
-  if (q.approvalStatus === "APPROVED" && q.answer) return "bg-success-bg text-success-text";
-  return "bg-surface-alt text-muted";
-}
 
 
 type PageParams = {
@@ -141,9 +128,9 @@ export default async function AdminFatwaPage({
                   <td className="px-4 py-3 text-muted">{q.askerEmail === `anonymous@${new URL(BRAND_CONFIG.websiteUrl).hostname}` ? "N/A" : q.askerEmail}</td>
                   <td className="px-4 py-3">
                     <span
-                      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass(q)}`}
+                      className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${fatwaStatusClass(q)}`}
                     >
-                      {statusLabel(q)}
+                      {fatwaStatusLabel(q)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted">

@@ -55,6 +55,23 @@ export function getFatwaCategoryOptions(current?: string | null) {
   return [{ value: current, label: current }, ...FATWA_CATEGORY_OPTIONS];
 }
 
+type FatwaStatusFields = { answer: string | null; approvalStatus: string };
+
+/** The status badge on the admin and teacher Fatwa Q&A lists. */
+export function fatwaStatusLabel(q: FatwaStatusFields): string {
+  if (q.approvalStatus === "PENDING") return "Pending Review";
+  if (q.approvalStatus === "REJECTED") return "Rejected";
+  if (q.approvalStatus === "APPROVED" && q.answer) return "Answered";
+  return "Unanswered";
+}
+
+export function fatwaStatusClass(q: FatwaStatusFields): string {
+  if (q.approvalStatus === "PENDING") return "bg-warning-bg text-warning-text";
+  if (q.approvalStatus === "REJECTED") return "bg-destructive-bg text-destructive-text";
+  if (q.approvalStatus === "APPROVED" && q.answer) return "bg-success-bg text-success-text";
+  return "bg-surface-alt text-muted";
+}
+
 export function isFatwaAnswered(fatwa: Pick<FatwaQuestion, "answer" | "approvalStatus">): boolean {
   return fatwa.approvalStatus === "APPROVED" && fatwa.answer != null && fatwa.answer.trim().length > 0;
 }

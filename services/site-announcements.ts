@@ -17,6 +17,13 @@ export type SiteAnnouncementPublic = SiteAnnouncement & {
   images: { id: string; imagePath: string; caption: string | null }[];
 };
 
+/** The status badge on /admin/announcements: draft, published, or published and featured on the homepage. */
+export function siteAnnouncementStatusBadge(published: boolean, showOnHomepage: boolean) {
+  if (!published) return { label: "Draft", className: "bg-surface-muted-hover text-muted" };
+  if (showOnHomepage) return { label: "Home + Public", className: "bg-info-bg text-info-text" };
+  return { label: "Published", className: "bg-success-bg text-success-text" };
+}
+
 export function formatSiteAnnouncementDate(date: Date): string {
   return date.toLocaleDateString("en-IN", {
     day: "numeric",

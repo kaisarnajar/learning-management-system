@@ -6,6 +6,7 @@ import { ToggleHomepageAnnouncementButton } from "@/components/admin/ToggleHomep
 import {
   getAllSiteAnnouncementsForAdminPaginated,
   HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX,
+  siteAnnouncementStatusBadge,
 } from "@/services/site-announcements";
 import { parseSearchQuery } from "@/utils/text-search";
 import { ActionToast } from "@/components/shared/ToastProvider";
@@ -23,11 +24,6 @@ type PageParams = {
   [key: string]: string | undefined;
 };
 
-function statusBadge(published: boolean, showOnHomepage: boolean) {
-  if (!published) return { label: "Draft", className: "bg-surface-muted-hover text-muted" };
-  if (showOnHomepage) return { label: "Home + Public", className: "bg-info-bg text-info-text" };
-  return { label: "Published", className: "bg-success-bg text-success-text" };
-}
 
 import { adminActionButtonClassName } from "@/utils/form";
 import { requireAdmin } from "@/services/auth-actions";
@@ -96,7 +92,7 @@ export default async function AdminAnnouncementsPage({
             </thead>
             <tbody className="divide-y divide-border">
               {announcements.map((item) => {
-                const badge = statusBadge(item.published, item.showOnHomepage);
+                const badge = siteAnnouncementStatusBadge(item.published, item.showOnHomepage);
                 return (
                   <tr key={item.id} className="hover:bg-background/30">
                     <td className="px-4 py-3 font-medium text-foreground">{item.title}</td>

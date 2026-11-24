@@ -290,3 +290,12 @@ export async function getAwaitingEnrollmentFeeCount(): Promise<number> {
     }), "Database operation failed");
 }
 
+
+/** Whether [enrollmentId] is an enrollment (in any status) of [courseId]. */
+export async function isEnrollmentInCourse(enrollmentId: string, courseId: string): Promise<boolean> {
+  const found = await withDbErrorHandling(() => prisma.enrollment.findFirst({
+      where: { id: enrollmentId, courseId },
+      select: { id: true },
+    }), "Database operation failed");
+  return Boolean(found);
+}

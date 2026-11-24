@@ -28,8 +28,14 @@ export async function POST(request: Request) {
     const user = await prisma.user.update({
       where: { email: consumed.email },
       data: { password: hashedPassword },
-      select: { id: true },
+      select: { id: true, emailVerified: true },
     });
+    // The reset link was delivered to the mailbox, which proves ownership as
+    // well as the verification link does; without this an unverified account
+    // could reset its password and still not sign in.
+    if (!user.emailVerified) {
+      await prisma.user.update({ where: { id: user.id }, data: { emailVerified: new Date() } });
+    }
     // A reset follows a lost or compromised password: end every mobile session.
     await revokeAllApiSessions(user.id);
 

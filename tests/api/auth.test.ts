@@ -161,6 +161,31 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
     });
   });
 
+  describe("password reset", () => {
+    const resetWith = (token: string | null, password = "brand-new-pass-1") =>
+      resetPassword(apiRequest("/api/auth/reset-password", { method: "POST", json: { token, password, confirmPassword: password } }));
+
+    it("lets only one of two simultaneous resets with the same link succeed", async () => {
+      const { user } = await createPasswordUser();
+      const token = await createPasswordResetToken(user.email);
+
+      const statuses = (await Promise.all([resetWith(token, "first-new-pass-1"), resetWith(token, "second-new-pass-1")])).map((r) => r.status);
+      expect(statuses.sort()).toEqual([200, 400]);
+      expect(await prisma.passwordResetToken.count()).toBe(0);
+    });
+
+    it("marks an unverified address verified, so the new password signs in", async () => {
+      const { user } = await createPasswordUser("old-password-1", { emailVerified: null });
+      const loginAs = (password: string) => login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: user.email, password } }));
+      expect((await loginAs("old-password-1")).status).toBe(403);
+
+      expect((await resetWith(await createPasswordResetToken(user.email))).status).toBe(200);
+
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).emailVerified).not.toBeNull();
+      expect((await loginAs("brand-new-pass-1")).status).toBe(200);
+    });
+  });
+
   describe("login", () => {
     it("signs in a verified user with the right password", async () => {
       const { user, password } = await createPasswordUser();

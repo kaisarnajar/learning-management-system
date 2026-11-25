@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import { useSession } from "next-auth/react";
 import { BRAND_CONFIG } from "@/config/brand";
 import { MAX_ORDER_QTY } from "@/config/constants/business";
 
@@ -114,6 +115,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [staleItems, setStaleItems] = useState<StaleCartItem[]>([]);
   const itemsRef = useRef<CartItem[]>([]);
   const lastPushedRef = useRef<string | null>(null);
+  const { data: session, status: sessionStatus } = useSession();
+  const userId = sessionStatus === "authenticated" ? (session?.user?.id ?? null) : null;
 
   useEffect(() => {
     itemsRef.current = items;
@@ -159,9 +162,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const localItems = loadCart();
-    setItems(localItems);
+    setItems(loadCart());
     setHydrated(true);
+  }, []);
+
+  // A guest's cart is local only: asking the server for it would answer 401
+  // (and log an error) on every page. Syncing starts once someone is signed
+  // in, including after signing in without a full page load.
+  useEffect(() => {
+    if (!userId) return;
 
     let cancelled = false;
 
@@ -183,18 +192,19 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, [pushToServer]);
+  }, [userId, pushToServer]);
 
   useEffect(() => {
     if (!hydrated) return;
     saveCart(items);
-    if (!serverReady || cartSignature(items) === lastPushedRef.current) return;
+    // After signing out the cart stays in this browser only.
+    if (!serverReady || !userId || cartSignature(items) === lastPushedRef.current) return;
 
     const timer = setTimeout(() => {
       void pushToServer(items);
     }, SYNC_DEBOUNCE_MS);
     return () => clearTimeout(timer);
-  }, [items, hydrated, serverReady, pushToServer]);
+  }, [items, hydrated, serverReady, userId, pushToServer]);
 
   const dismissStale = useCallback(() => setStaleItems([]), []);
 

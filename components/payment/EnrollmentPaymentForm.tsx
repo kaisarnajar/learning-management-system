@@ -7,9 +7,10 @@ import { submitEnrollmentPayment } from "@/app/actions/payments";
 import { CouponSelector } from "@/components/payment/CouponSelector";
 import { PaymentDetailsPanel } from "@/components/payment/PaymentDetailsPanel";
 import { PaymentProofFields, type PaymentMethod } from "@/components/payment/PaymentProofFields";
-import { calculateDiscountedAmount, type ApplicableCoupon } from "@/services/coupons";
+import { calculateDiscountedAmount, type ApplicableCoupon } from "@/utils/coupon-discount";
 import { formatPrice } from "@/utils/money";
-import type { PaymentSettingsData } from "@/services/payment-settings";
+import { PAYMENT_PROOF_REQUIRED_MESSAGE } from "@/config/constants/payments";
+import type { PaymentSettingsData } from "@/utils/payment-settings-format";
 
 type EnrollmentPaymentFormProps = {
   courseId: string;
@@ -49,6 +50,10 @@ export function EnrollmentPaymentForm({
     e.preventDefault();
     if (loading) return;
     setError("");
+    if (!isFree && !transactionId.trim() && !(screenshot && screenshot.size > 0)) {
+      setError(PAYMENT_PROOF_REQUIRED_MESSAGE);
+      return;
+    }
     setLoading(true);
 
     try {

@@ -10,11 +10,11 @@ import {
   type PaymentSettingsData,
   isUpiConfiguredFromSettings,
   toBankDetails,
-} from "@/services/payment-settings";
+} from "@/utils/payment-settings-format";
 import {
   buildUpiPaymentUrlFromSettings,
   buildUpiVpaUrlFromSettings,
-} from "@/services/upi";
+} from "@/utils/upi";
 
 type PaymentDetailsPanelProps = {
   settings: PaymentSettingsData;

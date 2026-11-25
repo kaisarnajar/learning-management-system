@@ -18,29 +18,11 @@ function courseAnnouncementWhere(
 }
 
 import { FILE_CONFIG } from "@/config/constants/file";
+import { ANNOUNCEMENT_CATEGORIES, announcementCategoryLabels } from "@/config/announcement-categories";
+
+// Pure helpers, importable from client components: config/announcement-categories.ts
+export { ANNOUNCEMENT_CATEGORIES, announcementCategoryLabels };
 export const ANNOUNCEMENT_MAX_UPLOAD_BYTES = FILE_CONFIG.MAX_ATTACHMENT_SIZE_BYTES;
-
-export function isAnnouncementAttachmentTooLarge(fileSizeBytes: number): boolean {
-  return fileSizeBytes > ANNOUNCEMENT_MAX_UPLOAD_BYTES;
-}
-
-export const ANNOUNCEMENT_CATEGORIES: AnnouncementCategory[] = [
-  "EXAMS_TESTS",
-  "ASSIGNMENTS_HOMEWORK",
-  "STUDY_MATERIALS",
-  "CLASS_SCHEDULE",
-  "COURSE_ANNOUNCEMENT",
-  "GENERAL_NOTICE",
-];
-
-export const announcementCategoryLabels: Record<AnnouncementCategory, string> = {
-  EXAMS_TESTS: "Exams & Tests",
-  ASSIGNMENTS_HOMEWORK: "Assignments & Homework",
-  STUDY_MATERIALS: "Study Materials",
-  CLASS_SCHEDULE: "Class Schedule",
-  COURSE_ANNOUNCEMENT: "Course Announcements",
-  GENERAL_NOTICE: "General Notices",
-};
 
 export const announcementCategoryStyles: Record<AnnouncementCategory, string> = {
   EXAMS_TESTS: "bg-destructive-bg text-destructive-text",

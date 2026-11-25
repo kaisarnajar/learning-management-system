@@ -1,5 +1,6 @@
 "use client";
 
+import { BUSINESS_TIMEZONE } from "@/config/constants/business";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { formatPrice } from "@/utils/money";
@@ -27,6 +28,7 @@ type ManualTransactionsTableProps = {
 
 function formatDate(date: Date): string {
   return date.toLocaleDateString("en-IN", {
+    timeZone: BUSINESS_TIMEZONE,
     day: "numeric",
     month: "short",
     year: "numeric",

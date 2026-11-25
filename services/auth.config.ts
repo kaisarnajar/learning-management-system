@@ -6,7 +6,7 @@ const googleConfigured =
   Boolean(process.env.AUTH_GOOGLE_ID) && Boolean(process.env.AUTH_GOOGLE_SECRET);
 
 /**
- * Edge-safe Auth.js config (no Prisma/bcrypt). Used by middleware.ts, whose
+ * Edge-safe Auth.js config (no Prisma/bcrypt). Used by proxy.ts, whose
  * `authorized` callback below runs for every matched request.
  * Database-backed logic lives in services/auth.ts.
  */
@@ -30,9 +30,10 @@ export const authConfig = {
             // password can later use Google. The pre-verification takeover it
             // allows (attacker registers the victim's address, victim links
             // Google, attacker's password still works) is closed in the signIn
-            // callback of services/auth.ts, which scrubs the password of an
-            // unverified row before the link, and by the credentials provider
-            // refusing unverified accounts.
+            // callback (services/google-link.ts), which refuses an address Google
+            // has not verified and scrubs the password of an unverified row
+            // before the link, and by the credentials provider refusing
+            // unverified accounts.
             allowDangerousEmailAccountLinking: true,
           }),
         ]
@@ -70,6 +71,15 @@ export const authConfig = {
       }
       return session;
     },
+    /**
+     * Advisory, not the authority: the role here is the one in the cookie,
+     * which this edge-safe config never re-reads, so it can be stale by as
+     * long as the cookie goes unrefreshed (an admin removed from ADMIN_EMAIL
+     * still passes here until then). Every protected layout, page and action
+     * calls a guard from services/auth-actions.ts, whose auth() re-reads the
+     * role at least once a minute (services/auth-jwt.ts); this only turns
+     * signed-out or obviously wrong visitors away early.
+     */
     authorized({ auth, request }) {
       const { pathname } = request.nextUrl;
 

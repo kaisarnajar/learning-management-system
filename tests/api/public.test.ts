@@ -141,11 +141,29 @@ describe.skipIf(SKIP_WITHOUT_DB)("public /api/v1 routes", () => {
   describe("fatwa questions", () => {
     const question = { title: "Is this allowed in Islam?", question: "x".repeat(40), category: "Prayer", askerName: "Ali", askerEmail: "ali@example.test" };
 
-    it("accepts a question as pending review", async () => {
+    it("accepts a question in the state teachers can answer, as the website does", async () => {
       const response = await askFatwa(apiRequest("/api/v1/fatwa", { method: "POST", json: question }));
 
       expect(response.status).toBe(200);
-      expect(await prisma.fatwaQuestion.findFirstOrThrow()).toMatchObject({ approvalStatus: "PENDING", title: question.title });
+      const stored = await prisma.fatwaQuestion.findFirstOrThrow();
+      expect(stored).toMatchObject({ approvalStatus: "APPROVED", answer: null, userId: null, title: question.title });
+      const { isFatwaAnswerLocked } = await import("@/services/fatwa");
+      expect(isFatwaAnswerLocked(stored)).toBe(false);
+    });
+
+    it("links a signed-in student's question to their account, unless asked anonymously", async () => {
+      const { user, headers } = await signedInStudent();
+      await askFatwa(apiRequest("/api/v1/fatwa", { method: "POST", headers, json: { ...question, title: "Signed-in question here" } }));
+      expect(await prisma.fatwaQuestion.findFirstOrThrow({ where: { title: "Signed-in question here" } })).toMatchObject({
+        userId: user.id,
+        askerEmail: user.email,
+      });
+
+      await askFatwa(apiRequest("/api/v1/fatwa", { method: "POST", headers, json: { ...question, title: "Anonymous question here", isAnonymous: true } }));
+      expect(await prisma.fatwaQuestion.findFirstOrThrow({ where: { title: "Anonymous question here" } })).toMatchObject({
+        userId: null,
+        askerName: "Anonymous",
+      });
     });
 
     it("validates the question and rate-limits a network", async () => {
@@ -169,18 +187,18 @@ describe.skipIf(SKIP_WITHOUT_DB)("public /api/v1 routes", () => {
     });
 
     it("returns the daily inspiration (or none)", async () => {
-      const empty = await jsonOf(await dailyInspiration(apiRequest("/api/v1/daily-inspiration")));
+      const empty = await jsonOf(await dailyInspiration());
       expect(empty).toMatchObject({ success: true });
 
       await prisma.dailyInspiration.create({ data: { kind: "QURAN", arabicText: "نص", englishTranslation: "Text", published: true } });
-      const data = await jsonOf(await dailyInspiration(apiRequest("/api/v1/daily-inspiration")));
+      const data = await jsonOf(await dailyInspiration());
       expect(data.inspiration).toMatchObject({ englishTranslation: "Text" });
     });
 
     it("exposes payment details for paying but not internal switches", async () => {
       await setPaymentSettings({ upiId: "academy@bank", bankName: "Bank", includeGstByDefault: true, autoApproveFullWaivers: true, feeWaiverEnabled: true });
 
-      const data = await jsonOf(await paymentSettings(apiRequest("/api/v1/payment-settings")));
+      const data = await jsonOf(await paymentSettings());
 
       expect(data.settings).toMatchObject({ upiId: "academy@bank", bankName: "Bank", feeWaiverEnabled: true });
       expect(data.settings).not.toHaveProperty("includeGstByDefault");

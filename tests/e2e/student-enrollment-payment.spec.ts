@@ -30,7 +30,7 @@ test("register, verify, complete the profile, enrol, pay, get approved and downl
   });
 
   await test.step("verify the e-mail address and sign in", async () => {
-    await verifyEmailThroughLink(page, STUDENT.email);
+    await verifyEmailThroughLink(page, STUDENT.email, STUDENT.password);
     await signIn(page, STUDENT.email, STUDENT.password);
     expect((await db().user.findUniqueOrThrow({ where: { email: STUDENT.email } })).emailVerified).not.toBeNull();
   });

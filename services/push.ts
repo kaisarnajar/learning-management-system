@@ -45,10 +45,6 @@ function getApp(): App | null {
   return app;
 }
 
-export function isPushConfigured(): boolean {
-  return getApp() !== null;
-}
-
 export type PushPayload = {
   title: string;
   body?: string | null;

@@ -1,4 +1,5 @@
 import { unstable_noStore as noStore } from "next/cache";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/pagination";
 import { resolveWaiverFeeType, waiverFeeTypeLabel } from "@/services/waiver-requests";
@@ -32,15 +33,10 @@ const requestInclude = {
   course: { select: { title: true } },
 } as const;
 
+type WaiverRequestRow = Prisma.CouponRequestGetPayload<{ include: typeof requestInclude }> & { feeTypeLabel: string };
+
 async function withFeeTypeLabels<T extends { feeType: Parameters<typeof resolveWaiverFeeType>[0]["feeType"]; reason: string }>(rows: T[]) {
   return rows.map((request) => ({ ...request, feeTypeLabel: waiverFeeTypeLabel(resolveWaiverFeeType(request)) }));
-}
-
-/** Every fee-waiver request, newest first, with its fee type label. */
-export async function getWaiverRequests() {
-  noStore();
-  const rows = await prisma.couponRequest.findMany({ include: requestInclude, orderBy: { createdAt: "desc" } });
-  return withFeeTypeLabels(rows);
 }
 
 /** One page of fee-waiver requests (optionally only one status), newest first. */
@@ -48,7 +44,7 @@ export async function getWaiverRequestsPaginated(
   page: number,
   pageSize: number,
   status?: "PENDING" | "APPROVED" | "REJECTED",
-): Promise<PaginatedResult<Awaited<ReturnType<typeof getWaiverRequests>>[number]>> {
+): Promise<PaginatedResult<WaiverRequestRow>> {
   noStore();
   const where = status ? { status } : {};
   const totalCount = await prisma.couponRequest.count({ where });

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
+import { startEnrollment } from "@/services/enrollments";
 
 /**
  * Helpers for the suites that need a real Postgres (integration, API,
@@ -88,6 +89,26 @@ export async function createEnrollment(
       ...overrides,
     },
   });
+}
+
+/** The profile fields a student must fill in before enrolling. */
+export const PROFILE_FIELDS = {
+  fatherName: "Imran Khan",
+  dateOfBirth: new Date("2000-01-15"),
+  occupation: "STUDENT" as const,
+  address: "12 Main Street, Srinagar",
+  whatsapp: "9876543210",
+  gender: "FEMALE" as const,
+};
+
+/**
+ * Where a student stands after starting to enrol in a course with a fee
+ * (POST /api/v1/enrollments, or checkout on the website): a complete profile
+ * and an enrollment awaiting the fee. Leaves an existing enrollment as it is.
+ */
+export async function startedEnrollment(userId: string, courseId: string) {
+  await prisma.user.update({ where: { id: userId }, data: PROFILE_FIELDS });
+  return startEnrollment(userId, courseId, "AWAITING_ENROLLMENT_FEE");
 }
 
 export async function createBook(overrides: Partial<Prisma.BookUncheckedCreateInput> = {}) {

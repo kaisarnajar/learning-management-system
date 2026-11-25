@@ -19,10 +19,15 @@ import { PAYMENTS } from "@/config/constants/payments";
  *    AND the legacy text column are always set together;
  *  - a row's value is read through `*Of(row)`, which prefers the enum and
  *    falls back to the text for rows the backfill has not reached;
- *  - where-clauses keep filtering on the legacy text column (every write
- *    populates it and the existing indexes cover it). The contract step, in a
- *    later release after scripts/backfill-status-enums.ts has run, switches
- *    the filters to the enum column and drops the text columns.
+ *  - where-clauses filter on the enum column (scripts/backfill-status-enums.ts
+ *    has filled it for older rows; scripts/check-status-backfill.ts counts
+ *    any row still missing it, which such a filter would not see). The
+ *    contract step later drops the text columns.
+ *
+ * Since migration 20261124000800_status_twin_agreement the database backs
+ * this up: a trigger fills a NULL twin from its text (and moves it when only
+ * the text changes), and a CHECK refuses a twin that contradicts a text with
+ * a mapping. The SQL mapping there must match the maps below.
  */
 
 function invert<E extends string>(map: Record<E, string>): Map<string, E> {
@@ -101,6 +106,9 @@ export const PAYMENT_TYPE_TEXT: Record<PaymentType, string> = {
   BOOK_PURCHASE: PAYMENTS.TYPES.BOOK_ORDER,
 };
 const PAYMENT_TYPE_FROM_TEXT = invert(PAYMENT_TYPE_TEXT);
+
+/** Course-fee periods (everything but the enrollment fee, manual entries and book orders). */
+export const COURSE_FEE_PAYMENT_TYPES: PaymentType[] = ["MONTHLY", "QUARTERLY", "HALF_YEARLY", "YEARLY", "ONE_TIME"];
 
 export function paymentTypeFromText(text: string | null | undefined): PaymentType | null {
   return text ? PAYMENT_TYPE_FROM_TEXT.get(text.toLowerCase()) ?? null : null;

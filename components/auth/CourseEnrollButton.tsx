@@ -2,6 +2,7 @@
 
 import type { CourseStatus } from "@prisma/client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
 import { submitCheckout } from "@/app/actions/checkout";
@@ -12,7 +13,7 @@ import {
   canReapplyForEnrollment,
   PENDING_ENROLLMENT_APPROVAL,
 } from "@/services/enrollment-status";
-import { PROFILE_COMPLETE_REDIRECT } from "@/services/profile";
+import { PROFILE_COMPLETE_REDIRECT } from "@/utils/profile-format";
 
 type CourseEnrollButtonProps = {
   courseId: string;
@@ -39,6 +40,7 @@ export function CourseEnrollButton({
   const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const enrollmentClosedMessage = getCourseEnrollmentClosedMessage(courseStatus);
   const enrollmentPayHref = `/profile/courses/${courseId}/enrollment-pay`;
@@ -130,7 +132,7 @@ export function CourseEnrollButton({
       const data = await submitCheckout(courseId);
 
       if (data.status === 401) {
-        window.location.href = `/login?callbackUrl=${encodeURIComponent(`/courses`)}`;
+        router.push(`/login?callbackUrl=${encodeURIComponent(`/courses`)}`);
         return;
       }
 

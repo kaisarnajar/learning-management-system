@@ -4,7 +4,9 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import { useActionState, useState } from "react";
 import { recordStudentPayment, type RecordPaymentState } from "@/app/admin/record-payment/actions";
 import { previewStudentAccountForEnrollment } from "@/app/admin/enrollments/actions";
+import { useStudentLookup } from "@/components/admin/useStudentLookup";
 import { inputClassName, labelClassName } from "@/utils/form";
+import { MANUAL_PAYMENT_MAX_INR, MANUAL_PAYMENT_MIN_INR } from "@/config/constants/payments";
 import { formatBusinessDate } from "@/services/business-time";
 import type { Course } from "@prisma/client";
 
@@ -18,38 +20,9 @@ export function RecordPaymentForm({ courses }: RecordPaymentFormProps) {
   const [state, formAction, pending] = useActionState(recordStudentPayment, initialState);
   
   const [email, setEmail] = useState("");
-  const [linkedName, setLinkedName] = useState("");
-  const [lookupError, setLookupError] = useState("");
-  const [lookupLoading, setLookupLoading] = useState(false);
+  const { linkedName, error: lookupError, loading: lookupLoading, runLookup } = useStudentLookup(previewStudentAccountForEnrollment);
 
   const today = formatBusinessDate(new Date());
-
-  async function runLookup(targetEmail: string) {
-    const trimmed = targetEmail.trim();
-    if (!trimmed) {
-      setLinkedName("");
-      setLookupError("");
-      return;
-    }
-
-    setLookupLoading(true);
-    setLookupError("");
-    try {
-      const result = await previewStudentAccountForEnrollment(trimmed);
-      if (result.ok) {
-        setLinkedName(result.name);
-        setLookupError("");
-      } else {
-        setLinkedName("");
-        setLookupError(result.error);
-      }
-    } catch {
-      setLookupError("Could not verify this email. Try again.");
-      setLinkedName("");
-    } finally {
-      setLookupLoading(false);
-    }
-  }
 
   const canSubmit = !lookupError && (email.trim().length === 0 || Boolean(linkedName));
 
@@ -108,7 +81,8 @@ export function RecordPaymentForm({ courses }: RecordPaymentFormProps) {
             id="amountInr"
             name="amountInr"
             type="number"
-            min="1"
+            min={MANUAL_PAYMENT_MIN_INR}
+            max={MANUAL_PAYMENT_MAX_INR}
             step="0.01"
             required
             placeholder="349"

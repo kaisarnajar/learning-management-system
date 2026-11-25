@@ -39,7 +39,7 @@ Replace the standard asset URLs in this file to match your academy's files:
 ### 3. Business Rules (`config/constants/`)
 Configure the core operational logic of the platform by editing the files in this directory:
 - `payments.ts`: Payment types, statuses and methods (amounts are stored as integer paise).
-- `file.ts`: Update max upload sizes and supported PDF/Image extensions.
+- `file.ts`: Update max upload sizes (the accepted file types per upload are in `services/upload-kinds.ts`).
 - `business.ts`: Set rules like minimum grade requirements, grace periods, or attendance policies.
 
 ### 4. UI Design System (`app/globals.css` & `services/pdf-generator.ts`)
@@ -70,7 +70,7 @@ If you intend to use the demo seed script (`npm run db:seed:demo`) to populate t
    ```
 
 4. **Seed the Database:**
-   Populate the database with the idempotent bootstrap data (teachers, courses, library items, payment-settings row). Admin access is granted by listing addresses in `ADMIN_EMAIL`; admins sign in with Google or register normally.
+   Populate the database with the bootstrap data: the teachers, courses and library items from `content/`, an empty payment-settings row (no bank or UPI details) and the shipping-charge slabs. The seed only creates rows that are missing; it never changes or deletes an existing row, so re-running it keeps every admin edit. It creates no coupons, users or reviews. Admin access is granted by listing addresses in `ADMIN_EMAIL`; admins sign in with Google or register normally.
    ```bash
    npm run db:seed
    ```
@@ -92,14 +92,14 @@ If you intend to use the demo seed script (`npm run db:seed:demo`) to populate t
 |---|---|
 | `npm run dev` | PDF stylesheet, `prisma generate`, then the dev server |
 | `npm run build` | `prisma generate` and `next build` (the `prebuild` hook builds the PDF stylesheet) |
-| `npm run vercel-build` | What Vercel runs: PDF stylesheet, `prisma generate`, `prisma migrate deploy`, `next build` |
+| `npm run vercel-build` | What Vercel runs (`scripts/vercel-build.sh`): PDF stylesheet, `prisma generate`, `prisma migrate deploy` (production deployments only), `next build` |
 | `npm start` | `next start` on a production build |
-| `npm run lint` / `npm run knip` | ESLint / unused files and dependencies |
+| `npm run lint` / `npm run knip` | ESLint / unused files, exports and dependencies (run in CI) |
 | `npm run build:pdf-css` | Compiles the Tailwind stylesheet embedded in generated PDFs into `generated/pdf.css` |
 | `npm run db:drift` | Fails if `prisma/migrations` and `prisma/schema.prisma` describe different databases (set `SHADOW_DATABASE_URL` for the authoritative check) |
 | `npm run db:safety` | Fails if a migration contains destructive SQL (`DROP`, `TRUNCATE`, column type changes, ...) |
 | `npm run db:migrate` | `prisma migrate dev`: **disposable local databases only** |
-| `npm run db:seed` / `db:seed:demo` | Idempotent bootstrap data / the demo seed, which wipes the database (see above) |
+| `npm run db:seed` / `db:seed:demo` | Create-only bootstrap data / the demo seed, which wipes the database (see above) |
 | `npm test` | Every Vitest project; the database-backed ones skip themselves without `DATABASE_URL_TEST` |
 | `npm run test:unit` / `test:integration` / `test:api` / `test:security` | One Vitest project each |
 | `npm run test:e2e` | Playwright journeys against `next start` (build first; needs `DATABASE_URL_TEST`) |
@@ -124,7 +124,7 @@ This application is architected to run on a modern, serverless edge stack. We re
 ### 1. Frontend & Backend: Vercel
 Vercel provides seamless hosting for Next.js App Router applications.
 - **Setup:** Connect your GitHub repository to Vercel.
-- **Build Command:** `npm run vercel-build` (already set in `vercel.json`). It builds the PDF stylesheet, generates the Prisma client, applies pending migrations with `prisma migrate deploy` (additive migrations only; it never runs `db push`) and then runs `next build`.
+- **Build Command:** `npm run vercel-build` (already set in `vercel.json`, implemented in `scripts/vercel-build.sh`). It builds the PDF stylesheet, generates the Prisma client, applies pending migrations with `prisma migrate deploy` (additive migrations only; it never runs `db push`) and then runs `next build`. Migrations run only when `VERCEL_ENV=production`, or when `RUN_MIGRATIONS=true` is set on a staging project with its own database; preview builds never migrate.
 - **Environment:** Copy all variables from your `.env` into Vercel's Environment Variables settings (Vercel's own system variables are set for you).
 - **Branches:** pull requests go into `master`, which Vercel deploys; see `docs/CONTRIBUTING.md`.
 

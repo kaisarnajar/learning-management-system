@@ -12,6 +12,11 @@ info:
     form's field names. In JSON, `true` is sent as the checkbox value "on" and
     `false`/null are left out; fields documented as the string "true" must be
     sent as that string.
+
+    Every error, whatever its status (429 included), has the Error shape
+    `{ success: false, error }`, sometimes with extra fields such as `code`.
+    A JSON body that is malformed or not an object is a 400 with that
+    envelope, never a 500.
 servers:
   - url: https://darsequranacademy.com/api/v1
     description: Production
@@ -131,6 +136,13 @@ components:
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
+    BadRequest:
+      description: >-
+        Invalid input, or a JSON body that is missing, malformed or not an object
+        ("The request body must be a JSON object.")
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
     Unauthorized:
       description: Not signed in, or the session has ended (refresh once, then sign in again)
       content:
@@ -155,7 +167,9 @@ components:
         application/json:
           schema: { $ref: "#/components/schemas/Ok" }
     Forbidden:
-      description: Signed in without the staff role this endpoint needs (or a teacher account with no teacher profile)
+      description: >-
+        Signed in without the staff role this endpoint needs (or a teacher account with no teacher profile).
+        A staff role is granted only once the account's e-mail address is verified; until then the account acts as USER.
       content:
         application/json:
           schema: { $ref: "#/components/schemas/Error" }
@@ -166,6 +180,10 @@ components:
           schema: { $ref: "#/components/schemas/StaffWrite" }
     Pdf:
       description: The PDF
+      headers:
+        Content-Disposition:
+          description: An ASCII `filename` plus an RFC 5987 `filename*` with the full UTF-8 name (e.g. a student's name in Urdu). Prefer `filename*`.
+          schema: { type: string }
       content:
         application/pdf:
           schema: { type: string, format: binary }
@@ -361,6 +379,7 @@ components:
           schema: { $ref: "#/components/schemas/AnnouncementForm" }
     AttendanceSave:
       required: true
+      description: Every enrollmentId must be an active student of the course (400 otherwise).
       content:
         application/json:
           schema:
@@ -377,6 +396,7 @@ components:
                     isPresent: { type: boolean }
     GradeCard:
       required: true
+      description: Every enrollmentId must be an active student of the course (400 otherwise).
       content:
         application/json:
           schema: { $ref: "#/components/schemas/GradeCardInput" }
@@ -424,7 +444,7 @@ components:
         id: { type: string }
         email: { type: string }
         name: { type: [string, "null"] }
-        role: { type: string, enum: [USER, TEACHER, ADMIN, DEVELOPER] }
+        role: { type: string, enum: [USER, TEACHER, ADMIN, DEVELOPER], description: "USER until the e-mail address is verified" }
         image: { type: [string, "null"] }
         registrationNumber: { type: [string, "null"] }
         emailVerified: { type: [string, "null"], format: date-time }
@@ -462,7 +482,12 @@ components:
         gender: { type: string, enum: [MALE, FEMALE] }
         country: { type: string, description: "ISO code; makes whatsapp a local number" }
         whatsapp: { type: string }
-        image: { type: [string, "null"], description: Only the bundled avatars or the academy's own storage }
+        image:
+          type: [string, "null"]
+          description: >-
+            Only the bundled avatars (/assets/male_icon.png, /assets/female_icon.png) or a Google photo
+            (https://*.googleusercontent.com). Upload a photo with POST /auth/me/photo instead; a storage URL
+            is refused (400) unless it is the profile's current image, which is then left unchanged.
 
     Teacher:
       type: object
@@ -554,23 +579,24 @@ components:
         courseId: { type: string }
         paymentType: { type: string, enum: [enrollment, monthly] }
         paymentMonth: { type: string, pattern: "^(0[1-9]|1[0-2])$", description: 'Course fees only; "01" for one-time fees' }
-        paymentYear: { type: string, pattern: "^[0-9]{4}$", description: Course fees only; one of the quote's yearOptions }
+        paymentYear: { type: string, pattern: "^[0-9]{4}$", description: "Course fees only; one of the quote's yearOptions. Ignored for one-time fees, which are paid once per course whatever the year" }
         paymentMethod: { type: string, enum: [upi, bank] }
-        upiTransactionId: { type: string, description: Letters and digits; required unless the amount is 0 }
+        upiTransactionId: { type: string, description: "Letters and digits, stored upper-cased; one reference backs one payment (fee or book order), otherwise 409. When the amount is above 0, this or a screenshot is required (400 otherwise); ignored for a 100% waiver" }
         couponId: { type: string, description: 'A coupon id from the quote, or "none"' }
         expectedAmountPaise: { type: integer, description: The amount shown; a different server price answers 409 }
-        screenshot: { type: string, format: binary, description: Multipart only }
+        screenshot: { type: string, format: binary, description: "Multipart only. When the amount is above 0, this or upiTransactionId is required" }
     BookOrder:
       type: object
       required: [items, paymentMethod, upiTransactionId, deliveryAddress, deliveryPinCode, deliveryPhoneNumber]
       properties:
-        items: { type: array, items: { $ref: "#/components/schemas/CartLine" }, description: In multipart, a JSON string }
+        items: { type: array, items: { $ref: "#/components/schemas/CartLine" }, description: "In multipart, a JSON string. Lines naming the same book are merged into one, and the merged quantity is limited to maxBookQuantityPerOrder (20) copies per book: more is a 400" }
         paymentMethod: { type: string }
-        upiTransactionId: { type: string }
+        upiTransactionId: { type: string, description: "Stored trimmed and upper-cased; a reference that already backs a fee submission or another order, in any case, answers 409" }
         deliveryAddress: { type: string, minLength: 10 }
         deliveryPinCode: { type: string, pattern: "^[0-9]{5,10}$" }
         deliveryPhoneNumber: { type: string, pattern: "^[0-9]{10,15}$" }
         notes: { type: string }
+        expectedTotalPaise: { type: integer, description: "Optional. The total from POST /bookstore/checkout-quote that the customer saw; a different current total answers 409. Without it the current total is charged" }
         screenshot: { type: string, format: binary, description: Multipart only }
 
     # ------------------------------------------------------------ Staff
@@ -1168,8 +1194,8 @@ components:
       properties:
         code: { type: string, description: DEFAULT coupons only }
         percentage: { type: number }
-        validFrom: { type: string, format: date }
-        validUntil: { type: string, format: date }
+        validFrom: { type: string, format: date, description: "First day, in the academy's calendar (IST): valid from 00:00 IST" }
+        validUntil: { type: string, format: date, description: "Last day, in the academy's calendar (IST): valid until 23:59:59 IST" }
         courseId: { type: string, description: DEFAULT coupons only }
         gender: { type: string, enum: [MALE, FEMALE, ""], description: DEFAULT coupons only }
         applyTo: { type: string, enum: [BOTH, ENROLLMENT, COURSE], description: DEFAULT coupons only }
@@ -1195,6 +1221,14 @@ paths:
     post:
       tags: [Auth]
       security: []
+      description: |
+        Creates an unverified account, e-mails a verification link and returns a session for it. The session
+        has role USER until the address is verified (whatever staff role the address would carry).
+
+        An address that already has an account answers 400 "An account with this email already exists." and
+        its owner is told by e-mail. Unlike the website's registration, this endpoint therefore reveals which
+        addresses are registered; that is accepted to keep installed apps working, and it is rate-limited per
+        network (429). `verificationRequired` is always true on a 200 (added 2026-11-24, additive).
       requestBody:
         required: true
         content:
@@ -1205,17 +1239,31 @@ paths:
               properties:
                 name: { type: string, maxLength: 100 }
                 email: { type: string, format: email }
-                password: { type: string, minLength: 8, maxLength: 128 }
+                password: { type: string, minLength: 8, description: "At most 72 bytes of UTF-8 (72 ASCII characters, fewer with accented letters or emoji); bcrypt ignores anything longer" }
                 acceptPolicies: { type: boolean, const: true }
       responses:
-        "200": { description: Signed in (unverified), content: { application/json: { schema: { $ref: "#/components/schemas/Tokens" } } } }
-        "400": { $ref: "#/components/responses/Error" }
-        "409": { $ref: "#/components/responses/Error" }
+        "200":
+          description: Registered and signed in (unverified, role USER)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/Tokens"
+                  - type: object
+                    properties:
+                      verificationRequired: { type: boolean, const: true }
+        "400":
+          description: Invalid details, a body that is not a JSON object, or the address already has an account ("An account with this email already exists.")
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
         "429": { $ref: "#/components/responses/TooManyRequests" }
   /auth/login:
     post:
       tags: [Auth]
       security: []
+      description: >-
+        Only failed attempts count toward the per-address limit (5 per 15 minutes),
+        and they count per network, so failures elsewhere never block this device.
+        A network is also limited in how many attempts it sends overall (429).
       requestBody:
         required: true
         content:
@@ -1228,6 +1276,7 @@ paths:
                 password: { type: string }
       responses:
         "200": { description: Signed in, content: { application/json: { schema: { $ref: "#/components/schemas/Tokens" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Error" }
         "403": { description: "E-mail not verified (code email_not_verified)", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "429": { $ref: "#/components/responses/TooManyRequests" }
@@ -1246,12 +1295,21 @@ paths:
                 idToken: { type: string, description: Requested with the web OAuth client ID as server client ID }
       responses:
         "200": { description: Signed in, content: { application/json: { schema: { $ref: "#/components/schemas/Tokens" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "401": { $ref: "#/components/responses/Error" }
         "503": { $ref: "#/components/responses/Error" }
   /auth/refresh:
     post:
       tags: [Auth]
       security: []
+      description: |
+        Exchanges a refresh token for a new pair; the presented token is revoked. Store the new refresh
+        token before using it, and send one refresh at a time.
+
+        Presenting a refresh token that was already exchanged is treated as a replay: every token rotated
+        from the same sign-in is revoked, so the client holding the newest pair gets 401 on its next call
+        and must sign in again. A second exchange of the same token within a few seconds (two requests
+        sharing one stored token) only gets 401 and leaves the first exchange's pair working.
       requestBody:
         required: true
         content:
@@ -1263,10 +1321,14 @@ paths:
   /auth/logout:
     post:
       tags: [Auth]
+      description: |
+        Ends the session of the Bearer access token and/or `refreshToken`. Send `deviceToken` (the FCM token
+        registered with POST /notifications/device-token) so this device stops receiving the account's
+        push notifications; it is removed only from the account that is signing out.
       requestBody:
         content:
           application/json:
-            schema: { type: object, properties: { refreshToken: { type: string } } }
+            schema: { type: object, properties: { refreshToken: { type: string }, deviceToken: { type: string, description: "This device's FCM token" } } }
       responses:
         "200": { $ref: "#/components/responses/Ok" }
   /auth/forgot-password:
@@ -1345,6 +1407,7 @@ paths:
       responses:
         "200": { description: Stored, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, image: { type: string } } } } } }
         "400": { $ref: "#/components/responses/Error" }
+        "413": { description: "Content-Length is over 2 MB plus 64 KB of multipart framing; the body is not read", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
     delete:
       tags: [Account]
       responses:
@@ -1352,6 +1415,9 @@ paths:
   /auth/change-password:
     post:
       tags: [Account]
+      description: >-
+        Every other app session and every website session of the account is signed out; the calling session stays signed in.
+        Attempts are limited per account (429) separately from sign-in, so a wrong current password never uses up sign-in attempts.
       requestBody:
         required: true
         content:
@@ -1360,8 +1426,9 @@ paths:
               type: object
               required: [currentPassword, newPassword]
               properties:
+                deviceToken: { type: string, description: "This device's FCM token. The account's other push registrations are removed; without it, all of them are (register again afterwards)" }
                 currentPassword: { type: string }
-                newPassword: { type: string, minLength: 8, maxLength: 128 }
+                newPassword: { type: string, minLength: 8, description: "At most 72 bytes of UTF-8 (72 ASCII characters, fewer with accented letters or emoji)" }
       responses:
         "200": { $ref: "#/components/responses/Ok" }
         "400": { $ref: "#/components/responses/Error" }
@@ -1501,7 +1568,8 @@ paths:
         "200": { description: Answered fatwas, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/Fatwa" } } } }] } } } }
     post:
       tags: [Public]
-      security: []
+      security: [{}, { bearer: [] }]
+      description: Open to guests. With a Bearer token the question is linked to the signed-in account and named by it.
       requestBody:
         required: true
         content:
@@ -1515,9 +1583,10 @@ paths:
                 category: { type: string }
                 askerName: { type: string }
                 askerEmail: { type: string, format: email }
+                isAnonymous: { type: boolean, description: "Ask without a name; the question is not linked to the account" }
       responses:
         "200": { $ref: "#/components/responses/Ok" }
-        "400": { $ref: "#/components/responses/Error" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "429": { $ref: "#/components/responses/TooManyRequests" }
   /fatwa/{id}:
     get:
@@ -1675,7 +1744,7 @@ paths:
             schema: { type: object, required: [courseId], properties: { courseId: { type: string } } }
       responses:
         "200": { description: Applied (or already enrolled), content: { application/json: { schema: { type: object } } } }
-        "400": { description: Course closed, or profile incomplete (profileIncomplete true), content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "400": { description: "Course closed, profile incomplete (profileIncomplete true), or a body that is not a JSON object", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "403": { description: E-mail not verified, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
   /courses/{id}/announcements:
     get:
@@ -1714,7 +1783,33 @@ paths:
     get:
       tags: [Courses]
       responses:
-        "200": { description: The caller's waiver requests, content: { application/json: { schema: { type: object } } } }
+        "200":
+          description: The caller's waiver requests, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        courseId: { type: string }
+                        feeType: { type: string, enum: [ENROLLMENT, COURSE, BOTH] }
+                        status: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+                        reason: { type: string }
+                        course: { type: object, properties: { id: { type: string }, title: { type: string } } }
+                        coupon:
+                          type: [object, "null"]
+                          description: The linked coupon; for a "both fees" waiver, the enrollment-fee one
+                          properties: { id: { type: string }, code: { type: string }, percentage: { type: integer } }
+                        couponCodes:
+                          type: array
+                          items: { type: string }
+                          description: Every code the approval issued. A "both fees" waiver has two, the enrollment-fee code and then the course-fee code (the first plus "-C"); empty until approved.
     post:
       tags: [Courses]
       requestBody:
@@ -1754,7 +1849,7 @@ paths:
                 location: { type: string }
       responses:
         "200": { description: Submitted for approval, content: { application/json: { schema: { type: object } } } }
-        "400": { $ref: "#/components/responses/Error" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   # ------------------------------------------------------------ Payments
   /payments/quote:
@@ -1805,9 +1900,21 @@ paths:
             schema: { $ref: "#/components/schemas/PaymentSubmission" }
       responses:
         "200": { $ref: "#/components/responses/Ok" }
-        "400": { $ref: "#/components/responses/Error" }
+        "400":
+          description: >-
+            Invalid details, including a fee above 0 with neither a UTR nor a screenshot, or (enrollment fee) no
+            enrollment awaiting the fee: start it with POST /enrollments first. Also refused when the course has closed
+            for enrollment or the profile is incomplete, or a JSON body that is not an object.
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
         "403": { description: E-mail not verified, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
-        "409": { description: Amount changed or already submitted, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "409":
+          description: >-
+            Amount changed, or the fee period is already paid or awaiting verification. A period is the month (or the
+            quarter, half or year it starts in) for course fees, the course for one-time and enrollment fees; a coupon
+            does not make it a different period. Also answered when the selected coupon was redeemed by another
+            submission in the meantime, or when the transaction reference already backs another fee submission or a
+            book order (compared without regard to case).
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
   /payments/history:
     get:
       tags: [Payments]
@@ -1818,7 +1925,7 @@ paths:
       tags: [Payments]
       parameters: [{ $ref: "#/components/parameters/Id" }]
       responses:
-        "200": { description: The receipt, content: { application/pdf: { schema: { type: string, format: binary } } } }
+        "200": { $ref: "#/components/responses/Pdf" }
         "404": { $ref: "#/components/responses/NotFound" }
         "409": { description: Not issued yet, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
         "429": { $ref: "#/components/responses/TooManyRequests" }
@@ -1890,9 +1997,11 @@ paths:
             schema: { $ref: "#/components/schemas/BookOrder" }
       responses:
         "200": { description: Placed, content: { application/json: { schema: { type: object } } } }
-        "400": { $ref: "#/components/responses/Error" }
+        "400": { $ref: "#/components/responses/BadRequest" }
         "403": { description: E-mail not verified, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
-        "409": { $ref: "#/components/responses/Error" }
+        "409":
+          description: Not enough stock, the transaction reference was already used, or the total differs from expectedTotalPaise
+          content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
   /bookstore/orders/{id}:
     get:
       tags: [Bookstore]
@@ -1917,6 +2026,7 @@ paths:
             schema: { type: object, properties: { notificationId: { type: string }, markAllRead: { type: boolean } } }
       responses:
         "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
   /notifications/{id}:
     get:
       tags: [Notifications]
@@ -1932,9 +2042,13 @@ paths:
         content:
           application/json:
             schema: { type: object, required: [token], properties: { token: { type: string }, platform: { type: string, enum: [android, ios, web], default: android } } }
+      description: |
+        Registers this device for push notifications. A token still registered to another account moves to
+        the caller (it used to answer 409). A password reset, e-mail verification or account take-over removes
+        all of an account's registrations; register again after signing in.
       responses:
         "200": { $ref: "#/components/responses/Ok" }
-        "409": { $ref: "#/components/responses/Error" }
+        "400": { $ref: "#/components/responses/BadRequest" }
     delete:
       tags: [Notifications]
       requestBody:
@@ -1944,6 +2058,7 @@ paths:
             schema: { type: object, required: [token], properties: { token: { type: string } } }
       responses:
         "200": { $ref: "#/components/responses/Ok" }
+        "400": { $ref: "#/components/responses/BadRequest" }
 
   # ------------------------------------------------------ Admin: Dashboard
   /admin/dashboard:
@@ -2260,7 +2375,7 @@ paths:
   /admin/enrollments/{id}:
     delete:
       tags: ["Admin: Enrollments"]
-      summary: Removes a student from one course; the account stays
+      summary: Removes a student from one course (audited); the account stays. An enrollment with a certificate, payments, grades or attendance is refused with 400
       parameters:
         - { $ref: "#/components/parameters/Id" }
         - { name: courseId, in: query, required: true, schema: { type: string } }
@@ -2503,6 +2618,7 @@ paths:
     get:
       tags: ["Admin: Courses"]
       summary: A student's attendance report
+      description: Only for an approved student, current or completed; 404 for an applicant or a rejected enrollment.
       parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
       responses:
         "200": { $ref: "#/components/responses/StudentAttendance" }
@@ -2574,6 +2690,7 @@ paths:
     get:
       tags: ["Admin: Courses"]
       summary: A student's grade report
+      description: Only for an approved student, current or completed; 404 for an applicant or a rejected enrollment.
       parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
       responses:
         "200": { $ref: "#/components/responses/StudentGrades" }
@@ -3226,7 +3343,7 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     post:
       tags: ["Admin: Payments"]
-      summary: Approves a pending fee submission (records the payment, notifies the student)
+      summary: Approves a pending fee submission (records the payment, spends its coupon, notifies the student)
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }
@@ -3236,7 +3353,7 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     post:
       tags: ["Admin: Payments"]
-      summary: Declines a pending fee submission; the student can resubmit
+      summary: Declines a pending fee submission; the student can resubmit, with the same coupon
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }
@@ -3246,7 +3363,7 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     post:
       tags: ["Admin: Payments"]
-      summary: Voids an approved fee payment
+      summary: Voids an approved fee payment; a voided enrollment fee reopens the enrollment (awaiting its fee), and a coupon it used is given back
       requestBody:
         required: true
         content:
@@ -3276,7 +3393,7 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     post:
       tags: ["Admin: Payments"]
-      summary: Voids a manually recorded payment
+      summary: Voids a manually recorded payment (a fee payment or a book order's payment is refused with 400; use their own flows)
       requestBody:
         required: true
         content:
@@ -3332,7 +3449,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [email, amountInr, paidAt], properties: { email: { type: string, format: email }, amountInr: { type: number }, paidAt: { type: string, format: date }, paymentType: { type: string, enum: [monthly, quarterly, half_yearly, yearly, enrollment, manual], description: See /admin/finance/options recordPaymentTypes }, courseId: { type: string } } }
+            schema: { type: object, required: [email, amountInr, paidAt], properties: { email: { type: string, format: email }, amountInr: { type: number, minimum: 1, maximum: 1000000, description: "Rupees, rounded to whole paise; outside ₹1 to ₹10,00,000 is a 400" }, paidAt: { type: string, format: date }, paymentType: { type: string, enum: [monthly, quarterly, half_yearly, yearly, enrollment, manual], description: See /admin/finance/options recordPaymentTypes }, courseId: { type: string } } }
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }
@@ -3459,7 +3576,7 @@ paths:
     get:
       tags: ["Admin: Finance"]
       summary: Choices for the finance filters and the record-payment and record-expense forms
-      parameters: [{ name: students, in: query, description: "all: every student (default: students with payments)", schema: { type: string, enum: [all] } }]
+      parameters: [{ name: students, in: query, description: "all: search every student, returning the first 50 by registration number (default: students with payments, unlimited)", schema: { type: string, enum: [all] } }, { name: q, in: query, description: "With students=all: only students whose name, e-mail or registration number contains this text", schema: { type: string, maxLength: 100 } }]
       responses:
         "200":
           description: Choices
@@ -3483,6 +3600,10 @@ paths:
     get:
       tags: ["Admin: Finance"]
       summary: Export to Excel, with the page's filters
+      description: |
+        The range must be bounded: `preset=all_time`, or `preset=custom` without both `from` and `to`, is refused
+        with 400. With no date parameters the range is this month, as on the page. An export of more than
+        50,000 rows is refused with 400; narrow the range.
       parameters: [{ name: type, in: query, required: true, schema: { type: string, enum: [income, expenses, book_sales, book_orders] } }, { $ref: "#/components/parameters/FinancePreset" }, { $ref: "#/components/parameters/FinanceFrom" }, { $ref: "#/components/parameters/FinanceTo" }]
       responses:
         "200":
@@ -3490,7 +3611,11 @@ paths:
           content:
             application/vnd.openxmlformats-officedocument.spreadsheetml.sheet:
               schema: { type: string, format: binary }
-        "400": { $ref: "#/components/responses/Error" }
+        "400":
+          description: Unknown type, an unbounded date range, or more than 50,000 rows
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
 
@@ -3620,7 +3745,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: { type: object, required: [percentage, validUntil], properties: { percentage: { type: integer, minimum: 1, maximum: 100 }, validUntil: { type: string, format: date } } }
+            schema: { type: object, required: [percentage, validUntil], properties: { percentage: { type: integer, minimum: 1, maximum: 100 }, validUntil: { type: string, format: date, description: "Last day in IST (valid until 23:59:59 IST); not before today in IST" } } }
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }
@@ -3668,13 +3793,13 @@ paths:
                           type: object
                           properties:
                             id: { type: string }
-                            date: { type: string, format: date-time }
+                            date: { type: string, format: date-time, description: "When the waiver was claimed (the submission's creation); the date range filters on it, newest first." }
                             studentName: { type: string }
                             studentEmail: { type: string }
                             courseTitle: { type: string }
                             paymentType: { type: string }
                             label: { type: string }
-                            originalFeePaise: { type: integer }
+                            originalFeePaise: { type: integer, description: "The fee before the waiver as it was when the student submitted; the course's current fee for submissions made before that was recorded." }
                             waivedAmountPaise: { type: integer }
                             discountPercentage: { type: number }
                             netPaidPaise: { type: integer }
@@ -3756,7 +3881,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
     post:
       tags: ["Admin: Receipts"]
-      summary: Generates the receipt (allocates the invoice number, stores the PDF)
+      summary: Generates the receipt (allocates the invoice number, stores the PDF); a voided payment is refused with 400
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }
@@ -3764,7 +3889,7 @@ paths:
         "403": { $ref: "#/components/responses/Forbidden" }
     delete:
       tags: ["Admin: Receipts"]
-      summary: Deletes the generated receipt; the payment record stays
+      summary: Deletes the generated receipt; the payment record stays and keeps its invoice number, which regenerating reissues (audited)
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }
@@ -3774,7 +3899,7 @@ paths:
     parameters: [{ $ref: "#/components/parameters/Id" }]
     get:
       tags: ["Admin: Receipts"]
-      summary: The receipt PDF
+      summary: The receipt PDF (404 for a voided payment)
       responses:
         "200": { $ref: "#/components/responses/Pdf" }
         "401": { $ref: "#/components/responses/Unauthorized" }
@@ -3806,7 +3931,8 @@ paths:
       tags: ["Admin: Certificates"]
       summary: Generates a certificate
       description: |
-        Answers `result.certificateNumber`.
+        Answers `result.certificateNumber`. COMPLETION needs a COMPLETED enrollment, APPRECIATION an
+        ACTIVE or COMPLETED one; any other enrollment is refused with 400 and no number is used.
       requestBody:
         required: true
         content:
@@ -3820,9 +3946,15 @@ paths:
   /admin/certificates/eligible:
     get:
       tags: ["Admin: Certificates"]
-      summary: Enrollments without a certificate, for the generate form
+      summary: Active or completed enrollments without a certificate (students not deleted), for the generate form, one page at a time
+      description: A Certificate of Completion needs a COMPLETED enrollment; a Certificate of Appreciation an ACTIVE or COMPLETED one.
+      parameters:
+        - { $ref: "#/components/parameters/Page" }
+        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 50, default: 50 } }
+        - { $ref: "#/components/parameters/Q" }
+        - { name: courseId, in: query, description: Only this course's enrollments, schema: { type: string } }
       responses:
-        "200": { description: Enrollments, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, enrollments: { type: array, items: { type: object, properties: { id: { type: string, description: Enrollment id }, user: { type: object, properties: { name: { type: [string, "null"] }, email: { type: string } } }, course: { type: object, properties: { id: { type: string }, title: { type: string } } } } } } } } } } }
+        "200": { description: Enrollments, content: { application/json: { schema: { type: object, properties: { success: { type: boolean }, enrollments: { type: array, items: { type: object, properties: { id: { type: string, description: Enrollment id }, status: { type: [string, "null"], enum: [ACTIVE, COMPLETED, null] }, user: { type: object, properties: { name: { type: [string, "null"] }, email: { type: string } } }, course: { type: object, properties: { id: { type: string }, title: { type: string } } } } } }, totalCount: { type: integer }, page: { type: integer }, pageSize: { type: integer } } } } } }
         "401": { $ref: "#/components/responses/Unauthorized" }
         "403": { $ref: "#/components/responses/Forbidden" }
   /admin/certificates/{enrollmentId}:
@@ -3851,7 +3983,7 @@ paths:
         "404": { $ref: "#/components/responses/NotFound" }
     delete:
       tags: ["Admin: Certificates"]
-      summary: Deletes the certificate and its PDF; the enrollment can be issued a new one
+      summary: Deletes the certificate and its PDF; the enrollment keeps its certificate number, which a new certificate reissues (audited)
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }
@@ -4059,14 +4191,15 @@ paths:
       description: |
         approve: pending to approved (checks and commits stock, records the payment, e-mails the student);
         decline: pending to declined; ship: approved to shipped (body courierServiceName, trackingId);
-        refund: approved or shipped to refunded (the recorded payment is voided);
+        refund: approved or shipped to refunded (the recorded payment is voided; for a shipped order, body
+        booksReturned true puts its books back in stock, and without it they are written off as not returned);
         void: declined or refunded orders leave the lists (kept for audit; body reason, 3+ characters).
         An unknown action is a 404.
       requestBody:
         required: false
         content:
           application/json:
-            schema: { type: object, properties: { courierServiceName: { type: string, description: ship }, trackingId: { type: string, description: ship }, reason: { type: string, minLength: 3, description: void } } }
+            schema: { type: object, properties: { courierServiceName: { type: string, description: ship }, trackingId: { type: string, description: ship }, booksReturned: { type: boolean, default: false, description: "refund of a shipped order: the books came back" }, reason: { type: string, minLength: 3, description: void } } }
       responses:
         "200": { $ref: "#/components/responses/StaffWrite" }
         "400": { $ref: "#/components/responses/Error" }
@@ -4393,6 +4526,7 @@ paths:
     get:
       tags: ["Teacher: Courses"]
       summary: A student's attendance report
+      description: Only for an approved student, current or completed; 404 for an applicant or a rejected enrollment.
       parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
       responses:
         "200": { $ref: "#/components/responses/StudentAttendance" }
@@ -4464,6 +4598,7 @@ paths:
     get:
       tags: ["Teacher: Courses"]
       summary: A student's grade report
+      description: Only for an approved student, current or completed; 404 for an applicant or a rejected enrollment.
       parameters: [{ $ref: "#/components/parameters/Id" }, { $ref: "#/components/parameters/EnrollmentId" }]
       responses:
         "200": { $ref: "#/components/responses/StudentGrades" }
@@ -4578,6 +4713,7 @@ paths:
     post:
       tags: ["Teacher: Fatwa"]
       summary: Saves the teacher's answer and submits it for admin approval
+      description: 400 when the answer is awaiting review or already published (`canEdit` false on the question).
       requestBody:
         required: true
         content:

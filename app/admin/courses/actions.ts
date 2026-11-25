@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
-import { deleteAnnouncementAttachment } from "@/services/announcement-upload";
-import { syncEnrollmentsWithCourseStatus } from "@/services/completion";
+import { deleteUpload } from "@/services/uploads";
+import { syncEnrollmentsWithCourseStatusIn } from "@/services/completion-sync";
 import { resolveCourseFeaturedUpdate } from "@/services/courses";
 import { prisma } from "@/utils/prisma";
 import { getDefaultFeesForLevel } from "@/services/course-pricing";
@@ -127,9 +127,9 @@ export async function updateCourse(id: string, formData: FormData) {
     const statusChanged = existing.status !== courseData.status;
 
     if (statusChanged && existing.status === "COMPLETED") {
-      // Reopening a completed course flips every completed enrollment back to
-      // active. With certificates already issued that is almost always a
-      // mistake, so it needs an explicit confirmation from the form.
+      // Reopening a completed course moves its uncertified enrollments back to
+      // active (certified students stay completed). With certificates already
+      // issued that is usually a mistake, so it needs an explicit confirmation.
       const certificates = await prisma.enrollment.count({
         where: { courseId: id, certificateGeneratedAt: { not: null } },
       });
@@ -140,16 +140,19 @@ export async function updateCourse(id: string, formData: FormData) {
       }
     }
 
-    await prisma.course.update({
-      where: { id },
-      data: { title, ...courseData, ...featured },
-    });
-
     // Only a status change moves enrollments between active and completed;
-    // editing a title or fee must not touch them.
-    if (statusChanged) {
-      await syncEnrollmentsWithCourseStatus(id, courseData.status);
-    }
+    // editing a title or fee must not touch them. Both writes commit together:
+    // a course saved as completed with its students still active would not
+    // be repaired by saving again, since the status would no longer change.
+    await prisma.$transaction(async (tx) => {
+      await tx.course.update({
+        where: { id },
+        data: { title, ...courseData, ...featured },
+      });
+      if (statusChanged) {
+        await syncEnrollmentsWithCourseStatusIn(tx, id, courseData.status);
+      }
+    });
 
     revalidatePath("/");
 
@@ -178,19 +181,24 @@ export async function deleteCourse(id: string) {
       throw new ActionError("Course not found.");
     }
 
-    const [activeStudentCount, submissionCount, attendanceCount, gradeCount, couponCount] =
+    const [activeStudentCount, submissionCount, paymentRecordCount, attendanceCount, gradeCount, couponCount, waiverRequestCount] =
       await withDbErrorHandling(
         () =>
           Promise.all([
             prisma.enrollment.count({
-              where: { courseId: id, status: { in: ["active", "completed"] } },
+              where: { courseId: id, statusEnum: { in: ["ACTIVE", "COMPLETED"] } },
             }),
             // Any submission (pending, decided or voided) is payment history and
             // the foreign key restricts the delete, so all of them block it.
             prisma.coursePaymentSubmission.count({ where: { courseId: id } }),
+            // Income records only detach (SetNull) when the course goes, so a
+            // manual payment would silently lose its course in finance reports.
+            prisma.paymentRecord.count({ where: { courseId: id } }),
             prisma.courseAttendance.count({ where: { courseId: id } }),
             prisma.courseGrade.count({ where: { courseId: id } }),
             prisma.coupon.count({ where: { courseId: id } }),
+            // Fee-waiver requests are history too; their foreign key restricts the delete.
+            prisma.couponRequest.count({ where: { courseId: id } }),
           ]),
         "Database operation failed",
       );
@@ -201,8 +209,11 @@ export async function deleteCourse(id: string) {
     if (submissionCount > 0) {
       throw new ActionError(`This course can't be deleted because it has ${submissionCount} fee payment submission${submissionCount === 1 ? "" : "s"} on record. Set it to Completed or On Hold instead.`);
     }
-    if (attendanceCount > 0 || gradeCount > 0 || couponCount > 0) {
-      throw new ActionError("This course can't be deleted because it still has attendance, grade or coupon records. Set it to Completed or On Hold instead.");
+    if (paymentRecordCount > 0) {
+      throw new ActionError(`This course can't be deleted because ${paymentRecordCount} payment record${paymentRecordCount === 1 ? " refers" : "s refer"} to it. Set it to Completed or On Hold instead.`);
+    }
+    if (attendanceCount > 0 || gradeCount > 0 || couponCount > 0 || waiverRequestCount > 0) {
+      throw new ActionError("This course can't be deleted because it still has attendance, grade, coupon or fee-waiver records. Set it to Completed or On Hold instead.");
     }
 
     // The announcements cascade with the course, so their attachment paths are
@@ -225,7 +236,7 @@ export async function deleteCourse(id: string) {
     );
 
     for (const { attachmentPath } of attachments) {
-      await deleteAnnouncementAttachment(attachmentPath);
+      await deleteUpload("course-announcement-attachment", attachmentPath);
     }
 
     revalidatePath("/");

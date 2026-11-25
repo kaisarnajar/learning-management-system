@@ -1,34 +1,35 @@
 import type { NextConfig } from "next";
-import { MAX_BLOG_IMAGE_BYTES, MAX_BLOG_IMAGES } from "./services/blog-limits";
+import { FORM_UPLOAD_FALLBACK_MAX_BYTES } from "./config/constants/direct-upload";
+import { imageRemotePatterns } from "./config/image-remote-patterns";
+import { PDF_ASSET_FILES, PDF_ASSET_ROUTE_GLOBS } from "./config/pdf-asset-routes";
 import { STATIC_SECURITY_HEADERS } from "./services/security-headers";
 
-const r2Domain = process.env.R2_PUBLIC_URL 
-  ? new URL(process.env.R2_PUBLIC_URL).hostname 
-  : "cdn.your-academy.com";
+// Warn only for a production build or server; dev and tests often run without R2.
+const remotePatterns = imageRemotePatterns(
+  process.env.R2_PUBLIC_URL,
+  process.env.NODE_ENV === "production" ? (message) => console.warn(`[next.config] ${message}`) : undefined,
+);
 
 const nextConfig: NextConfig = {
   turbopack: {
     root: __dirname,
   },
-  serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core", "sharp", "firebase-admin"],
-  // The PDF generators read these from disk at runtime; make sure the
-  // serverless bundles carry them.
-  outputFileTracingIncludes: {
-    "/**/*": ["./public/assets/**/*", "./public/fonts/**/*", "./generated/**/*"],
-  },
+  // exceljs (finance export) is loaded from node_modules as in the tests rather than bundled.
+  serverExternalPackages: ["@sparticuz/chromium-min", "puppeteer-core", "puppeteer", "sharp", "firebase-admin", "exceljs"],
+  // The PDF generators read fonts, images and generated/pdf.css from disk at
+  // runtime: only the routes that can render a PDF carry them.
+  outputFileTracingIncludes: Object.fromEntries(PDF_ASSET_ROUTE_GLOBS.map((glob) => [glob, PDF_ASSET_FILES])),
   experimental: {
     serverActions: {
-      // Default is 1 MB; blog images allow up to 5 MB each (max 10 per post).
-      bodySizeLimit: MAX_BLOG_IMAGES * MAX_BLOG_IMAGE_BYTES,
+      // Large files go straight to R2 (services/direct-upload.ts). Form
+      // uploads remain for payment screenshots and profile photos (2 MB) and
+      // as the fallback for files up to 4 MB in total, plus the other fields;
+      // Vercel refuses bodies over 4.5 MB in any case.
+      bodySizeLimit: FORM_UPLOAD_FALLBACK_MAX_BYTES + 512 * 1024,
     },
   },
   images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: r2Domain,
-      },
-    ],
+    remotePatterns,
   },
   async headers() {
     return [

@@ -1,11 +1,12 @@
 "use client";
 
+import { BUSINESS_TIMEZONE } from "@/config/constants/business";
 import Image from "next/image";
 import { formatPrice } from "@/utils/money";
 import { useState } from "react";
 import type { BookOrderWithItems } from "@/services/bookstore";
 import { approveBookOrder, declineBookOrder, markBookOrderShipped, markBookOrderRefunded, voidBookOrder } from "@/app/admin/bookstore/orders/actions";
-import { bookOrderStatusLabel, bookOrderStatusClass } from "@/services/bookstore";
+import { bookOrderStatusLabel, bookOrderStatusClass } from "@/utils/bookstore-status";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { useToast } from "@/components/shared/ToastProvider";
 import { ReceiptActionButtons } from "@/components/payment/ReceiptActionButtons";
@@ -157,6 +158,7 @@ export function MarkShippedModal({ orderId }: { orderId: string }) {
 }
 function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "default" | "payment_only" }) {
   const { addToast } = useToast();
+  const [booksReturned, setBooksReturned] = useState(false);
   if (order.status === "PENDING_VERIFICATION") {
      return (
         <td className="whitespace-nowrap px-4 py-4 align-top">
@@ -254,13 +256,23 @@ function OrderActions({ order, mode }: { order: BookOrderWithItems; mode: "defau
              description="Refund this shipped order? The recorded payment will be voided and the student notified."
              actionLabel="Refund"
              onConfirm={async () => {
-               const result = await markBookOrderRefunded(order.id, window.location.pathname + window.location.search);
+               const result = await markBookOrderRefunded(order.id, window.location.pathname + window.location.search, booksReturned);
                if (result?.error) addToast(result.error, "error");
              }}
              trigger={
                 <button type="button" className={adminDestructiveButtonClassName}>Refund</button>
              }
-          />
+          >
+            <label className="mt-4 flex items-start gap-2 text-sm text-foreground">
+              <input
+                type="checkbox"
+                checked={booksReturned}
+                onChange={(e) => setBooksReturned(e.target.checked)}
+                className="mt-0.5"
+              />
+              <span>The books came back. Leave unticked if the customer kept them; they will not return to stock.</span>
+            </label>
+          </ConfirmationModal>
         )}
         {(order.status === "DECLINED" || order.status === "REFUNDED") && (
           <ConfirmationModal
@@ -299,6 +311,7 @@ export function BaseOrderRow({
         <p className="mt-0.5 text-xs text-muted">{order.user.email}</p>
         <p className="mt-0.5 text-xs text-muted">
           {order.createdAt.toLocaleDateString("en-IN", {
+            timeZone: BUSINESS_TIMEZONE,
             day: "numeric",
             month: "short",
             year: "numeric",

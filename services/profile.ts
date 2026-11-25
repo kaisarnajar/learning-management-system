@@ -2,6 +2,10 @@ import type { User } from "@prisma/client";
 import { OCCUPATION_OPTIONS, occupationLabel } from "@/services/occupations";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { PROFILE_COMPLETE_REDIRECT, formatDateOfBirthDisplay, formatDateOfBirthForInput } from "@/utils/profile-format";
+
+// Pure helpers, importable from client components: utils/profile-format.ts
+export { PROFILE_COMPLETE_REDIRECT, formatDateOfBirthDisplay, formatDateOfBirthForInput };
 
 export { OCCUPATION_OPTIONS, occupationLabel };
 
@@ -20,20 +24,6 @@ export const userProfileSelect = {
 } as const;
 
 export type UserProfileData = Pick<User, keyof typeof userProfileSelect>;
-
-export function formatDateOfBirthForInput(date: Date | null | undefined): string {
-  if (!date) return "";
-  return date.toISOString().slice(0, 10);
-}
-
-export function formatDateOfBirthDisplay(date: Date | null | undefined): string {
-  if (!date) return "—";
-  return date.toLocaleDateString("en-IN", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
 
 export function isProfileComplete(user: Partial<UserProfileData>): boolean {
   return Boolean(
@@ -61,4 +51,3 @@ export async function isUserProfileComplete(userId: string): Promise<boolean> {
   return isProfileComplete(profile);
 }
 
-export const PROFILE_COMPLETE_REDIRECT = "/profile?complete=1";

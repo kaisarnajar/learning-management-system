@@ -6,6 +6,41 @@ import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { getAppBaseUrl } from "@/services/password-reset";
 import { cache } from "react";
+import { BASE_CATEGORIES, FATWA_CATEGORIES, FATWA_CATEGORY_OPTIONS, getFatwaCategoryOptions, isFatwaCategory, type FatwaCategory } from "@/config/fatwa-categories";
+import { HOMEPAGE_FEATURED_FATWA_MAX } from "@/config/constants/business";
+import { BRAND_CONFIG } from "@/config/brand";
+import { fatwaQuestionSchema } from "@/utils/validations";
+
+// Pure helpers, importable from client components: config/fatwa-categories.ts
+export { BASE_CATEGORIES, FATWA_CATEGORIES, FATWA_CATEGORY_OPTIONS, getFatwaCategoryOptions, isFatwaCategory };
+export type { FatwaCategory };
+
+/**
+ * Name and e-mail of the account that answered a fatwa, for the courtesy
+ * e-mail sent after a review. A failed lookup is logged and answers null, so
+ * the review itself (already saved) is never affected.
+ */
+export async function findFatwaAnswererContact(userId: string): Promise<{ email: string; name: string | null } | null> {
+  return prisma.user
+    .findUnique({ where: { id: userId }, select: { email: true, name: true } })
+    .catch((error: unknown) => {
+      console.error(`[fatwa] Could not look up answering user ${userId}:`, error);
+      return null;
+    });
+}
+
+/**
+ * A teacher cannot change an answer while it awaits review or once it is
+ * published: saving would resubmit it and take it off the public site.
+ */
+export function isFatwaAnswerLocked(question: Pick<FatwaQuestion, "approvalStatus" | "answer">): boolean {
+  return question.approvalStatus === "PENDING" || (question.approvalStatus === "APPROVED" && Boolean(question.answer));
+}
+
+/** The database form of the opposite of `isFatwaAnswerLocked`, for a guarded update. */
+export const FATWA_ANSWER_EDITABLE_WHERE = {
+  NOT: { OR: [{ approvalStatus: "PENDING" as const }, { approvalStatus: "APPROVED" as const, answer: { not: null } }] },
+};
 
 /** Admin-only search: may match asker name and e-mail. */
 function fatwaAdminSearchWhere(searchQuery?: string) {
@@ -22,38 +57,7 @@ function fatwaPublicSearchWhere(searchQuery?: string) {
   return buildSearchOr(["title", "question", "category"], [], searchQuery);
 }
 
-export const HOMEPAGE_FEATURED_FATWA_MAX = 4;
-
-export const BASE_CATEGORIES = [
-  "Islam",
-  "Quran",
-  "Hadith",
-  "Fiqh",
-  "Tajweed",
-  "Seerah",
-  "Arabic Language",
-  "Atheism",
-  "Fatwa",
-] as const;
-
-export const FATWA_CATEGORIES = [...BASE_CATEGORIES, "Others"] as const;
-export type FatwaCategory = (typeof FATWA_CATEGORIES)[number];
-
-export function isFatwaCategory(value: string): value is FatwaCategory {
-  return FATWA_CATEGORIES.includes(value as FatwaCategory);
-}
-
-export const FATWA_CATEGORY_OPTIONS = FATWA_CATEGORIES.map((category) => ({
-  value: category,
-  label: category,
-}));
-
-export function getFatwaCategoryOptions(current?: string | null) {
-  if (!current || isFatwaCategory(current)) {
-    return FATWA_CATEGORY_OPTIONS;
-  }
-  return [{ value: current, label: current }, ...FATWA_CATEGORY_OPTIONS];
-}
+export { HOMEPAGE_FEATURED_FATWA_MAX };
 
 type FatwaStatusFields = { answer: string | null; approvalStatus: string };
 
@@ -226,4 +230,37 @@ export function excerpt(text: string, maxLength = 160): string {
   const trimmed = text.trim().replace(/\s+/g, " ");
   if (trimmed.length <= maxLength) return trimmed;
   return `${trimmed.slice(0, maxLength).trim()}…`;
+}
+
+const ANONYMOUS_ASKER_NAME = "Anonymous";
+
+function anonymousAskerEmail(): string {
+  return `anonymous@${new URL(BRAND_CONFIG.websiteUrl).hostname}`;
+}
+
+export type FatwaAsker = { id: string; name: string | null; email: string };
+
+/**
+ * Stores a question asked on the website or in the app. Both callers go
+ * through here so the two cannot drift apart: a question starts in the
+ * default (APPROVED, unanswered) state, which is the one teachers can answer;
+ * a signed-in asker is linked to their account and named by it, unless they
+ * ask anonymously.
+ */
+export async function createFatwaQuestion(
+  input: { category: unknown; title: unknown; question: unknown; askerName: unknown; askerEmail: unknown },
+  options: { asker: FatwaAsker | null; isAnonymous: boolean },
+): Promise<{ ok: true; question: FatwaQuestion } | { ok: false; error: string }> {
+  const { asker, isAnonymous } = options;
+  const parsed = fatwaQuestionSchema.safeParse({
+    ...input,
+    askerName: isAnonymous ? ANONYMOUS_ASKER_NAME : (asker?.name?.trim() || input.askerName),
+    askerEmail: isAnonymous ? anonymousAskerEmail() : (asker?.email.toLowerCase().trim() || input.askerEmail),
+  });
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid fatwa question." };
+
+  const question = await prisma.fatwaQuestion.create({
+    data: { ...parsed.data, userId: isAnonymous ? null : (asker?.id ?? null) },
+  });
+  return { ok: true, question };
 }

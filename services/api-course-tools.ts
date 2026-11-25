@@ -2,23 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { notFound } from "next/navigation";
 import type { CourseAnnouncement } from "@prisma/client";
 import {
-  deleteCourseAttendance,
-  getAttendanceRecordsForDate,
-  getCourseAttendanceDates,
-  getEnrolledStudentsForAttendance,
-  getStudentAttendanceReport,
-  saveCourseAttendance,
-} from "@/app/actions/attendance";
-import {
-  deleteCourseGrade,
-  getCourseGradeCards,
-  getEnrolledStudentsForGrades,
-  getGradeRecordsForGradeId,
-  getStudentGradeReport,
-  saveCourseGrade,
-} from "@/app/actions/grades";
-import { sendStudentCardToEmailAction } from "@/app/actions/student-card";
-import {
   ANNOUNCEMENT_CATEGORIES,
   announcementCategoryLabels,
   canTeacherManageCourseAnnouncement,
@@ -48,17 +31,31 @@ import {
   updateCourseAnnouncement,
   updateStudentCourseAnnouncement,
 } from "@/services/course-announcement-actions";
+import {
+  deleteCourseAttendance,
+  deleteCourseGrade,
+  getAttendanceRecordsForDate,
+  getCourseAttendanceDates,
+  getCourseGradeCards,
+  getEnrolledStudentsForAttendance,
+  getEnrolledStudentsForGrades,
+  getGradeRecordsForGradeId,
+  getStudentAttendanceReport,
+  getStudentGradeReport,
+  saveCourseAttendance,
+  saveCourseGrade,
+} from "@/services/course-records";
+import { courseAccessFor } from "@/services/course-authorization";
 import { courseStatusLabel } from "@/services/course-status";
-import { getCourseById } from "@/services/courses";
-import { isEnrollmentInCourse } from "@/services/enrollments";
+import { CLASS_MEMBER_STATUSES, isEnrollmentInCourse } from "@/services/enrollments";
 import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { formatRollNumber } from "@/services/roll-numbers";
-import { STUDENT_CARDS, type StudentCardKind } from "@/services/student-cards";
-import { getTeacherCourseForPortal, getTeacherEnrollmentInCourse } from "@/services/teacher-portal";
+import { sendStudentCardEmailAsAdmin, STUDENT_CARDS, type StudentCardKind } from "@/services/student-cards";
+import { getTeacherEnrollmentInCourse } from "@/services/teacher-portal";
 import { apiError, readJson } from "@/utils/api-response";
 import { formatCalendarDate, toDateInputValue } from "@/utils/calendar-date";
 import { isDbError } from "@/utils/db-error";
-import { contentDisposition } from "@/utils/filename";
+import { pdfResponse } from "@/utils/pdf-response";
 import { GRID_PAGE_SIZE } from "@/utils/pagination";
 
 /**
@@ -66,8 +63,8 @@ import { GRID_PAGE_SIZE } from "@/utils/pagination";
  * portal (/teacher/courses/[id]/…) share: announcements, attendance, grade cards and
  * per-student reports. Each handler takes the portal ("admin" or "teacher"); the
  * route files under /api/v1/admin/courses and /api/v1/teacher/courses are thin
- * wrappers. Reads call the same actions/services the shared page components use;
- * writes call the same server actions.
+ * wrappers. Reads and writes call the same services (services/course-records.ts,
+ * services/course-announcement-actions.ts) the shared page components use.
  */
 
 export type CoursePortal = "admin" | "teacher";
@@ -78,9 +75,9 @@ export function portalRoles(portal: CoursePortal) {
 
 /** The course when the caller may manage it (any course for admins, an assigned one for teachers); 404 otherwise. */
 export async function requireManagedCourse(ctx: StaffContext, courseId: string) {
-  const course = ctx.teacherId ? await getTeacherCourseForPortal(ctx.teacherId, courseId) : await getCourseById(courseId);
-  if (!course) notFound();
-  return course;
+  const access = await courseAccessFor(ctx.session, courseId, { write: true });
+  if (!access) notFound();
+  return access.course;
 }
 
 /** The course's header as both portals' course layouts show it. */
@@ -324,7 +321,8 @@ export function deleteAttendanceDay(request: NextRequest, portal: CoursePortal, 
 
 async function requireEnrollmentInCourse(ctx: StaffContext, courseId: string, enrollmentId: string) {
   const course = await requireManagedCourse(ctx, courseId);
-  if (!(await isEnrollmentInCourse(enrollmentId, course.id))) notFound();
+  // Applicants who were never approved have no class record to show.
+  if (!(await isEnrollmentInCourse(enrollmentId, course.id, { statuses: CLASS_MEMBER_STATUSES }))) notFound();
   return course;
 }
 
@@ -453,7 +451,7 @@ export function getStudentGrades(request: NextRequest, portal: CoursePortal, cou
         rollNumberLabel: formatRollNumber(report.enrollment.rollNumber),
       },
       courseTitle: report.course.title,
-      summary: { exams: report.records.length, obtained, max, percentage: max === 0 ? 0 : Math.round((obtained / max) * 100) },
+      summary: { exams: report.records.length, obtained: Math.round(obtained * 100) / 100, max, percentage: max === 0 ? 0 : Math.round((obtained / max) * 100) },
       records: report.records.map((r) => ({
         id: r.id,
         title: r.grade.title,
@@ -478,13 +476,7 @@ export function studentCardPdf(request: NextRequest, courseId: string, enrollmen
     const card = STUDENT_CARDS[kind];
     const report = kind === "grade" ? await getStudentGradeReport(enrollmentId) : await getStudentAttendanceReport(enrollmentId);
     const pdf = await card.generatePdf(enrollmentId);
-    return new NextResponse(new Uint8Array(pdf), {
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": contentDisposition("inline", `${card.label} ${report.enrollment.user.name || "Student"}`, "pdf"),
-        "Cache-Control": "private, no-store",
-      },
-    });
+    return pdfResponse(pdf, `${card.label} ${report.enrollment.user.name?.trim() || "Student"}`, { inline: true });
   });
 }
 
@@ -492,6 +484,6 @@ export function studentCardPdf(request: NextRequest, courseId: string, enrollmen
 export function emailStudentCard(request: NextRequest, courseId: string, enrollmentId: string, kind: StudentCardKind) {
   return staffAction(request, ADMIN_ROLES, `api/v1/admin/courses/[id]/${kind}/student/[enrollmentId]/card/email`, async (ctx) => {
     await requireEnrollmentInCourse(ctx, courseId, enrollmentId);
-    return sendStudentCardToEmailAction(kind, enrollmentId);
+    return sendStudentCardEmailAsAdmin(kind, enrollmentId);
   });
 }

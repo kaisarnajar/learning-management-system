@@ -11,7 +11,7 @@ import {
   removeBlogImages,
 } from "@/services/blog-mutations";
 import { getBlogPostForTeacher } from "@/services/blogs";
-import { deleteBlogImageFile } from "@/services/blog-upload";
+import { deleteUpload } from "@/services/uploads";
 import { prisma } from "@/utils/prisma";
 import { executeServerAction } from "@/utils/action-utils";
 
@@ -122,7 +122,7 @@ export async function deleteTeacherBlogPost(id: string) {
   }
 
   for (const img of existing.images) {
-    await deleteBlogImageFile(img.imagePath);
+    await deleteUpload("blog-image", img.imagePath);
   }
 
   await prisma.blogPost.delete({ where: { id } });

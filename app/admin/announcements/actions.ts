@@ -1,9 +1,8 @@
 "use server";
 
-import { isRedirectError } from "next/dist/client/components/redirect-error";
 import { revalidatePath } from "next/cache";
 import { createAdminCrudActions } from "@/services/admin-crud";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { formatInputDateValue } from "@/utils/form-date";
 import { notifyAllStudentsOfSiteAnnouncement } from "@/services/notifications";
@@ -18,7 +17,7 @@ import {
   toggleSiteAnnouncementHomepageRecord,
   deleteSiteAnnouncementRecord
 } from "@/services/site-announcement-mutations";
-import { deleteAnnouncementImageFile } from "@/services/site-announcement-upload";
+import { deleteUpload } from "@/services/uploads";
 import { revalidatePublicContent } from "@/services/public-cache";
 
 function adminListPath(query = "") {
@@ -150,7 +149,7 @@ const crud = createAdminCrudActions({
 
     beforeDelete: async (existing) => {
       for (const img of existing.images) {
-        await deleteAnnouncementImageFile(img.imagePath);
+        await deleteUpload("site-announcement-image", img.imagePath);
       }
     },
   },
@@ -187,7 +186,7 @@ export async function toggleSiteAnnouncementHomepage(id: string) {
       await enforceHomepageAnnouncementLimit();
     }
   } catch (error) {
-    if (isRedirectError(error)) { throw error; }
+    unstable_rethrow(error);
     console.error("Database error toggling site announcement homepage:", error);
     redirect(`${adminListPath()}?error=${encodeURIComponent("An unexpected database error occurred.")}`);
   }

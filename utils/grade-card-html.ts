@@ -5,6 +5,7 @@ import { getAcademySettings } from "@/services/academy-settings";
 import { BRAND_CONFIG } from "@/config/brand";
 import { AUTHORITY_SIGNATURE } from "@/services/academy-contact";
 import { formatRollNumber } from "@/services/roll-numbers";
+import { formatBusinessDisplayDate } from "@/services/business-time";
 import { withMarks } from "@/services/grades";
 import { escapeHtml as e } from "@/utils/html-escape";
 
@@ -237,8 +238,12 @@ export async function generateGradeCardPdf(enrollmentId: string): Promise<Buffer
     totalMaxMarks += record.grade.maxMarks;
   }
 
-  const percentage = totalMaxMarks === 0 ? 0 : Math.round((totalMarksObtained / totalMaxMarks) * 100);
-  const overallGrade = totalMaxMarks === 0 ? "—" : getOverallGrade(percentage);
+  // Float sums print as 27.299999999999997; marks are kept to 2 decimals.
+  totalMarksObtained = Math.round(totalMarksObtained * 100) / 100;
+  // The letter comes from the exact ratio: 89.5 % is an A, not an A+, and 39.5 % is not a pass.
+  const exactPercentage = totalMaxMarks === 0 ? 0 : (totalMarksObtained / totalMaxMarks) * 100;
+  const percentage = Math.round(exactPercentage);
+  const overallGrade = totalMaxMarks === 0 ? "—" : getOverallGrade(exactPercentage);
 
   // Load static assets
   const { base64Logo, base64Signature, base64Stamp, base64Font } = await loadStandardPdfAssets();
@@ -271,11 +276,7 @@ export async function generateGradeCardPdf(enrollmentId: string): Promise<Buffer
     rollNumber: formatRollNumber(enrollment.rollNumber),
     studentEmail: enrollment.user.email,
     courseTitle: course.title,
-    issueDate: new Date().toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    }),
+    issueDate: formatBusinessDisplayDate(new Date()),
     exams: examsData,
     totalExams,
     totalMarksObtained,

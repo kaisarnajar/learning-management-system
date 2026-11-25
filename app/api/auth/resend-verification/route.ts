@@ -4,6 +4,7 @@ import { prisma } from "@/utils/prisma";
 import { buildVerificationUrl, generateVerificationToken } from "@/services/tokens";
 import { sendVerificationEmail } from "@/services/email";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
+import { apiError, apiServerError } from "@/utils/api-response";
 
 /**
  * Resends the verification email. Signed-in users resend for their own
@@ -21,12 +22,12 @@ export async function POST(request: NextRequest) {
       const body = await request.json().catch(() => null);
       email = typeof body?.email === "string" ? body.email.toLowerCase().trim() : "";
       if (!email) {
-        return NextResponse.json({ error: "Email is required." }, { status: 400 });
+        return apiError("Email is required.", 400);
       }
       const limitedByIp = await enforceRateLimit(RATE_LIMITS.RESEND_VERIFICATION_IP, getClientIp(request.headers));
       if (limitedByIp) return limitedByIp;
     } else if (session?.user?.emailVerified) {
-      return NextResponse.json({ error: "Email is already verified" }, { status: 400 });
+      return apiError("Email is already verified", 400);
     }
 
     const limited = await enforceRateLimit(RATE_LIMITS.RESEND_VERIFICATION, email);
@@ -40,7 +41,7 @@ export async function POST(request: NextRequest) {
     if (!user || user.deletedAt || user.emailVerified || !user.password) {
       // Signed-out callers get the generic answer; signed-in ones the real one.
       if (anonymous) return NextResponse.json({ success: true });
-      return NextResponse.json({ error: "Email is already verified" }, { status: 400 });
+      return apiError("Email is already verified", 400);
     }
 
     const verificationToken = await generateVerificationToken(email);
@@ -51,7 +52,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Failed to resend verification email:", error);
-    return NextResponse.json({ error: "Failed to send email. Please try again." }, { status: 500 });
+    return apiServerError("api/auth/resend-verification", error, "Failed to send email. Please try again.");
   }
 }

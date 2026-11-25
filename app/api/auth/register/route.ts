@@ -1,51 +1,32 @@
-import { isRedirectError } from "next/dist/client/components/redirect-error";
-import { hash } from "bcryptjs";
+import { unstable_rethrow } from "next/navigation";
 import { NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
-import { buildVerificationUrl, generateVerificationToken } from "@/services/tokens";
 import { registerSchema } from "@/utils/validations";
-import { sendVerificationEmail } from "@/services/email";
-import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
+import { registerWithPassword, REGISTRATION_MESSAGE } from "@/services/account-registration";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
+/**
+ * Answers the same for a new address and one that already has an account
+ * (whose owner is told by e-mail), so the form cannot be used to find out who
+ * has an account. The form then tries to sign in with the details entered.
+ */
 export async function POST(request: Request) {
   const limited = await enforceRateLimit(RATE_LIMITS.REGISTER_IP, getClientIp(request.headers));
   if (limited) return limited;
 
   try {
-    const parsed = registerSchema.safeParse(await request.json());
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
+    const parsed = registerSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { error: parsed.error.issues[0]?.message ?? "Invalid registration details." },
-        { status: 400 },
-      );
-    }
-    const { name, email, password } = parsed.data;
-
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return NextResponse.json({ error: "An account with this email already exists." }, { status: 400 });
+      return apiError(parsed.error.issues[0]?.message ?? "Invalid registration details.", 400);
     }
 
-    const hashedPassword = await hash(password, 12);
+    await registerWithPassword(parsed.data);
 
-    await prisma.user.create({
-      data: {
-        name: name || null,
-        email,
-        password: hashedPassword,
-        policiesAcceptedAt: new Date(),
-        policiesAcceptedVersion: CURRENT_POLICIES_VERSION,
-      },
-    });
-
-    const verificationToken = await generateVerificationToken(email);
-    await sendVerificationEmail({ to: email, verificationUrl: buildVerificationUrl(verificationToken.token) });
-
-    return NextResponse.json({ success: true, role: "USER" });
+    return NextResponse.json({ success: true, role: "USER", message: REGISTRATION_MESSAGE });
   } catch (error) {
-    if (isRedirectError(error)) { throw error; }
-    console.error("Caught error:", error);
-    return NextResponse.json({ error: "Registration failed. Please try again." }, { status: 500 });
+    unstable_rethrow(error);
+    return apiServerError("api/auth/register", error, "Registration failed. Please try again.");
     }
 }

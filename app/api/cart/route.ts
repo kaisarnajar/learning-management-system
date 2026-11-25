@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/services/auth";
 import { getCart, normalizeCartItems, replaceCart } from "@/services/cart";
+import { apiError, apiServerError } from "@/utils/api-response";
 
 /**
  * The website's cart sync (CartProvider). Same behaviour as
@@ -16,25 +17,23 @@ async function sessionUserId(): Promise<string | null> {
 
 export async function GET() {
   const userId = await sessionUserId();
-  if (!userId) return NextResponse.json({ success: false, error: "Unauthorized." }, { status: 401 });
+  if (!userId) return apiError("Unauthorized.", 401);
 
   try {
     return NextResponse.json(await getCart(userId));
   } catch (error) {
-    console.error("[api/cart] GET Error:", error);
-    return NextResponse.json({ success: false, error: "Failed to fetch the cart." }, { status: 500 });
+    return apiServerError("api/cart", error, "Failed to fetch the cart.");
   }
 }
 
 export async function POST(request: Request) {
   const userId = await sessionUserId();
-  if (!userId) return NextResponse.json({ success: false, error: "Unauthorized." }, { status: 401 });
+  if (!userId) return apiError("Unauthorized.", 401);
 
   try {
     const body = await request.json().catch(() => null);
     return NextResponse.json(await replaceCart(userId, normalizeCartItems(body?.items)));
   } catch (error) {
-    console.error("[api/cart] POST Error:", error);
-    return NextResponse.json({ success: false, error: "Failed to sync the cart." }, { status: 500 });
+    return apiServerError("api/cart", error, "Failed to sync the cart.");
   }
 }

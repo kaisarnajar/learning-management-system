@@ -1,12 +1,15 @@
 import { z } from "zod";
+import { rupeesToPaise } from "@/utils/form";
 import { MAX_ORDER_QTY } from "@/config/constants/business";
+import { MANUAL_PAYMENT_MAX_INR, MANUAL_PAYMENT_MIN_INR, PAYMENT_PROOF_REQUIRED_MESSAGE } from "@/config/constants/payments";
 import {
   PROFILE_COUNTRY_CODES,
   getProfileCountryOrDefault,
   isValidProfileLocalNumber,
 } from "@/services/countries";
 import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_OTHER, EXPENSE_CATEGORY_TEACHER_SALARY } from "@/services/expense-categories";
-import { isPaymentYearAllowed } from "@/services/monthly-payments";
+import { isPaymentYearAllowed } from "@/utils/payment-years";
+import { businessDateFromToday, businessDayStart } from "@/services/business-time";
 import { OCCUPATION_VALUES } from "@/services/occupations";
 
 export const levelEnum = z.enum(["Beginner", "Intermediate", "Advanced"]);
@@ -95,6 +98,30 @@ export const adminEnrollUserSchema = z.object({
   courseId: z.string().min(1, "Select a course."),
 });
 
+/**
+ * bcrypt reads only the first 72 bytes of a password and silently ignores the
+ * rest, so a new password is capped at 72 bytes of UTF-8 (72 ASCII
+ * characters, fewer with accented letters or emoji) rather than characters.
+ */
+export const PASSWORD_MAX_BYTES = 72;
+/**
+ * Sign-in only bounds the input. Accounts created while 128 characters were
+ * allowed may have longer passwords, which bcrypt truncated when hashing and
+ * still matches when truncated the same way, so sign-in must not refuse them.
+ */
+export const LOGIN_PASSWORD_MAX_LENGTH = 1024;
+
+const utf8Bytes = (value: string) => new TextEncoder().encode(value).length;
+
+/** A password being set: register, reset and change. */
+const newPasswordField = (requiredMessage: string) =>
+  z
+    .string(requiredMessage)
+    .min(8, "Password must be at least 8 characters.")
+    .refine((value) => utf8Bytes(value) <= PASSWORD_MAX_BYTES, {
+      message: "Password must be at most 72 characters (fewer if it uses accented letters or emoji).",
+    });
+
 /** Shared by the web and mobile registration endpoints. */
 export const registerSchema = z.object({
   name: z.string().trim().max(100, "Name must be at most 100 characters.").nullish(),
@@ -105,10 +132,7 @@ export const registerSchema = z.object({
     .min(1, "Email and password are required.")
     .max(254, "Email must be at most 254 characters.")
     .email("Enter a valid email address."),
-  password: z
-    .string("Email and password are required.")
-    .min(8, "Password must be at least 8 characters.")
-    .max(128, "Password must be at most 128 characters."),
+  password: newPasswordField("Email and password are required."),
   acceptPolicies: z.literal(true, {
     error: "You must accept the Terms & Conditions and Privacy Policy.",
   }),
@@ -118,10 +142,9 @@ export const registerSchema = z.object({
 export const changePasswordSchema = z
   .object({
     currentPassword: z.string("Enter your current password.").min(1, "Enter your current password."),
-    newPassword: z
-      .string("Enter a new password.")
-      .min(8, "Password must be at least 8 characters.")
-      .max(128, "Password must be at most 128 characters."),
+    newPassword: newPasswordField("Enter a new password."),
+    /** The calling device's push token, kept when the others are removed. */
+    deviceToken: z.string().trim().max(4096).optional(),
   })
   .refine((v) => v.currentPassword !== v.newPassword, {
     message: "The new password must be different from the current one.",
@@ -135,7 +158,7 @@ export const forgotPasswordSchema = z.object({
 export const resetPasswordSchema = z
   .object({
     token: z.string().min(1, "Reset link is invalid."),
-    password: z.string().min(8, "Password must be at least 8 characters."),
+    password: newPasswordField("Enter a new password."),
     confirmPassword: z.string().min(1, "Confirm your new password."),
   })
   .refine((data) => data.password === data.confirmPassword, {
@@ -174,6 +197,20 @@ export const expectedAmountPaiseSchema = z.preprocess(
   z.coerce.number().int().nonnegative().optional(),
 );
 
+/**
+ * A fee the client says costs money needs a UTR or a screenshot. The server
+ * repeats the check once it has computed the amount (services/payments.ts),
+ * which also covers clients that send no expected amount.
+ */
+function requirePaymentProof(
+  data: { expectedAmountPaise?: number; upiTransactionId?: string | null; hasScreenshot?: boolean },
+  ctx: z.RefinementCtx,
+) {
+  if ((data.expectedAmountPaise ?? 0) > 0 && !data.upiTransactionId && !data.hasScreenshot) {
+    ctx.addIssue({ code: "custom", path: ["upiTransactionId"], message: PAYMENT_PROOF_REQUIRED_MESSAGE });
+  }
+}
+
 export const monthlyPaymentSubmitSchema = z.object({
   courseId: z.string().min(1),
   paymentMonth: z.string().regex(/^(0[1-9]|1[0-2])$/, "Select a valid month."),
@@ -191,7 +228,8 @@ export const monthlyPaymentSubmitSchema = z.object({
     .or(z.null()),
   couponId: z.string().optional().or(z.literal("")).or(z.null()),
   expectedAmountPaise: expectedAmountPaiseSchema,
-});
+  hasScreenshot: z.boolean().optional(),
+}).superRefine(requirePaymentProof);
 
 export const enrollmentPaymentSubmitSchema = z.object({
   courseId: z.string().min(1),
@@ -205,7 +243,8 @@ export const enrollmentPaymentSubmitSchema = z.object({
     .or(z.null()),
   couponId: z.string().optional().or(z.literal("")).or(z.null()),
   expectedAmountPaise: expectedAmountPaiseSchema,
-});
+  hasScreenshot: z.boolean().optional(),
+}).superRefine(requirePaymentProof);
 
 export const occupationEnum = z.enum(OCCUPATION_VALUES);
 
@@ -300,8 +339,31 @@ export const profileImageUrlSchema = z
   .refine(isAllowedProfileImageUrl, "Profile image must be hosted on the academy's storage.");
 
 /**
+ * The profile images a client may set directly: the two default avatars and a
+ * Google account photo. An uploaded photo only ever arrives through
+ * POST /api/v1/auth/me/photo, which stores it under the caller's own id;
+ * accepting a storage URL here would let a user point their profile at
+ * someone else's upload, and the next photo change would then delete it.
+ */
+export function isClientSettableProfileImage(value: string): boolean {
+  if (value === "/assets/male_icon.png" || value === "/assets/female_icon.png") return true;
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol === "https:" && parsed.hostname.toLowerCase().endsWith(".googleusercontent.com");
+  } catch {
+    return false;
+  }
+}
+
+const apiProfileImageSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine(isClientSettableProfileImage, "Upload a photo with POST /api/v1/auth/me/photo; only a default avatar or a Google photo can be set here.");
+
+/**
  * Mobile API profile update: every field optional, no unknown keys, image
- * host-restricted. With `country` (ISO code, as on the web form) `whatsapp` is
+ * limited to the default avatars and Google photos. With `country` (ISO code, as on the web form) `whatsapp` is
  * the local number and follows that country's length rule; without it,
  * `whatsapp` is a full international number (7 to 15 digits, legacy clients).
  */
@@ -311,7 +373,7 @@ export const apiProfileUpdateSchema = profileFieldsSchema
       .string()
       .trim()
       .regex(/^\+?\d{4,15}$/, "WhatsApp number must be 4 to 15 digits."),
-    image: profileImageUrlSchema.nullable(),
+    image: apiProfileImageSchema.nullable(),
   })
   .partial()
   .strict()
@@ -390,7 +452,12 @@ export const calendarDateSchema = z.string().trim().regex(/^\d{4}-\d{2}-\d{2}$/,
 
 export const paymentRecordSchema = z.object({
   courseId: z.string().optional(),
-  amountInr: z.coerce.number().positive("Amount must be greater than zero."),
+  amountInr: z.coerce
+    .number("Enter the amount.")
+    .min(MANUAL_PAYMENT_MIN_INR, `Amount must be at least ₹${MANUAL_PAYMENT_MIN_INR}.`)
+    .max(MANUAL_PAYMENT_MAX_INR, `Amount cannot exceed ₹${MANUAL_PAYMENT_MAX_INR.toLocaleString("en-IN")}.`)
+    // Whole paise, as stored.
+    .transform((rupees) => rupeesToPaise(rupees) / 100),
   paidAt: calendarDateSchema,
   paymentType: z.enum(["monthly", "quarterly", "half_yearly", "yearly", "one_time", "enrollment", "manual"]),
 });
@@ -527,6 +594,15 @@ export const waiverRequestSchema = z.object({
 });
 export type WaiverRequestInput = z.infer<typeof waiverRequestSchema>;
 
+const MAX_COPIES_MESSAGE = `You can order at most ${MAX_ORDER_QTY} copies of a book.`;
+
+/** One line per book: repeated lines for the same book are added together. */
+export function mergeBookLines<T extends { bookId: string; quantity: number }>(items: T[]): { bookId: string; quantity: number }[] {
+  const byBook = new Map<string, number>();
+  for (const item of items) byBook.set(item.bookId, (byBook.get(item.bookId) ?? 0) + item.quantity);
+  return [...byBook].map(([bookId, quantity]) => ({ bookId, quantity }));
+}
+
 export const bookstoreCheckoutSchema = z.object({
   items: z.array(
     z.object({
@@ -535,21 +611,26 @@ export const bookstoreCheckoutSchema = z.object({
         .number()
         .int()
         .min(1, "Quantity must be at least 1.")
-        .max(MAX_ORDER_QTY, `You can order at most ${MAX_ORDER_QTY} copies of a book.`),
+        .max(MAX_ORDER_QTY, MAX_COPIES_MESSAGE),
     })
-  ).min(1, "Cart cannot be empty."),
+  ).min(1, "Cart cannot be empty.")
+    // The per-book limit applies to the book, not to each line naming it.
+    .transform(mergeBookLines)
+    .refine((items) => items.every((item) => item.quantity <= MAX_ORDER_QTY), MAX_COPIES_MESSAGE),
   paymentMethod: z.string().min(1, "Payment method is required."),
   upiTransactionId: z.string().trim().min(1, "Transaction / UTR reference is required."),
   deliveryAddress: z.string().trim().min(10, "Delivery address must be at least 10 characters long."),
   deliveryPinCode: z.string().trim().regex(/^[0-9]{5,10}$/, "Valid pin code is required."),
   deliveryPhoneNumber: z.string().trim().regex(/^[0-9]{10,15}$/, "Valid phone number (10-15 digits) is required."),
   notes: z.string().trim().optional(),
+  /** The total the client showed; optional so older app builds keep working. */
+  expectedTotalPaise: expectedAmountPaiseSchema,
 });
 
 const isoDateString = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "Enter a valid date.")
-  .refine((value) => !Number.isNaN(Date.parse(value)), "Enter a valid date.");
+  .refine((value) => businessDayStart(value) !== null, "Enter a valid date.");
 
 const couponPercentage = z.coerce
   .number("Discount must be a number.")
@@ -591,10 +672,8 @@ export const specialCouponUpdateSchema = couponFieldsSchema
 
 export const couponRequestApprovalSchema = z.object({
   percentage: couponPercentage,
-  validUntil: isoDateString.refine(
-    (value) => value >= new Date().toISOString().slice(0, 10),
-    "Valid until cannot be in the past.",
-  ),
+  // "Today" is the academy's calendar day, not the server's UTC one.
+  validUntil: isoDateString.refine((value) => value >= businessDateFromToday(), "Valid until cannot be in the past."),
 });
 
 /**

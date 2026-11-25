@@ -1,5 +1,6 @@
 "use client";
 
+import { BUSINESS_TIMEZONE } from "@/config/constants/business";
 import Image from "next/image";
 import { formatPrice } from "@/utils/money";
 import Link from "next/link";
@@ -7,7 +8,7 @@ import { useState } from "react";
 import { useCart } from "@/components/bookstore/CartProvider";
 import { CartStaleNotice } from "@/components/bookstore/CartStaleNotice";
 
-import { bookOrderStatusLabel, bookOrderStatusClass } from "@/services/bookstore";
+import { bookOrderStatusLabel, bookOrderStatusClass } from "@/utils/bookstore-status";
 import { ActionToast } from "@/components/shared/ToastProvider";
 
 
@@ -37,6 +38,7 @@ function PastOrderCard({ order }: { order: PastOrder }) {
         <div>
           <p className="text-sm text-muted">
             {new Date(order.createdAt).toLocaleDateString("en-IN", {
+              timeZone: BUSINESS_TIMEZONE,
               day: "numeric",
               month: "short",
               year: "numeric",

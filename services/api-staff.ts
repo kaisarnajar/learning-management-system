@@ -1,27 +1,26 @@
 import type { Session } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
-import { isRedirectError } from "next/dist/client/components/redirect-error";
-import { getURLFromRedirectError } from "next/dist/client/components/redirect";
-import {
-  getAccessFallbackHTTPStatus,
-  isHTTPAccessFallbackError,
-} from "next/dist/client/components/http-access-fallback/http-access-fallback";
 import { authenticateApiRequest, type ApiUserPayload } from "@/services/api-auth";
 import { runAsApiActor } from "@/services/api-actor";
 import { getTeacherForSession } from "@/services/teacher-auth";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { readFlash } from "@/utils/flash";
+import { nextControlFlowOf } from "@/utils/next-control-flow";
+import { apiError } from "@/utils/api-response";
 
 /**
  * Staff side of the mobile API: /api/v1/admin/** for admins and developers,
  * /api/v1/teacher/** for teachers.
  *
  * Reads call the same service functions the admin and teacher pages use.
- * Writes call the website's own server actions (`staffAction`), run as the
- * app user (see services/api-actor.ts), so validation, audit log, e-mails and
- * cache invalidation stay in one place. A server action reports its outcome
- * by returning `{ error }` / `{ success }` or by redirecting with a flash
- * (`?err=` / `?msg=` / `?error=`); both are turned into JSON here.
+ * Payments, coupons and book orders call their services directly
+ * (`staffServiceAction`), which return typed results. The other writes still
+ * call the website's own server actions (`staffAction`), run as the app user
+ * (see services/api-actor.ts), so validation, audit log, e-mails and cache
+ * invalidation stay in one place. A server action reports its outcome by
+ * returning `{ error }` / `{ success }` or by redirecting with a flash
+ * (`?err=` / `?msg=` / `?error=`); both are turned into JSON here. As those
+ * actions move into services, they move to `staffServiceAction`.
  */
 
 export const ADMIN_ROLES = ["ADMIN", "DEVELOPER"] as const;
@@ -39,13 +38,16 @@ export type StaffContext = {
 type StaffAuthResult = { ctx: StaffContext; errorResponse: null } | { ctx: null; errorResponse: NextResponse };
 
 function fail(error: string, status: number): NextResponse {
-  return NextResponse.json({ success: false, error }, { status });
+  return apiError(error, status);
 }
 
 /** Verifies the Bearer token and that the user has one of [roles]. */
 export async function requireStaffApiAuth(request: NextRequest, roles: readonly StaffRole[]): Promise<StaffAuthResult> {
   const { user, error } = await authenticateApiRequest(request);
   if (!user) return { ctx: null, errorResponse: fail(error || "Unauthorized access", 401) };
+  // authenticateApiRequest already resolves an unverified account to USER;
+  // refuse here too so a staff route never runs for an unproven address.
+  if (!user.emailVerified) return { ctx: null, errorResponse: fail("You do not have access to this.", 403) };
   if (!roles.includes(user.role as StaffRole)) {
     return { ctx: null, errorResponse: fail("You do not have access to this.", 403) };
   }
@@ -74,10 +76,10 @@ export async function requireStaffApiAuth(request: NextRequest, roles: readonly 
 
 /** Maps an error thrown by page or action code to a JSON response, or null when it is not one Next.js uses for control flow. */
 function controlFlowResponse(error: unknown): NextResponse | null {
-  if (isRedirectError(error)) return redirectResponse(getURLFromRedirectError(error));
-  if (isHTTPAccessFallbackError(error)) {
-    const status = getAccessFallbackHTTPStatus(error);
-    return fail(status === 404 ? "This record no longer exists." : "You do not have access to this.", status);
+  const flow = nextControlFlowOf(error);
+  if (flow?.kind === "redirect") return redirectResponse(flow.url);
+  if (flow?.kind === "http-status") {
+    return fail(flow.status === 404 ? "This record no longer exists." : "You do not have access to this.", flow.status);
   }
   return null;
 }
@@ -145,6 +147,37 @@ export async function staffAction(
       }
     }
     return NextResponse.json({ success: true, result: result ?? null });
+  } catch (error) {
+    const handled = controlFlowResponse(error);
+    if (handled) return handled;
+    console.error(`[${scope}]`, error);
+    return fail("Something went wrong. Please try again.", 500);
+  }
+}
+
+/** The typed result services/* return for a write (payment-approval, coupon-admin-actions, book-order-transitions). */
+type ServiceResult = { ok: true } | { ok: false; error: string; status: number };
+
+/**
+ * POST/PATCH/DELETE handler body that calls a service directly. [run] returns
+ * the service's typed result; a refusal becomes a 400 with its message (the
+ * status installed apps have always seen for a refused staff action), and
+ * [respond] gives the success body (without `success`). The route revalidates
+ * the website's caches in [respond], as the website's own action does.
+ */
+export async function staffServiceAction<R extends ServiceResult>(
+  request: NextRequest,
+  roles: readonly StaffRole[],
+  scope: string,
+  run: (ctx: StaffContext) => Promise<R>,
+  respond: (result: Extract<R, { ok: true }>, ctx: StaffContext) => Record<string, unknown>,
+): Promise<NextResponse> {
+  const { ctx, errorResponse } = await requireStaffApiAuth(request, roles);
+  if (errorResponse) return errorResponse;
+  try {
+    const result = await runAsApiActor(ctx.session, () => run(ctx));
+    if (!result.ok) return fail((result as Extract<R, { ok: false }>).error, 400);
+    return NextResponse.json({ success: true, ...respond(result as Extract<R, { ok: true }>, ctx) });
   } catch (error) {
     const handled = controlFlowResponse(error);
     if (handled) return handled;

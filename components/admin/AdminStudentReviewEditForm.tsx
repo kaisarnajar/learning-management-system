@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { unstable_rethrow, usePathname, useSearchParams } from "next/navigation";
 import { BRAND_CONFIG } from "@/config/brand";
 import { useState, useTransition } from "react";
 import {
@@ -9,8 +9,7 @@ import {
   saveApprovedReviewHomepageSetting,
 } from "@/app/admin/review-approvals/actions";
 import { StarRating } from "@/components/reviews/StarRating";
-import { HOMEPAGE_FEATURED_REVIEWS_MAX } from "@/services/student-reviews";
-import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { HOMEPAGE_FEATURED_REVIEWS_MAX } from "@/config/constants/business";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import type { StudentReviewStatus } from "@prisma/client";
 import { useToast } from "@/components/shared/ToastProvider";
@@ -64,7 +63,7 @@ export function AdminStudentReviewEditForm({
           addToast("Homepage settings saved.", "success");
         }
       } catch (error) {
-        if (isRedirectError(error)) throw error;
+        unstable_rethrow(error);
         addToast("An unexpected error occurred.", "error");
       }
     });

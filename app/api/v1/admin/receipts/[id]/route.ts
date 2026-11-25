@@ -42,7 +42,12 @@ export async function GET(request: NextRequest, { params }: Params) {
 }
 
 /** The messages generateReceipt throws on purpose; anything else is a 500. */
-const RECEIPT_ERRORS = ["Receipt has already been generated.", "Payment record not found.", "Unauthorized: Only admins can generate receipts."];
+const RECEIPT_ERRORS = [
+  "Receipt has already been generated.",
+  "Payment record not found.",
+  "This payment was voided, so it has no receipt.",
+  "Unauthorized: Only admins can generate receipts.",
+];
 
 /** Generates the receipt (allocates the invoice number and stores the PDF). */
 export async function POST(request: NextRequest, { params }: Params) {

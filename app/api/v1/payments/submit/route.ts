@@ -3,7 +3,8 @@ import { requireStudentApiAuth, requireVerifiedEmail } from "@/services/api-auth
 import { processMonthlyPayment, processEnrollmentPayment } from "@/services/payments";
 import { isUpiConfigured } from "@/services/upi";
 import { paymentTypeFromText } from "@/services/status-compat";
-import { validatePaymentScreenshot } from "@/services/payment-upload";
+import { validatePendingUpload } from "@/services/uploads";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 import { enrollmentPaymentSubmitSchema, monthlyPaymentSubmitSchema } from "@/utils/validations";
 
 export async function POST(request: NextRequest) {
@@ -13,10 +14,7 @@ export async function POST(request: NextRequest) {
   if (unverified) return unverified;
 
   if (!(await isUpiConfigured())) {
-    return NextResponse.json(
-      { success: false, error: "Online payments are not configured yet. Please contact the academy." },
-      { status: 503 }
-    );
+    return apiError("Online payments are not configured yet. Please contact the academy.", 503);
   }
 
   try {
@@ -34,23 +32,19 @@ export async function POST(request: NextRequest) {
         screenshotFile = file;
       }
     } else {
-      raw = (await request.json()) ?? {};
+      const body = await readJson(request);
+      if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
+      raw = body;
     }
 
     const courseId = typeof raw.courseId === "string" ? raw.courseId : "";
     if (!courseId) {
-      return NextResponse.json(
-        { success: false, error: "Course ID is required." },
-        { status: 400 }
-      );
+      return apiError("Course ID is required.", 400);
     }
 
     const paymentType = raw.paymentType ?? "monthly";
     if (paymentType !== "enrollment" && paymentType !== "monthly") {
-      return NextResponse.json(
-        { success: false, error: "Payment type must be \"enrollment\" or \"monthly\"." },
-        { status: 400 }
-      );
+      return apiError("Payment type must be \"enrollment\" or \"monthly\".", 400);
     }
 
     // Mobile clients historically send "UPI" and a numeric month; the shared
@@ -61,24 +55,19 @@ export async function POST(request: NextRequest) {
       upiTransactionId: raw.upiTransactionId ?? "",
       couponId: raw.couponId ?? null,
       expectedAmountPaise: raw.expectedAmountPaise,
+      hasScreenshot: Boolean(screenshotFile && screenshotFile.size > 0),
     };
 
-    const screenshotValidation = validatePaymentScreenshot(screenshotFile);
+    const screenshotValidation = validatePendingUpload("payment-screenshot", screenshotFile);
     if (screenshotValidation.error) {
-      return NextResponse.json(
-        { success: false, error: screenshotValidation.error },
-        { status: 400 }
-      );
+      return apiError(screenshotValidation.error, 400);
     }
 
     let result;
     if (paymentTypeFromText(paymentType) === "ENROLLMENT") {
       const parsed = enrollmentPaymentSubmitSchema.safeParse(common);
       if (!parsed.success) {
-        return NextResponse.json(
-          { success: false, error: parsed.error.issues[0]?.message ?? "Invalid payment details." },
-          { status: 400 }
-        );
+        return apiError(parsed.error.issues[0]?.message ?? "Invalid payment details.", 400);
       }
       result = await processEnrollmentPayment(
         user.id,
@@ -96,10 +85,7 @@ export async function POST(request: NextRequest) {
         paymentYear: String(raw.paymentYear ?? new Date().getFullYear()),
       });
       if (!parsed.success) {
-        return NextResponse.json(
-          { success: false, error: parsed.error.issues[0]?.message ?? "Invalid payment details." },
-          { status: 400 }
-        );
+        return apiError(parsed.error.issues[0]?.message ?? "Invalid payment details.", 400);
       }
       result = await processMonthlyPayment(
         user.id,
@@ -115,10 +101,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (result.error) {
-      return NextResponse.json(
-        { success: false, error: result.error },
-        { status: result.status || 400 }
-      );
+      return apiError(result.error, result.status || 400);
     }
 
     return NextResponse.json({
@@ -126,10 +109,6 @@ export async function POST(request: NextRequest) {
       message: "Payment proof submitted successfully. We will verify your fee payment shortly.",
     });
   } catch (error) {
-    console.error("[api/v1/payments/submit] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Could not submit payment proof. Please try again." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/payments/submit", error, "Could not submit payment proof. Please try again.");
   }
 }

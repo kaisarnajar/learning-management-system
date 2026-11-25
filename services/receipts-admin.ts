@@ -57,7 +57,7 @@ export async function getGeneratedReceiptsPaginated(
     const where = andWhere(baseWhere, searchWhere);
 
     const totalCount = await prisma.paymentRecord.count({ where });
-    const safePage = clampPage(page, pageSize, totalCount);
+    const safePage = clampPage(page, totalCount, pageSize);
 
     const items = await prisma.paymentRecord.findMany({
       where,

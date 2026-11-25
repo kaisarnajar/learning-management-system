@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { prisma } from "@/utils/prisma";
 import { studentReviewSchema } from "@/utils/validations";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -18,11 +19,7 @@ export async function GET(request: NextRequest) {
       data: reviews,
     });
   } catch (error) {
-    console.error("[api/v1/reviews] GET Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch reviews." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/reviews", error, "Failed to fetch reviews.");
   }
 }
 
@@ -31,7 +28,8 @@ export async function POST(request: NextRequest) {
   if (errorResponse) return errorResponse;
 
   try {
-    const body = await request.json();
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const parsed = studentReviewSchema.safeParse({
       quote: body?.quote,
       course: body?.course ?? "",
@@ -40,10 +38,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: parsed.error.issues[0]?.message ?? "Invalid review." },
-        { status: 400 }
-      );
+      return apiError(parsed.error.issues[0]?.message ?? "Invalid review.", 400);
     }
 
     const review = await prisma.studentReview.create({
@@ -63,10 +58,6 @@ export async function POST(request: NextRequest) {
       review,
     });
   } catch (error) {
-    console.error("[api/v1/reviews] POST Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to submit review." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/reviews", error, "Failed to submit review.");
   }
 }

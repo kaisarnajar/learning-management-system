@@ -1,5 +1,4 @@
-import { isRedirectError } from "next/dist/client/components/redirect-error";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { DbError } from "@/utils/db-error";
 import { type FlashCode, withFlash } from "@/utils/flash";
 
@@ -37,9 +36,7 @@ export async function executeServerAction<T>(
   try {
     return await action();
   } catch (error) {
-    if (isRedirectError(error)) {
-      throw error;
-    }
+    unstable_rethrow(error);
     if (error instanceof ActionError) {
       redirect(withFlash(redirectPathOnError, { message: error.message }));
     }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { rotateApiSession } from "@/services/api-auth";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
+import { apiError, apiServerError } from "@/utils/api-response";
 
 /**
  * POST { refreshToken } -> a new access token and a new refresh token. The
@@ -17,20 +18,16 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const refreshToken = typeof body?.refreshToken === "string" ? body.refreshToken.trim() : "";
     if (!refreshToken) {
-      return NextResponse.json({ success: false, error: "refreshToken is required." }, { status: 400 });
+      return apiError("refreshToken is required.", 400);
     }
 
     const tokens = await rotateApiSession(refreshToken);
     if (!tokens) {
-      return NextResponse.json(
-        { success: false, error: "Session has ended. Sign in again." },
-        { status: 401 }
-      );
+      return apiError("Session has ended. Sign in again.", 401);
     }
 
     return NextResponse.json({ success: true, token: tokens.accessToken, ...tokens });
   } catch (error) {
-    console.error("[api/v1/auth/refresh] Error:", error);
-    return NextResponse.json({ success: false, error: "Could not refresh the session." }, { status: 500 });
+    return apiServerError("api/v1/auth/refresh", error, "Could not refresh the session.");
   }
 }

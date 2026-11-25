@@ -18,6 +18,7 @@ import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { formatBusinessDate } from "@/services/business-time";
 import Link from "next/link";
 import { requireAdmin } from "@/services/auth-actions";
+import { FinanceExportLink } from "@/components/admin/FinanceExportLink";
 
 export default async function AdminBookstoreFinancePage({
   searchParams,
@@ -107,16 +108,14 @@ export default async function AdminBookstoreFinancePage({
                   totalCount={filters.q ? totalCount : undefined}
                 />
               </div>
-              <a
+              <FinanceExportLink
                 href={`/api/admin/finance/export?${new URLSearchParams({
                   ...searchPreserveParams,
                   type: "book_sales",
                   ...(filters.q ? { q: filters.q } : {}),
                 }).toString()}`}
-                className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-5 py-2 text-sm font-semibold text-foreground hover:bg-accent-muted/50 whitespace-nowrap"
-              >
-                Export to Excel
-              </a>
+                hasDateRange={Boolean(filters.from && filters.to)}
+              />
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-border bg-surface">
@@ -143,16 +142,14 @@ export default async function AdminBookstoreFinancePage({
                   totalCount={filters.q ? totalCount : undefined}
                 />
               </div>
-              <a
+              <FinanceExportLink
                 href={`/api/admin/finance/export?${new URLSearchParams({
                   ...searchPreserveParams,
                   type: "book_orders",
                   ...(filters.q ? { q: filters.q } : {}),
                 }).toString()}`}
-                className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-5 py-2 text-sm font-semibold text-foreground hover:bg-accent-muted/50 whitespace-nowrap"
-              >
-                Export to Excel
-              </a>
+                hasDateRange={Boolean(filters.from && filters.to)}
+              />
             </div>
 
             <div className="overflow-x-auto rounded-lg border border-border bg-surface">

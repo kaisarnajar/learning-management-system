@@ -1,7 +1,7 @@
 import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 import type { StudentNotification, StudentNotificationType } from "@prisma/client";
-import { PENDING_ENROLLMENT_APPROVAL } from "@/services/enrollment-status";
+
 import {
   DEFAULT_PAGE_SIZE,
   type PaginatedResult,
@@ -15,14 +15,16 @@ import {
   sendPaymentApprovedEmail,
   sendEnrollmentApprovedEmail,
   sendEnrollmentRejectedEmail,
-  sendCourseAnnouncementEmail,
+  buildCourseAnnouncementEmail,
+  buildSiteAnnouncementEmail,
+  type DeliverMailParams,
   sendPersonalMessageEmail,
-  sendSiteAnnouncementEmail,
   sendBookOrderApprovedEmail,
   sendBookOrderDeclinedEmail,
   sendBookOrderShippedEmail,
   sendBookOrderRefundedEmail
 } from "@/services/email";
+import { drainOutbox, enqueueEmails } from "@/services/email-outbox";
 import { buildUnsubscribeUrl } from "@/services/email-unsubscribe";
 import { sendPushToUsers } from "@/services/push";
 
@@ -44,41 +46,6 @@ function runInBackground(task: () => Promise<void>) {
   }
 }
 
-/**
- * Sends emails to a list of recipients with concurrency control, per-recipient error isolation,
- * and throttling delays between batches to prevent SMTP rate-limiting and connection limit drops.
- */
-async function processEmailBatch<T>(
-  items: T[],
-  batchSize: number,
-  delayMs: number,
-  worker: (item: T) => Promise<void>,
-): Promise<{ successCount: number; failureCount: number }> {
-  let successCount = 0;
-  let failureCount = 0;
-
-  for (let i = 0; i < items.length; i += batchSize) {
-    const chunk = items.slice(i, i + batchSize);
-    await Promise.all(
-      chunk.map(async (item) => {
-        try {
-          await worker(item);
-          successCount++;
-        } catch (err) {
-          failureCount++;
-          console.error("[processEmailBatch] Error sending email for item:", item, err);
-        }
-      }),
-    );
-
-    if (i + batchSize < items.length && delayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, delayMs));
-    }
-  }
-
-  return { successCount, failureCount };
-}
-
 async function getUserEmailData(userId: string): Promise<{ email: string; name: string; announcementEmailsOptOut: boolean } | null> {
   const user = await withDbErrorHandling(() => prisma.user.findUnique({
     where: { id: userId, deletedAt: null },
@@ -92,7 +59,6 @@ function toAbsoluteUrl(href: string): string {
   const base = getAppBaseUrl().replace(/\/$/, "");
   return `${base}${href.startsWith("/") ? "" : "/"}${href}`;
 }
-
 
 export type CreateStudentNotificationInput = {
   userId: string;
@@ -256,29 +222,70 @@ export async function createStudentNotificationsForUsers(
       }), "Database operation failed");
 }
 
-async function getEnrolledStudentUserIdsForCourse(courseId: string): Promise<string[]> {
-  const enrollments = await withDbErrorHandling(() => prisma.enrollment.findMany({
+type AnnouncementRecipient = {
+  id: string;
+  email: string;
+  name: string | null;
+  announcementEmailsOptOut: boolean;
+};
+
+const RECIPIENT_SELECT = { id: true, email: true, name: true, announcementEmailsOptOut: true } as const;
+
+/**
+ * Students who are in the course: active or completed enrollments of accounts
+ * that still exist. Pending, awaiting-fee and rejected requests are not.
+ * One query returns everything the in-app and e-mail fan-out needs.
+ */
+async function getEnrolledStudentRecipientsForCourse(courseId: string): Promise<AnnouncementRecipient[]> {
+  return withDbErrorHandling(() => prisma.user.findMany({
       where: {
-        courseId,
-        status: { not: PENDING_ENROLLMENT_APPROVAL },
+        deletedAt: null,
+        enrollments: {
+          some: {
+            courseId,
+            statusEnum: { in: ["ACTIVE", "COMPLETED"] },
+          },
+        },
       },
-      select: { userId: true },
+      select: RECIPIENT_SELECT,
     }), "Database operation failed");
-  return enrollments.map((enrollment) => enrollment.userId);
 }
 
-async function getNonTeacherUserIds(): Promise<string[]> {
+async function getNonTeacherRecipients(): Promise<AnnouncementRecipient[]> {
   const teachers = await withDbErrorHandling(() => prisma.teacher.findMany({ select: { email: true } }), "Database operation failed");
   const teacherEmails = teachers.flatMap((teacher) =>
     teacher.email ? [teacher.email.toLowerCase()] : [],
   );
 
-  const users = await withDbErrorHandling(() => prisma.user.findMany({
+  return withDbErrorHandling(() => prisma.user.findMany({
       where: { deletedAt: null, ...(teacherEmails.length > 0 ? { email: { notIn: teacherEmails } } : {}) },
-      select: { id: true },
+      select: RECIPIENT_SELECT,
     }), "Database operation failed");
+}
 
-  return users.map((user) => user.id);
+/** Recipients who get the announcement e-mail as well as the in-app notification. */
+function emailRecipients(recipients: AnnouncementRecipient[]): AnnouncementRecipient[] {
+  return recipients.filter((recipient) => recipient.email && !recipient.announcementEmailsOptOut);
+}
+
+/** How long the after() drain may spend sending; the cron sends the rest. */
+const AFTER_RESPONSE_SEND_BUDGET_MS = 20_000;
+
+/**
+ * Queues the announcement e-mails before the response, so none is lost if the
+ * instance stops, then starts sending them once the response is out. Large
+ * audiences are finished by the e-mail-outbox cron.
+ */
+async function enqueueAnnouncementEmails(messages: DeliverMailParams[]) {
+  if (messages.length === 0) return;
+  await withDbErrorHandling(() => enqueueEmails(messages), "Database operation failed");
+  runInBackground(async () => {
+    try {
+      await drainOutbox({ budgetMs: AFTER_RESPONSE_SEND_BUDGET_MS });
+    } catch (err) {
+      console.error("[enqueueAnnouncementEmails] Outbox drain error:", err);
+    }
+  });
 }
 
 export async function notifyPaymentApproved(params: {
@@ -388,8 +395,8 @@ export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
   title: string;
   body: string;
 }) {
-  const userIds = await getEnrolledStudentUserIdsForCourse(params.courseId);
-  await createStudentNotificationsForUsers(userIds, {
+  const recipients = await getEnrolledStudentRecipientsForCourse(params.courseId);
+  await createStudentNotificationsForUsers(recipients.map((recipient) => recipient.id), {
     type: "COURSE_ANNOUNCEMENT",
     title: `${params.courseTitle}: ${params.title}`,
     body: notificationPreview(params.body),
@@ -403,30 +410,20 @@ export async function notifyEnrolledStudentsOfCourseAnnouncement(params: {
   revalidateNotificationPaths();
   revalidatePath("/admin/students", "layout");
 
-  runInBackground(async () => {
-    const announcementUrl = toAbsoluteUrl(`/profile/courses/${params.courseId}/announcements`);
-    console.info(`[notifyEnrolledStudentsOfCourseAnnouncement] Starting email dispatch for course ${params.courseId} to ${userIds.length} students...`);
-    const { successCount, failureCount } = await processEmailBatch(
-      userIds,
-      5,
-      100,
-      async (userId) => {
-        const user = await getUserEmailData(userId);
-        if (user && user.email && !user.announcementEmailsOptOut) {
-          await sendCourseAnnouncementEmail({
-            to: user.email,
-            studentName: user.name,
-            courseTitle: params.courseTitle,
-            announcementTitle: params.title,
-            announcementBody: params.body,
-            announcementUrl,
-            unsubscribeUrl: buildUnsubscribeUrl(userId),
-          });
-        }
-      },
-    );
-    console.info(`[notifyEnrolledStudentsOfCourseAnnouncement] Completed course announcement email dispatch. Sent: ${successCount}, Failed: ${failureCount}`);
-  });
+  const announcementUrl = toAbsoluteUrl(`/profile/courses/${params.courseId}/announcements`);
+  await enqueueAnnouncementEmails(
+    emailRecipients(recipients).map((recipient) =>
+      buildCourseAnnouncementEmail({
+        to: recipient.email,
+        studentName: recipient.name || "",
+        courseTitle: params.courseTitle,
+        announcementTitle: params.title,
+        announcementBody: params.body,
+        announcementUrl,
+        unsubscribeUrl: buildUnsubscribeUrl(recipient.id),
+      }),
+    ),
+  );
 }
 
 export async function notifyStudentOfPersonalMessage(params: {
@@ -474,8 +471,8 @@ export async function notifyAllStudentsOfSiteAnnouncement(params: {
   title: string;
   body: string;
 }) {
-  const userIds = await getNonTeacherUserIds();
-  await createStudentNotificationsForUsers(userIds, {
+  const recipients = await getNonTeacherRecipients();
+  await createStudentNotificationsForUsers(recipients.map((recipient) => recipient.id), {
     type: "SITE_ANNOUNCEMENT",
     title: params.title,
     body: notificationPreview(params.body),
@@ -487,29 +484,19 @@ export async function notifyAllStudentsOfSiteAnnouncement(params: {
   revalidatePath("/profile/notifications", "page");
   revalidatePath("/profile", "layout");
 
-  runInBackground(async () => {
-    const announcementUrl = toAbsoluteUrl(`/announcements/${params.announcementId}`);
-    console.info(`[notifyAllStudentsOfSiteAnnouncement] Starting email dispatch for site announcement to ${userIds.length} students...`);
-    const { successCount, failureCount } = await processEmailBatch(
-      userIds,
-      5,
-      100,
-      async (userId) => {
-        const user = await getUserEmailData(userId);
-        if (user && user.email && !user.announcementEmailsOptOut) {
-          await sendSiteAnnouncementEmail({
-            to: user.email,
-            studentName: user.name,
-            announcementTitle: params.title,
-            announcementBody: params.body,
-            announcementUrl,
-            unsubscribeUrl: buildUnsubscribeUrl(userId),
-          });
-        }
-      },
-    );
-    console.info(`[notifyAllStudentsOfSiteAnnouncement] Completed site announcement email dispatch. Sent: ${successCount}, Failed: ${failureCount}`);
-  });
+  const announcementUrl = toAbsoluteUrl(`/announcements/${params.announcementId}`);
+  await enqueueAnnouncementEmails(
+    emailRecipients(recipients).map((recipient) =>
+      buildSiteAnnouncementEmail({
+        to: recipient.email,
+        studentName: recipient.name || "",
+        announcementTitle: params.title,
+        announcementBody: params.body,
+        announcementUrl,
+        unsubscribeUrl: buildUnsubscribeUrl(recipient.id),
+      }),
+    ),
+  );
 }
 
 export async function getNotificationsForUserPaginated(

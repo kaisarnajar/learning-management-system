@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OAuth2Client } from "google-auth-library";
 import { prisma } from "@/utils/prisma";
-import { issueApiSession } from "@/services/api-auth";
+import { issueApiSession, revokeAllApiSessions } from "@/services/api-auth";
 import { resolveUserRole } from "@/services/teacher-auth";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { forgetRecentClaims } from "@/services/auth-jwt";
 
 const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
 
@@ -50,28 +52,20 @@ export async function POST(request: NextRequest) {
   if (limited) return limited;
 
   try {
-    const body = await request.json();
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
     const idToken = typeof body.idToken === "string" ? body.idToken : (typeof body.token === "string" ? body.token : "");
 
     if (!idToken) {
-      return NextResponse.json(
-        { success: false, error: "Google ID token is required." },
-        { status: 400 }
-      );
+      return apiError("Google ID token is required.", 400);
     }
 
     const verification = await verifyGoogleIdToken(idToken);
     if (!verification.configured) {
-      return NextResponse.json(
-        { success: false, error: "Google sign-in is not configured." },
-        { status: 503 }
-      );
+      return apiError("Google sign-in is not configured.", 503);
     }
     if (!verification.payload) {
-      return NextResponse.json(
-        { success: false, error: "Invalid Google ID token." },
-        { status: 401 }
-      );
+      return apiError("Invalid Google ID token.", 401);
     }
 
     const payload = verification.payload;
@@ -96,19 +90,20 @@ export async function POST(request: NextRequest) {
         select: userSelect,
       });
     } else if (user.deletedAt) {
-      return NextResponse.json(
-        { success: false, error: "This account is no longer available." },
-        { status: 403 }
-      );
+      return apiError("This account is no longer available.", 403);
     } else if (!user.emailVerified) {
       // Google has verified ownership of this address. A password set on the
       // unverified row (possibly by someone else) must not survive, same as
       // the web sign-in flow.
       user = await prisma.user.update({
         where: { id: user.id },
-        data: { emailVerified: new Date(), password: null },
+        // sessionVersion ends any web session on the row (services/auth-jwt.ts).
+        data: { emailVerified: new Date(), password: null, sessionVersion: { increment: 1 } },
         select: userSelect,
       });
+      // Whoever registered the unverified row may still hold an API session.
+      await revokeAllApiSessions(user.id);
+      forgetRecentClaims(user.id);
     }
 
     const role = await resolveUserRole(user.email);
@@ -135,10 +130,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[api/v1/auth/google] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Google authentication failed." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/auth/google", error, "Google authentication failed.");
   }
 }

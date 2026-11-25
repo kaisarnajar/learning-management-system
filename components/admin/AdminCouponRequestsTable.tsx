@@ -1,6 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
+import { businessDateFromToday } from "@/services/business-time";
 import { useState, useTransition, useRef, useEffect } from "react";
 import { approveCouponRequest, rejectCouponRequest, deleteCouponRequest } from "@/app/admin/coupons/actions";
 import { SubmitButton } from "@/components/shared/SubmitButton";
@@ -194,8 +195,8 @@ export function AdminCouponRequestsTable({ requests }: { requests: CouponRequest
               required
               type="date"
               name="validUntil"
-              min={format(new Date(), "yyyy-MM-dd")}
-              defaultValue={format(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), "yyyy-MM-dd")}
+              min={businessDateFromToday()}
+              defaultValue={businessDateFromToday(30)}
               className={inputClassName}
             />
             <p className="text-xs text-muted mt-1">How long the student has to use this coupon.</p>

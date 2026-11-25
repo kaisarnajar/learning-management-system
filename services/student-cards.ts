@@ -1,3 +1,5 @@
+import { isAdminSession } from "@/services/admin";
+import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import { generateAttendanceCardPdf } from "@/utils/attendance-card-html";
 import { generateGradeCardPdf } from "@/utils/grade-card-html";
@@ -84,4 +86,20 @@ export async function sendStudentCardEmail(
     console.error(`sendStudentCardEmail(${kind}) error:`, error);
     return { error: `An unexpected error occurred while generating or sending the ${card.label}.` };
   }
+}
+
+/** Admins only: e-mails the student's card; [kind] is checked here (it comes from a form or a URL). */
+export async function sendStudentCardEmailAsAdmin(
+  kind: string,
+  enrollmentId: string,
+): Promise<{ success?: boolean; error?: string }> {
+  const session = await auth();
+  if (!session?.user?.id || !isAdminSession(session)) {
+    return { error: "Unauthorized. Admin access required." };
+  }
+  if (!isStudentCardKind(kind)) {
+    return { error: "Unknown card type." };
+  }
+
+  return sendStudentCardEmail(kind, enrollmentId);
 }

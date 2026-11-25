@@ -1,12 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   businessCalendarParts,
+  businessDateFromToday,
   businessDateString,
   businessDayEnd,
   businessDayStart,
   formatBusinessDate,
 } from "@/services/business-time";
 import { buildFinanceQueryString, financePaidAtWhere, parseFinanceFilters } from "@/services/finance-filters";
+import { couponDayEnd, couponDayStart, fromLegacyCouponBound } from "@/services/coupon-dates";
+import { couponRequestApprovalSchema } from "@/utils/validations";
 
 // India has no DST: IST is always UTC+05:30.
 describe("business day boundaries (Asia/Kolkata)", () => {
@@ -35,6 +38,12 @@ describe("business day boundaries (Asia/Kolkata)", () => {
   it("round-trips a day through start and end", () => {
     expect(formatBusinessDate(businessDayStart("2026-07-15")!)).toBe("2026-07-15");
     expect(formatBusinessDate(businessDayEnd("2026-07-15")!)).toBe("2026-07-15");
+  });
+
+  it("names today, or a day ahead, by the IST calendar", () => {
+    const lateEvening = new Date("2026-11-30T20:00:00Z"); // 01:30 IST on 1 Dec
+    expect(businessDateFromToday(0, lateEvening)).toBe("2026-12-01");
+    expect(businessDateFromToday(31, lateEvening)).toBe("2027-01-01");
   });
 
   it("derives calendar parts and date strings in IST", () => {
@@ -104,5 +113,40 @@ describe("parseFinanceFilters presets", () => {
     expect(qs).toContain("from=2026-03-05");
     expect(qs).toContain("to=2026-03-06");
     expect(buildFinanceQueryString({ preset: "this_month" })).toBe("");
+  });
+});
+
+describe("coupon days follow the academy's calendar", () => {
+  afterEach(() => vi.useRealTimers());
+
+  it("a Dec 1–31 coupon runs from 00:00 IST on 1 Dec to 23:59:59.999 IST on 31 Dec", () => {
+    expect(couponDayStart("2026-12-01")?.toISOString()).toBe("2026-11-30T18:30:00.000Z");
+    expect(couponDayEnd("2026-12-31")?.toISOString()).toBe("2026-12-31T18:29:59.999Z");
+    expect(couponDayEnd("2026-02-31")).toBeNull();
+  });
+
+  it("the edit dialog shows the stored days, so opening and saving never moves them", () => {
+    const stored = { from: couponDayStart("2026-12-01")!, until: couponDayEnd("2026-12-31")! };
+    // What EditCouponDialog puts in its date inputs, sent back unchanged on save.
+    const shown = { from: formatBusinessDate(stored.from), until: formatBusinessDate(stored.until) };
+    expect(shown).toEqual({ from: "2026-12-01", until: "2026-12-31" });
+    expect(couponDayStart(shown.from)).toEqual(stored.from);
+    expect(couponDayEnd(shown.until)).toEqual(stored.until);
+  });
+
+  it("re-expresses UTC-day bounds written before the change, and nothing else", () => {
+    expect(fromLegacyCouponBound(new Date("2026-12-01T00:00:00.000Z"), "start")?.toISOString()).toBe("2026-11-30T18:30:00.000Z");
+    expect(fromLegacyCouponBound(new Date("2026-12-31T23:59:59.999Z"), "end")?.toISOString()).toBe("2026-12-31T18:29:59.999Z");
+    // Already converted, or an instant such as a waiver coupon's approval time.
+    expect(fromLegacyCouponBound(new Date("2026-11-30T18:30:00.000Z"), "start")).toBeNull();
+    expect(fromLegacyCouponBound(new Date("2026-12-31T18:29:59.999Z"), "end")).toBeNull();
+    expect(fromLegacyCouponBound(new Date("2026-11-24T09:41:07.123Z"), "start")).toBeNull();
+  });
+
+  it("a waiver approval's \"today\" is the IST day, not the server's UTC one", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-30T20:00:00Z")); // 01:30 IST on 1 Dec, still 30 Nov in UTC
+    expect(couponRequestApprovalSchema.safeParse({ percentage: 50, validUntil: "2026-11-30" }).success).toBe(false);
+    expect(couponRequestApprovalSchema.safeParse({ percentage: 50, validUntil: "2026-12-01" }).success).toBe(true);
   });
 });

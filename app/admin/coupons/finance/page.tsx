@@ -13,7 +13,7 @@ import {
   type FinanceSearchParams,
 } from "@/services/finance-filters";
 import { getFeeWaiverFinanceData } from "@/services/waiver-finance";
-import { getStudentUsers } from "@/services/students";
+import { getStudentOption } from "@/services/students";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { requireAdmin } from "@/services/auth-actions";
 
@@ -34,11 +34,11 @@ export default async function FeeWaiverFinancePage({
 
   const [
     courses,
-    students,
+    selectedStudent,
     financeData,
   ] = await Promise.all([
     getAllCourses(),
-    getStudentUsers(),
+    getStudentOption(filters.studentId),
     getFeeWaiverFinanceData(filters, requestedPage, pageSize),
   ]);
 
@@ -111,7 +111,8 @@ export default async function FeeWaiverFinancePage({
         <FinanceIncomeFilters
           filters={filters}
           courses={courses.map((c) => ({ id: c.id, title: c.title }))}
-          students={students.map((s) => ({ id: s.id, name: s.name, email: s.email }))}
+          students={{ search: selectedStudent }}
+          action="/admin/coupons/finance"
         />
 
         {/* ── Claimed Fee Waivers Table ───────────────────── */}

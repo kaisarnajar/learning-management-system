@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { format } from "date-fns";
 import { useDialog } from "@/components/shared/useDialog";
 import type { Coupon } from "@prisma/client";
 import { updateCoupon } from "@/app/admin/coupons/actions";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 import { useToast } from "@/components/shared/ToastProvider";
 import { adminActionButtonClassName, inputClassName, labelClassName } from "@/utils/form";
+import { businessDateFromToday, formatBusinessDate } from "@/services/business-time";
 
 type CourseOption = {
   id: string;
@@ -53,12 +53,14 @@ export function EditCouponDialog({
     }
   }
 
+  // The academy's calendar days, whatever the browser's timezone, so opening
+  // and saving the dialog never moves a date.
   const defaultFrom = coupon.validFrom
-    ? format(new Date(coupon.validFrom), "yyyy-MM-dd")
-    : format(new Date(), "yyyy-MM-dd");
+    ? formatBusinessDate(new Date(coupon.validFrom))
+    : businessDateFromToday();
 
   const defaultUntil = coupon.validUntil
-    ? format(new Date(coupon.validUntil), "yyyy-MM-dd")
+    ? formatBusinessDate(new Date(coupon.validUntil))
     : "";
 
   const defaultApplyTo =

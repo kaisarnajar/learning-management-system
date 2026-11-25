@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { Occupation, Gender } from "@prisma/client";
 import { ProfileDetailsCard } from "./ProfileDetailsCard";
 import { ProfileForm } from "./ProfileForm";
-import { formatDateOfBirthForInput } from "@/services/profile";
+import { formatDateOfBirthForInput } from "@/utils/profile-format";
 
 type ProfileSectionProps = {
   name: string | null;

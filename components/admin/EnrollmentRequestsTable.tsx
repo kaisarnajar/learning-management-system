@@ -1,5 +1,6 @@
 "use client";
 
+import { BUSINESS_TIMEZONE } from "@/config/constants/business";
 import Link from "next/link";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { approveEnrollmentRequest, rejectEnrollmentRequest } from "@/app/admin/enrollments/actions";
@@ -48,6 +49,7 @@ export function EnrollmentRequestsTable({
             </td>
             <td className="px-4 py-3 text-muted">
               {new Date(enrollment.createdAt).toLocaleDateString("en-IN", {
+                timeZone: BUSINESS_TIMEZONE,
                 day: "numeric",
                 month: "short",
                 year: "numeric",

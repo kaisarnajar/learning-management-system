@@ -1,16 +1,11 @@
 import { revalidatePath } from "next/cache";
-import {
-  deleteBlogImageFile,
-  getBlogImageFiles,
-  MAX_BLOG_IMAGES,
-  saveBlogImage,
-  validateBlogImage,
-} from "@/services/blog-upload";
+import { MAX_BLOG_IMAGES } from "@/services/blog-limits";
+import { deleteUpload, deleteUploads, pendingUploadsOf, saveUpload, validatePendingUpload } from "@/services/uploads";
 import { prisma } from "@/utils/prisma";
 import { blogPostSchema, teacherBlogPostSchema } from "@/utils/validations";
 import { sanitizeRichText } from "@/services/rich-text";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { deleteManyFromR2, isUploadError } from "@/services/storage";
+import { isUploadError } from "@/services/storage";
 import { revalidatePublicContent } from "@/services/public-cache";
 
 /** Cache invalidation after an admin changes a blog post: lists, the public blog and (when known) the post's pages. */
@@ -60,7 +55,7 @@ export function getRemoveImageIds(formData: FormData): string[] {
 }
 
 export async function addImagesToPost(blogPostId: string, formData: FormData, existingCount: number) {
-  const files = getBlogImageFiles(formData);
+  const files = pendingUploadsOf("blog-image", formData, "images");
   if (files.length === 0) return { error: undefined as string | undefined };
 
   if (existingCount + files.length > MAX_BLOG_IMAGES) {
@@ -72,7 +67,7 @@ export async function addImagesToPost(blogPostId: string, formData: FormData, ex
   // Validate every file before touching storage, so a bad third file does
   // not leave the first two behind.
   for (const file of files) {
-    const validation = validateBlogImage(file);
+    const validation = validatePendingUpload("blog-image", file, { requireFile: true });
     if (validation.error) {
       return { error: validation.error };
     }
@@ -81,14 +76,14 @@ export async function addImagesToPost(blogPostId: string, formData: FormData, ex
   const uploaded: string[] = [];
   try {
     for (const file of files) {
-      uploaded.push(await saveBlogImage(blogPostId, file));
+      uploaded.push(await saveUpload("blog-image", blogPostId, file));
     }
     await withDbErrorHandling(() => prisma.blogImage.createMany({
       data: uploaded.map((imagePath, index) => ({ blogPostId, imagePath, sortOrder: existingCount + index })),
     }), "Database operation failed");
   } catch (error) {
     // Nothing was recorded: remove whatever reached the bucket.
-    await deleteManyFromR2("blogs", uploaded);
+    await deleteUploads("blog-image", uploaded);
     if (isUploadError(error)) return { error: error.message };
     throw error;
   }
@@ -111,6 +106,6 @@ export async function removeBlogImages(imageIds: string[], postId: string) {
     where: { id: { in: toRemove.map((img) => img.id) }, blogPostId: postId },
   }), "Database operation failed");
   for (const img of toRemove) {
-    await deleteBlogImageFile(img.imagePath);
+    await deleteUpload("blog-image", img.imagePath);
   }
 }

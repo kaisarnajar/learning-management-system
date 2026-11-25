@@ -19,5 +19,7 @@ declare module "next-auth/jwt" {
     emailVerified?: string | null;
     /** Epoch ms of the last role/verification refresh from the database. */
     refreshedAt?: number;
+    /** User.sessionVersion when the session began; absent on tokens issued before it existed (read as 0). */
+    sessionVersion?: number;
   }
 }

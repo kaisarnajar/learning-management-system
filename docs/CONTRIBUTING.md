@@ -3,6 +3,7 @@
 ## Branches
 
 - **`master` is production.** Vercel deploys it, and its build runs `prisma migrate deploy` against the live database.
+  Preview deployments (any other branch) never run migrations; see `scripts/vercel-build.sh`.
 - **`dev` is the integration branch.** Work lands here first and the full CI pipeline (including the e2e journeys) runs on it.
 - **Pull requests go into `master` only.** Do not open a PR against any other branch, and do not push to `master` directly.
   Work on a feature branch (`feat/…`, `fix/…`, `docs/…`), keep it up to date with `master`, and open the PR from there.
@@ -19,7 +20,8 @@ The production database is live, so migrations are additive and guarded (see `do
 
 - Use `IF NOT EXISTS` / duplicate-object guards; give every new `NOT NULL` column a default.
 - No `DROP TABLE/COLUMN`, `TRUNCATE`, `ALTER COLUMN … TYPE`, `prisma db push` or `--accept-data-loss`.
-  `npm run db:safety` rejects these in CI.
+  `npm run db:safety` rejects these in CI, along with `DROP CONSTRAINT/TYPE/SCHEMA/INDEX`, `RENAME`, `SET NOT NULL`
+  and `UPDATE`/`DELETE` without `WHERE` (mark a reviewed statement with `-- safety: allow <reason>`).
 - Never run `prisma migrate dev`, `migrate reset`, `db push` or the demo seed against anything but a disposable local database.
 - `npm run db:drift` must report no drift between `prisma/migrations` and `prisma/schema.prisma`.
 
@@ -34,6 +36,8 @@ npx eslint . --ignore-pattern ".claude/**"
 npm run db:drift
 npm run db:safety
 bash scripts/check-page-auth.sh
+node scripts/check-audit.mjs   # high/critical production advisories, minus scripts/audit-allowlist.json
+npx next build
 npm run test:unit
 ```
 

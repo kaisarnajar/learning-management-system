@@ -78,7 +78,9 @@ export async function addBlogComment(user: EngagementUser, blogPostId: string, r
   });
 
   if (blogPost.createdById && blogPost.createdById !== user.id) {
-    const commenterName = user.name || user.email || "Someone";
+    // Never the e-mail address: the post's author must not learn how to reach
+    // a commenter who did not give a name.
+    const commenterName = user.name?.trim() || "A reader";
     const preview = parsed.content.slice(0, 50) + (parsed.content.length > 50 ? "..." : "");
     await createStudentNotification({
       userId: blogPost.createdById,

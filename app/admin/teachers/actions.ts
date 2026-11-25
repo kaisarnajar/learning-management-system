@@ -142,6 +142,18 @@ export async function deleteTeacherById(id: string): Promise<{ error?: string }>
     };
   }
 
+  // Salary expenses only detach (SetNull) when the teacher goes; finance
+  // would no longer say who was paid.
+  const salaryExpenses = await withDbErrorHandling(
+    () => prisma.expense.count({ where: { teacherId: id } }),
+    "Database operation failed",
+  );
+  if (salaryExpenses > 0) {
+    return {
+      error: `${existing.name} has ${salaryExpenses} salary expense${salaryExpenses === 1 ? "" : "s"} on record, so the profile is kept. Unpublish it instead.`,
+    };
+  }
+
   await withDbErrorHandling(() => prisma.teacher.delete({ where: { id } }), "Database operation failed");
 
   revalidatePath("/teachers");

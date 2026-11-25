@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { isRedirectError } from "next/dist/client/components/redirect-error";
-import { getURLFromRedirectError } from "next/dist/client/components/redirect";
 import type { BlogPost, FatwaQuestion, LibraryItem } from "@prisma/client";
 import { BRAND_CONFIG } from "@/config/brand";
+import { nextControlFlowOf } from "@/utils/next-control-flow";
 import { HOMEPAGE_FEATURED_RESOURCES_MAX } from "@/services/library";
 import { LIBRARY_LANGUAGES, LIBRARY_TOPICS } from "@/services/library-options";
 import { levelEnum } from "@/utils/validations";
 import { blogApprovalStatusLabel } from "@/services/blog-approval";
 import { isBlogPubliclyVisible } from "@/services/blogs";
 import { fatwaStatusLabel } from "@/services/fatwa";
+import { apiError } from "@/utils/api-response";
 
 /**
  * Some content actions report a failure by redirecting with a short code
@@ -23,10 +23,11 @@ export async function withErrorCodes<T>(
   try {
     return await run();
   } catch (error) {
-    if (isRedirectError(error)) {
-      const code = new URL(getURLFromRedirectError(error), "http://local").searchParams.get("error");
+    const flow = nextControlFlowOf(error);
+    if (flow?.kind === "redirect") {
+      const code = new URL(flow.url, "http://local").searchParams.get("error");
       const known = code ? codes[code] : undefined;
-      if (known) return NextResponse.json({ success: false, error: known.message }, { status: known.status ?? 400 });
+      if (known) return apiError(known.message, known.status ?? 400);
     }
     throw error;
   }

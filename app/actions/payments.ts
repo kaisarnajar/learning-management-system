@@ -4,7 +4,9 @@ import { ensureAuth } from "@/utils/auth-utils";
 import { processMonthlyPayment, processEnrollmentPayment } from "@/services/payments";
 import { isUpiConfigured } from "@/services/upi";
 import { monthlyPaymentSubmitSchema, enrollmentPaymentSubmitSchema } from "@/utils/validations";
-import { validatePaymentScreenshot } from "@/services/payment-upload";
+import { validatePendingUpload } from "@/services/uploads";
+
+const hasFile = (value: FormDataEntryValue | null) => value instanceof File && value.size > 0;
 
 export async function submitMonthlyPayment(formData: FormData) {
   const { session, error: authError } = await ensureAuth();
@@ -21,13 +23,14 @@ export async function submitMonthlyPayment(formData: FormData) {
       upiTransactionId: formData.get("upiTransactionId"),
       couponId: formData.get("couponId"),
       expectedAmountPaise: formData.get("expectedAmountPaise"),
+      hasScreenshot: hasFile(formData.get("screenshot")),
     });
 
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid payment details.", status: 400 };
 
     const screenshot = formData.get("screenshot");
     const screenshotFile = screenshot instanceof File ? screenshot : null;
-    const screenshotValidation = validatePaymentScreenshot(screenshotFile);
+    const screenshotValidation = validatePendingUpload("payment-screenshot", screenshotFile);
     if (screenshotValidation.error) return { error: screenshotValidation.error, status: 400 };
 
     const result = await processMonthlyPayment(
@@ -64,13 +67,14 @@ export async function submitEnrollmentPayment(formData: FormData) {
       upiTransactionId: formData.get("upiTransactionId"),
       couponId: formData.get("couponId"),
       expectedAmountPaise: formData.get("expectedAmountPaise"),
+      hasScreenshot: hasFile(formData.get("screenshot")),
     });
 
     if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Invalid payment details.", status: 400 };
 
     const screenshot = formData.get("screenshot");
     const screenshotFile = screenshot instanceof File ? screenshot : null;
-    const screenshotValidation = validatePaymentScreenshot(screenshotFile);
+    const screenshotValidation = validatePendingUpload("payment-screenshot", screenshotFile);
     if (screenshotValidation.error) return { error: screenshotValidation.error, status: 400 };
 
     const result = await processEnrollmentPayment(

@@ -14,6 +14,7 @@ import {
   demoSiteAnnouncements,
   demoBooks,
 } from "../content/demo-content";
+import { studentTestimonials } from "../content/testimonials";
 
 const demoContentBaseTime = new Date("2026-02-01T10:00:00.000Z");
 
@@ -51,9 +52,68 @@ export async function seedDemoBooks(prisma: PrismaClient) {
   }
 }
 
-/** Site announcements, blogs, verse/hadith, fatwa, contact inquiries, and course announcements. */
+/** Homepage testimonials: one placeholder user and one approved, featured review each. */
+async function seedDemoTestimonials(prisma: PrismaClient) {
+  const featuredAtBase = new Date("2026-01-01T00:00:00.000Z");
+  for (const [index, testimonial] of studentTestimonials.entries()) {
+    const userId = `seed-testimonial-user-${testimonial.id}`;
+    const reviewId = `seed-testimonial-${testimonial.id}`;
+    const email = `seed-testimonial-${testimonial.id}@seed.local`;
+
+    await prisma.user.upsert({
+      where: { id: userId },
+      create: { id: userId, email, name: testimonial.name },
+      update: { name: testimonial.name },
+    });
+
+    await prisma.studentReview.upsert({
+      where: { id: reviewId },
+      create: {
+        id: reviewId,
+        userId,
+        quote: testimonial.quote,
+        course: testimonial.course,
+        location: testimonial.location,
+        rating: testimonial.rating ?? 5,
+        status: "APPROVED",
+        featuredOnHomepage: true,
+        featuredAt: new Date(featuredAtBase.getTime() + index * 60_000),
+      },
+      update: {
+        quote: testimonial.quote,
+        course: testimonial.course,
+        location: testimonial.location,
+        rating: testimonial.rating ?? 5,
+        status: "APPROVED",
+        featuredOnHomepage: true,
+      },
+    });
+  }
+}
+
+/**
+ * Demo coupons. DEFAULT coupons are offered to every student, so these exist
+ * only in the demo seed and never in the bootstrap seed that runs elsewhere.
+ */
+async function seedDemoCoupons(prisma: PrismaClient) {
+  const validFrom = new Date("2026-01-01T00:00:00.000Z");
+  const validUntil = new Date("2027-12-31T23:59:59.000Z");
+  const coupons = [
+    { id: "coupon-welcome50", code: "WELCOME50", percentage: 50, applyToEnrollment: true, applyToCourse: true },
+    { id: "coupon-earlybird20", code: "EARLYBIRD20", percentage: 20, applyToEnrollment: false, applyToCourse: true },
+    { id: "coupon-scholarship100", code: "SCHOLARSHIP100", percentage: 100, applyToEnrollment: true, applyToCourse: true },
+  ];
+  for (const coupon of coupons) {
+    const data = { ...coupon, type: "DEFAULT" as const, validFrom, validUntil, isActive: true };
+    await prisma.coupon.upsert({ where: { code: coupon.code }, create: data, update: data });
+  }
+}
+
+/** Testimonials, coupons, site announcements, blogs, verse/hadith, fatwa, contact inquiries, and course announcements. */
 export async function seedDemoContent(prisma: PrismaClient) {
   await seedDemoBooks(prisma);
+  await seedDemoTestimonials(prisma);
+  await seedDemoCoupons(prisma);
 
   const answererId = demoTeacherUserId("moulana-ibrahim-khan");
 

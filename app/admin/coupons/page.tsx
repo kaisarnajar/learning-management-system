@@ -1,11 +1,11 @@
 import { requireAdmin } from "@/services/auth-actions";
-import { getAdminCouponsPaginated, getCouponCourseOptions, getWaiverRequests } from "@/services/coupons-admin";
+import { getAdminCouponsPaginated, getCouponCourseOptions, getWaiverRequestsPaginated } from "@/services/coupons-admin";
 import { AdminCouponsTable } from "@/components/admin/AdminCouponsTable";
 import { AdminCouponRequestsTable } from "@/components/admin/AdminCouponRequestsTable";
 import { CreateCouponDialog } from "@/components/admin/CreateCouponDialog";
 import Link from "next/link";
 import { Pagination } from "@/components/shared/Pagination";
-import { parsePaginationParams } from "@/utils/pagination";
+import { clampPage, parsePaginationParams } from "@/utils/pagination";
 
 export const metadata = {
   title: "Fee Waivers & Coupons | Admin",
@@ -59,7 +59,9 @@ export default async function AdminCouponsPage({
   const couponTotal = couponResult.totalCount;
   const couponPage = couponResult.page;
 
-  const requests = activeTab !== "requests" ? [] : await getWaiverRequests();
+  const requestResult = activeTab !== "requests"
+    ? { items: [], totalCount: 0 }
+    : await getWaiverRequestsPaginated(requestedPage, pageSize);
 
   const courses = await getCouponCourseOptions();
 
@@ -82,7 +84,8 @@ export default async function AdminCouponsPage({
         {activeTab === "requests" && (
           <section>
             <h2 className="font-serif text-lg font-semibold text-foreground mb-4">Waiver Requests</h2>
-            <AdminCouponRequestsTable requests={requests} />
+            <AdminCouponRequestsTable requests={requestResult.items} />
+            <Pagination basePath="/admin/coupons" params={params} page={clampPage(requestedPage, requestResult.totalCount, pageSize)} totalCount={requestResult.totalCount} pageSize={pageSize} />
           </section>
         )}
         {activeTab === "special" && (

@@ -193,6 +193,22 @@ describe.skipIf(SKIP_WITHOUT_DB)("mobile API: public content", () => {
       expect(await prisma.blogComment.count()).toBe(0);
     });
 
+    it("never shows a commenter's e-mail to the post's author (L9)", async () => {
+      const post = await createPublishedPost();
+      for (const name of [null, "   "]) {
+        const commenter = await signedInStudent({ name });
+        const response = await addComment(apiRequest("/x", { method: "POST", headers: commenter.headers, json: { content: "Beneficial" } }), routeParams({ id: post.id }));
+        expect(response.status).toBe(201);
+      }
+
+      const notifications = await prisma.studentNotification.findMany({ where: { type: "BLOG_COMMENT_ADDED" } });
+      expect(notifications).toHaveLength(2);
+      for (const notification of notifications) {
+        expect(`${notification.title} ${notification.body}`).not.toContain("@");
+        expect(notification.body).toMatch(/^A reader commented/);
+      }
+    });
+
     it("rejects empty comments", async () => {
       const post = await createPublishedPost();
       const me = await signedInStudent();

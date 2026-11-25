@@ -8,6 +8,7 @@ import {
   type FinanceSearchParams,
 } from "@/services/finance-filters";
 import { prisma } from "@/utils/prisma";
+import { recordAudit } from "@/services/audit";
 import { withDbErrorHandling } from "@/utils/db-error";
 
 function revalidateFinancePaths() {
@@ -21,14 +22,22 @@ export async function deleteExpenseById(
   returnQuery: FinanceSearchParams = {},
   basePath: string = "/admin/finance"
 ): Promise<{ error?: string; redirectTo?: string }> {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const expense = await withDbErrorHandling(() => prisma.expense.findUnique({ where: { id } }), "Database operation failed");
   if (!expense) {
     return { error: "Expense not found." };
   }
 
-  await withDbErrorHandling(() => prisma.expense.delete({ where: { id } }), "Database operation failed");
+  // Financial changes leave an audit entry with what was removed.
+  await withDbErrorHandling(
+    () =>
+      prisma.$transaction(async (tx) => {
+        await tx.expense.delete({ where: { id } });
+        await recordAudit(tx, session, { action: "delete", entity: "Expense", entityId: id, before: expense });
+      }),
+    "Database operation failed",
+  );
 
   revalidateFinancePaths();
   revalidatePath("/admin/transactions");

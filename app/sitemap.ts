@@ -1,8 +1,14 @@
 import { MetadataRoute } from "next";
+import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { prisma } from "@/utils/prisma";
 import { BRAND_CONFIG } from "@/config/brand";
+import { isCoursePubliclyVisible } from "@/services/course-status";
 
 // Regenerated at most once an hour; content actions do not need to invalidate it.
+// A database error fails the regeneration (Next keeps serving the previous
+// sitemap) instead of caching a static-only one for the next hour. Only the
+// build itself, which may run without a migrated database (CI), falls back to
+// the static routes; the first revalidation then adds the rest.
 export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -29,11 +35,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    // Dynamic published courses
-    const courses = await prisma.course.findMany({
-      where: { status: "PUBLISHED" },
-      select: { id: true, updatedAt: true },
-    });
+    // Every course with a public page: all statuses except DRAFT (ongoing,
+    // completed, on-hold and coming-soon courses are listed on the site too).
+    const courses = (
+      await prisma.course.findMany({
+        select: { id: true, status: true, updatedAt: true },
+      })
+    ).filter((course) => isCoursePubliclyVisible(course.status));
 
     const courseRoutes: MetadataRoute.Sitemap = courses.map((course) => ({
       url: `${baseUrl}/courses/${course.id}`,
@@ -104,6 +112,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ];
   } catch (error) {
     console.error("Error generating sitemap:", error);
-    return staticRoutes;
+    if (process.env.NEXT_PHASE === PHASE_PRODUCTION_BUILD) return staticRoutes;
+    throw error;
   }
 }

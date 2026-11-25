@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { SubmitButton } from "@/components/shared/SubmitButton";
 import type { FatwaQuestion } from "@prisma/client";
-import { HOMEPAGE_FEATURED_FATWA_MAX } from "@/services/fatwa";
+import { HOMEPAGE_FEATURED_FATWA_MAX } from "@/config/constants/business";
 import { labelClassName } from "@/utils/form";
 import { RichTextEditor } from "@/components/shared/RichTextEditor";
 import { BRAND_CONFIG } from "@/config/brand";

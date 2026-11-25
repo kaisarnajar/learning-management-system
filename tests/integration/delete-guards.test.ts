@@ -4,7 +4,11 @@ import { prisma } from "@/utils/prisma";
 import { deleteCourse } from "@/app/admin/courses/actions";
 import { deleteTeacherById } from "@/app/admin/teachers/actions";
 import { deleteStudentUser } from "@/app/admin/students/actions";
+import { issueApiSession, rotateApiSession } from "@/services/api-auth";
+import { generateVerificationToken } from "@/services/tokens";
 import { deleteBook } from "@/app/admin/bookstore/actions";
+import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
+import { deleteExpenseById } from "@/app/admin/finance/actions";
 import {
   createBook,
   createCourse,
@@ -59,8 +63,21 @@ describe.skipIf(SKIP_WITHOUT_DB)("delete guards", () => {
 
       const result = await runAction(() => deleteCourse(course.id));
 
-      expect(flashOf(result.redirectedTo)).toContain("attendance, grade or coupon records");
+      expect(flashOf(result.redirectedTo)).toContain("attendance, grade, coupon or fee-waiver records");
       expect(await prisma.course.count()).toBe(1);
+    });
+
+    it("refuses when a fee-waiver request exists, and the database refuses too", async () => {
+      const course = await createCourse();
+      const student = await createUser();
+      await prisma.couponRequest.create({ data: { userId: student.id, courseId: course.id, reason: "Hardship" } });
+
+      const result = await runAction(() => deleteCourse(course.id));
+
+      expect(flashOf(result.redirectedTo)).toContain("fee-waiver records");
+      await expect(prisma.course.delete({ where: { id: course.id } })).rejects.toMatchObject({ code: "P2003" });
+      await expect(prisma.user.delete({ where: { id: student.id } })).rejects.toMatchObject({ code: "P2003" });
+      expect(await prisma.couponRequest.count()).toBe(1);
     });
 
     it("deletes an unused course together with its inactive enrollments", async () => {
@@ -92,6 +109,39 @@ describe.skipIf(SKIP_WITHOUT_DB)("delete guards", () => {
 
       expect(flashOf(result.redirectedTo)).toContain("1 fee payment submission on record");
       expect(await prisma.course.count()).toBe(1);
+    });
+  });
+
+  describe("financial links", () => {
+    it("keeps a course that a manual payment record refers to", async () => {
+      const course = await createCourse();
+      const student = await createUser();
+      await prisma.paymentRecord.create({ data: { userId: student.id, courseId: course.id, amountInrPaise: 100, paidAt: new Date() } });
+
+      const result = await runAction(() => deleteCourse(course.id));
+
+      expect(decodeURIComponent(new URL(result.redirectedTo ?? "/", "http://x").searchParams.get("msg") ?? "")).toContain("1 payment record refers to it");
+      expect(await prisma.course.count()).toBe(1);
+      expect((await prisma.paymentRecord.findFirstOrThrow()).courseId).toBe(course.id);
+    });
+
+    it("keeps a teacher whose salary expenses are on record", async () => {
+      const teacher = await createTeacher({ name: "Ustadh Umar" });
+      await prisma.expense.create({ data: { category: "teacher_salary", amountInrPaise: 500000, paidAt: new Date(), teacherId: teacher.id } });
+
+      expect((await deleteTeacherById(teacher.id)).error).toContain("1 salary expense on record");
+      expect(await prisma.teacher.count()).toBe(1);
+    });
+
+    it("audits an expense delete with the removed row", async () => {
+      const expense = await prisma.expense.create({ data: { category: "rent", amountInrPaise: 120000, paidAt: new Date() } });
+
+      expect((await deleteExpenseById(expense.id)).redirectTo).toContain("deleted=1");
+
+      expect(await prisma.expense.count()).toBe(0);
+      const audit = await prisma.auditLog.findFirstOrThrow({ where: { entity: "Expense", entityId: expense.id } });
+      expect(audit).toMatchObject({ action: "delete", actorEmail: "admin@example.test" });
+      expect(audit.before).toMatchObject({ amountInrPaise: 120000, category: "rent" });
     });
   });
 
@@ -137,6 +187,18 @@ describe.skipIf(SKIP_WITHOUT_DB)("delete guards", () => {
       const paid = await createUser();
       await prisma.paymentRecord.create({ data: { userId: paid.id, amountInrPaise: 100, paidAt: new Date() } });
       expect((await deleteStudentUser(paid.id)).error).toContain("payment records");
+    });
+
+    it("ends the student's app sessions and drops their e-mail tokens", async () => {
+      const student = await createUser({ email: "app-user@example.test" });
+      const { refreshToken } = await issueApiSession({ id: student.id, email: student.email, role: "USER" });
+      await generateVerificationToken(student.email);
+
+      expect((await deleteStudentUser(student.id)).success).toBeTruthy();
+
+      expect(await prisma.apiRefreshToken.count({ where: { userId: student.id, revokedAt: null } })).toBe(0);
+      expect(await rotateApiSession(refreshToken)).toBeNull();
+      expect(await prisma.verificationToken.count({ where: { identifier: "app-user@example.test" } })).toBe(0);
     });
 
     it("refuses admin and teacher accounts", async () => {
@@ -190,12 +252,83 @@ describe.skipIf(SKIP_WITHOUT_DB)("delete guards", () => {
       expect(await prisma.bookOrderItem.count({ where: { orderId: order.id } })).toBe(1);
     });
 
+    it("the database keeps order lines when a book delete skips the check (P2003)", async () => {
+      const student = await createUser();
+      const book = await createBook();
+      await prisma.bookOrder.create({
+        data: {
+          userId: student.id,
+          totalAmountInrPaise: book.priceInrPaise,
+          status: "SHIPPED",
+          items: { create: [{ bookId: book.id, quantity: 1, priceAtPurchaseInrPaise: book.priceInrPaise }] },
+        },
+      });
+
+      await expect(prisma.book.delete({ where: { id: book.id } })).rejects.toMatchObject({ code: "P2003" });
+      expect(await prisma.bookOrderItem.count()).toBe(1);
+    });
+
     it("deletes a book that was never ordered", async () => {
       const book = await createBook();
 
       expect(await deleteBook(book.id)).toEqual({});
       expect(await prisma.book.count()).toBe(0);
       expect((await deleteBook(book.id)).error).toBe("Book not found.");
+    });
+  });
+
+  describe("enrollments", () => {
+    const histories = {
+      "a certificate": async (enrollmentId: string) => {
+        await prisma.enrollment.update({ where: { id: enrollmentId }, data: { certificateNumber: "DQA-CERT/2026-27/00001", certificateGeneratedAt: new Date() } });
+      },
+      "a payment record": async (_enrollmentId: string, userId: string, courseId: string) => {
+        await prisma.paymentRecord.create({ data: { userId, courseId, amountInrPaise: 50000, paidAt: new Date(), paymentType: "enrollment", paymentTypeEnum: "ENROLLMENT" } });
+      },
+      "a grade": async (enrollmentId: string, _userId: string, courseId: string) => {
+        const grade = await prisma.courseGrade.create({ data: { courseId, title: "Test 1", date: new Date(), maxMarks: 10 } });
+        await prisma.courseGradeRecord.create({ data: { gradeId: grade.id, enrollmentId, marksObtained: 7 } });
+      },
+      "attendance": async (enrollmentId: string, _userId: string, courseId: string) => {
+        const day = await prisma.courseAttendance.create({ data: { courseId, date: new Date() } });
+        await prisma.courseAttendanceRecord.create({ data: { attendanceId: day.id, enrollmentId, isPresent: true } });
+      },
+    };
+
+    it.each(Object.keys(histories) as (keyof typeof histories)[])("refuses to remove an enrollment with %s", async (history) => {
+      const course = await createCourse();
+      const student = await createUser();
+      const enrollment = await createEnrollment(student.id, course.id);
+      await histories[history](enrollment.id, student.id, course.id);
+
+      const result = await removeEnrollmentFromCourse(enrollment.id, course.id);
+
+      expect(result.error).toContain("cannot be removed");
+      expect(await prisma.enrollment.count({ where: { id: enrollment.id } })).toBe(1);
+      expect(await prisma.auditLog.count()).toBe(0);
+    });
+
+    it.each(["a grade", "attendance"] as const)("the database keeps %s when an enrollment delete skips the check (P2003)", async (history) => {
+      const course = await createCourse();
+      const student = await createUser();
+      const enrollment = await createEnrollment(student.id, course.id);
+      await histories[history](enrollment.id, student.id, course.id);
+
+      await expect(prisma.enrollment.delete({ where: { id: enrollment.id } })).rejects.toMatchObject({ code: "P2003" });
+      expect(await prisma.courseGradeRecord.count() + await prisma.courseAttendanceRecord.count()).toBe(1);
+    });
+
+    it("removes an enrollment without history and audits it", async () => {
+      const course = await createCourse();
+      const student = await createUser();
+      const enrollment = await createEnrollment(student.id, course.id, { status: "pending_approval", statusEnum: "PENDING_APPROVAL" });
+
+      expect(await removeEnrollmentFromCourse(enrollment.id, course.id)).toEqual({ success: "Enrollment removed successfully." });
+
+      expect(await prisma.enrollment.count({ where: { id: enrollment.id } })).toBe(0);
+      const audit = await prisma.auditLog.findFirstOrThrow({ where: { entity: "Enrollment", entityId: enrollment.id } });
+      expect(audit).toMatchObject({ action: "delete", actorEmail: "admin@example.test" });
+      expect(audit.before).toMatchObject({ userId: student.id, courseId: course.id, status: "PENDING_APPROVAL" });
     });
   });
 });

@@ -5,6 +5,7 @@ import { getAcademySettings } from "@/services/academy-settings";
 import { BRAND_CONFIG } from "@/config/brand";
 import { AUTHORITY_SIGNATURE } from "@/services/academy-contact";
 import { formatRollNumber } from "@/services/roll-numbers";
+import { formatBusinessDisplayDate } from "@/services/business-time";
 import { escapeHtml as e } from "@/utils/html-escape";
 
 
@@ -309,11 +310,7 @@ export async function generateAttendanceCardPdf(enrollmentId: string): Promise<B
     rollNumber: formatRollNumber(enrollment.rollNumber),
     studentEmail: enrollment.user.email,
     courseTitle: course.title,
-    issueDate: new Date().toLocaleDateString("en-IN", {
-      day: "numeric",
-      month: "long",
-      year: "numeric"
-    }),
+    issueDate: formatBusinessDisplayDate(new Date()),
     records: recordsData,
     totalClasses,
     totalPresent,

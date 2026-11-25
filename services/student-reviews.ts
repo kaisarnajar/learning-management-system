@@ -5,6 +5,10 @@ import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/paginat
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { getInitialsFromName } from "@/utils/initials";
+
+// Pure helpers, importable from client components: utils/initials.ts
+export { getInitialsFromName };
 
 function studentReviewSearchWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -50,13 +54,6 @@ export function reviewStatusClass(status: StudentReviewStatus): string {
   return "bg-success-bg text-success-text";
 }
 
-export function getInitialsFromName(name: string): string {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return `${parts[0][0] ?? ""}${parts[parts.length - 1][0] ?? ""}`.toUpperCase();
-}
-
 export function toHomepageReview(review: StudentReviewWithUser): HomepageReview {
   const name = review.user.name?.trim() || "Student";
   return {
@@ -87,7 +84,8 @@ export function canStudentDeleteReview(
 
 export async function getFeaturedHomepageReviews(): Promise<HomepageReview[]> {
   const reviews = await withDbErrorHandling(() => prisma.studentReview.findMany({
-      where: { status: "APPROVED", featuredOnHomepage: true },
+      // A deleted account's review leaves the homepage with the account.
+      where: { status: "APPROVED", featuredOnHomepage: true, user: { deletedAt: null } },
       orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
       take: HOMEPAGE_FEATURED_REVIEWS_MAX,
       include: {
@@ -100,7 +98,7 @@ export async function getFeaturedHomepageReviews(): Promise<HomepageReview[]> {
 
 export async function getFeaturedHomepageReviewCount(): Promise<number> {
   return withDbErrorHandling(() => prisma.studentReview.count({
-      where: { status: "APPROVED", featuredOnHomepage: true },
+      where: { status: "APPROVED", featuredOnHomepage: true, user: { deletedAt: null } },
     }), "Database operation failed");
 }
 

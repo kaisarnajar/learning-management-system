@@ -13,9 +13,10 @@
  * academy resolves them (decline/void the duplicate) and re-creates the index
  * with the statement printed at the end of this report.
  */
-import { Prisma, PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main() {
   const utrDupes = await prisma.$queryRaw<Array<{ upiTransactionId: string; count: number; ids: string[] }>>`

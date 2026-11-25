@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireStudentApiAuth } from "@/services/api-auth";
 import { withMarks } from "@/services/grades";
 import { prisma } from "@/utils/prisma";
+import { apiServerError } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -57,10 +58,6 @@ export async function GET(request: NextRequest) {
       grades: results,
     });
   } catch (error) {
-    console.error("[api/v1/student/grades] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch student grades." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/student/grades", error, "Failed to fetch student grades.");
   }
 }

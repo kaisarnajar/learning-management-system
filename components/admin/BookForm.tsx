@@ -7,10 +7,12 @@ import {
   validateBookForm,
   type BookFormValues,
 } from "@/services/admin-form-validation";
-import { type BookWithDetails, HOMEPAGE_FEATURED_BOOKS_MAX } from "@/services/bookstore";
+import type { BookWithDetails } from "@/services/bookstore";
+import { HOMEPAGE_FEATURED_BOOKS_MAX } from "@/config/constants/business";
 import { useZodForm } from "@/utils/use-zod-form";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
+import { prepareDirectUploads, type DirectUploadField } from "@/utils/direct-upload-client";
 
 type BookFormProps = {
   book?: BookWithDetails & { featuredOnHomepage?: boolean };
@@ -24,6 +26,9 @@ const STATUS_OPTIONS = [
   { value: "OUT_OF_STOCK", label: "Out of Stock" },
   { value: "COMING_SOON", label: "Coming Soon" },
 ];
+
+/** The cover goes straight to storage before the form is submitted (utils/direct-upload-client.ts). */
+const UPLOAD_FIELDS: readonly DirectUploadField[] = [{ field: "image", kind: "book-cover" }];
 
 export function BookForm({ book, featuredCount, action, submitLabel }: BookFormProps) {
   const isCurrentlyFeatured = book?.featuredOnHomepage ?? false;
@@ -85,6 +90,13 @@ export function BookForm({ book, featuredCount, action, submitLabel }: BookFormP
     const formData = new FormData(e.currentTarget);
     formData.set("published", values.published ? "true" : "false");
     formData.set("featuredOnHomepage", values.featuredOnHomepage ? "true" : "false");
+
+    const prepared = await prepareDirectUploads(formData, UPLOAD_FIELDS);
+    if (!prepared.ok) {
+      setServerError(prepared.error);
+      setLoading(false);
+      return;
+    }
 
     try {
       const result = await action(formData);

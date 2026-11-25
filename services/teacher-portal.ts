@@ -17,7 +17,7 @@ export async function getCoursesForTeacher(teacherId: string): Promise<TeacherCo
 
   const counts = await withDbErrorHandling(() => prisma.enrollment.groupBy({
       by: ["courseId"],
-      where: { courseId: { in: courses.map((c) => c.id) }, status: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
+      where: { courseId: { in: courses.map((c) => c.id) }, statusEnum: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
       _count: { _all: true },
     }), "Database operation failed");
   const countByCourse = new Map(counts.map((row) => [row.courseId, row._count._all]));
@@ -44,7 +44,8 @@ export async function getCoursesForTeacherPaginated(
 
   const counts = await withDbErrorHandling(() => prisma.enrollment.groupBy({
       by: ["courseId"],
-      where: { courseId: { in: courses.map((c) => c.id) } },
+      // Students only: pending and rejected applicants are not counted, as in getCoursesForTeacher.
+      where: { courseId: { in: courses.map((c) => c.id) }, statusEnum: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
       _count: { _all: true },
     }), "Database operation failed");
   const countByCourse = new Map(counts.map((row) => [row.courseId, row._count._all]));
@@ -87,7 +88,7 @@ export const getTeacherEnrollmentInCourse = cache(async (
   // Teachers may only see students whose enrollment has been approved;
   // applicants' personal details stay private until the academy approves them.
   const enrollment = await withDbErrorHandling(() => prisma.enrollment.findFirst({
-      where: { id: enrollmentId, courseId, status: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
+      where: { id: enrollmentId, courseId, statusEnum: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
       include: {
         user: {
           select: {
@@ -125,7 +126,7 @@ export async function getTeacherDashboardStats(teacherId: string) {
 
   const courseIds = courses.map((c) => c.id);
   const uniqueStudents = await withDbErrorHandling(() => prisma.enrollment.findMany({
-      where: { courseId: { in: courseIds }, status: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
+      where: { courseId: { in: courseIds }, statusEnum: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
       distinct: ['userId'],
       select: { userId: true },
     }), "Database operation failed");

@@ -19,7 +19,7 @@ jobs:
   verify:
     name: Static checks and test suites
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     services:
       postgres:
         image: postgres:16
@@ -44,6 +44,9 @@ jobs:
       DIRECT_URL: postgresql://postgres:postgres@localhost:5432/lms_test
       AUTH_SECRET: ci-secret-ci-secret-ci-secret-0123456789
       CSP_ENFORCE: "true"
+      # Render a real receipt in tests/integration/pdf-smoke.test.ts; `npm ci`
+      # downloads Puppeteer's Chrome, and the PDF stylesheet is built below.
+      PDF_SMOKE: "1"
     steps:
       - uses: actions/checkout@v4
 
@@ -68,6 +71,15 @@ jobs:
         # New violations fail; the pre-existing ones are recorded in eslint-suppressions.json.
         run: npx eslint . --ignore-pattern ".claude/**"
 
+      - name: Unused files, exports and dependencies
+        # knip.jsonc explains each entry it ignores.
+        run: npm run knip
+
+      - name: Build the application
+        # Catches build-only failures (route segment config, server/client
+        # boundaries, prerender errors) before merge, not after.
+        run: npx next build
+
       - name: Create the shadow database
         run: PGPASSWORD=postgres psql -h localhost -U postgres -c 'CREATE DATABASE lms_shadow'
 
@@ -83,30 +95,35 @@ jobs:
       - name: .env.example lists every variable the code reads
         run: bash scripts/check-env-example.sh
 
-      - name: Dependency audit
-        # Reports advisories without failing the build: at the time this was added
-        # npm audit lists high advisories (e.g. xlsx, which has no fixed release)
-        # that need dependency upgrades of their own. Remove continue-on-error
-        # once `npm audit --audit-level=high` is clean.
-        continue-on-error: true
-        run: npm audit --audit-level=high
+      - name: Dependency audit (production, high and critical)
+        # Runs `npm audit --omit=dev` and fails on any high or critical advisory
+        # not reviewed in scripts/audit-allowlist.json (each entry: one advisory
+        # on one package, with a review date).
+        run: node scripts/check-audit.mjs
 
-      - name: Unit tests
-        run: npm run test:unit
+      - name: Test suites with coverage
+        # One run of all four projects (unit, then integration, api and
+        # security one after another; see sequence.groupOrder in
+        # vitest.config.mts), failing below the services/ coverage thresholds.
+        run: npm run test:coverage
 
-      - name: Integration tests
-        run: npm run test:integration
-
-      - name: API tests
-        run: npm run test:api
-
-      - name: Security tests
-        run: npm run test:security
+      - name: Keep the coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 14
 
   e2e:
     name: End-to-end journeys
     needs: verify
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master')
+    # After every push to dev/master, and before merge on pull requests into
+    # master: master is production (docs/CONTRIBUTING.md), so the journeys
+    # must pass before the merge, not only after it.
+    if: >-
+      (github.event_name == 'push' && (github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/master'))
+      || (github.event_name == 'pull_request' && github.base_ref == 'master')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:

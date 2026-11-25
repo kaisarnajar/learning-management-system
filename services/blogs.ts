@@ -8,6 +8,7 @@ import { andWhere, buildSearchOr } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { paginateQuery } from "@/utils/prisma-utils";
 import { cache } from "react";
+import { HOMEPAGE_FEATURED_BLOGS_MAX } from "@/config/constants/business";
 
 function adminBlogPostsWhere(searchQuery?: string) {
   if (!searchQuery) return undefined;
@@ -18,7 +19,7 @@ function adminBlogPostsWhere(searchQuery?: string) {
   );
 }
 
-export const HOMEPAGE_FEATURED_BLOGS_MAX = 4;
+export { HOMEPAGE_FEATURED_BLOGS_MAX };
 
 export type BlogPostWithImages = BlogPost & {
   images: BlogImage[];

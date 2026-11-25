@@ -29,7 +29,7 @@ OpenAPI Generator plugin (`generatorName = "kotlin"`, `library = "jvm-retrofit2"
 
 | Endpoint | Body | Result |
 |---|---|---|
-| `POST /auth/register` | `{ name?, email, password, acceptPolicies: true }` | tokens + `user`; the account starts unverified and a verification e-mail is sent |
+| `POST /auth/register` | `{ name?, email, password, acceptPolicies: true }` | tokens + `user` (role `USER` until verified) + `verificationRequired: true`; the account starts unverified and a verification e-mail is sent. A taken address gets `400` "An account with this email already exists." and its owner is e-mailed |
 | `POST /auth/login` | `{ email, password }` | tokens + `user`; `403` with `code: "email_not_verified"` until the address is verified |
 | `POST /auth/google` | `{ idToken }` | tokens + `user` |
 | `POST /auth/refresh` | `{ refreshToken }` | a new pair; the presented refresh token is revoked |
@@ -90,7 +90,7 @@ A profile must be complete before enrolling (`profileComplete`).
 | `GET /blog`, `GET /blog/{id}` | The detail has `likeCount`, `commentCount`, the first comments and, with a token, `likedByMe` |
 | `GET /blog/{id}/comments?skip=` | The next page of comments, newest first |
 | `GET /fatwa`, `GET /fatwa/{id}` | Answered and approved only; `?category` |
-| `POST /fatwa` | Ask a question: `{ title, question, category, askerName, askerEmail }` (rate-limited) |
+| `POST /fatwa` | Ask a question: `{ title, question, category, askerName, askerEmail, isAnonymous? }` (rate-limited). With a Bearer token the question is linked to the signed-in account and named by it unless `isAnonymous` is true |
 | `GET /library`, `GET /library/{id}` | `?topic` |
 | `GET /bookstore`, `GET /bookstore/{id}` | Published books |
 | `GET /announcements`, `GET /announcements/{id}` | Site announcements with images |

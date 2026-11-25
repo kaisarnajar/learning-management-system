@@ -8,7 +8,8 @@ import {
   rejectEnrollmentRequest,
   removeEnrollmentFromCourse,
 } from "@/app/admin/enrollments/actions";
-import { createCourse, createUser, resetDb, runAction, sessionFor, SKIP_WITHOUT_DB } from "../helpers/db";
+import { processEnrollmentPayment } from "@/services/payments";
+import { createCourse, createEnrollment, createUser, resetDb, runAction, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB, startedEnrollment } from "../helpers/db";
 
 describe.skipIf(SKIP_WITHOUT_DB)("enrollment lifecycle", () => {
   beforeEach(async () => {
@@ -125,6 +126,33 @@ describe.skipIf(SKIP_WITHOUT_DB)("enrollment lifecycle", () => {
     expect(row).toMatchObject({ statusEnum: "ACTIVE", rollNumber: 1 });
   });
 
+  it("direct enrolment never moves an active or completed enrollment, and moves a pending request onto the roster", async () => {
+    const course = await createCourse();
+    const form = (email: string) => {
+      const f = new FormData();
+      f.set("email", email);
+      f.set("courseId", course.id);
+      return f;
+    };
+
+    const graduate = await createUser({ email: "graduate@example.test" });
+    const done = await createEnrollment(graduate.id, course.id, {
+      status: "completed",
+      statusEnum: "COMPLETED",
+      rollNumber: 7,
+      completedAt: new Date(),
+      certificateNumber: "CERT-1",
+      certificateGeneratedAt: new Date(),
+    });
+    expect((await adminEnrollUser({}, form("graduate@example.test"))).error).toContain("already a completed student");
+    expect(await prisma.enrollment.findUniqueOrThrow({ where: { id: done.id } })).toMatchObject({ statusEnum: "COMPLETED", certificateNumber: "CERT-1" });
+
+    const applicant = await createUser({ email: "applicant@example.test" });
+    await startEnrollment(applicant.id, course.id, "PENDING_APPROVAL");
+    expect((await adminEnrollUser({}, form("applicant@example.test"))).success).toContain("is now enrolled");
+    expect(await prisma.enrollment.findFirstOrThrow({ where: { userId: applicant.id } })).toMatchObject({ statusEnum: "ACTIVE", rollNumber: 8 });
+  });
+
   it("removes an enrollment without touching the student account", async () => {
     const student = await createUser();
     const course = await createCourse();
@@ -135,5 +163,48 @@ describe.skipIf(SKIP_WITHOUT_DB)("enrollment lifecycle", () => {
     expect(result).toEqual({ success: "Enrollment removed successfully." });
     expect(await prisma.enrollment.count()).toBe(0);
     expect(await prisma.user.findUnique({ where: { id: student.id } })).not.toBeNull();
+  });
+  describe("the enrollment fee is paid only into an enrollment awaiting it (H5)", () => {
+    beforeEach(() => setPaymentSettings());
+
+    it("refuses a rejected applicant and leaves the enrollment rejected", async () => {
+      const student = await createUser();
+      const course = await createCourse();
+      const enrollment = await startedEnrollment(student.id, course.id);
+      await runAction(() => rejectEnrollmentRequest(enrollment.id, course.id));
+
+      const result = await processEnrollmentPayment(student.id, course.id, "upi", "UTR9100001", null);
+
+      expect(result).toMatchObject({ status: 400 });
+      expect((await prisma.enrollment.findUniqueOrThrow({ where: { id: enrollment.id } })).statusEnum).toBe("REJECTED");
+      expect(await prisma.coursePaymentSubmission.count()).toBe(0);
+    });
+
+    it("refuses a student who never started enrolling, and creates no enrollment", async () => {
+      const student = await createUser();
+      const course = await createCourse();
+
+      expect(await processEnrollmentPayment(student.id, course.id, "upi", "UTR9200001", null)).toMatchObject({ status: 400 });
+      expect(await prisma.enrollment.count({ where: { userId: student.id } })).toBe(0);
+      expect(await prisma.coursePaymentSubmission.count()).toBe(0);
+    });
+
+    it("refuses a request still waiting for approval", async () => {
+      const student = await createUser();
+      const course = await createCourse();
+      const enrollment = await startEnrollment(student.id, course.id, "PENDING_APPROVAL");
+
+      expect(await processEnrollmentPayment(student.id, course.id, "upi", "UTR9300001", null)).toMatchObject({ status: 400 });
+      expect((await prisma.enrollment.findUniqueOrThrow({ where: { id: enrollment.id } })).statusEnum).toBe("PENDING_APPROVAL");
+    });
+
+    it("accepts the fee for an enrollment awaiting it", async () => {
+      const student = await createUser();
+      const course = await createCourse();
+      await startedEnrollment(student.id, course.id);
+
+      expect(await processEnrollmentPayment(student.id, course.id, "upi", "UTR9400001", null)).toEqual({ success: true });
+      expect((await prisma.enrollment.findFirstOrThrow({ where: { userId: student.id } })).statusEnum).toBe("AWAITING_ENROLLMENT_FEE");
+    });
   });
 });

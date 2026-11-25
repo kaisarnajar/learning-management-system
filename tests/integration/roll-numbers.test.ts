@@ -45,6 +45,25 @@ describe.skipIf(SKIP_WITHOUT_DB)("roll number assignment", () => {
     expect(rows.map((r) => r.rollNumber)).toEqual([1, 1]);
   });
 
+  it("never issues a number again after the highest-numbered enrollment is removed or cleared", async () => {
+    const course = await createCourse();
+    const first = await createEnrollment((await createUser()).id, course.id);
+    const second = await createEnrollment((await createUser()).id, course.id);
+    await assignRollNumber(first.id, course.id);
+    await assignRollNumber(second.id, course.id);
+    expect((await prisma.enrollment.findUniqueOrThrow({ where: { id: second.id } })).rollNumber).toBe(2);
+
+    await prisma.enrollment.delete({ where: { id: second.id } });
+    const third = await createEnrollment((await createUser()).id, course.id);
+    await assignRollNumber(third.id, course.id);
+    expect((await prisma.enrollment.findUniqueOrThrow({ where: { id: third.id } })).rollNumber).toBe(3);
+
+    // A re-application clears the number (services/enrollments.ts); approving it again gets a new one.
+    await prisma.enrollment.update({ where: { id: third.id }, data: { rollNumber: null } });
+    await assignRollNumber(third.id, course.id);
+    expect((await prisma.enrollment.findUniqueOrThrow({ where: { id: third.id } })).rollNumber).toBe(4);
+  });
+
   it("continues after the highest existing number", async () => {
     const course = await createCourse();
     const first = await createUser();

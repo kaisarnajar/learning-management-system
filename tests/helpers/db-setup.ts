@@ -1,4 +1,4 @@
-import { vi } from "vitest";
+import { afterEach, vi } from "vitest";
 
 // Point the app's Prisma client at the disposable database before anything
 // imports it. When DATABASE_URL_TEST is missing the suites skip themselves;
@@ -14,9 +14,15 @@ process.env.NEXT_PUBLIC_APP_URL = "http://localhost:3000";
 vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
   revalidateTag: vi.fn(),
+  updateTag: vi.fn(),
   unstable_noStore: vi.fn(),
   unstable_cache: <T extends (...args: never[]) => unknown>(fn: T) => fn,
 }));
+
+// Deferred work started by after() during a test. It is awaited before the
+// next test so it never runs into that test's resetDb() TRUNCATE (which would
+// wait on, or wipe rows under, a still-running notification or outbox drain).
+const pendingAfterTasks = new Set<Promise<unknown>>();
 
 vi.mock("next/server", async (importOriginal) => {
   const actual = await importOriginal<typeof import("next/server")>();
@@ -24,11 +30,17 @@ vi.mock("next/server", async (importOriginal) => {
     ...actual,
     // Run the deferred work right away, like the fallback in notifications.ts.
     after: (task: (() => unknown) | Promise<unknown>) => {
-      Promise.resolve()
+      const run = Promise.resolve()
         .then(() => (typeof task === "function" ? task() : task))
         .catch(() => undefined);
+      pendingAfterTasks.add(run);
+      void run.finally(() => pendingAfterTasks.delete(run));
     },
   };
+});
+
+afterEach(async () => {
+  while (pendingAfterTasks.size > 0) await Promise.allSettled([...pendingAfterTasks]);
 });
 
 // Auth.js is replaced by a controllable session: tests call

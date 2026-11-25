@@ -5,17 +5,22 @@ import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { prisma } from "@/utils/prisma";
 import { changePasswordSchema } from "@/utils/validations";
 import { apiError, apiServerError, readJson } from "@/utils/api-response";
+import { forgetRecentClaims } from "@/services/auth-jwt";
 
 /**
  * Changes the caller's password: `{ currentPassword, newPassword }`. Every
- * other app session of the account is signed out; this one stays signed in.
+ * other app session and every website session of the account is signed out;
+ * this one stays signed in. The account's push registrations are removed
+ * except `deviceToken`, the calling device's own, when it is sent.
  * Accounts that only use Google have no password to change.
  */
 export async function POST(request: NextRequest) {
   const { user, sessionId, errorResponse } = await requireStudentApiAuth(request);
   if (errorResponse) return errorResponse;
 
-  const limited = await enforceRateLimit(RATE_LIMITS.LOGIN, user.email, {
+  // Its own bucket, keyed on the account: guessing the current password here
+  // must not use up the owner's sign-in attempts, nor theirs this.
+  const limited = await enforceRateLimit(RATE_LIMITS.CHANGE_PASSWORD, user.id, {
     success: false,
     error: "Too many attempts. Please wait a few minutes and try again.",
   });
@@ -35,13 +40,21 @@ export async function POST(request: NextRequest) {
 
     const now = new Date();
     await prisma.$transaction([
-      prisma.user.update({ where: { id: user.id }, data: { password: await hash(parsed.data.newPassword, 12) } }),
+      // sessionVersion ends every web session (services/auth-jwt.ts).
+      prisma.user.update({
+        where: { id: user.id },
+        data: { password: await hash(parsed.data.newPassword, 12), sessionVersion: { increment: 1 } },
+      }),
       prisma.apiRefreshToken.updateMany({
         where: { userId: user.id, revokedAt: null, id: { not: sessionId } },
         data: { revokedAt: now },
       }),
       prisma.passwordResetToken.deleteMany({ where: { email: user.email } }),
+      prisma.deviceToken.deleteMany({
+        where: { userId: user.id, ...(parsed.data.deviceToken ? { token: { not: parsed.data.deviceToken } } : {}) },
+      }),
     ]);
+    forgetRecentClaims(user.id);
 
     return NextResponse.json({ success: true });
   } catch (error) {

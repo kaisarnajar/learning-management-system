@@ -1,6 +1,6 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { getR2Client, R2_BUCKET_NAME, R2_PRIVATE_BUCKET_NAME, R2_PUBLIC_URL } from "@/utils/s3";
+import { getPrivateBucketName, getR2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from "@/utils/s3";
 
 /**
  * The one place that talks to R2 for uploads.
@@ -40,7 +40,7 @@ const EXT_BY_MIME: Record<StoredMime, string> = {
 };
 
 /** Folder under uploads/ (or private/) that a kind of file lives in. */
-export type StoragePrefix = "blogs" | "library" | "books" | "announcements" | "profiles" | "payments";
+export type StoragePrefix = "blogs" | "library" | "books" | "announcements" | "site-announcements" | "profiles" | "payments";
 
 /** A problem with a file the user chose; the message is safe to show. */
 export class UploadError extends Error {
@@ -88,17 +88,28 @@ function describeSize(bytes: number): string {
   return bytes >= 1024 * 1024 ? `${Math.round(bytes / (1024 * 1024))} MB` : `${Math.round(bytes / 1024)} KB`;
 }
 
+/** The message for a declared type or size the rules refuse; null when both are allowed. */
+export function declaredUploadError(type: string, size: number, rules: UploadRules): string | null {
+  const label = rules.label ?? "File";
+  if (!(rules.allowed as readonly string[]).includes(type)) {
+    return `${label} must be ${describeAllowed(rules.allowed)}.`;
+  }
+  if (size > rules.maxBytes) {
+    return `${label} must be ${describeSize(rules.maxBytes)} or smaller.`;
+  }
+  return null;
+}
+
+/** The message for stored bytes whose sniffed type is not the declared one. */
+export function contentMismatchMessage(rules: UploadRules): string {
+  return `${rules.label ?? "File"} content does not match its type. Upload ${describeAllowed(rules.allowed)}.`;
+}
+
 /** Declared type and size check for early form feedback (no bytes read). */
 export function validateUpload(file: File | null | undefined, rules: UploadRules): { error?: string } {
   if (!file || file.size === 0) return {};
-  const label = rules.label ?? "File";
-  if (!(rules.allowed as readonly string[]).includes(file.type)) {
-    return { error: `${label} must be ${describeAllowed(rules.allowed)}.` };
-  }
-  if (file.size > rules.maxBytes) {
-    return { error: `${label} must be ${describeSize(rules.maxBytes)} or smaller.` };
-  }
-  return {};
+  const error = declaredUploadError(file.type, file.size, rules);
+  return error ? { error } : {};
 }
 
 function randomSuffix(): string {
@@ -114,9 +125,31 @@ async function readVerified(file: File, rules: UploadRules): Promise<{ buffer: B
   const buffer = Buffer.from(await file.arrayBuffer());
   const sniffed = sniffMime(buffer);
   if (!sniffed || !(rules.allowed as readonly string[]).includes(sniffed) || sniffed !== file.type) {
-    throw new UploadError(`${rules.label ?? "File"} content does not match its type. Upload ${describeAllowed(rules.allowed)}.`);
+    throw new UploadError(contentMismatchMessage(rules));
   }
   return { buffer, mime: sniffed };
+}
+
+/** Where a new upload is stored: public (uploads/, R2_BUCKET_NAME) or private (private/, the private bucket). */
+export type StorageVisibility = "public" | "private";
+
+/**
+ * A fresh object location for a verified file: the bucket, the key
+ * (<uploads|private>/<prefix>/<idPrefix>-<unique>.<ext>) and what the app
+ * stores for it (the public URL, or the /api/files path for private files).
+ */
+export function newObjectTarget(
+  visibility: StorageVisibility,
+  prefix: StoragePrefix,
+  idPrefix: string,
+  mime: StoredMime,
+): { bucket: string; key: string; location: string } {
+  if (visibility === "private") {
+    const key = `private/${prefix}/${idPrefix}-${randomSuffix()}.${EXT_BY_MIME[mime]}`;
+    return { bucket: getPrivateBucketName(), key, location: `${PRIVATE_FILE_ROUTE}${key}` };
+  }
+  const key = `uploads/${prefix}/${idPrefix}-${randomSuffix()}.${EXT_BY_MIME[mime]}`;
+  return { bucket: R2_BUCKET_NAME, key, location: `${R2_PUBLIC_URL}/${key}` };
 }
 
 /**
@@ -126,55 +159,50 @@ async function readVerified(file: File, rules: UploadRules): Promise<{ buffer: B
  */
 export async function uploadToR2(prefix: StoragePrefix, idPrefix: string, file: File, rules: UploadRules): Promise<string> {
   const { buffer, mime } = await readVerified(file, rules);
-  const key = `uploads/${prefix}/${idPrefix}-${randomSuffix()}.${EXT_BY_MIME[mime]}`;
+  const target = newObjectTarget("public", prefix, idPrefix, mime);
   await getR2Client().send(
-    new PutObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key, Body: buffer, ContentType: mime }),
+    new PutObjectCommand({ Bucket: target.bucket, Key: target.key, Body: buffer, ContentType: mime }),
   );
-  return `${R2_PUBLIC_URL}/${key}`;
+  return target.location;
 }
 
 // ---------------------------------------------------------------------------
 // Private objects: served through /api/files/<key>, which checks ownership
 // and redirects to a short-lived presigned URL. They live in
-// R2_PRIVATE_BUCKET_NAME when set (a bucket without public access), else
-// under the private/ prefix of the main bucket, where the random object
-// names are the only protection, so set the private bucket in production.
+// R2_PRIVATE_BUCKET_NAME when it names a separate bucket, otherwise in the
+// private/ prefix of the main bucket (getPrivateBucketName).
 // ---------------------------------------------------------------------------
 
 export const PRIVATE_FILE_ROUTE = "/api/files/";
 export const PRIVATE_URL_TTL_SECONDS = 5 * 60;
 
-export function isPrivateFilePath(path: string | null | undefined): boolean {
-  return Boolean(path && path.startsWith(PRIVATE_FILE_ROUTE));
-}
-
 /** The private object key for an app path (/api/files/private/<prefix>/<object>), or null. */
 export function privateKeyFromPath(path: string | null | undefined): string | null {
   if (!path || !path.startsWith(PRIVATE_FILE_ROUTE)) return null;
   const key = path.slice(PRIVATE_FILE_ROUTE.length).replace(/^\/+/, "");
-  if (!/^private\/[a-z]+\/[A-Za-z0-9._-]+$/.test(key)) return null;
+  if (!/^private\/[a-z]+(?:-[a-z]+)*\/[A-Za-z0-9._-]+$/.test(key)) return null;
   return key;
 }
 
 /** Stores a file privately and returns the app path it is served from. */
 export async function uploadPrivateToR2(prefix: StoragePrefix, idPrefix: string, file: File, rules: UploadRules): Promise<string> {
   const { buffer, mime } = await readVerified(file, rules);
-  const key = `private/${prefix}/${idPrefix}-${randomSuffix()}.${EXT_BY_MIME[mime]}`;
+  const target = newObjectTarget("private", prefix, idPrefix, mime);
   await getR2Client().send(
-    new PutObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key, Body: buffer, ContentType: mime }),
+    new PutObjectCommand({ Bucket: target.bucket, Key: target.key, Body: buffer, ContentType: mime }),
   );
-  return `${PRIVATE_FILE_ROUTE}${key}`;
+  return target.location;
 }
 
 /** Stores a server-generated file (a rendered PDF) privately under an explicit key. */
 export async function putPrivateObject(key: string, body: Buffer, contentType: string): Promise<void> {
-  await getR2Client().send(new PutObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key, Body: body, ContentType: contentType }));
+  await getR2Client().send(new PutObjectCommand({ Bucket: getPrivateBucketName(), Key: key, Body: body, ContentType: contentType }));
 }
 
 /** Reads a private object into memory; null when it does not exist (or cannot be read). */
 export async function getPrivateObject(key: string): Promise<Buffer | null> {
   try {
-    const result = await getR2Client().send(new GetObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key }));
+    const result = await getR2Client().send(new GetObjectCommand({ Bucket: getPrivateBucketName(), Key: key }));
     if (!result.Body) return null;
     return Buffer.from(await result.Body.transformToByteArray());
   } catch (error) {
@@ -190,7 +218,7 @@ export async function getPrivateObject(key: string): Promise<Buffer | null> {
 export async function deletePrivateObject(key: string | null | undefined): Promise<void> {
   if (!key) return;
   try {
-    await getR2Client().send(new DeleteObjectCommand({ Bucket: R2_PRIVATE_BUCKET_NAME, Key: key }));
+    await getR2Client().send(new DeleteObjectCommand({ Bucket: getPrivateBucketName(), Key: key }));
   } catch (error) {
     console.error(`[storage] Failed to delete ${key} from R2:`, error);
   }
@@ -202,7 +230,7 @@ export function presignPrivateObject(key: string, downloadName?: string): Promis
   return getSignedUrl(
     getR2Client(),
     new GetObjectCommand({
-      Bucket: R2_PRIVATE_BUCKET_NAME,
+      Bucket: getPrivateBucketName(),
       Key: key,
       ...(safeName ? { ResponseContentDisposition: `inline; filename="${safeName}"` } : {}),
     }),
@@ -210,31 +238,50 @@ export function presignPrivateObject(key: string, downloadName?: string): Promis
   );
 }
 
-/** The bucket and key for a stored URL/path, or null when it is not ours (or not under the prefix). */
-export function r2KeyFromUrl(prefix: StoragePrefix, urlOrPath: string | null | undefined): { bucket: string; key: string } | null {
+/**
+ * The bucket and key for a stored URL/path, or null when it is not ours, not
+ * under the prefix, or (when `visibility` is given) not of that visibility.
+ */
+export function r2KeyFromUrl(
+  prefix: StoragePrefix,
+  urlOrPath: string | null | undefined,
+  visibility?: StorageVisibility,
+): { bucket: string; key: string } | null {
   if (!urlOrPath) return null;
   const privateKey = privateKeyFromPath(urlOrPath);
   if (privateKey) {
-    return privateKey.startsWith(`private/${prefix}/`) ? { bucket: R2_PRIVATE_BUCKET_NAME, key: privateKey } : null;
+    if (visibility === "public") return null;
+    return privateKey.startsWith(`private/${prefix}/`) ? { bucket: getPrivateBucketName(), key: privateKey } : null;
   }
+  if (visibility === "private") return null;
   let key = urlOrPath;
   if (R2_PUBLIC_URL && key.startsWith(R2_PUBLIC_URL)) key = key.slice(R2_PUBLIC_URL.length);
   key = key.replace(/^\/+/, "");
   return key.startsWith(`uploads/${prefix}/`) ? { bucket: R2_BUCKET_NAME, key } : null;
 }
 
-/** Best-effort delete; never throws (a leftover object is logged, not fatal). */
-export async function deleteFromR2(prefix: StoragePrefix, urlOrPath: string | null | undefined): Promise<void> {
-  const target = r2KeyFromUrl(prefix, urlOrPath);
+/**
+ * The storage key of a profile photo `userId` uploaded themselves, or null.
+ * Upload keys are uploads/profiles/<userId>-<unique>.<ext> (uploadToR2), so a
+ * URL that names another user's object, or anything that could escape the
+ * prefix once decoded, is never treated as this user's to replace or delete.
+ */
+export function ownedProfileImageKey(userId: string, urlOrPath: string | null | undefined): string | null {
+  if (!userId || !urlOrPath) return null;
+  if (urlOrPath.includes("..") || urlOrPath.includes("%")) return null;
+  let key = urlOrPath;
+  if (R2_PUBLIC_URL && key.startsWith(`${R2_PUBLIC_URL}/`)) key = key.slice(R2_PUBLIC_URL.length);
+  key = key.replace(/^\//, "");
+  const escapedId = userId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return new RegExp(`^uploads/profiles/${escapedId}-[A-Za-z0-9-]+\\.(jpg|png|webp|gif)$`).test(key) ? key : null;
+}
+
+/** Best-effort delete of a resolved bucket/key; never throws. */
+export async function deleteR2Object(target: { bucket: string; key: string } | null): Promise<void> {
   if (!target) return;
   try {
     await getR2Client().send(new DeleteObjectCommand({ Bucket: target.bucket, Key: target.key }));
   } catch (error) {
     console.error(`[storage] Failed to delete ${target.key} from R2:`, error);
   }
-}
-
-/** Deletes several objects, best effort, in parallel. */
-export async function deleteManyFromR2(prefix: StoragePrefix, urls: Array<string | null | undefined>): Promise<void> {
-  await Promise.all(urls.map((url) => deleteFromR2(prefix, url)));
 }

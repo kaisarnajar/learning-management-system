@@ -1,20 +1,18 @@
 import { unstable_noStore as noStore } from "next/cache";
-import {
-  MONTHLY_PAYMENT_PENDING,
-  MONTHLY_PAYMENT_APPROVED,
-  PAYMENT_TYPE_ENROLLMENT,
-  PAYMENT_TYPE_MONTHLY,
-  PAYMENT_TYPE_QUARTERLY,
-  PAYMENT_TYPE_HALF_YEARLY,
-  PAYMENT_TYPE_YEARLY,
-  PAYMENT_TYPE_ONE_TIME,
-} from "@/services/monthly-payment-status";
+import { COURSE_FEE_PAYMENT_TYPES } from "@/services/status-compat";
 import { getCourseIdsByTitleSearch } from "@/services/courses";
 import { APPROVAL_PAGE_SIZE, clampPage, paginationArgs, type PaginatedResult } from "@/utils/pagination";
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr, type TextSearchWhere } from "@/utils/text-search";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { paymentTypeFromText } from "@/services/status-compat";
+import { PAYMENT_YEARS_BACK, PAYMENT_YEARS_FORWARD, getPaymentYearBounds, getPaymentYearOptions, isPaymentYearAllowed } from "@/utils/payment-years";
+import { buildEnrollmentFeeLabel, buildMonthlyFeeLabel } from "@/services/fee-labels";
+
+// Pure helpers, importable from client components: services/fee-labels.ts
+export { buildEnrollmentFeeLabel, buildMonthlyFeeLabel };
+
+// Pure helpers, importable from client components: utils/payment-years.ts
+export { PAYMENT_YEARS_BACK, PAYMENT_YEARS_FORWARD, getPaymentYearBounds, getPaymentYearOptions, isPaymentYearAllowed };
 
 async function paymentSubmissionSearchWhere(
   searchQuery?: string,
@@ -66,9 +64,9 @@ export async function getPendingMonthlyPaymentsPaginated(
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
   const base = {
-    status: MONTHLY_PAYMENT_PENDING,
+    statusEnum: "PENDING_VERIFICATION" as const,
     deletedAt: null,
-    paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY, PAYMENT_TYPE_ONE_TIME] }
+    paymentTypeEnum: { in: COURSE_FEE_PAYMENT_TYPES }
   };
   const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
   const totalCount = await withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where }), "Database operation failed");
@@ -90,7 +88,7 @@ export async function getPendingEnrollmentFeePaymentsPaginated(
   searchQuery?: string,
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
-  const base = { status: MONTHLY_PAYMENT_PENDING, paymentType: PAYMENT_TYPE_ENROLLMENT, deletedAt: null };
+  const base = { statusEnum: "PENDING_VERIFICATION" as const, paymentTypeEnum: "ENROLLMENT" as const, deletedAt: null };
   const where = andWhere(base, await paymentSubmissionSearchWhere(searchQuery));
   const totalCount = await withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
@@ -108,76 +106,8 @@ export async function getPendingEnrollmentFeePaymentsPaginated(
 export async function getPendingPaymentCount(): Promise<number> {
   noStore();
   return withDbErrorHandling(() => prisma.coursePaymentSubmission.count({
-      where: { status: MONTHLY_PAYMENT_PENDING, deletedAt: null },
+      where: { statusEnum: "PENDING_VERIFICATION", deletedAt: null },
     }), "Database operation failed");
-}
-
-/** How many calendar years before the current year students may select. */
-export const PAYMENT_YEARS_BACK = 2;
-
-/** How many calendar years after the current year students may select (e.g. 2035, 2040). */
-export const PAYMENT_YEARS_FORWARD = 25;
-
-export function getPaymentYearBounds(referenceDate = new Date()) {
-  const current = referenceDate.getFullYear();
-  return {
-    min: current - PAYMENT_YEARS_BACK,
-    max: current + PAYMENT_YEARS_FORWARD,
-  };
-}
-
-export function getPaymentYearOptions(referenceDate = new Date()): string[] {
-  const { min, max } = getPaymentYearBounds(referenceDate);
-  const years: string[] = [];
-  for (let y = min; y <= max; y++) {
-    years.push(String(y));
-  }
-  return years;
-}
-
-export function isPaymentYearAllowed(year: string, referenceDate = new Date()): boolean {
-  const y = Number.parseInt(year, 10);
-  if (!Number.isFinite(y) || year.length !== 4) return false;
-  const { min, max } = getPaymentYearBounds(referenceDate);
-  return y >= min && y <= max;
-}
-
-export function buildMonthlyFeeLabel(month: string, year: string, paymentType: string = "monthly"): string {
-  const monthNames = [
-    "January",
-    "February",
-    "March",
-    "April",
-    "May",
-    "June",
-    "July",
-    "August",
-    "September",
-    "October",
-    "November",
-    "December",
-  ];
-  const index = Number.parseInt(month, 10) - 1;
-  const monthName = monthNames[index] ?? month;
-
-  const type = paymentTypeFromText(paymentType);
-  if (type === "QUARTERLY") {
-    return `Quarterly fee — starting ${monthName} ${year}`;
-  }
-  if (type === "HALF_YEARLY") {
-    return `Half Yearly fee — starting ${monthName} ${year}`;
-  }
-  if (type === "YEARLY") {
-    return `Yearly fee — starting ${monthName} ${year}`;
-  }
-  if (type === "ONE_TIME") {
-    return `One-Time fee — ${year}`;
-  }
-  return `Monthly fee — ${monthName} ${year}`;
-}
-
-export function buildEnrollmentFeeLabel(courseTitle: string): string {
-  return `Enrollment fee — ${courseTitle}`;
 }
 
 export async function hasPendingEnrollmentFeeSubmission(
@@ -188,8 +118,8 @@ export async function hasPendingEnrollmentFeeSubmission(
       where: {
         userId,
         courseId,
-        paymentType: PAYMENT_TYPE_ENROLLMENT,
-        status: MONTHLY_PAYMENT_PENDING,
+        paymentTypeEnum: "ENROLLMENT",
+        statusEnum: "PENDING_VERIFICATION",
         deletedAt: null,
       },
       select: { id: true },
@@ -201,8 +131,8 @@ export async function getPendingEnrollmentFeeSubmissionMap(userId: string) {
   const rows = await withDbErrorHandling(() => prisma.coursePaymentSubmission.findMany({
       where: {
         userId,
-        paymentType: PAYMENT_TYPE_ENROLLMENT,
-        status: MONTHLY_PAYMENT_PENDING,
+        paymentTypeEnum: "ENROLLMENT",
+        statusEnum: "PENDING_VERIFICATION",
         deletedAt: null,
       },
       select: { courseId: true },
@@ -218,9 +148,9 @@ export async function getApprovedMonthlyPaymentsPaginated(
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
   const base: Record<string, unknown> = {
-    status: MONTHLY_PAYMENT_APPROVED,
+    statusEnum: "APPROVED",
     deletedAt: null,
-    paymentType: { in: [PAYMENT_TYPE_MONTHLY, PAYMENT_TYPE_QUARTERLY, PAYMENT_TYPE_HALF_YEARLY, PAYMENT_TYPE_YEARLY, PAYMENT_TYPE_ONE_TIME] }
+    paymentTypeEnum: { in: COURSE_FEE_PAYMENT_TYPES }
   };
   if (filterType === "paid") {
     base.amountInrPaise = { gt: 0 };
@@ -252,7 +182,7 @@ export async function getApprovedEnrollmentFeePaymentsPaginated(
   filterType: "all" | "paid" | "waiver" = "all",
 ): Promise<PaginatedResult<CoursePaymentSubmissionWithUser>> {
   noStore();
-  const base: Record<string, unknown> = { status: MONTHLY_PAYMENT_APPROVED, paymentType: PAYMENT_TYPE_ENROLLMENT, deletedAt: null };
+  const base: Record<string, unknown> = { statusEnum: "APPROVED", paymentTypeEnum: "ENROLLMENT", deletedAt: null };
   if (filterType === "paid") {
     base.amountInrPaise = { gt: 0 };
   } else if (filterType === "waiver") {

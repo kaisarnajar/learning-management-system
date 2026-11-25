@@ -2,7 +2,7 @@
 
 import type { Prisma } from "@prisma/client";
 import { createAdminCrudActions, fromSafeParse } from "@/services/admin-crud";
-import { deleteBlogImageFile } from "@/services/blog-upload";
+import { deleteUpload } from "@/services/uploads";
 import {
   addImagesToPost,
   getRemoveImageIds,
@@ -107,7 +107,7 @@ const crud = createAdminCrudActions({
 
     beforeDelete: async (existing) => {
       for (const img of existing.images) {
-        await deleteBlogImageFile(img.imagePath);
+        await deleteUpload("blog-image", img.imagePath);
       }
     },
   },

@@ -1,5 +1,6 @@
 "use client";
 
+import { BUSINESS_TIMEZONE } from "@/config/constants/business";
 import Link from "next/link";
 import { BRAND_CONFIG } from "@/config/brand";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
@@ -10,6 +11,7 @@ import type { StudentReviewWithUser } from "@/services/student-reviews";
 
 function formatDate(date: Date) {
   return new Date(date).toLocaleDateString("en-IN", {
+    timeZone: BUSINESS_TIMEZONE,
     day: "numeric",
     month: "short",
     year: "numeric",

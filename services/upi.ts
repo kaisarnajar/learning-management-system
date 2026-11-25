@@ -1,42 +1,12 @@
-import type { PaymentSettingsData } from "@/services/payment-settings";
 import { getPaymentSettings } from "@/services/payment-settings";
+import { buildUpiPaymentUrlFromSettings, buildUpiVpaUrlFromSettings, formatUpiAmount, type UpiPaymentParams } from "@/utils/upi";
 
-export type UpiPaymentParams = {
-  amountPaise: number;
-  payeeName: string;
-  note: string;
-  transactionRef: string;
-};
+// Pure helpers, importable from client components: utils/upi.ts
+export { buildUpiPaymentUrlFromSettings, buildUpiVpaUrlFromSettings, formatUpiAmount };
+export type { UpiPaymentParams };
 
 export async function isUpiConfigured(): Promise<boolean> {
   const settings = await getPaymentSettings();
   return Boolean(settings.upiId.trim());
 }
 
-export function formatUpiAmount(amountPaise: number): string {
-  return (amountPaise / 100).toFixed(2);
-}
-
-export function buildUpiVpaUrlFromSettings(settings: PaymentSettingsData): string {
-  const query = new URLSearchParams({
-    pa: settings.upiId,
-    pn: settings.upiPayeeName.slice(0, 50),
-    cu: "INR",
-  });
-  return `upi://pay?${query.toString()}`;
-}
-
-export function buildUpiPaymentUrlFromSettings(
-  settings: PaymentSettingsData,
-  params: UpiPaymentParams,
-): string {
-  const query = new URLSearchParams({
-    pa: settings.upiId,
-    pn: params.payeeName.slice(0, 50),
-    am: formatUpiAmount(params.amountPaise),
-    cu: "INR",
-    tn: params.note.slice(0, 80),
-    tr: params.transactionRef.slice(0, 35),
-  });
-  return `upi://pay?${query.toString()}`;
-}

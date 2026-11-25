@@ -35,3 +35,12 @@ test("the removed demo seed endpoint answers 404", async ({ request }) => {
     expect((await request.get(url)).status(), url).toBe(404);
   }
 });
+
+test("the home page registers the service worker", async ({ page }) => {
+  await page.goto("/");
+  const scope = await page.evaluate(async () => {
+    await navigator.serviceWorker.ready;
+    return (await navigator.serviceWorker.getRegistration())?.scope ?? null;
+  });
+  expect(scope).toBe(new URL("/", page.url()).href);
+});

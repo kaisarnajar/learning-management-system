@@ -15,6 +15,12 @@ const ERROR_MESSAGES: Record<string, string> = {
   notfound: "Account not found.",
 };
 
+/** Errors after which the confirmation form is shown again. */
+const FORM_ERRORS: Record<string, string> = {
+  password: "That password is not correct.",
+  limited: "Too many attempts. Please wait a few minutes and try again.",
+};
+
 export default async function VerifyEmailPage({ searchParams }: PageProps) {
   const { token, verified, error } = await searchParams;
 
@@ -28,7 +34,8 @@ export default async function VerifyEmailPage({ searchParams }: PageProps) {
     );
   }
 
-  if (error) {
+  const formError = token && error ? FORM_ERRORS[error] : undefined;
+  if (error && !formError) {
     return <VerificationResult success={false} message={ERROR_MESSAGES[error] ?? ERROR_MESSAGES.invalid} />;
   }
 
@@ -50,8 +57,9 @@ export default async function VerifyEmailPage({ searchParams }: PageProps) {
 
   const existingUser = await prisma.user.findUnique({
     where: { email: existingToken.identifier },
-    select: { email: true },
+    select: { email: true, password: true },
   });
+  const needsPassword = Boolean(existingUser?.password);
 
   if (!existingUser) {
     return <VerificationResult success={false} message={ERROR_MESSAGES.notfound} />;
@@ -64,15 +72,46 @@ export default async function VerifyEmailPage({ searchParams }: PageProps) {
         <p className="mt-2 text-muted">
           Confirm that <span className="font-medium text-foreground">{existingUser.email}</span> is your email address.
         </p>
-        <form action={confirmEmailVerification} className="mt-6">
+        <form action={confirmEmailVerification} className="mt-6 space-y-4 text-left">
           <input type="hidden" name="token" value={token} />
+          {needsPassword && (
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-foreground">
+                Your account password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="mt-1 w-full rounded-md border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          )}
+          {formError && (
+            <p role="alert" className="text-sm text-destructive-text">
+              {formError}
+            </p>
+          )}
+          <div className="text-center">
           <button
             type="submit"
             className="inline-block rounded-full bg-primary px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-primary-light"
           >
             Confirm email
           </button>
+          </div>
         </form>
+        {needsPassword && (
+          <p className="mt-6 text-sm text-muted">
+            Didn&apos;t create this account, or forgot the password?{" "}
+            <Link href="/forgot-password" className="font-medium text-primary hover:underline">
+              Reset the password
+            </Link>{" "}
+            instead; that also confirms your email.
+          </p>
+        )}
       </div>
     </div>
   );

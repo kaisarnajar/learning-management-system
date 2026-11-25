@@ -23,6 +23,7 @@ import { getStudentsWithPayments } from "@/services/students";
 import { getAllTeachers } from "@/services/teachers";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { requireAdmin } from "@/services/auth-actions";
+import { FinanceExportLink } from "@/components/admin/FinanceExportLink";
 
 
 export default async function AdminFinancePage({
@@ -123,12 +124,10 @@ export default async function AdminFinancePage({
         {filters.tab === "income" ? (
           <section className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-              <a
+              <FinanceExportLink
                 href={`/api/admin/finance/export${buildFinanceQueryString(filters, { tab: "income" }) || "?"}&type=income`.replace("?&", "?")}
-                className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-5 py-2 text-sm font-semibold text-foreground hover:bg-accent-muted/50"
-              >
-                Export to Excel
-              </a>
+                hasDateRange={Boolean(filters.from && filters.to)}
+              />
               <Link
                 href="/admin/transactions?tab=payments"
                 className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"
@@ -172,12 +171,10 @@ export default async function AdminFinancePage({
         ) : (
           <section className="space-y-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-              <a
+              <FinanceExportLink
                 href={`/api/admin/finance/export${buildFinanceQueryString(filters, { tab: "expenses" }) || "?"}&type=expenses`.replace("?&", "?")}
-                className="inline-flex min-h-11 items-center justify-center rounded-md border border-border bg-surface px-5 py-2 text-sm font-semibold text-foreground hover:bg-accent-muted/50"
-              >
-                Export to Excel
-              </a>
+                hasDateRange={Boolean(filters.from && filters.to)}
+              />
               <Link
                 href="/admin/transactions?tab=expenses"
                 className="inline-flex min-h-11 items-center justify-center rounded-md bg-primary px-5 py-2 text-sm font-semibold text-white hover:bg-primary-light"

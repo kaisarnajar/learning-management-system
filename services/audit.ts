@@ -86,9 +86,10 @@ export async function getAuditLogPaginated(
 }
 
 export async function getAuditEntities(): Promise<string[]> {
-  const rows = await withDbErrorHandling(() => prisma.auditLog.findMany({
-    distinct: ["entity"],
-    select: { entity: true },
+  // groupBy runs as SELECT ... GROUP BY in the database; `distinct` would be
+  // applied in memory by Prisma after reading every row of this append-only table.
+  const rows = await withDbErrorHandling(() => prisma.auditLog.groupBy({
+    by: ["entity"],
     orderBy: { entity: "asc" },
   }), "Database operation failed");
   return rows.map((r) => r.entity);

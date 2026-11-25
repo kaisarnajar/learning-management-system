@@ -7,8 +7,9 @@ import { prisma } from "@/utils/prisma";
  *   available = inventoryPurchased + Σ BookStockMovement.delta − committed
  *   committed = Σ quantity of items in APPROVED or SHIPPED orders (not soft-deleted)
  *
- * Refunded, declined and pending orders do not hold stock; a refund therefore
- * restores availability without any extra bookkeeping.
+ * Refunded, declined and pending orders do not hold stock, so a refund
+ * restores availability by itself. When a shipped order is refunded but its
+ * books did not come back, writeOffUnreturnedStockTx records them as gone.
  */
 type Client = Prisma.TransactionClient | typeof prisma;
 
@@ -62,6 +63,27 @@ export async function getStockLevels(client: Client, bookIds: string[]): Promise
     });
   }
   return levels;
+}
+
+/**
+ * A refunded order stops holding stock, which would make its books available
+ * again. For a shipped order whose books stayed with the customer, this writes
+ * one negative movement per book so the stock level does not change.
+ */
+export async function writeOffUnreturnedStockTx(
+  tx: Prisma.TransactionClient,
+  orderId: string,
+  createdById: string | null,
+): Promise<number> {
+  const items = await tx.bookOrderItem.findMany({ where: { orderId }, select: { bookId: true, quantity: true } });
+  const byBook = new Map<string, number>();
+  for (const item of items) byBook.set(item.bookId, (byBook.get(item.bookId) ?? 0) + item.quantity);
+  if (byBook.size === 0) return 0;
+  const reason = `Refunded without return (order ${orderId.slice(-6).toUpperCase()})`;
+  await tx.bookStockMovement.createMany({
+    data: [...byBook].map(([bookId, quantity]) => ({ bookId, orderId, delta: -quantity, reason, createdById })),
+  });
+  return byBook.size;
 }
 
 /**

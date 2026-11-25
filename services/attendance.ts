@@ -1,6 +1,5 @@
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
 
 export type AttendanceRecordInput = {
   enrollmentId: string;
@@ -34,7 +33,7 @@ export async function getEnrolledStudentsForAttendanceFromDb(courseId: string) {
     return prisma.enrollment.findMany({
       where: {
         courseId,
-        status: ENROLLMENT_STATUS.ACTIVE, // Only active students
+        statusEnum: "ACTIVE", // Only active students
       },
       select: {
         id: true,
@@ -86,15 +85,16 @@ export async function getAttendanceRecordsForDateFromDb(courseId: string, target
 export async function saveCourseAttendanceToDb(courseId: string, targetDate: Date, records: AttendanceRecordInput[]) {
   return withDbErrorHandling(async () => {
     await prisma.$transaction(async (tx) => {
-      // Every enrollment must belong to the authorised course.
+      // Every enrollment must be an active one of the authorised course: a
+      // pending, rejected or finished student cannot be marked.
       const enrollmentIds = [...new Set(records.map((r) => r.enrollmentId))];
       if (enrollmentIds.length > 0) {
         const found = await tx.enrollment.findMany({
-          where: { courseId, id: { in: enrollmentIds } },
+          where: { courseId, id: { in: enrollmentIds }, statusEnum: "ACTIVE" },
           select: { id: true },
         });
         if (found.length !== enrollmentIds.length) {
-          throw new Error("One or more students do not belong to this course.");
+          throw new Error("One or more students are not active in this course.");
         }
       }
 
@@ -113,23 +113,19 @@ export async function saveCourseAttendanceToDb(courseId: string, targetDate: Dat
         update: {}, // Just touch it
       });
 
-      // Upsert individual records
-      for (const record of records) {
-        await tx.courseAttendanceRecord.upsert({
-          where: {
-            attendanceId_enrollmentId: {
-              attendanceId: attendance.id,
-              enrollmentId: record.enrollmentId,
-            }
-          },
-          create: {
-            attendanceId: attendance.id,
-            enrollmentId: record.enrollmentId,
-            isPresent: record.isPresent,
-          },
-          update: {
-            isPresent: record.isPresent,
-          }
+      // Three statements whatever the class size (one upsert per student kept
+      // the transaction, and the connection, open for N round trips): create
+      // the missing rows, then set present and absent in one update each.
+      await tx.courseAttendanceRecord.createMany({
+        data: records.map((record) => ({ attendanceId: attendance.id, enrollmentId: record.enrollmentId, isPresent: record.isPresent })),
+        skipDuplicates: true,
+      });
+      for (const isPresent of [true, false]) {
+        const enrollmentIds = records.filter((record) => record.isPresent === isPresent).map((record) => record.enrollmentId);
+        if (enrollmentIds.length === 0) continue;
+        await tx.courseAttendanceRecord.updateMany({
+          where: { attendanceId: attendance.id, enrollmentId: { in: enrollmentIds } },
+          data: { isPresent },
         });
       }
     });

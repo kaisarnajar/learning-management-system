@@ -24,6 +24,7 @@ export default async function NewCourseAnnouncementPage({
       backLabel="← Back to announcements"
       heading="New announcement"
       description="Choose a category and write your message for students."
+      courseId={course.id}
       action={createCourseAnnouncement.bind(null, course.id)}
       submitLabel="Post announcement"
       error={error ? decodeURIComponent(error) : undefined}

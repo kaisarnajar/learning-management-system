@@ -8,7 +8,9 @@ import { getIncomeRecordsPaginated, getIncomeTotal } from "@/services/finance-in
 import { parseFinanceFilters } from "@/services/finance-filters";
 import { getAuditLogPaginated } from "@/services/audit";
 import { getPaymentRecordsForUserPaginated, getPaymentSubmissionsForUser } from "@/services/payments";
-import { createCourse, createEnrollment, createUser, resetDb, runAction, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB } from "../helpers/db";
+import { getApplicableCoupons } from "@/services/coupons";
+import { paymentTypeData } from "@/services/status-compat";
+import { createCourse, createEnrollment, createUser, resetDb, runAction, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB, startedEnrollment } from "../helpers/db";
 
 const allTime = () => parseFinanceFilters({ preset: "all_time" });
 
@@ -23,6 +25,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("voiding, finance totals and the audit trail", 
   async function approvedFee(amountPaise = 50000) {
     const student = await createUser();
     const course = await createCourse({ priceInrPaise: amountPaise });
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, "upi", `UTR${Math.random().toString(36).slice(2, 10)}`, null);
     const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
     await runAction(() => confirmMonthlyPayment(submission.id));
@@ -57,7 +60,12 @@ describe.skipIf(SKIP_WITHOUT_DB)("voiding, finance totals and the audit trail", 
     await runAction(() => voidApprovedPayment(fee.submission.id, "wrong student"));
 
     const entries = await prisma.auditLog.findMany({ orderBy: { createdAt: "asc" } });
-    expect(entries.map((e) => `${e.action}:${e.entity}`).sort()).toEqual(["soft_delete:CoursePaymentSubmission", "void:PaymentRecord"]);
+    // An enrollment fee: the reopened enrollment is audited too.
+    expect(entries.map((e) => `${e.action}:${e.entity}`).sort()).toEqual([
+      "soft_delete:CoursePaymentSubmission",
+      "update:Enrollment",
+      "void:PaymentRecord",
+    ]);
     const voidEntry = entries.find((e) => e.action === "void")!;
     expect(voidEntry).toMatchObject({ entityId: fee.submission.paymentRecordId, reason: "wrong student", actorEmail: "admin@example.test" });
     expect(voidEntry.before).toMatchObject({ amountInrPaise: 50000 });
@@ -76,10 +84,11 @@ describe.skipIf(SKIP_WITHOUT_DB)("voiding, finance totals and the audit trail", 
 
     const student = await createUser();
     const course = await createCourse();
+    await startedEnrollment(student.id, course.id);
     await processEnrollmentPayment(student.id, course.id, "upi", "UTRPENDING1", null);
     const pending = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
     expect((await voidApprovedPayment(pending.id, "not approved yet"))?.error).toBe("Only approved payments can be voided.");
-    expect(await prisma.auditLog.count()).toBe(2); // only the first void wrote entries
+    expect(await prisma.auditLog.count()).toBe(3); // only the first void wrote entries
   });
 
   it("voids a manually recorded payment and removes it from income", async () => {
@@ -96,6 +105,23 @@ describe.skipIf(SKIP_WITHOUT_DB)("voiding, finance totals and the audit trail", 
     const audit = await prisma.auditLog.findFirstOrThrow({ where: { entity: "PaymentRecord", entityId: record.id } });
     expect(audit).toMatchObject({ action: "void", reason: "recorded in error" });
     expect((await voidManualPaymentRecord(record.id, "second try"))?.error).toBe("Payment record not found.");
+  });
+
+  it("refuses to void a fee payment or a book order's payment as a manual record", async () => {
+    const fee = await approvedFee(20000);
+    const result = await voidManualPaymentRecord(fee.submission.paymentRecordId!, "wrong flow");
+    expect(result?.error).toContain("fee payment");
+
+    const student = await createUser();
+    const order = await prisma.bookOrder.create({ data: { userId: student.id, totalAmountInrPaise: 30000, status: "APPROVED" } });
+    const bookRecord = await prisma.paymentRecord.create({
+      data: { userId: student.id, amountInrPaise: 30000, paidAt: new Date(), ...paymentTypeData("BOOK_PURCHASE"), description: "Books", bookOrderId: order.id },
+    });
+    expect((await voidManualPaymentRecord(bookRecord.id, "wrong flow"))?.error).toContain("book order");
+
+    // Nothing changed and nothing was audited.
+    expect(await prisma.paymentRecord.count({ where: { voidedAt: { not: null } } })).toBe(0);
+    expect(await prisma.auditLog.count()).toBe(0);
   });
 
   it("never renumbers or alters an issued invoice when a record is voided", async () => {
@@ -122,6 +148,55 @@ describe.skipIf(SKIP_WITHOUT_DB)("voiding, finance totals and the audit trail", 
     // The voided submission is soft-deleted; it must not block a new one for the same period.
     expect(await processMonthlyPayment(student.id, course.id, "03", "2026", "upi", "UTR8100002", null)).toEqual({ success: true });
     expect(await prisma.coursePaymentSubmission.count({ where: { userId: student.id, deletedAt: null } })).toBe(1);
+  });
+
+  it("voiding an enrollment fee reopens the enrollment and gives its coupon back", async () => {
+    await setPaymentSettings({ feeWaiverEnabled: true });
+    const student = await createUser();
+    const course = await createCourse();
+    const coupon = await prisma.coupon.create({
+      data: {
+        code: "WAIVER-AK-9999",
+        percentage: 50,
+        type: "SPECIAL",
+        userId: student.id,
+        validFrom: new Date(Date.now() - 86_400_000),
+        validUntil: new Date(Date.now() + 30 * 86_400_000),
+      },
+    });
+    await startedEnrollment(student.id, course.id);
+    expect(await processEnrollmentPayment(student.id, course.id, "upi", "UTR8700001", null, coupon.id, 25000)).toEqual({ success: true });
+    const submission = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id } });
+    await runAction(() => confirmMonthlyPayment(submission.id));
+    const active = await prisma.enrollment.findFirstOrThrow({ where: { userId: student.id } });
+    expect(active).toMatchObject({ statusEnum: "ACTIVE", rollNumber: 1 });
+    expect((await prisma.coupon.findUniqueOrThrow({ where: { id: coupon.id } })).isActive).toBe(false);
+
+    await runAction(() => voidApprovedPayment(submission.id, "the transfer bounced"));
+
+    // Back to awaiting the fee (what the course page shows), roll number kept.
+    const reopened = await prisma.enrollment.findUniqueOrThrow({ where: { id: active.id } });
+    expect(reopened).toMatchObject({ status: "awaiting_enrollment_fee", statusEnum: "AWAITING_ENROLLMENT_FEE", rollNumber: 1 });
+    expect(await prisma.couponUsage.count()).toBe(0);
+    expect(await getApplicableCoupons(student.id, course.id, "enrollment")).toEqual([
+      expect.objectContaining({ id: coupon.id, isUsed: false }),
+    ]);
+    const audit = await prisma.auditLog.findMany({ where: { entity: { in: ["Enrollment", "Coupon"] } } });
+    expect(audit.map((e) => `${e.action}:${e.entity}:${e.entityId}`).sort()).toEqual([
+      `restore:Coupon:${coupon.id}`,
+      `update:Enrollment:${active.id}`,
+    ]);
+    expect(audit.find((e) => e.entity === "Enrollment")).toMatchObject({
+      reason: "the transfer bounced",
+      before: { status: "ACTIVE", rollNumber: 1 },
+      after: { status: "AWAITING_ENROLLMENT_FEE", rollNumber: 1 },
+    });
+
+    // The student can pay again, with the same coupon, and keeps the roll number.
+    expect(await processEnrollmentPayment(student.id, course.id, "upi", "UTR8700002", null, coupon.id, 25000)).toEqual({ success: true });
+    const again = await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: student.id, deletedAt: null } });
+    await runAction(() => confirmMonthlyPayment(again.id));
+    expect(await prisma.enrollment.findUniqueOrThrow({ where: { id: active.id } })).toMatchObject({ statusEnum: "ACTIVE", rollNumber: 1 });
   });
 
   it("does not let a non-admin void anything", async () => {

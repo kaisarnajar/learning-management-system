@@ -37,12 +37,13 @@ export async function generateVerificationToken(email: string) {
 }
 
 /**
- * Looks a raw token up without consuming it. Tokens issued before hashing was
- * introduced were stored verbatim, so the raw value is accepted as a fallback
- * until they expire (24 hours).
+ * Looks a raw token up without consuming it. Only the hash is compared: a
+ * stored value is never itself a valid token, so reading the table (a backup,
+ * a leaked dump) does not yield working links. Tokens stored verbatim before
+ * hashing was introduced expired long ago (24 hours).
  */
 export async function findVerificationToken(token: string) {
   return prisma.verificationToken.findFirst({
-    where: { token: { in: [hashVerificationToken(token), token] } },
+    where: { token: hashVerificationToken(token) },
   });
 }

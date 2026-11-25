@@ -136,7 +136,7 @@ export function AttendanceForm({ courseId, baseUrl, students, initialDate, initi
         </div>
       )}
 
-      <div className="bg-surface border border-border rounded-lg overflow-hidden">
+      <div className="bg-surface border border-border rounded-lg overflow-x-auto">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-surface-muted">
             <tr>

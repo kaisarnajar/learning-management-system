@@ -217,3 +217,6 @@ export const FINANCE_DATE_PRESETS: { label: string; preset: FinanceDatePreset }[
   { label: "This year", preset: "this_year" },
   { label: "All time", preset: "all_time" },
 ];
+
+/** Most rows one finance export may contain; a larger export must narrow its date range. */
+export const FINANCE_EXPORT_MAX_ROWS = 50_000;

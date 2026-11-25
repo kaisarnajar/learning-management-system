@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import { isAdminEmail } from "@/services/admin";
 import { isDeveloperEmail } from "@/services/developer";
 import { recordAudit } from "@/services/audit";
+import { revalidatePublicContent } from "@/services/public-cache";
 import { requireAdmin } from "@/services/auth-actions";
+import { searchStudentOptions } from "@/services/students";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 
@@ -50,8 +52,8 @@ export async function deleteStudentUser(id: string): Promise<{ error?: string; s
   }
 
   const [activeEnrollments, pendingSubmissions, paymentRecords] = await Promise.all([
-    withDbErrorHandling(() => prisma.enrollment.count({ where: { userId: id, status: { in: [ENROLLMENT_STATUS.ACTIVE, ENROLLMENT_STATUS.PENDING, ENROLLMENT_STATUS.AWAITING_FEE] } } }), "Database operation failed"),
-    withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where: { userId: id, deletedAt: null, status: PAYMENTS.SUBMISSION_STATUS.PENDING } }), "Database operation failed"),
+    withDbErrorHandling(() => prisma.enrollment.count({ where: { userId: id, statusEnum: { in: ["ACTIVE", "PENDING_APPROVAL", "AWAITING_ENROLLMENT_FEE"] } } }), "Database operation failed"),
+    withDbErrorHandling(() => prisma.coursePaymentSubmission.count({ where: { userId: id, deletedAt: null, statusEnum: "PENDING_VERIFICATION" } }), "Database operation failed"),
     withDbErrorHandling(() => prisma.paymentRecord.count({ where: { userId: id, voidedAt: null } }), "Database operation failed"),
   ]);
 
@@ -80,6 +82,10 @@ export async function deleteStudentUser(id: string): Promise<{ error?: string; s
     await tx.account.deleteMany({ where: { userId: id } });
     await tx.deviceToken.deleteMany({ where: { userId: id } });
     await tx.passwordResetToken.deleteMany({ where: { email: user.email } });
+    await tx.verificationToken.deleteMany({ where: { identifier: user.email } });
+    // The mobile app's refresh tokens would otherwise keep minting access
+    // tokens for the removed account.
+    await tx.apiRefreshToken.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date() } });
     await tx.user.update({
       where: { id },
       data: { deletedAt: new Date(), email: anonymisedEmail, password: null, image: null },
@@ -94,6 +100,8 @@ export async function deleteStudentUser(id: string): Promise<{ error?: string; s
   }), "Database operation failed");
 
   revalidateStudentPaths(courseIds);
+  // Their featured review leaves the cached homepage now.
+  revalidatePublicContent();
 
   return { success: "Student account removed. Records are kept for auditing." };
 }
@@ -108,9 +116,8 @@ export async function deleteStudentUserForm(id: string) {
 
 import type { StudentFormValues } from "@/services/admin-form-validation";
 import { adminStudentSchema } from "@/utils/validations";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
-import { PAYMENTS } from "@/config/constants/payments";
-import { deleteProfileImage } from "@/services/profile-upload";
+
+import { deleteOwnedProfileImage } from "@/services/uploads";
 import { getStudentUserById } from "@/services/students";
 
 function parseStudentForm(formData: FormData): Record<keyof StudentFormValues, string> {
@@ -149,7 +156,8 @@ export async function updateStudentUserForm(id: string, formData: FormData) {
       if (formData.get("confirmReplacePhoto") !== "on") {
         redirect(`/admin/students/${id}/edit?error=${encodeURIComponent("This student has an uploaded photo. Tick \"Replace the uploaded photo with the female avatar\" to confirm.")}`);
       }
-      await deleteProfileImage(currentStudent!.image!);
+      // The photo belongs to the student being edited; only their own upload is removed.
+      await deleteOwnedProfileImage(id, currentStudent!.image!);
     }
     updateImage = "/assets/female_icon.png";
   } else if (parsed.data.gender === "MALE") {
@@ -176,4 +184,10 @@ export async function updateStudentUserForm(id: string, formData: FormData) {
   revalidatePath(`/admin/students/${id}`);
   
   redirect(`/admin/students/${id}?saved=1`);
+}
+
+/** The student picker's search (StudentSearchCombobox): at most 20 matches. */
+export async function searchStudentOptionsAction(query: string) {
+  await requireAdmin();
+  return searchStudentOptions(typeof query === "string" ? query.slice(0, 100) : "");
 }

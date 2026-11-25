@@ -4,7 +4,7 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 import { useCallback, useEffect, useActionState, useRef, useState } from "react";
 import { useToast } from "@/components/shared/ToastProvider";
 import { submitFatwaQuestion, type SubmitFatwaState } from "@/app/fatwa/actions";
-import { getFatwaCategoryOptions } from "@/services/fatwa";
+import { getFatwaCategoryOptions } from "@/config/fatwa-categories";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
 import {

@@ -1,7 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
-import { withDbErrorHandling } from "@/utils/db-error";
-import { ENROLLMENT_STATUS } from "@/config/constants/business";
+import { DbError, withDbErrorHandling } from "@/utils/db-error";
 
 /**
  * marksObtained is migrating from Float to DECIMAL(6,2) (expand step:
@@ -56,7 +55,7 @@ export async function getEnrolledStudentsForGradesFromDb(courseId: string) {
     return prisma.enrollment.findMany({
       where: {
         courseId,
-        status: ENROLLMENT_STATUS.ACTIVE, // Only active students
+        statusEnum: "ACTIVE", // Only active students
       },
       select: {
         id: true,
@@ -77,8 +76,10 @@ export async function getEnrolledStudentsForGradesFromDb(courseId: string) {
 }
 
 /**
- * Ensures every enrollment id in `records` belongs to `courseId`. Callers
- * authorise on the course, so an id from another course must be rejected.
+ * Ensures every enrollment id in `records` is an active enrollment of
+ * `courseId`. Callers authorise on the course, so an id from another course
+ * must be rejected, and so must a student who is not (or no longer) in the
+ * class: a pending applicant, a rejected one or a finished one.
  */
 async function assertEnrollmentsBelongToCourse(
   tx: Pick<typeof prisma, "enrollment">,
@@ -88,11 +89,11 @@ async function assertEnrollmentsBelongToCourse(
   const unique = [...new Set(enrollmentIds)];
   if (unique.length === 0) return;
   const found = await tx.enrollment.findMany({
-    where: { courseId, id: { in: unique } },
+    where: { courseId, id: { in: unique }, statusEnum: "ACTIVE" },
     select: { id: true },
   });
   if (found.length !== unique.length) {
-    throw new Error("One or more students do not belong to this course.");
+    throw new Error("One or more students are not active in this course.");
   }
 }
 
@@ -120,6 +121,9 @@ export async function getGradeRecordsForGradeIdFromDb(courseId: string, gradeId:
     return grade ? { ...grade, records: grade.records.map(withMarks) } : null;
   }, "Failed to fetch grade records");
 }
+
+/** One upsert per student (marks differ per row); a large class needs more than the default 5 s. */
+const GRADE_SAVE_TIMEOUT_MS = 20_000;
 
 export async function saveCourseGradeToDb(
   gradeId: string | null,
@@ -177,7 +181,14 @@ export async function saveCourseGradeToDb(
           update: marksData(record.marksObtained),
         });
       }
-    });
+
+      // Lowering maxMarks must not leave a stored mark above it; students
+      // not in this save (e.g. completed ones) still have their marks.
+      const highest = await tx.courseGradeRecord.aggregate({ where: { gradeId: grade.id }, _max: { marksObtained: true } });
+      if ((highest._max.marksObtained ?? 0) > maxMarks) {
+        throw new DbError("UNKNOWN", `A student already has ${highest._max.marksObtained} marks on this test; maximum marks cannot be lower than that.`);
+      }
+    }, { timeout: GRADE_SAVE_TIMEOUT_MS });
   }, "Failed to save grades");
 }
 

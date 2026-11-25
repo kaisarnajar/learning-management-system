@@ -3,18 +3,21 @@ import { SubmitButton } from "@/components/shared/SubmitButton";
 
 import type { AnnouncementCategory, CourseAnnouncement } from "@prisma/client";
 import Link from "next/link";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   type CourseAnnouncementFormValues,
   validateCourseAnnouncementForm,
 } from "@/services/admin-form-validation";
-import { ANNOUNCEMENT_CATEGORIES, announcementCategoryLabels } from "@/services/announcements";
+import { ANNOUNCEMENT_CATEGORIES, announcementCategoryLabels } from "@/config/announcement-categories";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
 import { useZodForm } from "@/utils/use-zod-form";
+import { useDirectUploadAction } from "@/utils/use-direct-upload";
 
 type AnnouncementFormProps = {
   action: (formData: FormData) => Promise<void>;
+  /** The course the announcement belongs to; the attachment is uploaded straight to storage for it. */
+  courseId: string;
   submitLabel: string;
   announcement?: Pick<
     CourseAnnouncement,
@@ -29,6 +32,7 @@ const ANNOUNCEMENT_FIELDS: (keyof CourseAnnouncementFormValues)[] = ["category",
 
 export function AnnouncementForm({
   action,
+  courseId,
   submitLabel,
   announcement,
   defaultCategory = "COURSE_ANNOUNCEMENT",
@@ -52,6 +56,13 @@ export function AnnouncementForm({
     validate,
   });
 
+  const uploadFields = useMemo(
+    () => [{ field: "attachment", kind: "course-announcement-attachment" as const, courseId }],
+    [courseId],
+  );
+  const { formAction, uploadError } = useDirectUploadAction(action, uploadFields);
+  const shownError = uploadError ?? error;
+
   const fileRef = useRef<HTMLInputElement>(null);
   const [hasFile, setHasFile] = useState(false);
 
@@ -63,10 +74,10 @@ export function AnnouncementForm({
   }
 
   return (
-    <form action={action} encType="multipart/form-data" className="mx-auto max-w-2xl space-y-5">
-      {error && (
+    <form action={formAction} className="mx-auto max-w-2xl space-y-5">
+      {shownError && (
         <p className="rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
-          {error}
+          {shownError}
         </p>
       )}
 

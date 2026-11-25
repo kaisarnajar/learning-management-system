@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import {
@@ -8,7 +8,10 @@ import {
   saveCourseGrade,
 } from "@/app/actions/grades";
 import { deleteCourseAttendance, getAttendanceRecordsForDate, saveCourseAttendance } from "@/app/actions/attendance";
-import { createCourse, createEnrollment, createTeacher, createUser, resetDb, sessionFor, SKIP_WITHOUT_DB } from "../helpers/db";
+import { submitTeacherFatwaAnswer } from "@/app/teacher/(portal)/fatwa/actions";
+import { PUT as updateMe } from "@/app/api/v1/auth/me/route";
+import { createCourse, createEnrollment, createTeacher, createUser, resetDb, runAction, sessionFor, SKIP_WITHOUT_DB } from "../helpers/db";
+import { apiRequest, signedInStudent } from "../helpers/api";
 
 /** Two teachers, each with a course, a student, a grade card and an attendance day. */
 async function twoClassrooms() {
@@ -127,6 +130,21 @@ describe.skipIf(SKIP_WITHOUT_DB)("teacher authorisation: grades and attendance s
     expect(await prisma.courseAttendanceRecord.findFirstOrThrow({ where: { enrollmentId: b.enrollment.id } })).toMatchObject({ isPresent: true });
   });
 
+  it("cannot grade or mark a student who is not active in the course (L11)", async () => {
+    const { a } = await twoClassrooms();
+    const applicant = await createEnrollment((await createUser()).id, a.course.id, { status: "pending_approval", statusEnum: "PENDING_APPROVAL", rollNumber: null });
+    const finished = await createEnrollment((await createUser()).id, a.course.id, { status: "completed", statusEnum: "COMPLETED", rollNumber: 2 });
+    actAs(a.user, "TEACHER");
+
+    for (const enrollment of [applicant, finished]) {
+      const result = await saveCourseGrade(a.grade.id, a.course.id, "Exam a", new Date("2026-03-05"), 50, [{ enrollmentId: enrollment.id, marksObtained: 30 }]);
+      expect(result.error).toBe("Failed to save grades");
+      await expect(saveCourseAttendance(a.course.id, a.day, [{ enrollmentId: enrollment.id, isPresent: true }])).rejects.toThrow("Failed to save attendance");
+      expect(await prisma.courseGradeRecord.count({ where: { enrollmentId: enrollment.id } })).toBe(0);
+      expect(await prisma.courseAttendanceRecord.count({ where: { enrollmentId: enrollment.id } })).toBe(0);
+    }
+  });
+
   it("validates grade input on the server (negative, above maximum, NaN, duplicates)", async () => {
     const { a } = await twoClassrooms();
     actAs(a.user, "TEACHER");
@@ -155,5 +173,50 @@ describe.skipIf(SKIP_WITHOUT_DB)("teacher authorisation: grades and attendance s
     expect(await getGradeRecordsForGradeId(b.course.id, b.grade.id)).toMatchObject({ id: b.grade.id });
     await deleteCourseGrade(b.course.id, b.grade.id);
     expect(await prisma.courseGrade.count({ where: { id: b.grade.id } })).toBe(0);
+  });
+});
+
+describe.skipIf(SKIP_WITHOUT_DB)("fatwa answers: a teacher can't rewrite an answer under review or published (L10)", () => {
+  beforeEach(resetDb);
+
+  it("refuses the website action and leaves the answer as it was", async () => {
+    const user = await createUser({ email: "mufti@example.test" });
+    await createTeacher({ email: user.email, userId: user.id });
+    actAs(user, "TEACHER");
+    const answer = "<p>The published answer, long enough to be valid.</p>";
+    const base = { askerName: "Asker", askerEmail: "asker@example.test", category: "Salah", title: "A question", question: "What is the ruling?", answer, answeredById: user.id };
+
+    for (const approvalStatus of ["APPROVED", "PENDING"] as const) {
+      const question = await prisma.fatwaQuestion.create({ data: { ...base, approvalStatus } });
+      const form = new FormData();
+      form.set("answer", "<p>A rewritten answer that is long enough.</p>");
+
+      const { redirectedTo } = await runAction(() => submitTeacherFatwaAnswer(question.id, form));
+
+      expect(redirectedTo).toContain("error=");
+      expect(await prisma.fatwaQuestion.findUniqueOrThrow({ where: { id: question.id } })).toMatchObject({ answer, approvalStatus });
+    }
+  });
+});
+
+describe.skipIf(SKIP_WITHOUT_DB)("profile photo: a user cannot claim another user's upload (H4)", () => {
+  const previousR2 = process.env.R2_PUBLIC_URL;
+  beforeAll(() => {
+    process.env.R2_PUBLIC_URL = "https://files.example.org";
+  });
+  afterAll(() => {
+    process.env.R2_PUBLIC_URL = previousR2;
+  });
+  beforeEach(resetDb);
+
+  it("refuses another user's upload URL as the profile image", async () => {
+    const victim = await createUser();
+    const foreign = `https://files.example.org/uploads/profiles/${victim.id}-1732400000000-k3j9x.jpg`;
+    await prisma.user.update({ where: { id: victim.id }, data: { image: foreign } });
+    const attacker = await signedInStudent();
+
+    const response = await updateMe(apiRequest("/api/v1/auth/me", { method: "PUT", headers: attacker.headers, json: { image: foreign } }));
+    expect(response.status).toBe(400);
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: attacker.user.id } })).image).not.toBe(foreign);
   });
 });

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { createSiteAnnouncement } from "@/app/admin/announcements/actions";
 import { ADMIN_ROLES, pagedBody, readActionForm, staffAction, staffListParams, staffRead } from "@/services/api-staff";
-import { MAX_ANNOUNCEMENT_IMAGES } from "@/services/site-announcement-upload";
+import { MAX_ANNOUNCEMENT_IMAGES } from "@/services/site-announcement-limits";
 import {
   getAllSiteAnnouncementsForAdminPaginated,
   getFeaturedHomepageAnnouncementCount,

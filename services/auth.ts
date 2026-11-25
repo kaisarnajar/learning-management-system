@@ -1,45 +1,23 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import { compare } from "bcryptjs";
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import { authConfig } from "@/services/auth.config";
 import { prisma } from "@/utils/prisma";
-import { getTeacherByEmail, resolveUserRole } from "@/services/teacher-auth";
-import { withDbErrorHandling } from "@/utils/db-error";
-import { CURRENT_POLICIES_VERSION } from "@/config/constants";
-import { getClientIp, rateLimit, RATE_LIMITS } from "@/services/rate-limit";
+import { resolveUserRole } from "@/services/teacher-auth";
+import { createAuthAdapter } from "@/services/auth-adapter";
+import { getClientIp } from "@/services/rate-limit";
+import { authenticateCredentials, normalizeSignInEmail } from "@/services/credentials";
 import { getApiActorSession } from "@/services/api-actor";
+import { googleSignInCallback } from "@/services/google-link";
+import { authJwtCallback } from "@/services/auth-jwt";
 
 /** Surfaced to the login form as result.code so it can offer to resend the verification email. */
 class EmailNotVerifiedError extends CredentialsSignin {
   code = "email_not_verified";
 }
 
-/**
- * What to do when Google signs in an address that exists as an unverified
- * password account: "scrub" (default) nulls that password and marks the
- * address verified before linking; "refuse" sends the user back to /login.
- */
-const UNVERIFIED_LINK_POLICY = process.env.AUTH_GOOGLE_LINK_UNVERIFIED === "refuse" ? "refuse" : "scrub";
-
-/** How long role, teacher link and verification state may be served from the token before being re-read. */
-const TOKEN_REFRESH_INTERVAL_MS = 60 * 1000;
-
-const prismaAdapter = PrismaAdapter(prisma);
-const originalCreateUser = prismaAdapter.createUser;
-if (originalCreateUser) {
-  prismaAdapter.createUser = async (user) => {
-    return originalCreateUser({
-      ...user,
-      policiesAcceptedAt: new Date(),
-      policiesAcceptedVersion: CURRENT_POLICIES_VERSION,
-    } as any);
-  };
-}
-
 const nextAuth = NextAuth({
   ...authConfig,
-  adapter: prismaAdapter,
+  adapter: createAuthAdapter(prisma),
   providers: [
     ...authConfig.providers,
     Credentials({
@@ -51,29 +29,17 @@ const nextAuth = NextAuth({
       async authorize(credentials, request) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const email = String(credentials.email).toLowerCase().trim();
-
-        // Brute-force protection: per e-mail and per client IP.
         const ip = getClientIp(request.headers);
-        const [byEmail, byIp] = await Promise.all([
-          rateLimit(RATE_LIMITS.LOGIN, email),
-          rateLimit(RATE_LIMITS.LOGIN_IP, ip),
-        ]);
-        if (!byEmail.ok || !byIp.ok) {
-          console.warn(`[auth] Login rate limit hit for ${email} from ${ip}`);
+        const result = await authenticateCredentials(String(credentials.email), String(credentials.password), ip);
+        if (!result.ok) {
+          if (result.reason === "RATE_LIMITED") {
+            console.warn(`[auth] Login rate limit hit for ${normalizeSignInEmail(String(credentials.email))} from ${ip}`);
+          }
+          if (result.reason === "EMAIL_NOT_VERIFIED") throw new EmailNotVerifiedError();
           return null;
         }
-        const user = await withDbErrorHandling(() => prisma.user.findUnique({ where: { email } }), "Database operation failed");
 
-        if (!user?.password || user.deletedAt) return null;
-
-        const valid = await compare(String(credentials.password), user.password);
-        if (!valid) return null;
-
-        // An unverified address cannot sign in with a password: until the
-        // owner confirms the mailbox, nobody can prove the account is theirs.
-        if (!user.emailVerified) throw new EmailNotVerifiedError();
-
+        const { user } = result;
         return {
           id: user.id,
           email: user.email,
@@ -85,99 +51,8 @@ const nextAuth = NextAuth({
   ],
   callbacks: {
     ...authConfig.callbacks,
-    async signIn({ user, account }) {
-      if (account?.provider !== "google" || !user.email) return true;
-
-      const email = user.email.toLowerCase().trim();
-      const existing = await withDbErrorHandling(
-        () => prisma.user.findUnique({
-          where: { email },
-          select: { id: true, emailVerified: true, password: true, deletedAt: true },
-        }),
-        "Database operation failed",
-      );
-      if (!existing) return true;
-      if (existing.deletedAt) return false;
-
-      if (!existing.emailVerified && existing.password) {
-        // The row was created with a password nobody has proven ownership of.
-        // Google has just proven ownership of the address, so the password
-        // (possibly set by someone else) must not survive the link.
-        if (UNVERIFIED_LINK_POLICY === "refuse") return "/login?error=unverified-link";
-        await withDbErrorHandling(
-          () => prisma.user.update({
-            where: { id: existing.id },
-            data: { password: null, emailVerified: new Date() },
-          }),
-          "Database operation failed",
-        );
-      }
-      return true;
-    },
-    async jwt({ token, user, account, trigger }) {
-      if (user?.id) {
-        token.id = user.id;
-
-        // Auto-verify email for OAuth providers (e.g. Google) on first sign-in.
-        if (account && account.provider !== "credentials") {
-          try {
-            const dbUser = await prisma.user.findUnique({
-              select: { emailVerified: true },
-              where: { id: user.id },
-            });
-            if (dbUser && !dbUser.emailVerified) {
-              await prisma.user.update({
-                where: { id: user.id },
-                data: { emailVerified: new Date() },
-              });
-            }
-          } catch (e) {
-            console.error("[auth] Error auto-verifying OAuth user:", e);
-          }
-        }
-      }
-
-      // Role, teacher link and verification state are re-read from the
-      // database on sign-in, on an explicit update() and at most once a
-      // minute otherwise, so removing an admin email or verifying an address
-      // takes effect on the next request instead of at the next sign-in.
-      const stale = !token.refreshedAt || Date.now() - token.refreshedAt > TOKEN_REFRESH_INTERVAL_MS;
-      if (token.email && (user || trigger === "update" || !token.role || stale)) {
-        try {
-          const dbUser = await prisma.user.findUnique({
-            select: { emailVerified: true, name: true, image: true, deletedAt: true },
-            where: { email: token.email }
-          });
-          if (!dbUser || dbUser.deletedAt) {
-            // Account gone: hand back an empty token so the session ends.
-            return null;
-          }
-          token.emailVerified = dbUser.emailVerified ? dbUser.emailVerified.toISOString() : null;
-          token.refreshedAt = Date.now();
-          if (dbUser?.name) token.name = dbUser.name;
-          
-          // Never store large base64 data URLs in JWT session cookie header to prevent Vercel 494 (REQUEST_HEADER_TOO_LARGE)
-          if (dbUser?.image && !dbUser.image.startsWith("data:") && dbUser.image.length < 500) {
-            token.picture = dbUser.image;
-          } else {
-            token.picture = null;
-          }
-
-          const role = await resolveUserRole(token.email as string);
-          token.role = role;
-          if (role === "TEACHER") {
-            const teacher = await getTeacherByEmail(token.email as string);
-            token.teacherId = teacher?.id;
-          } else {
-            token.teacherId = undefined;
-          }
-        } catch (error) {
-          console.error("[auth] Failed to resolve user role:", error);
-          token.role = token.role ?? "USER";
-        }
-      }
-      return token;
-    },
+    signIn: googleSignInCallback,
+    jwt: authJwtCallback,
     async session({ session, token }) {
       if (session.user) {
         if (token.name) session.user.name = token.name as string;

@@ -8,6 +8,11 @@ export class ConfigError extends Error {
   }
 }
 
+/** A production deployment, where a storage misconfiguration must fail instead of warn. */
+function isProductionRuntime(): boolean {
+  return process.env.NODE_ENV === "production" || process.env.VERCEL_ENV === "production";
+}
+
 const REQUIRED_R2_VARS = ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET_NAME", "R2_PUBLIC_URL"] as const;
 
 /**
@@ -19,7 +24,7 @@ function assertStorageConfigured(): void {
   const missing = REQUIRED_R2_VARS.filter((name) => !process.env[name]?.trim());
   if (missing.length === 0) return;
   const message = `Storage is not configured: set ${missing.join(", ")} (see .env.example).`;
-  if (process.env.NODE_ENV === "production") throw new ConfigError(message);
+  if (isProductionRuntime()) throw new ConfigError(message);
   console.warn(`[storage] ${message}`);
 }
 
@@ -38,11 +43,36 @@ export function getR2Client(): S3Client {
       secretAccessKey: process.env.R2_SECRET_ACCESS_KEY || "",
     },
     forcePathStyle: true,
+    // Without this the SDK adds a CRC32 of the (empty) request body to
+    // presigned PUT URLs, and R2 then refuses the browser's upload.
+    requestChecksumCalculation: "WHEN_REQUIRED",
   });
   return client;
 }
 
 export const R2_BUCKET_NAME = process.env.R2_BUCKET_NAME || "";
 export const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL || "";
-/** Bucket for objects served only through /api/files (no public access). Falls back to the main bucket. */
-export const R2_PRIVATE_BUCKET_NAME = process.env.R2_PRIVATE_BUCKET_NAME || R2_BUCKET_NAME;
+
+let warnedPrivateFallback = false;
+
+/**
+ * The bucket for objects served only through /api/files: payment screenshots,
+ * course attachments, receipts and certificates. R2_PRIVATE_BUCKET_NAME names
+ * a separate bucket without public access; when it is unset (or equal to
+ * R2_BUCKET_NAME) the main bucket's private/ prefix is used, in production
+ * too. /api/files still checks ownership either way, but objects in the main
+ * bucket are also reachable through its public URL by anyone who has the key,
+ * so a warning is logged once.
+ */
+export function getPrivateBucketName(): string {
+  const privateBucket = process.env.R2_PRIVATE_BUCKET_NAME?.trim() ?? "";
+  const publicBucket = process.env.R2_BUCKET_NAME?.trim() ?? "";
+  if (privateBucket && privateBucket !== publicBucket) return privateBucket;
+  if (!warnedPrivateFallback) {
+    warnedPrivateFallback = true;
+    console.warn(
+      "[storage] No separate R2_PRIVATE_BUCKET_NAME: private files use the private/ prefix of R2_BUCKET_NAME (see .env.example).",
+    );
+  }
+  return publicBucket;
+}

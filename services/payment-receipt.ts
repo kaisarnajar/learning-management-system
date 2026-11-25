@@ -7,6 +7,7 @@ import { incomePaymentTypeLabel } from "@/services/monthly-payment-status";
 import { loadStandardPdfAssets } from "@/services/pdf-generator";
 import { PAYMENTS } from "@/config/constants/payments";
 import { paymentMethodFromText, paymentTypeOf } from "@/services/status-compat";
+import { formatBusinessDisplayDate } from "@/services/business-time";
 
 
 /**
@@ -44,6 +45,17 @@ export function getReceiptFilename(courseTitle: string, paymentRecordId: string)
   return `invoice-${slug || "payment"}-${paymentRecordId.slice(0, 8)}.pdf`;
 }
 
+async function currentCourseFeePaise(
+  courseId: string,
+  record: Parameters<typeof paymentTypeOf>[0],
+): Promise<number | null> {
+  const { getCourseById } = await import("@/services/courses");
+  const { getMonthlyFeePaise, getRegistrationFeePaise } = await import("@/services/course-pricing");
+  const course = await getCourseById(courseId);
+  if (!course) return null;
+  return paymentTypeOf(record) === "ENROLLMENT" ? getRegistrationFeePaise(course) : getMonthlyFeePaise(course);
+}
+
 export type ReceiptRecordInput = {
   id: string;
   userId: string;
@@ -67,6 +79,8 @@ export type ReceiptRecordInput = {
     upiTransactionId: string | null;
     label: string | null;
     couponId?: string | null;
+    /** Fee before any coupon when the submission was made; null for older rows. */
+    baseFeePaise?: number | null;
   } | null;
 };
 
@@ -107,20 +121,14 @@ export async function prepareReceiptData(
     paymentMethodFromText(record.submission?.paymentMethod) === "WAIVER";
 
   if (record.courseId && isWaiverOrDiscountUsed) {
-    const { getCourseById } = await import("@/services/courses");
-    const { getMonthlyFeePaise, getRegistrationFeePaise } = await import("@/services/course-pricing");
-    const course = await getCourseById(record.courseId);
+    // The fee in force when the student paid; the course's current fee only
+    // for submissions made before the snapshot existed.
+    const fullFeePaise = record.submission?.baseFeePaise ?? (await currentCourseFeePaise(record.courseId, record));
 
-    if (course) {
-      const fullFeePaise = paymentTypeOf(record) === "ENROLLMENT"
-        ? getRegistrationFeePaise(course)
-        : getMonthlyFeePaise(course);
-
-      if (fullFeePaise > 0 && fullFeePaise > record.amountInrPaise) {
-        originalAmount = fullFeePaise / 100;
-        discountAmount = (fullFeePaise - record.amountInrPaise) / 100;
-        discountPercentage = Math.round(((fullFeePaise - record.amountInrPaise) / fullFeePaise) * 100);
-      }
+    if (fullFeePaise != null && fullFeePaise > 0 && fullFeePaise > record.amountInrPaise) {
+      originalAmount = fullFeePaise / 100;
+      discountAmount = (fullFeePaise - record.amountInrPaise) / 100;
+      discountPercentage = Math.round(((fullFeePaise - record.amountInrPaise) / fullFeePaise) * 100);
     }
   }
 
@@ -140,11 +148,7 @@ export async function prepareReceiptData(
   ]);
 
   const invoiceNumber = options?.invoiceNumberOverride || record.invoiceNumber || "";
-  const dateFormatted = (record.receiptGeneratedAt || new Date()).toLocaleDateString("en-IN", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  const dateFormatted = formatBusinessDisplayDate(record.receiptGeneratedAt || new Date());
 
   const baseAmount = options?.baseAmountPaiseOverride !== undefined
     ? options.baseAmountPaiseOverride

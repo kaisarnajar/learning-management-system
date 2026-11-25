@@ -7,6 +7,7 @@ import {
   markNotificationRead,
 } from "@/services/notifications";
 import { parseApiPagination } from "@/utils/api-pagination";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   const { user, errorResponse } = await requireStudentApiAuth(request);
@@ -31,11 +32,7 @@ export async function GET(request: NextRequest) {
       pageSize,
     });
   } catch (error) {
-    console.error("[api/v1/notifications] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch notifications." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/notifications", error, "Failed to fetch notifications.");
   }
 }
 
@@ -44,8 +41,10 @@ export async function PATCH(request: NextRequest) {
   if (errorResponse) return errorResponse;
 
   try {
-    const body = await request.json();
-    const { notificationId, markAllRead } = body;
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
+    const { markAllRead } = body;
+    const notificationId = typeof body.notificationId === "string" ? body.notificationId : "";
 
     if (markAllRead) {
       await markAllNotificationsRead(user.id);
@@ -56,18 +55,12 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (!notificationId) {
-      return NextResponse.json(
-        { success: false, error: "Notification ID is required." },
-        { status: 400 }
-      );
+      return apiError("Notification ID is required.", 400);
     }
 
     const updated = await markNotificationRead(user.id, notificationId);
     if (!updated) {
-      return NextResponse.json(
-        { success: false, error: "Notification not found." },
-        { status: 404 }
-      );
+      return apiError("Notification not found.", 404);
     }
 
     return NextResponse.json({
@@ -75,10 +68,6 @@ export async function PATCH(request: NextRequest) {
       notification: updated,
     });
   } catch (error) {
-    console.error("[api/v1/notifications] PATCH Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to update notification." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/notifications", error, "Failed to update notification.");
   }
 }

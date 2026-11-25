@@ -1,15 +1,12 @@
 import { revalidatePath } from "next/cache";
 import type { CourseAnnouncement } from "@prisma/client";
 import type { z } from "zod";
-import {
-  deleteAnnouncementAttachment,
-  saveAnnouncementAttachment,
-  validateAnnouncementAttachment,
-} from "@/services/announcement-upload";
+import { attachmentNameOf, deleteUpload, saveUpload, validatePendingUpload } from "@/services/uploads";
 import { prisma } from "@/utils/prisma";
 import { courseAnnouncementSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { isUploadError } from "@/services/storage";
+import { pendingUploadFrom, type PendingUpload } from "@/services/staged-upload";
 
 export type ParsedCourseAnnouncement = z.infer<typeof courseAnnouncementSchema>;
 
@@ -35,21 +32,29 @@ export function parseCourseAnnouncementFormOrError(formData: FormData):
   return { ok: true, data: parsed.data };
 }
 
-export function getCourseAnnouncementAttachmentFile(formData: FormData): File | null {
-  const raw = formData.get("attachment");
-  if (raw instanceof File && raw.size > 0) return raw;
-  return null;
+/** The attachment the form submits: the file (form upload, mobile API) or a staged key (direct upload). */
+/** Stores a course-announcement attachment privately; served through /api/files after an access check. */
+async function saveAnnouncementAttachment(
+  idPrefix: string,
+  upload: PendingUpload,
+): Promise<{ attachmentPath: string; attachmentName: string }> {
+  const attachmentPath = await saveUpload("course-announcement-attachment", idPrefix, upload);
+  return { attachmentPath, attachmentName: attachmentNameOf(upload) };
+}
+
+export function getCourseAnnouncementAttachmentFile(formData: FormData): PendingUpload | null {
+  return pendingUploadFrom(formData, "attachment", "course-announcement-attachment");
 }
 
 export function validateCreateCourseAnnouncementAttachment(formData: FormData):
-  | { ok: true; upload: File | null }
+  | { ok: true; upload: PendingUpload | null }
   | { ok: false; error: string } {
   const upload = getCourseAnnouncementAttachmentFile(formData);
   if (!upload) {
     return { ok: true, upload: null };
   }
 
-  const validation = validateAnnouncementAttachment(upload);
+  const validation = validatePendingUpload("course-announcement-attachment", upload);
   if (validation.error) {
     return { ok: false, error: validation.error };
   }
@@ -94,7 +99,7 @@ export async function resolveCourseAnnouncementAttachment(
   const remove = formData.get("removeAttachment") === "1";
 
   if (upload) {
-    const validation = validateAnnouncementAttachment(upload);
+    const validation = validatePendingUpload("course-announcement-attachment", upload);
     if (validation.error) return { kind: "error", error: validation.error };
     try {
       const data = await saveAnnouncementAttachment(announcementId, upload);
@@ -119,7 +124,7 @@ export async function createCourseAnnouncementRecord(params: {
   authorName: string;
   postedByAdmin: boolean;
   data: ParsedCourseAnnouncement;
-  upload: File | null;
+  upload: PendingUpload | null;
 }) {
   // Upload first so the row is written once, with its attachment; if the row
   // cannot be created the object is removed again.
@@ -142,7 +147,7 @@ export async function createCourseAnnouncementRecord(params: {
         },
       }), "Database operation failed");
   } catch (error) {
-    if (saved) await deleteAnnouncementAttachment(saved.attachmentPath);
+    if (saved) await deleteUpload("course-announcement-attachment", saved.attachmentPath);
     throw error;
   }
 }
@@ -169,13 +174,13 @@ export async function updateCourseAnnouncementRecord(
         },
       }), "Database operation failed");
   } catch (error) {
-    if (attachment.kind === "replace") await deleteAnnouncementAttachment(attachment.data.attachmentPath);
+    if (attachment.kind === "replace") await deleteUpload("course-announcement-attachment", attachment.data.attachmentPath);
     throw error;
   }
 
   // The row now points at the new object (or none): the old one can go.
   if ((attachment.kind === "replace" || attachment.kind === "remove") && attachment.previous) {
-    await deleteAnnouncementAttachment(attachment.previous);
+    await deleteUpload("course-announcement-attachment", attachment.previous);
   }
 
   return {};
@@ -185,7 +190,7 @@ export async function deleteCourseAnnouncementRecord(
   existing: Pick<CourseAnnouncement, "id" | "attachmentPath">,
 ) {
   await withDbErrorHandling(() => prisma.courseAnnouncement.delete({ where: { id: existing.id } }), "Database operation failed");
-  await deleteAnnouncementAttachment(existing.attachmentPath);
+  await deleteUpload("course-announcement-attachment", existing.attachmentPath);
 }
 
 export async function getCourseAnnouncementRecord(

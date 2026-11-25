@@ -1,7 +1,7 @@
 import { requireUser } from "@/services/auth-actions";
 import { prisma } from "@/utils/prisma";
 import { WaiverRequestsView } from "@/components/profile/WaiverRequestsView";
-import { resolveWaiverFeeType, waiverFeeTypeLabel } from "@/services/waiver-requests";
+import { resolveWaiverFeeType, waiverFeeTypeLabel, withIssuedCouponCodes } from "@/services/waiver-requests";
 
 export const metadata = {
   title: "Fee Waiver Requests",
@@ -23,14 +23,14 @@ export default async function WaiverRequestsPage({
     orderBy: { title: "asc" },
   });
 
-  const requests = (await prisma.couponRequest.findMany({
+  const requests = (await withIssuedCouponCodes(await prisma.couponRequest.findMany({
     where: { userId: session.user.id },
     include: {
       course: { select: { title: true } },
       coupon: { select: { code: true, percentage: true } },
     },
     orderBy: { createdAt: "desc" },
-  })).map((request) => ({
+  }))).map((request) => ({
     ...request,
     feeTypeLabel: waiverFeeTypeLabel(resolveWaiverFeeType(request)),
   }));

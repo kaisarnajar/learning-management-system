@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
-import { createBookOrder } from "@/services/book-orders";
+import { createBookOrder, quoteBookOrder } from "@/services/book-orders";
 import { getStockLevels } from "@/services/inventory";
 import {
   approveBookOrder,
@@ -13,6 +13,18 @@ import {
 import { getIncomeTotal } from "@/services/finance-income";
 import { parseFinanceFilters } from "@/services/finance-filters";
 import { createBook, createUser, resetDb, runAction, sessionFor, SKIP_WITHOUT_DB } from "../helpers/db";
+
+const uploads = vi.hoisted(() => ({ fail: false, deleted: [] as Array<string | null | undefined> }));
+vi.mock("@/services/uploads", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/services/uploads")>()),
+  saveUpload: vi.fn(async (_kind: string, prefix: string) => {
+    if (uploads.fail) throw new Error("storage unavailable");
+    return `private/payment-screenshots/${prefix}-shot.png`;
+  }),
+  deleteUpload: vi.fn(async (_kind: string, path: string | null | undefined) => {
+    uploads.deleted.push(path);
+  }),
+}));
 
 const input = (items: Array<{ bookId: string; quantity: number }>) => ({
   items,
@@ -32,6 +44,8 @@ async function placeOrder(userId: string, items: Array<{ bookId: string; quantit
 describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
   beforeEach(async () => {
     await resetDb();
+    uploads.fail = false;
+    uploads.deleted = [];
     const admin = await createUser({ email: "admin@example.test", name: "Admin" });
     vi.mocked(auth).mockResolvedValue(sessionFor(admin, "ADMIN") as never);
   });
@@ -53,6 +67,19 @@ describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
     expect(order.items[0]).toMatchObject({ quantity: 2, priceAtPurchaseInrPaise: 10000 });
   });
 
+  it("snapshots each book's purchase cost on the order line", async () => {
+    const student = await createUser();
+    const book = await createBook({ priceInrPaise: 10000, purchasePriceInrPaise: 6500 });
+
+    const order = await placeOrder(student.id, [{ bookId: book.id, quantity: 2 }]);
+    await prisma.book.update({ where: { id: book.id }, data: { purchasePriceInrPaise: 9000 } });
+
+    expect(await prisma.bookOrderItem.findFirstOrThrow({ where: { orderId: order.id } })).toMatchObject({
+      priceAtPurchaseInrPaise: 10000,
+      unitCostPaise: 6500,
+    });
+  });
+
   it("refuses an order that exceeds the stock and clears the cart on success", async () => {
     const student = await createUser();
     const book = await createBook({ inventoryPurchased: 2 });
@@ -67,6 +94,66 @@ describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
     expect(await prisma.userCartItem.count()).toBe(0);
   });
 
+  it("a failed screenshot upload creates no order, keeps the cart and leaves the UTR free for the retry", async () => {
+    const student = await createUser();
+    const book = await createBook({ inventoryPurchased: 2 });
+    await prisma.userCartItem.create({ data: { userId: student.id, bookId: book.id, quantity: 1 } });
+    const order = { ...input([{ bookId: book.id, quantity: 1 }]), upiTransactionId: "UTR-RETRY-1" };
+    const screenshotFile = new File([new Uint8Array([1, 2, 3])], "proof.png", { type: "image/png" });
+
+    uploads.fail = true;
+    expect(await createBookOrder({ userId: student.id, input: order, screenshotFile })).toMatchObject({ ok: false, status: 500 });
+    expect(await prisma.bookOrder.count()).toBe(0);
+    expect(await prisma.userCartItem.count()).toBe(1);
+
+    uploads.fail = false;
+    const retried = await createBookOrder({ userId: student.id, input: order, screenshotFile });
+    expect(retried).toMatchObject({ ok: true });
+    expect(await prisma.bookOrder.findFirstOrThrow()).toMatchObject({ upiTransactionId: "UTR-RETRY-1", paymentScreenshotPath: expect.stringContaining("book-order-") });
+    expect(await prisma.userCartItem.count()).toBe(0);
+  });
+
+  it("a refused order deletes the screenshot it stored", async () => {
+    const student = await createUser();
+    const book = await createBook({ inventoryPurchased: 5 });
+    const screenshotFile = new File([new Uint8Array([1, 2, 3])], "proof.png", { type: "image/png" });
+    await placeOrder(student.id, [{ bookId: book.id, quantity: 1 }]);
+    const used = (await prisma.bookOrder.findFirstOrThrow()).upiTransactionId!;
+
+    const again = await createBookOrder({ userId: student.id, input: { ...input([{ bookId: book.id, quantity: 1 }]), upiTransactionId: used }, screenshotFile });
+    expect(again).toMatchObject({ ok: false, status: 409 });
+    expect(uploads.deleted).toEqual([expect.stringContaining("book-order-")]);
+  });
+
+  it("repeated lines for one book become one line and count against the per-book limit", async () => {
+    const student = await createUser();
+    const book = await createBook({ inventoryPurchased: 100, priceInrPaise: 10000 });
+
+    const over = await createBookOrder({ userId: student.id, input: input([{ bookId: book.id, quantity: 20 }, { bookId: book.id, quantity: 20 }]), screenshotFile: null });
+    expect(over).toMatchObject({ ok: false, status: 400 });
+    expect(await prisma.bookOrder.count()).toBe(0);
+
+    const order = await placeOrder(student.id, [{ bookId: book.id, quantity: 5 }, { bookId: book.id, quantity: 5 }]);
+    expect(order.items).toEqual([expect.objectContaining({ bookId: book.id, quantity: 10 })]);
+    expect(order.totalAmountInrPaise).toBe(100000 + order.shippingChargeInrPaise);
+  });
+
+  it("refuses an order whose total changed since the quote, and takes one with no expected total", async () => {
+    const student = await createUser();
+    const book = await createBook({ priceInrPaise: 10000, inventoryPurchased: 10 });
+    const quoted = await quoteBookOrder([{ bookId: book.id, quantity: 2 }]);
+    if (!quoted.ok) throw new Error(quoted.error);
+    await prisma.book.update({ where: { id: book.id }, data: { priceInrPaise: 12000 } });
+
+    const stale = await createBookOrder({ userId: student.id, input: { ...input([{ bookId: book.id, quantity: 2 }]), expectedTotalPaise: quoted.totalAmountInrPaise }, screenshotFile: null });
+    expect(stale).toMatchObject({ ok: false, status: 409, error: expect.stringContaining("total has changed") });
+    expect(await prisma.bookOrder.count()).toBe(0);
+
+    // Older app builds send no expected total and are charged the current one.
+    const legacy = await placeOrder(student.id, [{ bookId: book.id, quantity: 2 }]);
+    expect(legacy.totalAmountInrPaise).toBe(quoted.totalAmountInrPaise + 4000);
+  });
+
   it("refuses unavailable and unpublished books", async () => {
     const student = await createUser();
     const soldOut = await createBook({ status: "OUT_OF_STOCK" });
@@ -79,7 +166,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
     expect(b).toMatchObject({ ok: false, status: 400 });
   });
 
-  it("holds stock from approval, through shipping, and releases it on refund", async () => {
+  it("holds stock from approval and through shipping; refunding the shipped order keeps it gone", async () => {
     const student = await createUser();
     const book = await createBook({ inventoryPurchased: 5, priceInrPaise: 10000 });
     const order = await placeOrder(student.id, [{ bookId: book.id, quantity: 2 }]);
@@ -102,9 +189,13 @@ describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
     });
     expect(await available()).toBe(3);
 
+    // The books are with the customer: the refund must not make them sellable again.
     const refunded = await runAction(() => markBookOrderRefunded(order.id));
     expect(refunded.redirectedTo).toContain("refunded=1");
-    expect(await available()).toBe(5);
+    expect(await available()).toBe(3);
+    expect(await prisma.bookStockMovement.findMany({ where: { bookId: book.id } })).toEqual([
+      expect.objectContaining({ orderId: order.id, delta: -2, reason: expect.stringContaining("without return") }),
+    ]);
     expect(await prisma.bookOrder.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({ status: "REFUNDED" });
     const voided = await prisma.paymentRecord.findUniqueOrThrow({ where: { id: record.id } });
     expect(voided.voidedAt).not.toBeNull();
@@ -112,6 +203,28 @@ describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
 
     const types = (await prisma.studentNotification.findMany({ where: { userId: student.id }, orderBy: { createdAt: "asc" } })).map((n) => n.type);
     expect(types).toEqual(["BOOK_ORDER_APPROVED", "BOOK_ORDER_SHIPPED", "BOOK_ORDER_REFUNDED"]);
+  });
+
+  it("refunding returns stock when the order never shipped, or its books came back", async () => {
+    const student = await createUser();
+    const book = await createBook({ inventoryPurchased: 5 });
+    const available = async () => (await getStockLevels(prisma, [book.id])).get(book.id)!.available;
+
+    const notShipped = await placeOrder(student.id, [{ bookId: book.id, quantity: 1 }]);
+    await runAction(() => approveBookOrder(notShipped.id));
+    expect(await available()).toBe(4);
+    await runAction(() => markBookOrderRefunded(notShipped.id, undefined, false));
+    expect(await available()).toBe(5);
+
+    const returned = await placeOrder(student.id, [{ bookId: book.id, quantity: 2 }]);
+    await runAction(() => approveBookOrder(returned.id));
+    await runAction(() => markBookOrderShipped(returned.id, "Speed Post", "TRK9"));
+    expect(await available()).toBe(3);
+    await runAction(() => markBookOrderRefunded(returned.id, undefined, true));
+    expect(await available()).toBe(5);
+    expect(await prisma.bookStockMovement.count()).toBe(0);
+    const audit = await prisma.auditLog.findFirstOrThrow({ where: { entity: "BookOrder", entityId: returned.id, action: "refund" } });
+    expect(audit.after).toMatchObject({ booksReturned: true, booksWrittenOff: 0 });
   });
 
   it("only moves orders along the allowed transitions", async () => {

@@ -3,6 +3,9 @@ import { prisma } from "@/utils/prisma";
 
 type Tx = Prisma.TransactionClient;
 
+/** DocumentSequence kind holding the last roll number issued per course (period = course id). */
+const ROLL_SEQUENCE_KIND = "roll";
+
 function isUniqueViolation(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002";
 }
@@ -13,8 +16,8 @@ function isUniqueViolation(error: unknown): boolean {
  *
  * The course row is locked (SELECT ... FOR UPDATE) for the rest of the
  * transaction, so two approvals for the same course are serialised and
- * cannot both read the same MAX(rollNumber). The (courseId, rollNumber)
- * unique index remains the backstop.
+ * cannot both read the same counter. The (courseId, rollNumber) unique index
+ * remains the backstop.
  */
 export async function assignRollNumberTx(tx: Tx, enrollmentId: string, courseId: string) {
   const existing = await tx.enrollment.findUnique({
@@ -28,12 +31,23 @@ export async function assignRollNumberTx(tx: Tx, enrollmentId: string, courseId:
 
   await tx.$queryRaw`SELECT "id" FROM "Course" WHERE "id" = ${courseId} FOR UPDATE`;
 
-  const maxRollResult = await tx.enrollment.aggregate({
-    where: { courseId },
-    _max: { rollNumber: true },
-  });
+  // Numbers are never handed out twice: the highest number ever issued for
+  // the course is kept in DocumentSequence (kind "roll", period = course id),
+  // so removing the last-numbered enrollment, or a re-application that
+  // clears its number, does not make MAX(rollNumber) + 1 issue it again.
+  // A course numbered before the counter existed starts from its highest number.
+  const sequenceKey = { kind_period: { kind: ROLL_SEQUENCE_KIND, period: courseId } };
+  const [maxRollResult, sequence] = await Promise.all([
+    tx.enrollment.aggregate({ where: { courseId }, _max: { rollNumber: true } }),
+    tx.documentSequence.findUnique({ where: sequenceKey, select: { next: true } }),
+  ]);
 
-  const nextRoll = (maxRollResult._max.rollNumber ?? 0) + 1;
+  const nextRoll = Math.max(maxRollResult._max.rollNumber ?? 0, sequence?.next ?? 0) + 1;
+  await tx.documentSequence.upsert({
+    where: sequenceKey,
+    create: { kind: ROLL_SEQUENCE_KIND, period: courseId, next: nextRoll },
+    update: { next: nextRoll },
+  });
 
   await tx.enrollment.update({
     where: { id: enrollmentId },

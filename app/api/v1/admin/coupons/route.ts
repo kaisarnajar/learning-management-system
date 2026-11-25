@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
-import { createDefaultCoupon } from "@/app/admin/coupons/actions";
-import { ADMIN_ROLES, pagedBody, readActionForm, staffAction, staffListParams, staffRead } from "@/services/api-staff";
+import { ADMIN_ROLES, pagedBody, readActionForm, staffListParams, staffRead, staffServiceAction } from "@/services/api-staff";
+import { couponInputFromForm, createCoupon, revalidateCouponPaths } from "@/services/coupon-admin-actions";
 import { getAdminCouponsPaginated, getCouponCourseOptions } from "@/services/coupons-admin";
 
 function applyTo(c: { applyToEnrollment: boolean; applyToCourse: boolean }) {
@@ -49,5 +49,14 @@ export async function GET(request: NextRequest) {
  * applyTo (BOTH | ENROLLMENT | COURSE), isActive ("true").
  */
 export async function POST(request: NextRequest) {
-  return staffAction(request, ADMIN_ROLES, "api/v1/admin/coupons POST", async () => createDefaultCoupon(await readActionForm(request)));
+  return staffServiceAction(
+    request,
+    ADMIN_ROLES,
+    "api/v1/admin/coupons POST",
+    async () => createCoupon(couponInputFromForm(await readActionForm(request))),
+    () => {
+      revalidateCouponPaths();
+      return { result: { success: true } };
+    },
+  );
 }

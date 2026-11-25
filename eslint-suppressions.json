@@ -1,11 +1,166 @@
 {
-  "components/admin/AdminCouponRequestsTable.tsx": {
-    "react-hooks/purity": {
+  "app/actions/certificates.ts": {
+    "no-restricted-imports": {
       "count": 1
     }
   },
-  "components/admin/CreateCouponDialog.tsx": {
-    "react-hooks/purity": {
+  "app/actions/id-card.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/actions/receipts.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/blog-approvals/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/blogs/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/bookstore/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/contact-inquiries/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/courses/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/daily-inspiration/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/enrollments/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/fatwa/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/finance/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/library/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/payment-settings/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/record-expense/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/record-payment/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/review-approvals/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/shipping-charges/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/students/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/admin/teachers/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/profile/cart/checkout/page.tsx": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/profile/courses/[courseId]/enrollment-pay/page.tsx": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/profile/courses/[courseId]/grades/page.tsx": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/profile/courses/[courseId]/pay/page.tsx": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/profile/page.tsx": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/profile/reviews/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/profile/reviews/page.tsx": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/profile/waiver-requests/page.tsx": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/sitemap.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/teacher/(portal)/blogs/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/teacher/(portal)/fatwa/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/verify-email/actions.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "app/verify-email/page.tsx": {
+    "no-restricted-imports": {
       "count": 1
     }
   },
@@ -20,11 +175,6 @@
     }
   },
   "prisma/seed-demo.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "services/auth.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
     }

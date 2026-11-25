@@ -15,7 +15,7 @@ import {
   type ProfileCountryCode,
 } from "@/services/countries";
 import { inputClassName, labelClassName } from "@/utils/form";
-import { OCCUPATION_OPTIONS } from "@/services/profile";
+import { OCCUPATION_OPTIONS } from "@/services/occupations";
 import { profileUpdateSchema } from "@/utils/validations";
 
 type ProfileFormProps = {

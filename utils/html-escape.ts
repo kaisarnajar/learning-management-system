@@ -19,15 +19,3 @@ export function escapeHtml(value: unknown): string {
 export function escapeHtmlMultiline(value: unknown): string {
   return escapeHtml(value).replace(/\r?\n/g, "<br />");
 }
-
-/**
- * Marker type for HTML fragments that were produced by trusted server code
- * (already escaped or built from constants). Templates should accept
- * `SafeHtml` for pre-rendered fragments and plain `string` for text that
- * still needs escaping.
- */
-export type SafeHtml = string & { readonly __safeHtml: unique symbol };
-
-export function safeHtml(fragment: string): SafeHtml {
-  return fragment as SafeHtml;
-}

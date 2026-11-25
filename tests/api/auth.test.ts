@@ -1,13 +1,28 @@
+import { createHash } from "node:crypto";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { encode } from "next-auth/jwt";
 import { prisma } from "@/utils/prisma";
 import { POST as register } from "@/app/api/v1/auth/register/route";
+import { POST as webRegister } from "@/app/api/auth/register/route";
+import { POST as resendVerification } from "@/app/api/v1/auth/resend-verification/route";
 import { POST as login } from "@/app/api/v1/auth/login/route";
 import { POST as refresh } from "@/app/api/v1/auth/refresh/route";
 import { POST as logout } from "@/app/api/v1/auth/logout/route";
 import { POST as google } from "@/app/api/v1/auth/google/route";
 import { GET as me, PUT as updateMe } from "@/app/api/v1/auth/me/route";
-import { createUser, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
+import { GET as teacherCourses } from "@/app/api/v1/teacher/courses/route";
+import { GET as adminDashboard } from "@/app/api/v1/admin/dashboard/route";
+import { POST as resetPassword } from "@/app/api/auth/reset-password/route";
+import { POST as changePassword } from "@/app/api/v1/auth/change-password/route";
+import { confirmEmailVerification } from "@/app/verify-email/actions";
+import { createPasswordResetToken } from "@/services/password-reset";
+import { generateVerificationToken } from "@/services/tokens";
+import { sendAccountExistsEmail, sendVerificationEmail } from "@/services/email";
+import { REGISTRATION_MESSAGE } from "@/services/account-registration";
+import { authJwtCallback } from "@/services/auth-jwt";
+import { issueApiSession, REFRESH_REUSE_GRACE_MS } from "@/services/api-auth";
+import { deleteOwnAccount } from "@/services/account-deletion";
+import { createTeacher, createUser, resetDb, runAction, SKIP_WITHOUT_DB } from "../helpers/db";
 import { apiRequest, bearer, createPasswordUser, jsonOf, signedInStudent } from "../helpers/api";
 
 const verifyIdToken = vi.fn();
@@ -27,12 +42,17 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
   describe("register", () => {
     const body = { name: "New Student", email: " New.Student@Example.com ", password: "long-enough-1", acceptPolicies: true };
 
-    it("creates an unverified account and returns a token pair", async () => {
+    it("creates an unverified account, e-mails a verification link and returns a token pair", async () => {
+      vi.mocked(sendVerificationEmail).mockClear();
       const response = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: body }));
       const data = await jsonOf(response);
 
       expect(response.status).toBe(200);
-      expect(data).toMatchObject({ success: true, user: { email: "new.student@example.com", emailVerified: null, role: "USER" } });
+      expect(data).toMatchObject({
+        success: true,
+        verificationRequired: true,
+        user: { email: "new.student@example.com", name: "New Student", emailVerified: null, role: "USER" },
+      });
       expect(data.accessToken).toBeTruthy();
       expect(data.token).toBe(data.accessToken);
       expect(data.refreshToken).toBeTruthy();
@@ -42,21 +62,104 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       expect(row.password).not.toBe(body.password);
       expect(row.password).toMatch(/^\$2[aby]\$/);
       expect(row.emailVerified).toBeNull();
+      expect(data.user.id).toBe(row.id);
       expect(await prisma.apiRefreshToken.count({ where: { userId: row.id } })).toBe(1);
+      expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(data.accessToken) }))).status).toBe(200);
+      expect(sendVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "new.student@example.com" }));
     });
 
-    it("rejects invalid details and duplicate addresses", async () => {
+    it("a failing verification e-mail never fails registration, on either route, and the link can be re-sent", async () => {
+      const failingSender = () => {
+        vi.mocked(sendVerificationEmail).mockReset();
+        vi.mocked(sendVerificationEmail).mockRejectedValueOnce(new Error("SMTP down"));
+        vi.mocked(sendVerificationEmail).mockResolvedValue({ sent: false, error: "SMTP down" } as never);
+      };
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      try {
+        failingSender();
+        const app = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { ...body, email: "app.smtp@example.com" } }));
+        expect(app.status).toBe(200);
+        expect(await jsonOf(app)).toMatchObject({ success: true, verificationRequired: true });
+
+        failingSender();
+        const web = await webRegister(apiRequest("/api/auth/register", { method: "POST", json: { ...body, email: "web.smtp@example.com" } }));
+        expect(web.status).toBe(200);
+        expect(await jsonOf(web)).toEqual({ success: true, role: "USER", message: REGISTRATION_MESSAGE });
+
+        for (const email of ["app.smtp@example.com", "web.smtp@example.com"]) {
+          expect((await prisma.user.findUniqueOrThrow({ where: { email } })).emailVerified).toBeNull();
+        }
+        expect(errors).toHaveBeenCalledWith("[registration] Verification e-mail failed:", expect.anything());
+
+        // The account is there, so "resend the verification e-mail" works once mail is back.
+        vi.mocked(sendVerificationEmail).mockReset();
+        vi.mocked(sendVerificationEmail).mockResolvedValue({ sent: true } as never);
+        const resent = await resendVerification(apiRequest("/api/v1/auth/resend-verification", { method: "POST", json: { email: "web.smtp@example.com" } }));
+        expect(resent.status).toBe(200);
+        expect(sendVerificationEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "web.smtp@example.com" }));
+      } finally {
+        errors.mockRestore();
+        vi.mocked(sendVerificationEmail).mockReset();
+        vi.mocked(sendVerificationEmail).mockResolvedValue({ sent: false, skipped: true } as never);
+      }
+    });
+
+    it("rejects invalid details", async () => {
       const weak = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { ...body, password: "short" } }));
       expect(weak.status).toBe(400);
 
       const noPolicies = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { ...body, acceptPolicies: false } }));
       expect(noPolicies.status).toBe(400);
       expect((await jsonOf(noPolicies)).error).toMatch(/Terms/);
+    });
 
-      await createUser({ email: "new.student@example.com" });
+    // The mobile contract tells a taken address apart (accepted for this
+    // rate-limited endpoint, review L3) so installed apps keep working.
+    it("refuses an address that already has an account, as installed apps expect, and tells the owner by e-mail", async () => {
+      const owner = await createUser({ email: "new.student@example.com", password: "owner-hash" });
+      vi.mocked(sendVerificationEmail).mockClear();
+      vi.mocked(sendAccountExistsEmail).mockClear();
+
       const duplicate = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: body }));
+
       expect(duplicate.status).toBe(400);
-      expect((await jsonOf(duplicate)).error).toMatch(/already exists/);
+      expect(await jsonOf(duplicate)).toEqual({ success: false, error: "An account with this email already exists." });
+      expect(sendAccountExistsEmail).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(sendAccountExistsEmail).mock.calls[0]![0]).toMatchObject({ to: "new.student@example.com" });
+      expect(sendVerificationEmail).not.toHaveBeenCalled();
+      // nothing about the existing account changed
+      const row = await prisma.user.findUniqueOrThrow({ where: { id: owner.id } });
+      expect(row.password).toBe("owner-hash");
+      expect(row.name).toBe(owner.name);
+      expect(await prisma.apiRefreshToken.count({ where: { userId: owner.id } })).toBe(0);
+    });
+
+    it("the website's registration answers a taken address like a new one too", async () => {
+      const webRequest = (email: string) =>
+        webRegister(apiRequest("/api/auth/register", { method: "POST", json: { ...body, email } }));
+      const fresh = await webRequest("web.new@example.com");
+      await createUser({ email: "web.taken@example.com" });
+      vi.mocked(sendAccountExistsEmail).mockClear();
+
+      const duplicate = await webRequest("web.taken@example.com");
+
+      expect(fresh.status).toBe(200);
+      expect(duplicate.status).toBe(200);
+      const freshBody = await jsonOf(fresh);
+      expect(freshBody).toEqual({ success: true, role: "USER", message: REGISTRATION_MESSAGE });
+      expect(await jsonOf(duplicate)).toEqual(freshBody);
+      expect(sendAccountExistsEmail).toHaveBeenCalledWith(expect.objectContaining({ to: "web.taken@example.com" }));
+    });
+
+    it("tells nobody when the address belongs to a removed account, and does not reuse it", async () => {
+      await createUser({ email: "removed@example.com", deletedAt: new Date() });
+      vi.mocked(sendAccountExistsEmail).mockClear();
+
+      const response = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { ...body, email: "removed@example.com" } }));
+
+      expect(response.status).toBe(400);
+      expect(sendAccountExistsEmail).not.toHaveBeenCalled();
+      expect(await prisma.user.count({ where: { email: "removed@example.com" } })).toBe(1);
     });
 
     it("limits registrations per network", async () => {
@@ -72,7 +175,262 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
     });
   });
 
+  describe("staff roles need a verified address", () => {
+    const registerAs = async (email: string) => {
+      const response = await register(
+        apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "Claimant", email, password: "long-enough-1", acceptPolicies: true } }),
+      );
+      expect(response.status).toBe(200);
+      return jsonOf(response);
+    };
+    const verify = (email: string) => prisma.user.update({ where: { email }, data: { emailVerified: new Date() } });
+
+    it("an address with a teacher profile acts as USER until verified", async () => {
+      await createTeacher({ email: "new.teacher@example.test" });
+      const { accessToken, refreshToken } = await registerAs("new.teacher@example.test");
+
+      const before = await teacherCourses(apiRequest("/api/v1/teacher/courses", { headers: bearer(accessToken) }));
+      expect(before.status).toBe(403);
+      expect((await jsonOf(await me(apiRequest("/api/v1/auth/me", { headers: bearer(accessToken) })))).user.role).toBe("USER");
+
+      // A refreshed pair carries no staff role either.
+      const rotated = await jsonOf(await refresh(apiRequest("/api/v1/auth/refresh", { method: "POST", json: { refreshToken } })));
+      expect((await teacherCourses(apiRequest("/api/v1/teacher/courses", { headers: bearer(rotated.accessToken) }))).status).toBe(403);
+
+      await verify("new.teacher@example.test");
+      expect((await teacherCourses(apiRequest("/api/v1/teacher/courses", { headers: bearer(rotated.accessToken) }))).status).toBe(200);
+    });
+
+    it("the ADMIN_EMAIL address acts as USER until verified", async () => {
+      const { accessToken } = await registerAs(process.env.ADMIN_EMAIL!);
+
+      expect((await adminDashboard(apiRequest("/api/v1/admin/dashboard", { headers: bearer(accessToken) }))).status).toBe(403);
+
+      await verify(process.env.ADMIN_EMAIL!);
+      expect((await adminDashboard(apiRequest("/api/v1/admin/dashboard", { headers: bearer(accessToken) }))).status).toBe(200);
+    });
+  });
+
+  describe("sessions end when the account is taken back", () => {
+    /** Someone else registers the address and holds the API session registration returned. */
+    const registerSquatter = async (email: string) => {
+      const response = await register(
+        apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "Squatter", email, password: "long-enough-1", acceptPolicies: true } }),
+      );
+      return jsonOf(response);
+    };
+    const refreshWith = (refreshToken: string) => refresh(apiRequest("/api/v1/auth/refresh", { method: "POST", json: { refreshToken } }));
+
+    it("a password reset revokes every API session and forgets the account's devices", async () => {
+      const { refreshToken, accessToken } = await registerSquatter("reset.me@example.test");
+      const squatter = await prisma.user.findUniqueOrThrow({ where: { email: "reset.me@example.test" } });
+      await prisma.deviceToken.create({ data: { userId: squatter.id, token: "squatter-phone" } });
+      const token = await createPasswordResetToken("reset.me@example.test");
+
+      const reset = await resetPassword(apiRequest("/api/auth/reset-password", { method: "POST", json: { token, password: "brand-new-pass-1", confirmPassword: "brand-new-pass-1" } }));
+      expect(reset.status).toBe(200);
+
+      expect((await refreshWith(refreshToken)).status).toBe(401);
+      expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(accessToken) }))).status).toBe(401);
+      expect(await prisma.deviceToken.count({ where: { userId: squatter.id } })).toBe(0);
+    });
+
+    it("verifying the address revokes the sessions opened before it", async () => {
+      const { refreshToken } = await registerSquatter("verify.me@example.test");
+      const { token } = await generateVerificationToken("verify.me@example.test");
+      const form = new FormData();
+      form.set("token", token);
+      form.set("password", "long-enough-1");
+
+      expect((await runAction(() => confirmEmailVerification(form))).redirectedTo).toBe("/verify-email?verified=1");
+      expect((await refreshWith(refreshToken)).status).toBe(401);
+    });
+
+    it("a password account is verified only with its password, so a squatter's password never gets a verified address", async () => {
+      await registerSquatter("squatted@example.test");
+      const { token } = await generateVerificationToken("squatted@example.test");
+      const verifiedAt = async () => (await prisma.user.findUniqueOrThrow({ where: { email: "squatted@example.test" } })).emailVerified;
+
+      // The mailbox owner clicks "Confirm" without knowing the squatter's password.
+      const blank = new FormData();
+      blank.set("token", token);
+      expect((await runAction(() => confirmEmailVerification(blank))).redirectedTo).toBe(
+        `/verify-email?token=${encodeURIComponent(token)}&error=password`,
+      );
+      const wrong = new FormData();
+      wrong.set("token", token);
+      wrong.set("password", "owner-guess-1");
+      expect((await runAction(() => confirmEmailVerification(wrong))).redirectedTo).toContain("error=password");
+      expect(await verifiedAt()).toBeNull();
+
+      // The link still works for the person who did set the password.
+      const right = new FormData();
+      right.set("token", token);
+      right.set("password", "long-enough-1");
+      expect((await runAction(() => confirmEmailVerification(right))).redirectedTo).toBe("/verify-email?verified=1");
+      expect(await verifiedAt()).not.toBeNull();
+    });
+
+    it("a verification link matches by hash only: the stored value is not itself a token", async () => {
+      const user = await createUser({ email: "hash.only@example.test", emailVerified: null });
+      await generateVerificationToken(user.email);
+      const stored = await prisma.verificationToken.findFirstOrThrow({ where: { identifier: user.email } });
+      const form = new FormData();
+      form.set("token", stored.token);
+
+      expect((await runAction(() => confirmEmailVerification(form))).redirectedTo).toBe("/verify-email?error=invalid");
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).emailVerified).toBeNull();
+    });
+
+    it("mobile Google sign-in on an unverified row revokes the squatter's sessions", async () => {
+      process.env.AUTH_GOOGLE_ID = "client-id";
+      verifyIdToken.mockResolvedValue({
+        getPayload: () => ({ iss: "https://accounts.google.com", aud: "client-id", email: "taken@example.test", email_verified: true, name: "Owner" }),
+      });
+      const { refreshToken } = await registerSquatter("taken@example.test");
+
+      const owner = await google(apiRequest("/api/v1/auth/google", { method: "POST", json: { idToken: "id-token" } }));
+      expect(owner.status).toBe(200);
+      const ownerTokens = await jsonOf(owner);
+
+      expect((await refreshWith(refreshToken)).status).toBe(401);
+      // The owner's own new session is unaffected.
+      expect((await refreshWith(ownerTokens.refreshToken)).status).toBe(200);
+    });
+  });
+
+  describe("web sessions end on a password reset or change and on a take-over", () => {
+    type JwtArgs = Parameters<typeof authJwtCallback>[0];
+    /** The web session cookie's token right after a sign-in, as Auth.js builds it. */
+    const webSignIn = async (user: { id: string; email: string }) =>
+      (await authJwtCallback({ token: { email: user.email }, user: { id: user.id, email: user.email } } as JwtArgs))!;
+    /** The same cookie presented on a later request, once its refresh minute has passed. */
+    const laterRequest = (token: Awaited<ReturnType<typeof webSignIn>>) =>
+      authJwtCallback({ token: { ...token, refreshedAt: 0 } } as JwtArgs);
+    const sessionVersionOf = async (email: string) =>
+      (await prisma.user.findUniqueOrThrow({ where: { email }, select: { sessionVersion: true } })).sessionVersion;
+
+    it("a password reset ends the web sessions issued before it", async () => {
+      const { user } = await createPasswordUser();
+      const cookie = await webSignIn(user);
+      expect(cookie.sessionVersion).toBe(0);
+      expect(await laterRequest(cookie)).not.toBeNull();
+
+      const token = await createPasswordResetToken(user.email);
+      const reset = await resetPassword(apiRequest("/api/auth/reset-password", { method: "POST", json: { token, password: "brand-new-pass-1", confirmPassword: "brand-new-pass-1" } }));
+      expect(reset.status).toBe(200);
+
+      expect(await sessionVersionOf(user.email)).toBe(1);
+      expect(await laterRequest(cookie)).toBeNull();
+      // Signing in again starts a session at the new version.
+      expect(await laterRequest(await webSignIn(user))).not.toBeNull();
+    });
+
+    it("changing the password in the app ends the web sessions", async () => {
+      const { user, password } = await createPasswordUser();
+      const cookie = await webSignIn(user);
+      const { accessToken } = await (await import("@/services/api-auth")).issueApiSession({ id: user.id, email: user.email, role: "USER" });
+
+      const changed = await changePassword(apiRequest("/x", { method: "POST", headers: bearer(accessToken), json: { currentPassword: password, newPassword: "second-password-2" } }));
+      expect(changed.status).toBe(200);
+
+      expect(await laterRequest(cookie)).toBeNull();
+    });
+
+    it("a deleted account's cookie does not come back when the address is registered again", async () => {
+      const { user, password } = await createPasswordUser();
+      const cookie = await webSignIn(user);
+      expect(await deleteOwnAccount(user.id, { password })).toEqual({ ok: true });
+
+      const again = await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "New Owner", email: user.email, password: "long-enough-1", acceptPolicies: true } }));
+      expect(again.status).toBe(200);
+      const newOwner = await prisma.user.findUniqueOrThrow({ where: { email: user.email } });
+      expect(newOwner.id).not.toBe(user.id);
+
+      expect(await laterRequest(cookie)).toBeNull();
+    });
+
+    it("account deletion limits password guesses and removes the person from fatwa questions and inquiries", async () => {
+      const { user, password } = await createPasswordUser();
+      await prisma.fatwaQuestion.create({
+        data: { userId: user.id, askerName: "Real Name", askerEmail: user.email, category: "General", title: "T", question: "Q" },
+      });
+      await prisma.contactInquiry.create({ data: { userId: user.id, name: "Real Name", email: user.email, phone: "9999999999", message: "Hi" } });
+
+      for (let i = 0; i < 5; i++) {
+        expect(await deleteOwnAccount(user.id, { password: `guess-${i}` })).toMatchObject({ ok: false, status: 403 });
+      }
+      // Even the right password waits once the guesses are used up.
+      expect(await deleteOwnAccount(user.id, { password })).toMatchObject({ ok: false, status: 429 });
+      await prisma.rateLimitBucket.deleteMany();
+
+      expect(await deleteOwnAccount(user.id, { password })).toEqual({ ok: true });
+      const fatwa = await prisma.fatwaQuestion.findFirstOrThrow({ where: { userId: user.id } });
+      expect(fatwa).toMatchObject({ askerName: "Anonymous", askerEmail: `deleted+${user.id}@invalid.local` });
+      const inquiry = await prisma.contactInquiry.findFirstOrThrow({ where: { userId: user.id } });
+      expect(inquiry).toMatchObject({ name: "Deleted user", email: `deleted+${user.id}@invalid.local`, phone: "" });
+    });
+
+    it("verifying the address and a mobile Google take-over move the version", async () => {
+      await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "Squatter", email: "verify.web@example.test", password: "long-enough-1", acceptPolicies: true } }));
+      const { token } = await generateVerificationToken("verify.web@example.test");
+      const form = new FormData();
+      form.set("token", token);
+      form.set("password", "long-enough-1");
+      await runAction(() => confirmEmailVerification(form));
+      expect(await sessionVersionOf("verify.web@example.test")).toBe(1);
+
+      process.env.AUTH_GOOGLE_ID = "client-id";
+      verifyIdToken.mockResolvedValue({
+        getPayload: () => ({ iss: "https://accounts.google.com", aud: "client-id", email: "taken.web@example.test", email_verified: true, name: "Owner" }),
+      });
+      await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "Squatter", email: "taken.web@example.test", password: "long-enough-1", acceptPolicies: true } }));
+      expect((await google(apiRequest("/api/v1/auth/google", { method: "POST", json: { idToken: "id-token" } }))).status).toBe(200);
+      expect(await sessionVersionOf("taken.web@example.test")).toBe(1);
+
+      // A verified account signing in with Google again is not a take-over.
+      expect((await google(apiRequest("/api/v1/auth/google", { method: "POST", json: { idToken: "id-token" } }))).status).toBe(200);
+      expect(await sessionVersionOf("taken.web@example.test")).toBe(1);
+    });
+  });
+
+  describe("password reset", () => {
+    const resetWith = (token: string | null, password = "brand-new-pass-1") =>
+      resetPassword(apiRequest("/api/auth/reset-password", { method: "POST", json: { token, password, confirmPassword: password } }));
+
+    it("lets only one of two simultaneous resets with the same link succeed", async () => {
+      const { user } = await createPasswordUser();
+      const token = await createPasswordResetToken(user.email);
+
+      const statuses = (await Promise.all([resetWith(token, "first-new-pass-1"), resetWith(token, "second-new-pass-1")])).map((r) => r.status);
+      expect(statuses.sort()).toEqual([200, 400]);
+      expect(await prisma.passwordResetToken.count()).toBe(0);
+    });
+
+    it("marks an unverified address verified, so the new password signs in", async () => {
+      const { user } = await createPasswordUser("old-password-1", { emailVerified: null });
+      const loginAs = (password: string) => login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: user.email, password } }));
+      expect((await loginAs("old-password-1")).status).toBe(403);
+
+      expect((await resetWith(await createPasswordResetToken(user.email))).status).toBe(200);
+
+      expect((await prisma.user.findUniqueOrThrow({ where: { id: user.id } })).emailVerified).not.toBeNull();
+      expect((await loginAs("brand-new-pass-1")).status).toBe(200);
+    });
+  });
+
   describe("login", () => {
+    it("still signs in an account whose password was set longer than 72 bytes, and refuses an absurdly long one", async () => {
+      // Allowed while the limit was 128 characters; bcrypt hashed its first 72 bytes.
+      const { user, password } = await createPasswordUser("long-".repeat(25));
+
+      const ok = await login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: user.email, password } }));
+      expect(ok.status).toBe(200);
+
+      const huge = await login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: user.email, password: "x".repeat(2000) } }));
+      expect(huge.status).toBe(401);
+    });
+
     it("signs in a verified user with the right password", async () => {
       const { user, password } = await createPasswordUser();
 
@@ -111,14 +469,14 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       expect(await jsonOf(response)).toMatchObject({ code: "email_not_verified" });
     });
 
-    it("requires both fields and throttles repeated attempts for one address", async () => {
+    it("requires both fields and throttles repeated failures for one address from one network", async () => {
       expect((await login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: "a@example.test" } }))).status).toBe(400);
       expect((await login(apiRequest("/api/v1/auth/login", { method: "POST", json: {} }))).status).toBe(400);
 
       const { user } = await createPasswordUser();
       const statuses: number[] = [];
       for (let i = 0; i < 6; i++) {
-        const response = await login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: user.email, password: "nope-nope-1" } }));
+        const response = await login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: user.email, password: "nope-nope-1" }, ip: "10.99.0.1" }));
         statuses.push(response.status);
       }
       expect(statuses).toEqual([401, 401, 401, 401, 401, 429]);
@@ -245,6 +603,94 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       ]);
 
       expect(results.map((r) => r.status).sort()).toEqual([200, 401]);
+      // the client refreshing twice at once is not a replay: the winner's pair keeps working
+      const winner = await jsonOf(results.find((r) => r.status === 200)!);
+      expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(winner.accessToken) }))).status).toBe(200);
+      expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: winner.refreshToken })).status).toBe(200);
+    });
+
+    describe("reuse of a rotated refresh token", () => {
+      const hash = (token: string) => createHash("sha256").update(token).digest("hex");
+      /** Moves the revocation of a token past the grace that covers a client's own concurrent refreshes. */
+      const ageRevocation = (token: string) =>
+        prisma.apiRefreshToken.update({
+          where: { tokenHash: hash(token) },
+          data: { revokedAt: new Date(Date.now() - REFRESH_REUSE_GRACE_MS - 1000) },
+        });
+
+      it("rotation keeps the family, and a replay of the old token ends every token rotated from it", async () => {
+        const student = await signedInStudent();
+        const other = await issueApiSession({ id: student.user.id, email: student.user.email, role: "USER" });
+
+        const second = await jsonOf(await post(refresh, "/api/v1/auth/refresh", { refreshToken: student.tokens.refreshToken }));
+        const third = await jsonOf(await post(refresh, "/api/v1/auth/refresh", { refreshToken: second.refreshToken }));
+        const family = await prisma.apiRefreshToken.findMany({
+          where: { tokenHash: { in: [student.tokens.refreshToken, second.refreshToken, third.refreshToken].map(hash) } },
+          select: { familyId: true },
+        });
+        expect(family).toHaveLength(3);
+        expect(new Set(family.map((r) => r.familyId)).size).toBe(1);
+        expect(family[0].familyId).toBeTruthy();
+
+        // someone replays the first token after the legitimate client moved on
+        await ageRevocation(student.tokens.refreshToken);
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: student.tokens.refreshToken })).status).toBe(401);
+
+        // the newest pair of that family is dead too
+        expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(third.accessToken) }))).status).toBe(401);
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: third.refreshToken })).status).toBe(401);
+        // a separate sign-in of the same user is another family and survives
+        expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(other.accessToken) }))).status).toBe(200);
+      });
+
+      it("a thief who rotates first loses the chain when the owner presents the old token", async () => {
+        const student = await signedInStudent();
+        const stolen = await jsonOf(await post(refresh, "/api/v1/auth/refresh", { refreshToken: student.tokens.refreshToken }));
+
+        await ageRevocation(student.tokens.refreshToken);
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: student.tokens.refreshToken })).status).toBe(401);
+
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: stolen.refreshToken })).status).toBe(401);
+      });
+
+      it("a replayed token issued before families existed ends all of the user's sessions", async () => {
+        const student = await signedInStudent();
+        await prisma.apiRefreshToken.create({
+          data: { userId: student.user.id, tokenHash: hash("legacy-rotated"), expiresAt: new Date(Date.now() + 86_400_000), revokedAt: new Date(Date.now() - 60_000) },
+        });
+
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: "legacy-rotated" })).status).toBe(401);
+
+        expect((await me(apiRequest("/api/v1/auth/me", { headers: student.headers }))).status).toBe(401);
+        expect(await prisma.apiRefreshToken.count({ where: { userId: student.user.id, revokedAt: null } })).toBe(0);
+      });
+
+      it("a live token issued before families existed starts a family when it rotates", async () => {
+        const student = await signedInStudent();
+        const legacy = await prisma.apiRefreshToken.create({
+          data: { userId: student.user.id, tokenHash: hash("legacy-live"), expiresAt: new Date(Date.now() + 86_400_000) },
+        });
+
+        const next = await jsonOf(await post(refresh, "/api/v1/auth/refresh", { refreshToken: "legacy-live" }));
+        expect((await prisma.apiRefreshToken.findUniqueOrThrow({ where: { id: legacy.id } })).familyId).toBe(legacy.id);
+        expect((await prisma.apiRefreshToken.findUniqueOrThrow({ where: { tokenHash: hash(next.refreshToken) } })).familyId).toBe(legacy.id);
+
+        // its replay is then confined to that family
+        await ageRevocation("legacy-live");
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: "legacy-live" })).status).toBe(401);
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: next.refreshToken })).status).toBe(401);
+        expect((await me(apiRequest("/api/v1/auth/me", { headers: student.headers }))).status).toBe(200);
+      });
+
+      it("a token ended by logout presented again does not end the user's other sessions", async () => {
+        const first = await signedInStudent();
+        const second = await issueApiSession({ id: first.user.id, email: first.user.email, role: "USER" });
+        await post(logout, "/api/v1/auth/logout", { refreshToken: first.tokens.refreshToken });
+        await ageRevocation(first.tokens.refreshToken);
+
+        expect((await post(refresh, "/api/v1/auth/refresh", { refreshToken: first.tokens.refreshToken })).status).toBe(401);
+        expect((await me(apiRequest("/api/v1/auth/me", { headers: bearer(second.accessToken) }))).status).toBe(200);
+      });
     });
 
     it("refuses missing, unknown and expired refresh tokens", async () => {
@@ -283,6 +729,29 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       expect((await me(apiRequest("/api/v1/auth/me", { headers: b.headers }))).status).toBe(401);
 
       expect((await logout(apiRequest("/api/v1/auth/logout", { method: "POST" }))).status).toBe(200);
+    });
+
+    it("logout with a device token removes that device's push registration", async () => {
+      const student = await signedInStudent();
+      await prisma.deviceToken.createMany({ data: [{ userId: student.user.id, token: "this-phone" }, { userId: student.user.id, token: "tablet" }] });
+
+      const response = await post(logout, "/api/v1/auth/logout", { refreshToken: student.tokens.refreshToken, deviceToken: "this-phone" }, student.headers);
+
+      expect(response.status).toBe(200);
+      expect((await prisma.deviceToken.findMany({ where: { userId: student.user.id }, select: { token: true } })).map((d) => d.token)).toEqual(["tablet"]);
+    });
+
+    it("logout with only a refresh token still removes the device, but never another account's registration", async () => {
+      const student = await signedInStudent();
+      const other = await signedInStudent();
+      await prisma.deviceToken.createMany({ data: [{ userId: student.user.id, token: "mine" }, { userId: other.user.id, token: "theirs" }] });
+
+      await post(logout, "/api/v1/auth/logout", { refreshToken: student.tokens.refreshToken, deviceToken: "mine" });
+      await post(logout, "/api/v1/auth/logout", { deviceToken: "theirs" });
+      await post(logout, "/api/v1/auth/logout", { deviceToken: "theirs" }, student.headers);
+
+      expect(await prisma.deviceToken.count({ where: { token: "mine" } })).toBe(0);
+      expect(await prisma.deviceToken.count({ where: { token: "theirs" } })).toBe(1);
     });
 
     it("logging one session out leaves the user's other sessions alone", async () => {

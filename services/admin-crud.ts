@@ -1,5 +1,4 @@
-import { isRedirectError } from "next/dist/client/components/redirect-error";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import type { z } from "zod";
 import { requireAdmin } from "@/services/auth-actions";
 import { ActionError, executeServerAction } from "@/utils/action-utils";
@@ -143,7 +142,7 @@ export function createAdminCrudActions<TData, TRecord>(config: AdminCrudConfig<T
     try {
       return await run();
     } catch (error) {
-      if (isRedirectError(error)) throw error;
+      unstable_rethrow(error);
       console.error(`Database error ${verb} ${label}:`, error);
       redirect(`${errorPath}?error=${encodeURIComponent(message)}`);
     }
@@ -217,7 +216,7 @@ export function createAdminCrudActions<TData, TRecord>(config: AdminCrudConfig<T
       try {
         await removeRecord();
       } catch (error) {
-        if (isRedirectError(error)) throw error;
+        unstable_rethrow(error);
         console.error(`Failed to delete ${label}:`, error);
         return { error: config.deleteFailedMessage };
       }

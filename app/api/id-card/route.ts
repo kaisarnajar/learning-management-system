@@ -1,11 +1,12 @@
-import { NextResponse } from "next/server";
 import { auth } from "@/services/auth";
 import { enforceRateLimit, RATE_LIMITS } from "@/services/rate-limit";
 import { prisma } from "@/utils/prisma";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { generateIdCardPdf } from "@/utils/id-card-html";
 import { isAdminSession } from "@/services/admin";
-import { contentDisposition } from "@/utils/filename";
+import { isUserProfileComplete } from "@/services/profile";
+import { pdfResponse } from "@/utils/pdf-response";
+import { apiError, apiServerError } from "@/utils/api-response";
 
 // Chromium cold start plus rendering can exceed the default function timeout.
 export const maxDuration = 60;
@@ -17,7 +18,7 @@ export async function GET(request: Request) {
   const limited = await enforceRateLimit(RATE_LIMITS.DOCUMENT_USER, session?.user?.id ?? "anonymous");
   if (limited) return limited;
   if (!isAdminSession(session)) {
-    return NextResponse.json({ error: "Unauthorized. Admin access required." }, { status: 401 });
+    return apiError("Unauthorized. Admin access required.", 401);
   }
 
   const searchParams = new URL(request.url).searchParams;
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
   const requestedUserId = searchParams.get("userId");
 
   if (!requestedUserId) {
-    return NextResponse.json({ error: "userId parameter is required." }, { status: 400 });
+    return apiError("userId parameter is required.", 400);
   }
 
   const targetUserId = requestedUserId;
@@ -35,19 +36,18 @@ export async function GET(request: Request) {
   }), "Database operation failed");
 
   if (!user) {
-    return NextResponse.json({ error: "User not found." }, { status: 404 });
+    return apiError("User not found.", 404);
   }
 
-  const pdfBuffer = await generateIdCardPdf(user);
+  // The same rule as the staff API: an ID card needs the details printed on it.
+  if (!(await isUserProfileComplete(user.id))) {
+    return apiError("The student must complete their profile first.", 409);
+  }
 
-  const displayName = `ID Card ${user.name || "Student"}`;
-
-  return new NextResponse(new Uint8Array(pdfBuffer), {
-    status: 200,
-    headers: {
-      "Content-Type": "application/pdf",
-      "Content-Disposition": contentDisposition(inline ? "inline" : "attachment", displayName, "pdf"),
-      "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
-    },
-  });
+  try {
+    const pdfBuffer = await generateIdCardPdf(user);
+    return pdfResponse(pdfBuffer, `ID Card ${user.name?.trim() || "Student"}`, { inline });
+  } catch (error) {
+    return apiServerError("api/id-card", error, "Failed to generate the ID card.");
+  }
 }

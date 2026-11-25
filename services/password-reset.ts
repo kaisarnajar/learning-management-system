@@ -62,13 +62,22 @@ export async function consumePasswordResetToken(
 
   const tokenHash = hashResetToken(trimmed);
   const record = await withDbErrorHandling(() => prisma.passwordResetToken.findUnique({ where: { tokenHash } }), "Database operation failed");
+  const invalid = { ok: false as const, error: "Reset link is invalid or has expired." };
 
   if (!record || record.expiresAt < new Date()) {
     if (record) {
-      await withDbErrorHandling(() => prisma.passwordResetToken.delete({ where: { id: record.id } }), "Database operation failed");
+      await withDbErrorHandling(() => prisma.passwordResetToken.deleteMany({ where: { id: record.id } }), "Database operation failed");
     }
-    return { ok: false, error: "Reset link is invalid or has expired." };
+    return invalid;
   }
+
+  // Claim the token: of two concurrent resets with the same link, only the
+  // one whose delete removes the row goes on to set a password.
+  const claimed = await withDbErrorHandling(
+    () => prisma.passwordResetToken.deleteMany({ where: { tokenHash, expiresAt: { gt: new Date() } } }),
+    "Database operation failed",
+  );
+  if (claimed.count !== 1) return invalid;
 
   await withDbErrorHandling(() => prisma.passwordResetToken.deleteMany({ where: { email: record.email } }), "Database operation failed");
 

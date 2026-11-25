@@ -30,10 +30,9 @@ export function StudentCardPreview({
   const [isLoading, setIsLoading] = useState(true);
   const [isPending, startTransition] = useTransition();
   const { addToast } = useToast();
-  const [timestamp] = useState(() => Date.now());
   const copy = CARD_COPY[kind];
 
-  const iframeSrc = `/api/student-card/${kind}?inline=1&enrollmentId=${enrollmentId}&t=${timestamp}#toolbar=0&navpanes=0&scrollbar=0`;
+  const iframeSrc = `/api/student-card/${kind}?inline=1&enrollmentId=${enrollmentId}#toolbar=0&navpanes=0&scrollbar=0`;
 
   const handleSendEmail = () => {
     startTransition(async () => {

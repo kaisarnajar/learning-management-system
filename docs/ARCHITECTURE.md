@@ -22,6 +22,16 @@ config/ (brand, assets, constants)
   Prisma client, the R2 client, and the HTML builders for receipts, certificates and cards.
 - **`config/`** is the white-label surface: `brand.ts`, `assets.ts`, `constants/`. Academy-specific strings belong here,
   not in components.
+- **Enforced by ESLint** (`no-restricted-imports` in `eslint.config.mjs`): `services/` may not import from `app/`, and
+  `app/` outside `app/api/` (pages, layouts, server actions) and `components/` may not import `@/utils/prisma`.
+  `utils/prisma.ts` is also `server-only`, so a client component that reaches Prisma through a service fails the
+  build; pure helpers that client components need live in `utils/` or `config/` and are re-exported by the service.
+  Services that the staff API shares with the website return typed results (`{ ok: true, … } | { ok: false, error,
+  status }`) and never redirect; the action or route maps the result to a redirect, flash or HTTP status.
+- **The Prisma baseline.** The 33 pages and server actions under `app/` that still import Prisma directly (8 of them
+  pages) are recorded in `eslint-suppressions.json` under `no-restricted-imports`, one entry per file. New imports
+  fail lint. When a file's queries move into a service, run
+  `npx eslint . --ignore-pattern ".claude/**" --prune-suppressions` to drop its entry; the list only shrinks.
 - **Server actions** are wrapped with `utils/action-utils.ts`: an `ActionError` carries a user-facing message back with
   the redirect, a database error becomes a flash code, and anything else is logged and reported as a generic failure so
   internals never reach a URL.
@@ -38,9 +48,11 @@ profile linked to the user.
 
 **Enforcement happens in three layers, and each one stands on its own:**
 
-1. `middleware.ts` runs Auth.js's `authorized` decision for every matched request and enforces it: pages redirect to
-   `/login?callbackUrl=...`, API paths receive 401. It also sets the per-request CSP nonce and, for `/api/v1`, the CORS
-   allow-list (`API_ALLOWED_ORIGINS`) and the cross-site request guard.
+1. `proxy.ts` (Next 16's name for middleware) runs Auth.js's `authorized` decision for every matched request and
+   enforces it: pages redirect to `/login?callbackUrl=...`, API paths receive 401. The role it checks is the cookie's
+   and may be stale, so this layer is advisory; layers 2 and 3 re-read the role (at most a minute old, read once per
+   request: `services/auth-jwt.ts`). It also sets the per-request CSP nonce and, for `/api/v1`, the CORS allow-list
+   (`API_ALLOWED_ORIGINS`) and the cross-site request guard.
 2. Route-group layouts (`app/admin`, `app/teacher`, ...) call the matching guard.
 3. Every protected page and server action calls an explicit guard from `services/auth-actions.ts` (`requireAdmin`,
    `requireTeacher`, `requireDeveloper`, `requireUser`). The guards are plain helpers, not a `"use server"` module,
@@ -53,7 +65,7 @@ whose hash is stored in `ApiRefreshToken`. Each request checks the session row, 
 send no `Origin` header and need no CORS entry.
 
 **Other controls.** A nonce-based Content-Security-Policy (report-only until `CSP_ENFORCE=true`, built in
-`services/security-headers.ts`); rate limiting (`services/rate-limit.ts`, Upstash Redis when configured, otherwise a
+`services/security-headers.ts`, violations reported to `/api/csp-report`); rate limiting (`services/rate-limit.ts`, Upstash Redis when configured, otherwise a
 Postgres table, failing open if the backend is down); `sanitize-html` for rich text; HTML escaping in e-mail and PDF
 templates; private files served through `/api/files` after an authorization check.
 
@@ -62,7 +74,7 @@ templates; private files served through `/api/files` after an authorization chec
 Prisma schema in `prisma/schema.prisma`, migrations in `prisma/migrations`. Money is stored as integer paise.
 Payments are recorded as `PaymentRecord` rows; voiding sets `voidedAt` and writes an `AuditLog` entry rather than
 deleting. Sequences that must never repeat (roll numbers, registration numbers, receipt and invoice numbers) are
-allocated inside the transaction that stores them (`RegistrationSequence`, `DocumentSequence`).
+allocated inside the transaction that stores them (`RegistrationSequence`, `DocumentSequence`; roll numbers keep their per-course high-water mark there as kind `roll`).
 
 The production database is live, so migrations are additive and guarded, and nothing destructive runs from a build or
 a script without an explicit flag. The rules, the baseline and the rehearsal procedure are in `OPERATIONS.md`;

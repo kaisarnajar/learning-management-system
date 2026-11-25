@@ -1,12 +1,12 @@
 import { unstable_noStore as noStore } from "next/cache";
 import { prisma } from "@/utils/prisma";
-import { MONTHLY_PAYMENT_APPROVED, PAYMENT_TYPE_ENROLLMENT } from "@/services/monthly-payment-status";
+import { PAYMENT_TYPE_ENROLLMENT } from "@/services/monthly-payment-status";
 import { getCourseIdsByTitleSearch, getAllCourses } from "@/services/courses";
 import { getMonthlyFeePaise, getRegistrationFeePaise } from "@/services/course-pricing";
 import { clampPage, type PaginatedResult } from "@/utils/pagination";
 import { buildSearchOr } from "@/utils/text-search";
 import type { FinanceFilters } from "@/services/finance-filters";
-import { PAYMENT_METHOD_TEXT } from "@/services/status-compat";
+import { paymentTypeFromText } from "@/services/status-compat";
 
 export type FeeWaiverFinanceStats = {
   totalWaiverCount: number;
@@ -39,7 +39,6 @@ export type ClaimedFeeWaiverItem = {
 const WAIVER_CLAIM_WHERE = {
   OR: [
     { couponId: { not: null } },
-    { paymentMethod: { equals: PAYMENT_METHOD_TEXT.WAIVER, mode: "insensitive" as const } },
     { paymentMethodEnum: "WAIVER" as const },
     { label: { contains: "waiver", mode: "insensitive" as const } },
   ],
@@ -47,17 +46,19 @@ const WAIVER_CLAIM_WHERE = {
 
 async function buildWaiverSearchWhere(filters: FinanceFilters): Promise<Record<string, unknown>> {
   const where: Record<string, unknown> = {
-    status: MONTHLY_PAYMENT_APPROVED,
+    statusEnum: "APPROVED",
     deletedAt: null,
     AND: [WAIVER_CLAIM_WHERE],
   };
 
-  // Date filtering
+  // Date filtering on when the waiver was claimed. updatedAt moved with
+  // every later edit (a void, a relabel), shifting old waivers into the
+  // current period.
   if (filters.from || filters.to) {
-    const updatedAt: { gte?: Date; lte?: Date } = {};
-    if (filters.from) updatedAt.gte = filters.from;
-    if (filters.to) updatedAt.lte = filters.to;
-    where.updatedAt = updatedAt;
+    const createdAt: { gte?: Date; lte?: Date } = {};
+    if (filters.from) createdAt.gte = filters.from;
+    if (filters.to) createdAt.lte = filters.to;
+    where.createdAt = createdAt;
   }
 
   // Course filtering
@@ -72,7 +73,7 @@ async function buildWaiverSearchWhere(filters: FinanceFilters): Promise<Record<s
 
   // Payment type filter if set
   if (filters.paymentType) {
-    where.paymentType = filters.paymentType;
+    where.paymentTypeEnum = paymentTypeFromText(filters.paymentType) ?? { in: [] };
   }
 
   // Search query
@@ -107,30 +108,32 @@ export async function getFeeWaiverFinanceData(
   const courses = await getAllCourses();
   const courseById = new Map(courses.map((c) => [c.id, c]));
 
-  // The waiver test is in the WHERE clause, so the page is read with
-  // skip/take; the totals still need every matching row's amount and course
-  // (the original fee depends on the course), read with a narrow select.
-  const totalCount = await prisma.coursePaymentSubmission.count({ where });
+  // Totals are summed in the database: one row per distinct (course, type,
+  // snapshot fee, amount) with its count, so the work no longer grows with
+  // the number of waivers. The page itself is read with skip/take.
+  const groups = await prisma.coursePaymentSubmission.groupBy({
+    by: ["courseId", "paymentType", "baseFeePaise", "amountInrPaise"],
+    where,
+    _count: { _all: true },
+  });
+  const totalCount = groups.reduce((sum, g) => sum + g._count._all, 0);
   const safePage = clampPage(page, totalCount, pageSize);
 
-  const [allSubmissions, pageRows] = await Promise.all([
-    prisma.coursePaymentSubmission.findMany({
-      where,
-      select: { courseId: true, paymentType: true, amountInrPaise: true },
-    }),
-    prisma.coursePaymentSubmission.findMany({
-      where,
-      orderBy: { updatedAt: "desc" },
-      skip: (safePage - 1) * pageSize,
-      take: pageSize,
-      include: {
-        user: { select: { name: true, email: true } },
-        paymentRecord: { select: { receiptGeneratedAt: true } },
-      },
-    }),
-  ]);
+  const pageRows = await prisma.coursePaymentSubmission.findMany({
+    where,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    skip: (safePage - 1) * pageSize,
+    take: pageSize,
+    include: {
+      user: { select: { name: true, email: true } },
+      paymentRecord: { select: { receiptGeneratedAt: true } },
+    },
+  });
 
-  const originalFeeFor = (s: { courseId: string; paymentType: string; amountInrPaise: number }) => {
+  // The fee in force at submission (baseFeePaise); the course's current fee
+  // only for rows written before the snapshot existed.
+  const originalFeeFor = (s: { courseId: string; paymentType: string; amountInrPaise: number; baseFeePaise: number | null }) => {
+    if (s.baseFeePaise != null) return Math.max(s.baseFeePaise, s.amountInrPaise);
     const course = courseById.get(s.courseId);
     const baseCourseFeePaise = course
       ? s.paymentType === PAYMENT_TYPE_ENROLLMENT
@@ -151,21 +154,22 @@ export async function getFeeWaiverFinanceData(
   let partialWaiverCount = 0;
   let partialWaiverSumPaise = 0;
 
-  for (const s of allSubmissions) {
-    const originalFeePaise = originalFeeFor(s);
-    const waivedAmountPaise = Math.max(0, originalFeePaise - s.amountInrPaise);
+  for (const g of groups) {
+    const count = g._count._all;
+    const originalFeePaise = originalFeeFor(g);
+    const waivedAmountPaise = Math.max(0, originalFeePaise - g.amountInrPaise);
 
-    totalWaiverCount++;
-    totalSumWaivedPaise += waivedAmountPaise;
-    totalOriginalFeePaise += originalFeePaise;
-    totalNetPaidPaise += s.amountInrPaise;
+    totalWaiverCount += count;
+    totalSumWaivedPaise += waivedAmountPaise * count;
+    totalOriginalFeePaise += originalFeePaise * count;
+    totalNetPaidPaise += g.amountInrPaise * count;
 
-    if (s.amountInrPaise === 0) {
-      fullWaiverCount++;
-      fullWaiverSumPaise += waivedAmountPaise;
+    if (g.amountInrPaise === 0) {
+      fullWaiverCount += count;
+      fullWaiverSumPaise += waivedAmountPaise * count;
     } else {
-      partialWaiverCount++;
-      partialWaiverSumPaise += waivedAmountPaise;
+      partialWaiverCount += count;
+      partialWaiverSumPaise += waivedAmountPaise * count;
     }
   }
 
@@ -179,7 +183,7 @@ export async function getFeeWaiverFinanceData(
 
     processedItems.push({
       id: s.id,
-      date: s.updatedAt,
+      date: s.createdAt,
       studentName: s.user.name || "Student",
       studentEmail: s.user.email,
       courseTitle: course?.title || s.courseId,

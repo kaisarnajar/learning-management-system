@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/utils/prisma";
 import {
   createStudentNotification,
@@ -86,6 +86,52 @@ describe.skipIf(SKIP_WITHOUT_DB)("notification fan-out and de-duplication", () =
     const rows = await prisma.studentNotification.findMany();
     expect(rows.map((r) => r.userId)).toEqual([active.id]);
     expect(rows.some((r) => r.userId === pending.id || r.userId === outsider.id)).toBe(false);
+  });
+
+  it("leaves rejected, awaiting-fee and deleted students out of a course announcement", async () => {
+    const course = await createCourse();
+    const active = await createUser();
+    const completed = await createUser();
+    const rejected = await createUser();
+    const awaitingFee = await createUser();
+    const deleted = await createUser({ deletedAt: new Date() });
+    await createEnrollment(active.id, course.id);
+    await createEnrollment(completed.id, course.id, { status: "completed", statusEnum: "COMPLETED" });
+    await createEnrollment(rejected.id, course.id, { status: "rejected", statusEnum: "REJECTED" });
+    await createEnrollment(awaitingFee.id, course.id, { status: "awaiting_enrollment_fee", statusEnum: "AWAITING_ENROLLMENT_FEE" });
+    await createEnrollment(deleted.id, course.id);
+
+    await notifyEnrolledStudentsOfCourseAnnouncement({
+      courseId: course.id, courseTitle: course.title, announcementId: "ann-2", title: "Exam", body: "Exam on Friday",
+    });
+
+    const recipients = (await prisma.studentNotification.findMany()).map((r) => r.userId).sort();
+    expect(recipients).toEqual([active.id, completed.id].sort());
+  });
+
+  it("loads a large course audience in one query and queues one e-mail per opted-in student", async () => {
+    const course = await createCourse();
+    const students = await Promise.all(Array.from({ length: 50 }, () => createUser()));
+    await prisma.user.update({ where: { id: students[0].id }, data: { announcementEmailsOptOut: true } });
+    for (const student of students) await createEnrollment(student.id, course.id);
+
+    const findUnique = vi.spyOn(prisma.user, "findUnique");
+    const findMany = vi.spyOn(prisma.user, "findMany");
+    try {
+      await notifyEnrolledStudentsOfCourseAnnouncement({
+        courseId: course.id, courseTitle: course.title, announcementId: "ann-50", title: "Holiday", body: "No class Monday",
+      });
+      expect(findMany).toHaveBeenCalledTimes(1);
+      expect(findUnique).not.toHaveBeenCalled();
+    } finally {
+      findUnique.mockRestore();
+      findMany.mockRestore();
+    }
+
+    const queued = await prisma.emailOutbox.findMany({ select: { to: true, subject: true, listUnsubscribeUrl: true } });
+    expect(queued.map((row) => row.to).sort()).toEqual(students.slice(1).map((s) => s.email).sort());
+    expect(queued.every((row) => row.subject === `${course.title} — Holiday` && row.listUnsubscribeUrl)).toBe(true);
+    expect(await prisma.studentNotification.count()).toBe(50);
   });
 
   it("sends a site announcement to every non-teacher account except deleted ones", async () => {

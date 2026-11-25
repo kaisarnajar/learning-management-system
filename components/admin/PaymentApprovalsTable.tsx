@@ -1,5 +1,6 @@
 "use client";
 
+import { BUSINESS_TIMEZONE } from "@/config/constants/business";
 import Image from "next/image";
 import { usePathname, useSearchParams } from "next/navigation";
 import { getReturnToUrl } from "@/components/shared/ActionButton";
@@ -100,6 +101,7 @@ export function PaymentApprovalsTable({
             <td className="px-4 py-3 text-muted">{formatPrice(submission.amountInrPaise)}</td>
             <td className="px-4 py-3 text-muted">
               {submission.updatedAt.toLocaleDateString("en-IN", {
+                timeZone: BUSINESS_TIMEZONE,
                 day: "numeric",
                 month: "short",
                 year: "numeric",

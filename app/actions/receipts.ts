@@ -4,7 +4,7 @@ import { auth } from "@/services/auth";
 import { BRAND_CONFIG } from "@/config/brand";
 
 import { splitInclusiveGst } from "@/services/gst";
-import { PAYMENTS } from "@/config/constants/payments";
+import { PAYMENTS, RECEIPT_SUBMISSION_SELECT } from "@/config/constants/payments";
 import { findBookOrderForRecord } from "@/services/payment-receipt";
 import { isAdminSession } from "@/services/admin";
 import { prisma } from "@/utils/prisma";
@@ -13,6 +13,9 @@ import { deleteStoredReceiptPdf, getReceiptPdf, storeReceiptPdf } from "@/servic
 import { getCourseById } from "@/services/courses";
 import { getPaymentSettings } from "@/services/payment-settings";
 import { allocateDocumentNumber } from "@/services/document-numbers";
+import { recordAudit } from "@/services/audit";
+
+const VOIDED_RECEIPT_ERROR = "This payment was voided, so it has no receipt.";
 
 export async function generateReceipt(paymentRecordId: string) {
   const session = await auth();
@@ -29,12 +32,18 @@ export async function generateReceipt(paymentRecordId: string) {
     where: { id: paymentRecordId },
     include: {
       user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } },
-      submission: { select: { paymentMethod: true, upiTransactionId: true, label: true, couponId: true } },
+      submission: { select: RECEIPT_SUBMISSION_SELECT },
     },
   });
 
   if (!record) {
     throw new Error("Payment record not found.");
+  }
+
+  // A voided payment is not income: issuing it an invoice number would put a
+  // receipt for money the academy did not keep into the GST series.
+  if (record.voidedAt) {
+    throw new Error(VOIDED_RECEIPT_ERROR);
   }
 
   if (record.receiptGeneratedAt) {
@@ -65,11 +74,13 @@ export async function generateReceipt(paymentRecordId: string) {
 
   // Allocate the sequential number and mark the receipt generated atomically.
   // The updateMany guard makes a concurrent second click a no-op instead of
-  // a second invoice number.
+  // a second invoice number. A receipt that was deleted kept its number (an
+  // issued invoice number is never given up), so regenerating reuses it.
   const invoiceNumber = await prisma.$transaction(async (tx) => {
-    const number = await allocateDocumentNumber(tx, "invoice");
+    const reused = record.invoiceNumber;
+    const number = reused ?? (await allocateDocumentNumber(tx, "invoice"));
     const updated = await tx.paymentRecord.updateMany({
-      where: { id: paymentRecordId, receiptGeneratedAt: null },
+      where: { id: paymentRecordId, receiptGeneratedAt: null, voidedAt: null },
       data: {
         receiptGeneratedAt: new Date(),
         invoiceNumber: number,
@@ -82,6 +93,14 @@ export async function generateReceipt(paymentRecordId: string) {
     if (updated.count === 0) {
       throw new Error("Receipt has already been generated.");
     }
+    if (reused) {
+      await recordAudit(tx, session, {
+        action: "generate",
+        entity: "Receipt",
+        entityId: paymentRecordId,
+        after: { invoiceNumber: number, reissued: true, receiptIncludesGst: includeGst, receiptFeeAmountPaise: baseAmount, receiptGstAmountPaise: gstAmount },
+      });
+    }
     return number;
   });
 
@@ -91,7 +110,7 @@ export async function generateReceipt(paymentRecordId: string) {
     where: { id: paymentRecordId },
     include: {
       user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } },
-      submission: { select: { paymentMethod: true, upiTransactionId: true, label: true, couponId: true } },
+      submission: { select: RECEIPT_SUBMISSION_SELECT },
     },
   });
   if (issued) await storeReceiptPdf(issued);
@@ -119,17 +138,36 @@ export async function deleteReceipt(paymentRecordId: string) {
     return { error: "Receipt has not been generated." };
   }
 
-  await prisma.paymentRecord.update({
-    where: { id: paymentRecordId },
-    data: {
-      receiptGeneratedAt: null,
-      invoiceNumber: null,
-      receiptIncludesGst: null,
-      receiptFeeAmountPaise: null,
-      receiptGstAmountPaise: null,
-      receiptEmailSentAt: null,
-      receiptPdfKey: null,
-    },
+  // The invoice number stays on the record: it was issued, so dropping it
+  // would leave a gap in the GST series. Regenerating reissues it.
+  await prisma.$transaction(async (tx) => {
+    await tx.paymentRecord.update({
+      where: { id: paymentRecordId },
+      data: {
+        receiptGeneratedAt: null,
+        receiptIncludesGst: null,
+        receiptFeeAmountPaise: null,
+        receiptGstAmountPaise: null,
+        receiptShippingAmountPaise: null,
+        receiptEmailSentAt: null,
+        receiptPdfKey: null,
+      },
+    });
+    await recordAudit(tx, session, {
+      action: "delete",
+      entity: "Receipt",
+      entityId: paymentRecordId,
+      before: {
+        invoiceNumber: record.invoiceNumber,
+        receiptGeneratedAt: record.receiptGeneratedAt,
+        receiptIncludesGst: record.receiptIncludesGst,
+        receiptFeeAmountPaise: record.receiptFeeAmountPaise,
+        receiptGstAmountPaise: record.receiptGstAmountPaise,
+        receiptShippingAmountPaise: record.receiptShippingAmountPaise,
+        receiptEmailSentAt: record.receiptEmailSentAt,
+      },
+      after: { invoiceNumber: record.invoiceNumber, receiptGeneratedAt: null },
+    });
   });
   await deleteStoredReceiptPdf(record);
 
@@ -148,12 +186,15 @@ export async function sendReceiptToEmailAction(paymentRecordId: string): Promise
     where: { id: paymentRecordId },
     include: {
       user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } },
-      submission: { select: { paymentMethod: true, upiTransactionId: true, label: true } },
+      submission: { select: RECEIPT_SUBMISSION_SELECT },
     },
   });
 
   if (!record || !record.receiptGeneratedAt || !record.invoiceNumber) {
     return { error: "Receipt has not been generated yet or payment record not found." };
+  }
+  if (record.voidedAt) {
+    return { error: VOIDED_RECEIPT_ERROR };
   }
 
   try {

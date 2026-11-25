@@ -12,7 +12,7 @@ import { GET as reviewsGet, POST as reviewsPost } from "@/app/api/v1/reviews/rou
 import { GET as attendanceGet } from "@/app/api/v1/student/attendance/route";
 import { GET as gradesGet } from "@/app/api/v1/student/grades/route";
 import { GET as waiversGet, POST as waiversPost } from "@/app/api/v1/waiver-requests/route";
-import { createBook, createCourse, createEnrollment, createUser, resetDb, setPaymentSettings, SKIP_WITHOUT_DB } from "../helpers/db";
+import { createBook, createCourse, createEnrollment, createUser, resetDb, setPaymentSettings, SKIP_WITHOUT_DB, startedEnrollment } from "../helpers/db";
 import { apiRequest, jsonOf, signedInStudent } from "../helpers/api";
 
 type Handler = (request: ReturnType<typeof apiRequest>) => Promise<Response>;
@@ -199,6 +199,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
       await setPaymentSettings();
       const me = await signedInStudent();
       const course = await createCourse({ priceInrPaise: 50000 });
+      await startedEnrollment(me.user.id, course.id);
 
       const response = await submitPost(
         apiRequest("/api/v1/payments/submit", {
@@ -227,6 +228,76 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
       await createEnrollment(me.user.id, course.id);
       expect((await submit({ ...body, expectedAmountPaise: 1 })).status).toBe(409);
       expect((await submit(body)).status).toBe(200);
+    });
+
+    it("refuses a paid fee with no UTR and no screenshot, and accepts a 100% waiver without either", async () => {
+      await setPaymentSettings({ feeWaiverEnabled: true });
+      const me = await signedInStudent();
+      const course = await createCourse({ priceInrPaise: 50000 });
+      await startedEnrollment(me.user.id, course.id);
+      const submit = (json: Record<string, unknown>) =>
+        submitPost(apiRequest("/api/v1/payments/submit", { method: "POST", headers: me.headers, json: { courseId: course.id, paymentType: "enrollment", ...json } }));
+
+      // Refused by the schema (the client sent the amount) and by the service (it did not).
+      const withAmount = await submit({ expectedAmountPaise: 50000 });
+      expect(withAmount.status).toBe(400);
+      expect((await jsonOf(withAmount)).error).toMatch(/UTR/);
+      expect((await submit({ upiTransactionId: "" })).status).toBe(400);
+      expect(await prisma.coursePaymentSubmission.count()).toBe(0);
+
+      const waiver = await prisma.coupon.create({
+        data: { code: "FULL100", type: "SPECIAL", percentage: 100, validFrom: new Date(Date.now() - 86_400_000), validUntil: new Date(Date.now() + 86_400_000), userId: me.user.id, courseId: course.id, applyToEnrollment: true },
+      });
+      expect((await submit({ couponId: waiver.id, expectedAmountPaise: 0 })).status).toBe(200);
+      expect(await prisma.coursePaymentSubmission.findFirstOrThrow({ where: { userId: me.user.id } })).toMatchObject({ amountInrPaise: 0, upiTransactionId: "FEE-WAIVER" });
+    });
+
+    it("refuses a UTR that already backs a book order, whatever its case", async () => {
+      await setPaymentSettings();
+      const me = await signedInStudent();
+      const course = await createCourse();
+      await createEnrollment(me.user.id, course.id);
+      const book = await createBook({ inventoryPurchased: 5 });
+      const placed = await ordersPost(
+        apiRequest("/api/v1/bookstore/orders", {
+          method: "POST",
+          headers: me.headers,
+          json: { items: [{ bookId: book.id, quantity: 1 }], paymentMethod: "upi", upiTransactionId: "utr424242", deliveryAddress: "12 Main Street, Srinagar", deliveryPinCode: "190001", deliveryPhoneNumber: "9876543210" },
+        }),
+      );
+      expect(placed.status).toBe(200);
+
+      const fee = await submitPost(
+        apiRequest("/api/v1/payments/submit", {
+          method: "POST",
+          headers: me.headers,
+          json: { courseId: course.id, paymentType: "monthly", paymentMonth: 3, paymentYear: new Date().getFullYear(), upiTransactionId: "UTR424242" },
+        }),
+      );
+      expect(fee.status).toBe(409);
+      expect(await prisma.coursePaymentSubmission.count()).toBe(0);
+    });
+
+    it("refuses a one-time fee for another year once it is submitted", async () => {
+      await setPaymentSettings();
+      const me = await signedInStudent();
+      const course = await createCourse({ feeFrequency: "ONE_TIME" });
+      await createEnrollment(me.user.id, course.id);
+      const year = new Date().getFullYear();
+      const submit = (paymentYear: number, upiTransactionId: string) =>
+        submitPost(
+          apiRequest("/api/v1/payments/submit", {
+            method: "POST",
+            headers: me.headers,
+            json: { courseId: course.id, paymentType: "monthly", paymentMonth: 1, paymentYear, upiTransactionId },
+          }),
+        );
+
+      expect((await submit(year, "UTR60001")).status).toBe(200);
+      const again = await submit(year + 1, "UTR60002");
+      expect(again.status).toBe(409);
+      expect((await jsonOf(again)).success).toBe(false);
+      expect(await prisma.coursePaymentSubmission.count({ where: { userId: me.user.id } })).toBe(1);
     });
 
     it("validates the submission", async () => {
@@ -349,6 +420,11 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
 
       expect((await order({ ...valid, upiTransactionId: "UTR10000", items: [{ bookId: book.id, quantity: 5 }] })).status).toBe(409);
       expect((await order({ ...valid, deliveryPinCode: "1" })).status).toBe(400);
+      // A total that no longer matches the current price is refused; none at all is accepted.
+      expect((await order({ ...valid, upiTransactionId: "UTR10002", items: [{ bookId: book.id, quantity: 1 }], expectedTotalPaise: 9000 })).status).toBe(409);
+      expect((await order({ ...valid, upiTransactionId: "UTR10003", items: [{ bookId: book.id, quantity: 1 }], expectedTotalPaise: 10000 })).status).toBe(200);
+      // Two lines of 20 for one book are 40 copies of it.
+      expect((await order({ ...valid, upiTransactionId: "UTR10001", items: [{ bookId: book.id, quantity: 20 }, { bookId: book.id, quantity: 20 }] })).status).toBe(400);
       expect((await order({})).status).toBe(400);
       expect((await order({ ...valid, items: "not json" })).status).toBe(400);
     });
@@ -378,6 +454,19 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
       expect(await prisma.deviceToken.findUniqueOrThrow({ where: { token: "fcm-1" } })).toMatchObject({ userId: me.user.id, platformEnum: "IOS" });
       expect((await register({})).status).toBe(400);
       expect((await register({ token: "fcm-2", platform: "symbian" })).status).toBe(400);
+    });
+
+    it("moves a token still registered to another account to the account now signed in on the device", async () => {
+      const me = await signedInStudent();
+      const previous = await signedInStudent();
+      await prisma.deviceToken.create({ data: { userId: previous.user.id, token: "shared-phone", platform: "android" } });
+
+      const response = await devicePost(apiRequest("/api/v1/notifications/device-token", { method: "POST", headers: me.headers, json: { token: "shared-phone", platform: "android" } }));
+
+      expect(response.status).toBe(200);
+      const rows = await prisma.deviceToken.findMany({ where: { token: "shared-phone" } });
+      expect(rows).toHaveLength(1);
+      expect(rows[0].userId).toBe(me.user.id);
     });
 
     it("only unregisters the caller's own tokens", async () => {
@@ -432,7 +521,33 @@ describe.skipIf(SKIP_WITHOUT_DB)("authenticated /api/v1 routes", () => {
 
       const data = await jsonOf(await waiversGet(apiRequest("/api/v1/waiver-requests", { headers: me.headers })));
       expect(data.data).toHaveLength(1);
-      expect(data.data[0]).toMatchObject({ userId: me.user.id, feeType: "BOTH", status: "PENDING" });
+      expect(data.data[0]).toMatchObject({ userId: me.user.id, feeType: "BOTH", status: "PENDING", coupon: null, couponCodes: [] });
+    });
+
+    it("lists both codes of an approved both-fees waiver, and one for a single-fee waiver", async () => {
+      const me = await signedInStudent();
+      const both = await createCourse();
+      const single = await createCourse();
+      const coupon = (code: string, courseId: string) => prisma.coupon.create({
+        data: { code, type: "SPECIAL", percentage: 100, validFrom: new Date(), validUntil: new Date(Date.now() + 86_400_000), userId: me.user.id, courseId },
+      });
+      const enrollmentCoupon = await coupon("WAIVER-AISHA-1234", both.id);
+      await coupon("WAIVER-AISHA-1234-C", both.id);
+      const singleCoupon = await coupon("WAIVER-AISHA-5678", single.id);
+      // A same-named code that belongs to someone else's course is not this waiver's.
+      await coupon("WAIVER-AISHA-5678-C", both.id);
+      await prisma.couponRequest.createMany({
+        data: [
+          { userId: me.user.id, courseId: both.id, feeType: "BOTH", reason: "Family circumstances", status: "APPROVED", couponId: enrollmentCoupon.id },
+          { userId: me.user.id, courseId: single.id, feeType: "COURSE", reason: "Family circumstances", status: "APPROVED", couponId: singleCoupon.id },
+        ],
+      });
+
+      const data = await jsonOf(await waiversGet(apiRequest("/api/v1/waiver-requests", { headers: me.headers })));
+      const byCourse = Object.fromEntries(data.data.map((r: { courseId: string }) => [r.courseId, r]));
+
+      expect(byCourse[both.id]).toMatchObject({ coupon: { code: "WAIVER-AISHA-1234" }, couponCodes: ["WAIVER-AISHA-1234", "WAIVER-AISHA-1234-C"] });
+      expect(byCourse[single.id]).toMatchObject({ coupon: { code: "WAIVER-AISHA-5678" }, couponCodes: ["WAIVER-AISHA-5678"] });
     });
 
     it("validates the request and the course", async () => {

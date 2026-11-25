@@ -1,8 +1,8 @@
 "use client";
 
-import { usePathname, useSearchParams } from "next/navigation";
+import { unstable_rethrow, usePathname, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
-import { isRedirectError } from "next/dist/client/components/redirect-error";
+import { isNextRedirect } from "@/utils/next-control-flow";
 import { Button } from "../ui/Button";
 
 import { useToast } from "@/components/shared/ToastProvider";
@@ -56,12 +56,11 @@ export function ActionButton({
           setHidden(true);
         }
       } catch (error) {
-        if (isRedirectError(error)) {
-          if (hideOnSuccess) {
-            setHidden(true);
-          }
-          throw error;
+        // A redirect is the action's success path.
+        if (hideOnSuccess && isNextRedirect(error)) {
+          setHidden(true);
         }
+        unstable_rethrow(error);
         addToast("An unexpected error occurred. Please try again.", "error");
       }
     });

@@ -21,6 +21,10 @@ import {
 } from "@/services/student-admin";
 import { adminEnrollUserSchema } from "@/utils/validations";
 import { withDbErrorHandling } from "@/utils/db-error";
+import { recordAudit } from "@/services/audit";
+
+/** Rolls the removal back when the enrollment gained history since it was read. */
+class EnrollmentHasHistoryError extends Error {}
 
 function revalidateEnrollmentPaths(courseId: string) {
   const paths = [
@@ -78,7 +82,7 @@ export async function approveEnrollmentRequest(
   // second concurrent approval a no-op instead of a double update.
   const approved = await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
     const updated = await tx.enrollment.updateMany({
-      where: { id: enrollmentId, status: enrollment.status },
+      where: { id: enrollmentId, statusEnum: enrollment.statusEnum },
       data: { ...enrollmentStatusData(rosterStatus), rejectedAt: null },
     });
     if (updated.count === 0) return false;
@@ -130,7 +134,7 @@ export async function rejectEnrollmentRequest(
   // Rejection is a status, not a deletion: the request stays visible in the
   // student's history and the student can apply again later.
   const rejected = await withDbErrorHandling(() => prisma.enrollment.updateMany({
-      where: { id: enrollmentId, status: enrollment.status },
+      where: { id: enrollmentId, statusEnum: enrollment.statusEnum },
       data: { ...enrollmentStatusData("REJECTED"), rejectedAt: new Date() },
     }), "Database operation failed");
 
@@ -183,17 +187,42 @@ export async function adminEnrollUser(
 
   const status = getRosterEnrollmentStatusForCourse(course.status);
 
-  const upserted = await withDbErrorHandling(() => prisma.enrollment.upsert({
-      where: {
-        userId_courseId: { userId: account.userId, courseId: course.id },
-      },
-      create: {
-        userId: account.userId,
-        courseId: course.id,
-        ...enrollmentStatusData(status),
-      },
-      update: { ...enrollmentStatusData(status), rejectedAt: null },
-    }), "Database operation failed");
+  // An existing request is moved onto the roster; an enrollment that is
+  // already on it (active or completed, perhaps certified) is left alone.
+  const outcome = await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
+    const existing = await tx.enrollment.findUnique({
+      where: { userId_courseId: { userId: account.userId, courseId: course.id } },
+      select: { id: true, status: true, statusEnum: true },
+    });
+    if (!existing) {
+      const created = await tx.enrollment.create({
+        data: { userId: account.userId, courseId: course.id, ...enrollmentStatusData(status) },
+        select: { id: true },
+      });
+      return { id: created.id };
+    }
+    const current = enrollmentStatusOf(existing);
+    if (current === "ACTIVE" || current === "COMPLETED") {
+      return { alreadyEnrolled: current };
+    }
+    // Guarded on the status just read, so a concurrent approval is not overwritten.
+    const moved = await tx.enrollment.updateMany({
+      where: { id: existing.id, status: existing.status },
+      data: { ...enrollmentStatusData(status), rejectedAt: null },
+    });
+    if (moved.count === 0) return { changed: true as const };
+    return { id: existing.id };
+  }), "Database operation failed");
+
+  if ("alreadyEnrolled" in outcome) {
+    return {
+      error: `${account.name} is already ${outcome.alreadyEnrolled === "COMPLETED" ? "a completed student" : "enrolled"} in ${course.title}.`,
+    };
+  }
+  if ("changed" in outcome) {
+    return { error: "This enrollment was changed by someone else. Please refresh and try again." };
+  }
+  const upserted = outcome;
 
   if (status === "ACTIVE") {
     const { assignRollNumber } = await import("@/services/roll-numbers");
@@ -213,8 +242,15 @@ export async function previewStudentAccountForEnrollment(email: string) {
   return lookupStudentAccountForEnrollment(normalizeStudentEmail(email));
 }
 
+/**
+ * Removes an enrollment that never got going (a mistaken or abandoned one).
+ * Deleting cascades to its grades and attendance, and a payment or a
+ * certificate would lose the enrollment it belongs to, so an enrollment with
+ * any of those is refused and kept as the student's record. The removal is
+ * audited with a snapshot of the row.
+ */
 export async function removeEnrollmentFromCourse(enrollmentId: string, courseId: string) {
-  await requireAdmin();
+  const session = await requireAdmin();
 
   const enrollment = await withDbErrorHandling(() => prisma.enrollment.findUnique({
       where: { id: enrollmentId },
@@ -223,7 +259,45 @@ export async function removeEnrollmentFromCourse(enrollmentId: string, courseId:
   if (!enrollment || enrollment.courseId !== courseId) {
     return { error: "Enrollment not found." };
   }
-  await withDbErrorHandling(() => prisma.enrollment.delete({ where: { id: enrollmentId } }), "Database operation failed");
+
+  const removed = await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
+    const [current, payments, grades, attendance] = await Promise.all([
+      tx.enrollment.findUnique({ where: { id: enrollmentId }, select: { certificateNumber: true, certificateGeneratedAt: true } }),
+      tx.paymentRecord.count({ where: { userId: enrollment.userId, courseId } }),
+      tx.courseGradeRecord.count({ where: { enrollmentId } }),
+      tx.courseAttendanceRecord.count({ where: { enrollmentId } }),
+    ]);
+    if (!current) return false;
+    if (current.certificateNumber || current.certificateGeneratedAt || payments > 0 || grades > 0 || attendance > 0) {
+      throw new EnrollmentHasHistoryError();
+    }
+    await tx.enrollment.delete({ where: { id: enrollmentId } });
+    await recordAudit(tx, session, {
+      action: "delete",
+      entity: "Enrollment",
+      entityId: enrollmentId,
+      before: {
+        userId: enrollment.userId,
+        courseId,
+        status: enrollmentStatusOf(enrollment),
+        rollNumber: enrollment.rollNumber,
+        createdAt: enrollment.createdAt,
+      },
+    });
+    return true;
+  }).catch((error: unknown) => {
+    if (error instanceof EnrollmentHasHistoryError) return "has-history" as const;
+    throw error;
+  }), "Database operation failed");
+
+  if (removed === "has-history") {
+    return {
+      error: "This enrollment has a certificate, payments, grades or attendance, so it cannot be removed: it is kept as the student's record.",
+    };
+  }
+  if (!removed) {
+    return { error: "Enrollment not found." };
+  }
 
   revalidateEnrollmentPaths(courseId);
   revalidatePath(`/admin/students/${enrollment.userId}`);

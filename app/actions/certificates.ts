@@ -9,8 +9,21 @@ import { sendCertificateEmail } from "@/services/email";
 import { getCourseById } from "@/services/courses";
 import { allocateDocumentNumber } from "@/services/document-numbers";
 import { deleteStoredCertificatePdf, getCertificatePdf, storeCertificatePdf } from "@/services/documents";
-import { certificateTypeData } from "@/services/status-compat";
-import type { CertificateType } from "@prisma/client";
+import { certificateTypeData, enrollmentStatusOf } from "@/services/status-compat";
+import { recordAudit } from "@/services/audit";
+import type { CertificateType, EnrollmentStatus } from "@prisma/client";
+
+/** Completion needs a completed enrollment; appreciation an active or completed one. */
+const CERTIFIABLE_STATUSES: Record<CertificateType, EnrollmentStatus[]> = {
+  COMPLETION: ["COMPLETED"],
+  APPRECIATION: ["ACTIVE", "COMPLETED"],
+};
+
+function notCertifiableMessage(certificateType: CertificateType) {
+  return certificateType === "COMPLETION"
+    ? "A Certificate of Completion can only be issued once the enrollment is completed."
+    : "A certificate can only be issued for an active or completed enrollment.";
+}
 
 export async function generateCertificate(enrollmentId: string, certificateType: CertificateType, certificateGrade?: number) {
   const session = await auth();
@@ -22,15 +35,30 @@ export async function generateCertificate(enrollmentId: string, certificateType:
 
   const enrollment = await prisma.enrollment.findUnique({
     where: { id: enrollmentId },
-    include: { user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } } },
+    include: { user: { select: { id: true, name: true, email: true, address: true, whatsapp: true, deletedAt: true } } },
   });
 
   if (!enrollment) {
     return { error: "Enrollment not found." };
   }
 
+  // A deleted account has no name to print and nobody to send it to.
+  if (enrollment.user.deletedAt) {
+    return { error: "This student has deleted their account." };
+  }
+
   if (enrollment.certificateGeneratedAt) {
     return { error: "Certificate has already been generated." };
+  }
+
+  // Checked before a number is allocated, and again by the guarded update.
+  const allowed = CERTIFIABLE_STATUSES[certificateType];
+  if (!allowed) {
+    return { error: "Choose a certificate type." };
+  }
+  const status = enrollmentStatusOf(enrollment);
+  if (!status || !allowed.includes(status)) {
+    return { error: notCertifiableMessage(certificateType) };
   }
 
   if (certificateType === "COMPLETION") {
@@ -46,13 +74,20 @@ export async function generateCertificate(enrollmentId: string, certificateType:
   }
 
   // Sequential number + generation flag in one transaction; a concurrent
-  // second click finds no row to update and reports the duplicate.
+  // second click finds no row to update and reports the duplicate. A deleted
+  // certificate kept its number (issued numbers are never given up), so
+  // regenerating reuses it.
   let certificateNumber: string;
   try {
     certificateNumber = await prisma.$transaction(async (tx) => {
-      const number = await allocateDocumentNumber(tx, "certificate");
+      const reused = enrollment.certificateNumber;
+      const number = reused ?? (await allocateDocumentNumber(tx, "certificate"));
       const updated = await tx.enrollment.updateMany({
-        where: { id: enrollmentId, certificateGeneratedAt: null },
+        where: {
+          id: enrollmentId,
+          certificateGeneratedAt: null,
+          statusEnum: { in: allowed },
+        },
         data: {
           certificateGeneratedAt: new Date(),
           certificateNumber: number,
@@ -63,11 +98,21 @@ export async function generateCertificate(enrollmentId: string, certificateType:
       if (updated.count === 0) {
         throw new Error("ALREADY_GENERATED");
       }
+      if (reused) {
+        await recordAudit(tx, session, {
+          action: "generate",
+          entity: "Certificate",
+          entityId: enrollmentId,
+          after: { certificateNumber: number, reissued: true, certificateType, certificateGrade: certificateType === "COMPLETION" ? certificateGrade : null },
+        });
+      }
       return number;
     });
   } catch (error) {
     if (error instanceof Error && error.message === "ALREADY_GENERATED") {
-      return { error: "Certificate has already been generated." };
+      // Lost to a concurrent generation, or the enrollment's status changed meanwhile.
+      const current = await prisma.enrollment.findUnique({ where: { id: enrollmentId }, select: { certificateGeneratedAt: true } });
+      return { error: current?.certificateGeneratedAt ? "Certificate has already been generated." : notCertifiableMessage(certificateType) };
     }
     throw error;
   }
@@ -104,15 +149,32 @@ export async function deleteCertificate(enrollmentId: string) {
     return { error: "Certificate has not been generated." };
   }
 
-  await prisma.enrollment.update({
-    where: { id: enrollmentId },
-    data: {
-      certificateGeneratedAt: null,
-      certificateNumber: null,
-      ...certificateTypeData(null),
-      certificateGrade: null,
-      certificatePdfKey: null,
-    },
+  // The certificate number stays on the enrollment so the series has no gap;
+  // regenerating reissues it.
+  await prisma.$transaction(async (tx) => {
+    await tx.enrollment.update({
+      where: { id: enrollmentId },
+      data: {
+        certificateGeneratedAt: null,
+        ...certificateTypeData(null),
+        certificateGrade: null,
+        certificateEmailSentAt: null,
+        certificatePdfKey: null,
+      },
+    });
+    await recordAudit(tx, session, {
+      action: "delete",
+      entity: "Certificate",
+      entityId: enrollmentId,
+      before: {
+        certificateNumber: enrollment.certificateNumber,
+        certificateGeneratedAt: enrollment.certificateGeneratedAt,
+        certificateType: enrollment.certificateType,
+        certificateGrade: enrollment.certificateGrade,
+        certificateEmailSentAt: enrollment.certificateEmailSentAt,
+      },
+      after: { certificateNumber: enrollment.certificateNumber, certificateGeneratedAt: null },
+    });
   });
   await deleteStoredCertificatePdf(enrollment);
 

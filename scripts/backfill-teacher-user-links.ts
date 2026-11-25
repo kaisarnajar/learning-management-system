@@ -12,10 +12,10 @@
  * account, or whose account is already linked to another teacher are listed
  * and left alone. Idempotent: rows with userId already set are skipped.
  */
-import { PrismaClient } from "@prisma/client";
+import { createPrismaClient } from "../utils/prisma-client";
 import { isApplyMode, printMode, writeSnapshot } from "./lib/dry-run";
 
-const prisma = new PrismaClient();
+const prisma = createPrismaClient();
 
 async function main() {
   const apply = isApplyMode();

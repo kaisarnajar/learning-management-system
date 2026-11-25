@@ -1,80 +1,35 @@
 "use server";
 
-import { prisma } from "@/utils/prisma";
-import { auth } from "@/services/auth";
-import { revalidatePath } from "next/cache";
-import { authorizeCourseManagement, loadForCourseManagement } from "@/services/course-authorization";
-import {
-  type AttendanceRecordInput,
-  getCourseAttendanceDatesFromDb,
-  getEnrolledStudentsForAttendanceFromDb,
-  getAttendanceRecordsForDateFromDb,
-  saveCourseAttendanceToDb,
-  getStudentAttendanceRecordsFromDb,
-  deleteCourseAttendanceFromDb,
-  getStudentAttendanceReportFromDb
-} from "@/services/attendance";
+import type { AttendanceRecordInput } from "@/services/attendance";
+import * as records from "@/services/course-records";
+
+// Server-action entry points for the attendance pages; the checks and the
+// work live in services/course-records.ts.
 
 export async function getCourseAttendanceDates(courseId: string) {
-  await authorizeCourseManagement(courseId);
-  return getCourseAttendanceDatesFromDb(courseId);
+  return records.getCourseAttendanceDates(courseId);
 }
 
 export async function getEnrolledStudentsForAttendance(courseId: string) {
-  await authorizeCourseManagement(courseId);
-  return getEnrolledStudentsForAttendanceFromDb(courseId);
+  return records.getEnrolledStudentsForAttendance(courseId);
 }
 
 export async function getAttendanceRecordsForDate(courseId: string, date: Date) {
-  await authorizeCourseManagement(courseId);
-  const targetDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  return getAttendanceRecordsForDateFromDb(courseId, targetDate);
+  return records.getAttendanceRecordsForDate(courseId, date);
 }
 
-export async function saveCourseAttendance(courseId: string, date: Date, records: AttendanceRecordInput[]) {
-  await authorizeCourseManagement(courseId);
-  const targetDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-
-  await saveCourseAttendanceToDb(courseId, targetDate, records);
-
-  revalidatePath(`/admin/courses/${courseId}/attendance`);
-  revalidatePath(`/teacher/courses/${courseId}/attendance`);
-  revalidatePath(`/profile/courses/${courseId}`);
+export async function saveCourseAttendance(courseId: string, date: Date, attendance: AttendanceRecordInput[]) {
+  return records.saveCourseAttendance(courseId, date, attendance);
 }
 
 export async function getStudentAttendanceRecords(courseId: string) {
-  const session = await auth();
-  if (!session?.user?.id) throw new Error("Unauthorized");
-  const userId = session.user.id;
-
-  const enrollment = await prisma.enrollment.findUnique({
-    where: {
-      userId_courseId: {
-        userId,
-        courseId,
-      }
-    }
-  });
-
-  if (!enrollment) throw new Error("Not enrolled in this course");
-
-  return getStudentAttendanceRecordsFromDb(enrollment.id);
+  return records.getStudentAttendanceRecords(courseId);
 }
 
 export async function deleteCourseAttendance(courseId: string, date: Date) {
-  await authorizeCourseManagement(courseId);
-  const targetDate = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-
-  await deleteCourseAttendanceFromDb(courseId, targetDate);
-
-  revalidatePath(`/admin/courses/${courseId}/attendance`);
-  revalidatePath(`/teacher/courses/${courseId}/attendance`);
-  revalidatePath(`/profile/courses/${courseId}`);
+  return records.deleteCourseAttendance(courseId, date);
 }
 
 export async function getStudentAttendanceReport(enrollmentId: string) {
-  return loadForCourseManagement(
-    () => getStudentAttendanceReportFromDb(enrollmentId),
-    (report) => report.course.teacherId,
-  );
+  return records.getStudentAttendanceReport(enrollmentId);
 }

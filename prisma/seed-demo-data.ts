@@ -1,7 +1,7 @@
 import { hash } from "bcryptjs";
 import type { PrismaClient } from "@prisma/client";
 
-import { syncEnrollmentsWithCourseStatus } from '../services/completion';
+import { syncEnrollmentsWithCourseStatusIn } from '../services/completion-sync';
 import { courses } from "../content/courses";
 import {
   DEMO_STUDENT_COUNT,
@@ -13,7 +13,7 @@ import { teachers } from "../content/teachers";
 import {
   buildEnrollmentFeeLabel,
   buildMonthlyFeeLabel,
-} from '../services/monthly-payments';
+} from '../services/fee-labels';
 import {
   EXPENSE_CATEGORY_MARKETING,
   EXPENSE_CATEGORY_SOFTWARE_TOOLS,
@@ -270,7 +270,7 @@ async function seedCompletedCourseScenario(prisma: PrismaClient) {
     },
   });
 
-  await syncEnrollmentsWithCourseStatus(courseId, "COMPLETED");
+  await syncEnrollmentsWithCourseStatusIn(prisma, courseId, "COMPLETED");
 }
 
 async function syncCompletedCourseEnrollments(prisma: PrismaClient) {
@@ -280,7 +280,7 @@ async function syncCompletedCourseEnrollments(prisma: PrismaClient) {
   });
 
   for (const course of completedCourses) {
-    await syncEnrollmentsWithCourseStatus(course.id, course.status);
+    await syncEnrollmentsWithCourseStatusIn(prisma, course.id, course.status);
   }
 }
 

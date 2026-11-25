@@ -8,11 +8,13 @@ import {
   type BlogPostFormValues,
   validateBlogPostForm,
 } from "@/services/admin-form-validation";
-import { HOMEPAGE_FEATURED_BLOGS_MAX } from "@/services/blogs";
+import { HOMEPAGE_FEATURED_BLOGS_MAX } from "@/config/constants/business";
 import { MAX_BLOG_IMAGES } from "@/services/blog-limits";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
 import { useZodForm } from "@/utils/use-zod-form";
+import { useDirectUploadAction } from "@/utils/use-direct-upload";
+import type { DirectUploadField } from "@/utils/direct-upload-client";
 import { RichTextEditor } from "@/components/shared/RichTextEditor";
 
 type BlogPostFormPost = {
@@ -35,6 +37,9 @@ type BlogPostFormProps = {
 };
 
 const BLOG_FIELDS: (keyof BlogPostFormValues)[] = ["title", "excerpt", "body"];
+
+/** The images go straight to storage before the form is submitted (utils/direct-upload-client.ts). */
+const UPLOAD_FIELDS: readonly DirectUploadField[] = [{ field: "images", kind: "blog-image" }];
 
 export function BlogPostForm({
   action,
@@ -69,6 +74,9 @@ export function BlogPostForm({
     validate,
   });
 
+  const { formAction, uploadError } = useDirectUploadAction(action, UPLOAD_FIELDS);
+  const shownError = uploadError ?? error;
+
   const fileRef = useRef<HTMLInputElement>(null);
   const [hasFiles, setHasFiles] = useState(false);
 
@@ -80,10 +88,10 @@ export function BlogPostForm({
   }
 
   return (
-    <form action={action} encType="multipart/form-data" className="mx-auto max-w-2xl space-y-5">
-      {error && (
+    <form action={formAction} className="mx-auto max-w-2xl space-y-5">
+      {shownError && (
         <p className="rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
-          {error}
+          {shownError}
         </p>
       )}
 

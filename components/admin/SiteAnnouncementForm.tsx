@@ -12,9 +12,11 @@ import {
 import { getFormDateInputValue } from "@/utils/form-date";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
-import { HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX } from "@/services/site-announcements";
-import { MAX_ANNOUNCEMENT_IMAGES } from "@/services/site-announcement-upload";
+import { HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX } from "@/config/constants/business";
+import { MAX_ANNOUNCEMENT_IMAGES } from "@/services/site-announcement-limits";
 import { useZodForm } from "@/utils/use-zod-form";
+import { useDirectUploadAction } from "@/utils/use-direct-upload";
+import type { DirectUploadField } from "@/utils/direct-upload-client";
 
 type SiteAnnouncementFormProps = {
   action: (formData: FormData) => Promise<void>;
@@ -28,6 +30,9 @@ type SiteAnnouncementFormProps = {
 
 
 
+/** The images go straight to storage before the form is submitted (utils/direct-upload-client.ts). */
+const UPLOAD_FIELDS: readonly DirectUploadField[] = [{ field: "images", kind: "site-announcement-image" }];
+
 export function SiteAnnouncementForm({
   action,
   submitLabel,
@@ -40,6 +45,9 @@ export function SiteAnnouncementForm({
   const featuredSlotsFull = featuredCount >= HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX;
   const canFeatureThisAnnouncement = isCurrentlyFeatured || !featuredSlotsFull;
   const displayedFeaturedCount = Math.min(featuredCount, HOMEPAGE_FEATURED_ANNOUNCEMENTS_MAX);
+
+  const { formAction, uploadError } = useDirectUploadAction(action, UPLOAD_FIELDS);
+  const shownError = uploadError ?? error;
 
   const fileRef = useRef<HTMLInputElement>(null);
   const [hasFiles, setHasFiles] = useState(false);
@@ -80,10 +88,10 @@ export function SiteAnnouncementForm({
   const eventDateError = showError("eventDate") ? errors.eventDate : undefined;
 
   return (
-    <form action={action} className="mx-auto max-w-2xl space-y-5">
-      {error && (
+    <form action={formAction} className="mx-auto max-w-2xl space-y-5">
+      {shownError && (
         <p className="rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
-          {error}
+          {shownError}
         </p>
       )}
 

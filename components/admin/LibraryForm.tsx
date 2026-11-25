@@ -8,11 +8,13 @@ import {
   type LibraryFormValues,
   validateLibraryForm,
 } from "@/services/admin-form-validation";
-import { HOMEPAGE_FEATURED_RESOURCES_MAX } from "@/services/library";
+import { HOMEPAGE_FEATURED_RESOURCES_MAX } from "@/config/constants/business";
 import { getLibraryLanguageOptions, getLibraryTopicOptions } from "@/services/library-options";
 import { labelClassName } from "@/utils/form";
 import { formErrorTextClassName, formFieldInputClass } from "@/utils/form-validation";
 import { useZodForm } from "@/utils/use-zod-form";
+import { useDirectUploadAction } from "@/utils/use-direct-upload";
+import type { DirectUploadField } from "@/utils/direct-upload-client";
 
 type LibraryFormProps = {
   item?: LibraryItem;
@@ -30,6 +32,9 @@ const LIBRARY_FIELDS: (keyof LibraryFormValues)[] = [
   "pdfUrl",
 ];
 
+/** The cover goes straight to storage before the form is submitted (utils/direct-upload-client.ts). */
+const UPLOAD_FIELDS: readonly DirectUploadField[] = [{ field: "image", kind: "library-cover" }];
+
 export function LibraryForm({ item, featuredCount, action, submitLabel }: LibraryFormProps) {
   const isCurrentlyFeatured = item?.featuredOnHomepage ?? false;
   const featuredSlotsFull = featuredCount >= HOMEPAGE_FEATURED_RESOURCES_MAX;
@@ -41,6 +46,7 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
   const [imagePreview, setImagePreview] = useState<string | null>(
     item?.imagePath ?? null
   );
+  const { formAction, uploadError } = useDirectUploadAction(action, UPLOAD_FIELDS);
   const fileRef = useRef<HTMLInputElement>(null);
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -91,7 +97,12 @@ export function LibraryForm({ item, featuredCount, action, submitLabel }: Librar
   const isCustomLanguage = languageSelect === "Other";
 
   return (
-    <form action={action} className="mx-auto max-w-2xl space-y-5">
+    <form action={formAction} className="mx-auto max-w-2xl space-y-5">
+      {uploadError && (
+        <p className="rounded-md bg-destructive-bg px-4 py-3 text-sm text-destructive-text" role="alert">
+          {uploadError}
+        </p>
+      )}
       <div>
         <label htmlFor="image" className="block text-sm font-medium text-foreground">
           Cover image <span className="font-normal text-muted">(optional, max 2 MB)</span>

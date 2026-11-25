@@ -54,7 +54,11 @@ export async function getTeacherForSession(session: Session | null) {
     await withDbErrorHandling(
       () => prisma.teacher.updateMany({ where: { id: byEmail.id, userId: null }, data: { userId } }),
       "Database operation failed",
-    ).catch(() => undefined);
+    ).catch((error: unknown) => {
+      // Not fatal: the e-mail match still identifies the teacher, and the
+      // link is retried on the next request.
+      console.error(`[teacher-auth] Could not link teacher ${byEmail.id} to user ${userId}:`, error);
+    });
   }
   return byEmail;
 }

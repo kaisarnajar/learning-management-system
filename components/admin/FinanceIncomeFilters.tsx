@@ -4,11 +4,20 @@ import {
 } from "@/services/monthly-payment-status";
 import type { FinanceFilters } from "@/services/finance-filters";
 import { formatBusinessDate } from "@/services/business-time";
+import { StudentSearchCombobox } from "@/components/admin/StudentSearchCombobox";
+
+type StudentOption = { id: string; name: string | null; email: string };
 
 type FinanceIncomeFiltersProps = {
   filters: FinanceFilters;
   courses: { id: string; title: string }[];
-  students: { id: string; name: string | null; email: string }[];
+  /**
+   * A short list (students with payments) shown as a select, or, when the
+   * audience is every student, `{ search: selected }` for a search box.
+   */
+  students: StudentOption[] | { search: StudentOption | null };
+  /** The page the filters submit to. */
+  action?: string;
 };
 
 function preserveFields(filters: FinanceFilters) {
@@ -30,11 +39,12 @@ function preserveFields(filters: FinanceFilters) {
   return fields;
 }
 
-export function FinanceIncomeFilters({ filters, courses, students }: FinanceIncomeFiltersProps) {
+export function FinanceIncomeFilters({ filters, courses, students, action = "/admin/finance" }: FinanceIncomeFiltersProps) {
+  const fieldClassName = "mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm";
   return (
     <form
       method="get"
-      action="/admin/finance"
+      action={action}
       className="flex flex-wrap items-end gap-3 rounded-lg border border-border bg-surface p-4"
     >
       {preserveFields(filters).map((field) => (
@@ -64,19 +74,23 @@ export function FinanceIncomeFilters({ filters, courses, students }: FinanceInco
         <label htmlFor="income-student" className="block text-xs font-medium text-muted">
           Student
         </label>
-        <select
-          id="income-student"
-          name="studentId"
-          defaultValue={filters.studentId ?? ""}
-          className="mt-1 w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
-        >
-          <option value="">All students</option>
-          {students.map((student) => (
-            <option key={student.id} value={student.id}>
-              {student.name?.trim() || student.email}
-            </option>
-          ))}
-        </select>
+        {Array.isArray(students) ? (
+          <select
+            id="income-student"
+            name="studentId"
+            defaultValue={filters.studentId ?? ""}
+            className={fieldClassName}
+          >
+            <option value="">All students</option>
+            {students.map((student) => (
+              <option key={student.id} value={student.id}>
+                {student.name?.trim() || student.email}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <StudentSearchCombobox id="income-student" name="studentId" selected={students.search} className={fieldClassName} />
+        )}
       </div>
 
       <div className="w-full sm:w-auto sm:min-w-[140px]">

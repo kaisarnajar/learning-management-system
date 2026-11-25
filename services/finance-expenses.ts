@@ -68,11 +68,13 @@ export async function getExpenseTotal(filters: FinanceFilters): Promise<number> 
 
 export async function getExpensesAll(
   filters: FinanceFilters,
+  take?: number,
 ): Promise<Prisma.ExpenseGetPayload<{ include: typeof expenseInclude }>[]> {
   const where = buildExpenseWhere(filters);
   return withDbErrorHandling(() => prisma.expense.findMany({
       where,
       include: expenseInclude,
       orderBy: { paidAt: "desc" },
+      take,
     }), "Database operation failed");
 }

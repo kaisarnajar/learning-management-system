@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getPublishedSiteAnnouncementsPaginated } from "@/services/site-announcements";
 import { parseApiPagination } from "@/utils/api-pagination";
+import { apiServerError } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,10 +19,6 @@ export async function GET(request: NextRequest) {
       pageSize,
     });
   } catch (error) {
-    console.error("[api/v1/announcements] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Failed to fetch announcements." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/announcements", error, "Failed to fetch announcements.");
   }
 }

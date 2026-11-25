@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { hash } from "bcryptjs";
 import { NextRequest } from "next/server";
 import { issueApiSession, type ApiSessionTokens } from "@/services/api-auth";
-import { createUser } from "./db";
+import { createTeacher, createUser, PROFILE_FIELDS } from "./db";
 
 type RequestOptions = {
   method?: string;
@@ -38,14 +38,7 @@ export async function jsonOf(response: Response): Promise<Json> {
 /** A route's second argument for dynamic segments like `[id]`. */
 export const routeParams = <T extends Record<string, string>>(params: T) => ({ params: Promise.resolve(params) });
 
-export const PROFILE_FIELDS = {
-  fatherName: "Imran Khan",
-  dateOfBirth: new Date("2000-01-15"),
-  occupation: "STUDENT" as const,
-  address: "12 Main Street, Srinagar",
-  whatsapp: "9876543210",
-  gender: "FEMALE" as const,
-};
+export { PROFILE_FIELDS };
 
 /** A verified student with a complete profile who is signed in to the mobile API. */
 export async function signedInStudent(overrides: Parameters<typeof createUser>[0] = {}) {
@@ -58,4 +51,28 @@ export async function signedInStudent(overrides: Parameters<typeof createUser>[0
 export async function createPasswordUser(password = "correct-horse-1", overrides: Parameters<typeof createUser>[0] = {}) {
   const user = await createUser({ password: await hash(password, 4), email: `pw-${randomUUID().slice(0, 8)}@example.test`, ...overrides });
   return { user, password };
+}
+
+/**
+ * Bearer headers for [user] signed in to the mobile API. [role] is what the
+ * token is issued with; each request re-derives the role from the address
+ * (ADMIN_EMAIL, a Teacher row) and its verification, as in production.
+ */
+export async function bearerFor(user: { id: string; email: string; name?: string | null }, role: "USER" | "ADMIN" | "DEVELOPER" | "TEACHER" = "USER") {
+  const tokens = await issueApiSession({ id: user.id, email: user.email, name: user.name ?? null, role });
+  return bearer(tokens.accessToken);
+}
+
+/** The ADMIN_EMAIL account, verified and signed in to the API. */
+export async function signedInAdmin() {
+  const user = await createUser({ email: process.env.ADMIN_EMAIL, name: "Academy Admin" });
+  return { user, headers: await bearerFor(user, "ADMIN") };
+}
+
+/** A verified account linked to a teacher profile, signed in to the API. */
+export async function signedInTeacher() {
+  const email = `teacher-${randomUUID().slice(0, 8)}@example.test`;
+  const user = await createUser({ email, name: "Teacher Account" });
+  const teacher = await createTeacher({ email, userId: user.id });
+  return { user, teacher, headers: await bearerFor(user, "TEACHER") };
 }

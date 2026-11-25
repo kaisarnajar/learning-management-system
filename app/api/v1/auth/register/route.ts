@@ -1,13 +1,20 @@
-import { hash } from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/utils/prisma";
-import { issueApiSession } from "@/services/api-auth";
-import { buildVerificationUrl, generateVerificationToken } from "@/services/tokens";
 import { registerSchema } from "@/utils/validations";
-import { sendVerificationEmail } from "@/services/email";
-import { CURRENT_POLICIES_VERSION } from "@/config/constants";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
+import { issueApiSession } from "@/services/api-auth";
+import { registerWithPassword } from "@/services/account-registration";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
 
+/**
+ * Creates an unverified account, e-mails a verification link and signs the
+ * app in straight away, as every installed app version expects.
+ *
+ * Unlike the website's registration, this answer does reveal a taken address
+ * (400 "already exists"; the owner is also told by e-mail). That is accepted
+ * for this endpoint (review L3) to keep installed apps working: it is
+ * rate-limited per network, and the session it issues is USER-only until the
+ * address is verified.
+ */
 export async function POST(request: NextRequest) {
   const limited = await enforceRateLimit(RATE_LIMITS.REGISTER_IP, getClientIp(request.headers), {
     success: false,
@@ -16,51 +23,22 @@ export async function POST(request: NextRequest) {
   if (limited) return limited;
 
   try {
-    const parsed = registerSchema.safeParse(await request.json());
+    const body = await readJson(request);
+    if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
+    const parsed = registerSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json(
-        { success: false, error: parsed.error.issues[0]?.message ?? "Invalid registration details." },
-        { status: 400 }
-      );
-    }
-    const { name, email, password } = parsed.data;
-
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
-      return NextResponse.json(
-        { success: false, error: "An account with this email already exists." },
-        { status: 400 }
-      );
+      return apiError(parsed.error.issues[0]?.message ?? "Invalid registration details.", 400);
     }
 
-    const hashedPassword = await hash(password, 12);
-
-    const user = await prisma.user.create({
-      data: {
-        name: name || null,
-        email,
-        password: hashedPassword,
-        policiesAcceptedAt: new Date(),
-        policiesAcceptedVersion: CURRENT_POLICIES_VERSION,
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        image: true,
-        registrationNumber: true,
-        emailVerified: true,
-      },
-    });
-
-    // Verification Email
-    try {
-      const verificationToken = await generateVerificationToken(email);
-      await sendVerificationEmail({ to: email, verificationUrl: buildVerificationUrl(verificationToken.token) });
-    } catch (emailErr) {
-      console.error("[api/v1/auth/register] Failed to send verification email:", emailErr);
+    const result = await registerWithPassword(parsed.data);
+    if (!result.created) {
+      return apiError("An account with this email already exists.", 400);
     }
+    const { user } = result;
 
+    // Always a USER session: a staff role (from ADMIN_EMAIL, DEVELOPER_EMAIL or
+    // a Teacher row with this address) is granted only after the address is
+    // verified; see apiRoleFor in services/api-auth.ts.
     const tokens = await issueApiSession({
       id: user.id,
       email: user.email,
@@ -70,6 +48,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      verificationRequired: true,
       // `token` is the legacy name for the access token; kept for one release.
       token: tokens.accessToken,
       ...tokens,
@@ -84,10 +63,6 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[api/v1/auth/register] Error:", error);
-    return NextResponse.json(
-      { success: false, error: "Registration failed. Please try again." },
-      { status: 500 }
-    );
+    return apiServerError("api/v1/auth/register", error, "Registration failed. Please try again.");
   }
 }

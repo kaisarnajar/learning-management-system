@@ -1,11 +1,22 @@
 /**
- * Content-Security-Policy construction shared by the middleware (per-request
+ * Content-Security-Policy construction shared by the proxy (per-request
  * nonce) and tests. Kept free of Node-only imports so it runs on the edge.
  *
  * The policy is emitted as Report-Only unless the CSP_ENFORCE environment
- * variable is "true" (see middleware.ts and docs/TESTING.md); CI runs the
+ * variable is "true" (see proxy.ts and docs/TESTING.md); CI runs the
  * end-to-end journeys with it enabled before production is switched over.
+ * Either way, violations are reported to CSP_REPORT_PATH: `report-uri` for
+ * browsers without the Reporting API, `report-to` (with the
+ * Reporting-Endpoints response header) for those with it.
  */
+
+/** Where browsers send CSP violation reports (app/api/csp-report/route.ts). */
+export const CSP_REPORT_PATH = "/api/csp-report";
+/** The Reporting API group name used by `report-to`. */
+export const CSP_REPORT_GROUP = "csp-endpoint";
+/** Value of the Reporting-Endpoints response header that defines CSP_REPORT_GROUP. */
+export const REPORTING_ENDPOINTS_HEADER = `${CSP_REPORT_GROUP}="${CSP_REPORT_PATH}"`;
+
 export function buildContentSecurityPolicy(nonce: string, options?: { enforce?: boolean }): string {
   const isDev = process.env.NODE_ENV !== "production";
   const r2Host = (() => {
@@ -16,10 +27,16 @@ export function buildContentSecurityPolicy(nonce: string, options?: { enforce?: 
     }
   })();
 
-  const imgSources = ["'self'", "data:", "blob:", "https://*.googleusercontent.com", "https://www.googletagmanager.com"];
+  const imgSources = ["'self'", "data:", "blob:", "https://*.googleusercontent.com"];
   if (r2Host) imgSources.push(`https://${r2Host}`);
 
-  const scriptSources = ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'", "https://www.googletagmanager.com"];
+  // Direct uploads PUT files to the R2 S3 endpoint (services/direct-upload.ts).
+  const connectSources = ["'self'", "https://vitals.vercel-insights.com"];
+  const r2AccountId = process.env.R2_ACCOUNT_ID?.trim();
+  if (r2AccountId && /^[A-Za-z0-9]+$/.test(r2AccountId)) connectSources.push(`https://${r2AccountId}.r2.cloudflarestorage.com`);
+
+  // No third-party script hosts: Google Analytics was removed until a consent banner exists (plan D4).
+  const scriptSources = ["'self'", `'nonce-${nonce}'`, "'strict-dynamic'"];
   if (isDev) scriptSources.push("'unsafe-eval'");
 
   const directives: Record<string, string[]> = {
@@ -29,7 +46,7 @@ export function buildContentSecurityPolicy(nonce: string, options?: { enforce?: 
     "style-src": ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
     "img-src": imgSources,
     "font-src": ["'self'", "data:", "https://fonts.gstatic.com"],
-    "connect-src": ["'self'", "https://www.google-analytics.com", "https://*.google-analytics.com", "https://vitals.vercel-insights.com"],
+    "connect-src": connectSources,
     // 'self' for the in-app PDF previews; Google Maps for the About page embed.
     "frame-src": ["'self'", "https://www.google.com", "https://maps.google.com"],
     // Receipts, certificates and cards are previewed in same-origin iframes.
@@ -39,6 +56,8 @@ export function buildContentSecurityPolicy(nonce: string, options?: { enforce?: 
     "form-action": ["'self'"],
     "worker-src": ["'self'"],
     "manifest-src": ["'self'"],
+    "report-uri": [CSP_REPORT_PATH],
+    "report-to": [CSP_REPORT_GROUP],
   };
   if (options?.enforce && !isDev) {
     directives["upgrade-insecure-requests"] = [];

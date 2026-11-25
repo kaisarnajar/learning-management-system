@@ -10,7 +10,7 @@ import {
 } from "@/services/admin-form-validation";
 import { getCourseCategoryOptions } from "@/services/course-categories";
 import { getCourseStartDateInputValue } from "@/services/course-start-date";
-import { HOMEPAGE_FEATURED_COURSES_MAX } from "@/services/courses";
+import { HOMEPAGE_FEATURED_COURSES_MAX } from "@/config/constants/business";
 import { getCoursePricingFromCourse, getDefaultFeesForLevel } from "@/services/course-pricing";
 import { COURSE_STATUS_OPTIONS } from "@/services/course-status";
 import { FEE_FREQUENCY_OPTIONS, getFeeFrequencyOption } from "@/services/fee-frequency";

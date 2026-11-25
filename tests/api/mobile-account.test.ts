@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "bcryptjs";
+import { NextRequest } from "next/server";
 import { prisma } from "@/utils/prisma";
 import { DELETE as deleteMe, GET as me, PUT as updateMe } from "@/app/api/v1/auth/me/route";
 import { DELETE as removePhoto, POST as uploadPhoto } from "@/app/api/v1/auth/me/photo/route";
@@ -9,10 +10,11 @@ import { createCourse, createEnrollment, createUser, resetDb, setPaymentSettings
 import { apiRequest, bearer, jsonOf, signedInStudent } from "../helpers/api";
 
 // Object storage is not available under test: uploads get a fake public URL.
-vi.mock("@/services/profile-upload", () => ({
-  validateProfileImage: (file: File | null) => (file && file.type.startsWith("image/") ? {} : { error: "Upload a JPEG, PNG or WebP image." }),
-  saveProfileImage: vi.fn(async (userId: string) => `https://files.example.org/uploads/profiles/${userId}-${Math.random().toString(36).slice(2, 8)}.png`),
-  deleteProfileImage: vi.fn(async () => undefined),
+vi.mock("@/services/uploads", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/services/uploads")>()),
+  validatePendingUpload: (_kind: string, file: File | null) => (file && file.type.startsWith("image/") ? {} : { error: "Upload a JPEG, PNG or WebP image." }),
+  saveUpload: vi.fn(async (_kind: string, userId: string) => `https://files.example.org/uploads/profiles/${userId}-${Math.random().toString(36).slice(2, 8)}.png`),
+  deleteOwnedProfileImage: vi.fn(async () => undefined),
 }));
 
 const FULL_PROFILE = {
@@ -81,6 +83,24 @@ describe.skipIf(SKIP_WITHOUT_DB)("mobile API: account", () => {
       const refused = await uploadPhoto(apiRequest("/api/v1/auth/me/photo", { method: "POST", headers: female.headers, body: form }));
       expect(refused.status).toBe(400);
     });
+
+    it("answers 413 for an oversize Content-Length without reading the body", async () => {
+      const male = await signedInStudent({ gender: "MALE" });
+      let pulled = false;
+      const body = new ReadableStream({ pull(controller) { pulled = true; controller.close(); } }, { highWaterMark: 0 });
+      const request = new NextRequest(new URL("/api/v1/auth/me/photo", "http://localhost:3000"), {
+        method: "POST",
+        headers: { ...male.headers, "content-type": "multipart/form-data; boundary=x", "content-length": String(50 * 1024 * 1024), "x-forwarded-for": "10.9.9.9" },
+        body,
+        duplex: "half",
+      } as unknown as ConstructorParameters<typeof NextRequest>[1]);
+
+      const response = await uploadPhoto(request);
+      expect(response.status).toBe(413);
+      expect((await jsonOf(response)).error).toMatch(/2 MB or smaller/);
+      expect(pulled).toBe(false);
+      expect(request.bodyUsed).toBe(false);
+    });
   });
 
   describe("change password", () => {
@@ -102,6 +122,21 @@ describe.skipIf(SKIP_WITHOUT_DB)("mobile API: account", () => {
       expect(oldLogin.status).toBe(401);
       const newLogin = await login(apiRequest("/api/v1/auth/login", { method: "POST", json: { email: user.email, password: "second-password-2" } }));
       expect(newLogin.status).toBe(200);
+    });
+
+    it("removes the account's other push registrations and keeps the calling device's", async () => {
+      const { user, password } = await newStudentWithPassword();
+      const here = await (await import("@/services/api-auth")).issueApiSession({ id: user.id, email: user.email, role: "USER" });
+      await prisma.deviceToken.createMany({ data: [{ userId: user.id, token: "this-phone" }, { userId: user.id, token: "lost-phone" }] });
+
+      const ok = await changePassword(apiRequest("/x", {
+        method: "POST",
+        headers: bearer(here.accessToken),
+        json: { currentPassword: password, newPassword: "second-password-2", deviceToken: "this-phone" },
+      }));
+      expect(ok.status).toBe(200);
+
+      expect((await prisma.deviceToken.findMany({ where: { userId: user.id }, select: { token: true } })).map((d) => d.token)).toEqual(["this-phone"]);
     });
 
     it("tells Google-only accounts there is no password to change", async () => {

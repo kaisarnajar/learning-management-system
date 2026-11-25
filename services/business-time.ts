@@ -27,6 +27,20 @@ function parseBusinessDay(value: string | undefined, time: string): Date | null 
   return formatBusinessDate(instant) === trimmed ? instant : null;
 }
 
+/**
+ * Human-readable calendar date of an instant in the business timezone, for
+ * printed documents and exports ("1 April 2026"). Formatting with the
+ * server's zone (UTC on Vercel) dates anything issued between 00:00 and 05:30
+ * IST on the previous day, which can disagree with the financial year in a
+ * document number.
+ */
+export function formatBusinessDisplayDate(
+  date: Date,
+  options: Intl.DateTimeFormatOptions = { year: "numeric", month: "long", day: "numeric" },
+): string {
+  return date.toLocaleDateString("en-IN", { ...options, timeZone: BUSINESS_TIMEZONE });
+}
+
 /** First instant (00:00:00.000) of that calendar day in the business timezone. */
 export function businessDayStart(value: string | undefined): Date | null {
   return parseBusinessDay(value, "00:00:00.000");
@@ -50,4 +64,10 @@ export function businessCalendarParts(now: Date): { year: number; month: number;
  */
 export function businessDateString(year: number, month: number, day: number): string {
   return new Date(Date.UTC(year, month, day)).toISOString().slice(0, 10);
+}
+
+/** "yyyy-MM-dd" of today in the business timezone, or of the day `days` later. */
+export function businessDateFromToday(days = 0, now: Date = new Date()): string {
+  const { year, month, day } = businessCalendarParts(now);
+  return businessDateString(year, month, day + days);
 }

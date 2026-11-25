@@ -20,7 +20,9 @@ import {
   notifyEnrolledStudentsOfCourseAnnouncement,
   notifyStudentOfPersonalMessage,
 } from "@/services/notifications";
-import { getTeacherCourseForPortal, getTeacherEnrollmentInCourse } from "@/services/teacher-portal";
+import { getTeacherEnrollmentInCourse } from "@/services/teacher-portal";
+import { courseAccessFor } from "@/services/course-authorization";
+import { isUploadError } from "@/services/storage";
 
 function redirectWithError(path: string, error: string): never {
   redirect(`${path}?error=${encodeURIComponent(error)}`);
@@ -31,12 +33,12 @@ function redirectWithSuccess(path: string, query: "posted" | "saved" | "deleted"
 }
 
 async function requireTeacherCourse(courseId: string) {
-  const { teacher } = await requireTeacher();
-  const course = await getTeacherCourseForPortal(teacher.id, courseId);
-  if (!course) {
+  const { session, teacher } = await requireTeacher();
+  const access = await courseAccessFor({ user: { ...session.user, teacherId: teacher.id } }, courseId, { write: true });
+  if (access?.as !== "teacher") {
     redirect("/teacher");
   }
-  return { teacher, course };
+  return { teacher, course: access.course };
 }
 
 async function requireTeacherEnrollment(courseId: string, enrollmentId: string) {
@@ -114,15 +116,26 @@ async function runAnnouncementMutation({
       redirectWithError(newPath, attachment.error);
     }
 
-    const announcement = await createCourseAnnouncementRecord({
-      courseId,
-      enrollmentId,
-      teacherId: actor.teacherId,
-      authorName: actor.authorName,
-      postedByAdmin: actor.postedByAdmin,
-      data: parsed.data,
-      upload: attachment.upload,
-    });
+    let announcement: { id: string } | null = null;
+    let uploadError: string | null = null;
+    try {
+      announcement = await createCourseAnnouncementRecord({
+        courseId,
+        enrollmentId,
+        teacherId: actor.teacherId,
+        authorName: actor.authorName,
+        postedByAdmin: actor.postedByAdmin,
+        data: parsed.data,
+        upload: attachment.upload,
+      });
+    } catch (error) {
+      // A refused file (wrong content, or a direct upload that is missing or not the caller's).
+      if (!isUploadError(error)) throw error;
+      uploadError = error.message;
+    }
+    if (!announcement) {
+      redirectWithError(newPath, uploadError ?? "The attachment could not be stored.");
+    }
 
     await actor.notifyCreated(announcement, parsed.data);
 

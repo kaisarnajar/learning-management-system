@@ -64,6 +64,7 @@ work in a realistic flow; **Low** = edge case, cosmetic, maintainability.
 | L-7 | Client tables listed in the review (`PaymentApprovalsTable`, `BookOrdersTable`, …) | Dates formatted in the browser's timezone differ from the server's render → hydration mismatch around midnight IST. | Format in `BUSINESS_TIMEZONE`. |
 | L-8 | `services/pdf-generator.ts:83` | PDF queue waits up to 45 s inside a 60 s function, leaving 15 s for a cold Chromium launch and render. | Queue timeout 20 s. |
 | L-9 | `config/constants/file.ts` | Unused upload constants that contradict the real rules (no GIF); wrong comment on the photo route. | Remove; correct the comment. |
+| L-11 | `components/bookstore/CartProvider.tsx:164-190` | Found during browser testing: every page load by a signed-out visitor requested `/api/cart` and got a 401, logging a console error site-wide; a sign-in without a full reload never started the cart sync. | Sync with the server only while signed in, keyed on the session's user. |
 | L-10 | `app/api/v1/daily-inspiration/route.ts`, `app/api/v1/payment-settings/route.ts`, `BlogEngagement.tsx`, `CourseEnrollButton.tsx` | ESLint warnings: unused parameters, `window.location.href` for internal navigation. | Remove the parameters; `router.push`. |
 
 ### Operational (need production access; documented, not changed in code)
@@ -122,6 +123,7 @@ All code findings are fixed on `dev`, one commit each (tests added where behavio
 | L-7 | `c50ec5e4` fix(ui): render dates in the academy's timezone to avoid hydration mismatches |
 | L-9 | `54e299b7` chore: remove unused upload constants that contradicted the real rules |
 | M-13 | `c8695499` perf(records): save a day's attendance in three statements; allow a large grade save time |
+| L-11 | see the `fix(cart)` commit after this document |
 | O-1 … O-4 | `d8462865` docs(ops): recommend a small connection pool; list the production checks (`docs/OPERATIONS.md` §7) |
 
 O-1 to O-4 need production access (Vercel environment, plan, production database) and remain for the maintainer.

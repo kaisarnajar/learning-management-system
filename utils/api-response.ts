@@ -27,3 +27,24 @@ export async function readJson(request: Request): Promise<Record<string, unknown
   const body = await request.json().catch(() => null);
   return body && typeof body === "object" && !Array.isArray(body) ? (body as Record<string, unknown>) : null;
 }
+
+/**
+ * Edge caching for public content (home, lists and details of published
+ * items). An anonymous request (no Authorization header) gets a response the
+ * CDN may keep for a minute and serve stale for five more while it refetches;
+ * admin edits therefore show up on the apps within about a minute. A request
+ * with a Bearer token may be personalised (e.g. `likedByMe`, the caller's
+ * enrollment), so its response is never stored. `Vary: Authorization` keeps
+ * the two apart in any cache that would otherwise ignore the difference.
+ */
+export const PUBLIC_EDGE_CACHE_CONTROL = "public, s-maxage=60, stale-while-revalidate=300";
+
+export function publicJson(request: Request, body: unknown, init: ResponseInit = {}): NextResponse {
+  const response = NextResponse.json(body, init);
+  response.headers.set(
+    "Cache-Control",
+    request.headers.has("authorization") ? "private, no-store" : PUBLIC_EDGE_CACHE_CONTROL,
+  );
+  response.headers.append("Vary", "Authorization");
+  return response;
+}

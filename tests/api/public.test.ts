@@ -181,17 +181,17 @@ describe.skipIf(SKIP_WITHOUT_DB)("public /api/v1 routes", () => {
 
   describe("static and settings routes", () => {
     it("lists the occupations", async () => {
-      const data = await jsonOf(await occupations());
+      const data = await jsonOf(await occupations(apiRequest("/api/v1/occupations")));
       expect(data.success).toBe(true);
       expect(data.data).toContainEqual({ value: "STUDENT", label: "Student" });
     });
 
     it("returns the daily inspiration (or none)", async () => {
-      const empty = await jsonOf(await dailyInspiration());
+      const empty = await jsonOf(await dailyInspiration(apiRequest("/api/v1/daily-inspiration")));
       expect(empty).toMatchObject({ success: true });
 
       await prisma.dailyInspiration.create({ data: { kind: "QURAN", arabicText: "نص", englishTranslation: "Text", published: true } });
-      const data = await jsonOf(await dailyInspiration());
+      const data = await jsonOf(await dailyInspiration(apiRequest("/api/v1/daily-inspiration")));
       expect(data.inspiration).toMatchObject({ englishTranslation: "Text" });
     });
 

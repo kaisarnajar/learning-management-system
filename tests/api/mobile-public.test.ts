@@ -41,7 +41,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("mobile API: public content", () => {
   });
 
   it("app-config describes the brand, policies, lookups and features", async () => {
-    const data = await jsonOf(await appConfig());
+    const data = await jsonOf(await appConfig(apiRequest("/api/v1/app-config")));
     expect(data.success).toBe(true);
     expect(data.brand.name).toBeTruthy();
     expect(data.policies.version).toBeTruthy();
@@ -55,7 +55,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("mobile API: public content", () => {
     await createCourse({ teacherId: teacher.id, featuredOnHomepage: true });
     await createBook({ featuredOnHomepage: true });
 
-    const data = await jsonOf(await home());
+    const data = await jsonOf(await home(apiRequest("/api/v1/home")));
     expect(data.success).toBe(true);
     expect(data.courses).toHaveLength(1);
     expect(data.courses[0].teacher).not.toHaveProperty("email");

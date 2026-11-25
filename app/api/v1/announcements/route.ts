@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getPublishedSiteAnnouncementsPaginated } from "@/services/site-announcements";
 import { parseApiPagination } from "@/utils/api-pagination";
-import { apiServerError } from "@/utils/api-response";
+import { apiServerError, publicJson } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
 
     const result = await getPublishedSiteAnnouncementsPaginated(page, pageSize, search);
 
-    return NextResponse.json({
+    return publicJson(request, {
       success: true,
       data: result.items,
       totalCount: result.totalCount,

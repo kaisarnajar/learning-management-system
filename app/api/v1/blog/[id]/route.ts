@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { authenticateApiRequest } from "@/services/api-auth";
 import { BLOG_COMMENTS_PAGE_SIZE, getPublishedBlogPostById } from "@/services/blogs";
 import { sanitizeRichText } from "@/services/rich-text";
-import { apiError, apiServerError } from "@/utils/api-response";
+import { apiError, apiServerError, publicJson } from "@/utils/api-response";
 
 /**
  * One published post with its images, like and comment counts and the first
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     if (!post) return apiError("Blog post not found.", 404);
 
     const { likes, _count, body, ...rest } = post;
-    return NextResponse.json({
+    return publicJson(request, {
       success: true,
       post: {
         ...rest,

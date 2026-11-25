@@ -1,14 +1,21 @@
 import type { NextConfig } from "next";
 import { FORM_UPLOAD_FALLBACK_MAX_BYTES } from "./config/constants/direct-upload";
 import { imageRemotePatterns } from "./config/image-remote-patterns";
+import { publicStorageHosts } from "./config/storage-urls";
 import { PDF_ASSET_FILES, PDF_ASSET_ROUTE_GLOBS } from "./config/pdf-asset-routes";
 import { STATIC_SECURITY_HEADERS } from "./services/security-headers";
 
 // Warn only for a production build or server; dev and tests often run without R2.
-const remotePatterns = imageRemotePatterns(
-  process.env.R2_PUBLIC_URL,
-  process.env.NODE_ENV === "production" ? (message) => console.warn(`[next.config] ${message}`) : undefined,
-);
+const remotePatterns = [
+  ...imageRemotePatterns(
+    process.env.R2_PUBLIC_URL,
+    process.env.NODE_ENV === "production" ? (message) => console.warn(`[next.config] ${message}`) : undefined,
+  ),
+  // Earlier addresses of the bucket, until their stored URLs are rewritten.
+  ...publicStorageHosts()
+    .slice(1)
+    .map((hostname) => ({ protocol: "https" as const, hostname })),
+];
 
 const nextConfig: NextConfig = {
   turbopack: {

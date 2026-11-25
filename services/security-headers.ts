@@ -9,6 +9,7 @@
  * browsers without the Reporting API, `report-to` (with the
  * Reporting-Endpoints response header) for those with it.
  */
+import { publicStorageHosts } from "@/config/storage-urls";
 
 /** Where browsers send CSP violation reports (app/api/csp-report/route.ts). */
 export const CSP_REPORT_PATH = "/api/csp-report";
@@ -19,16 +20,8 @@ export const REPORTING_ENDPOINTS_HEADER = `${CSP_REPORT_GROUP}="${CSP_REPORT_PAT
 
 export function buildContentSecurityPolicy(nonce: string, options?: { enforce?: boolean }): string {
   const isDev = process.env.NODE_ENV !== "production";
-  const r2Host = (() => {
-    try {
-      return process.env.R2_PUBLIC_URL ? new URL(process.env.R2_PUBLIC_URL).hostname : null;
-    } catch {
-      return null;
-    }
-  })();
-
   const imgSources = ["'self'", "data:", "blob:", "https://*.googleusercontent.com"];
-  if (r2Host) imgSources.push(`https://${r2Host}`);
+  for (const host of publicStorageHosts()) imgSources.push(`https://${host}`);
 
   // Direct uploads PUT files to the R2 S3 endpoint (services/direct-upload.ts).
   const connectSources = ["'self'", "https://vitals.vercel-insights.com"];

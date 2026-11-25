@@ -350,6 +350,27 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       expect(await laterRequest(cookie)).toBeNull();
     });
 
+    it("account deletion limits password guesses and removes the person from fatwa questions and inquiries", async () => {
+      const { user, password } = await createPasswordUser();
+      await prisma.fatwaQuestion.create({
+        data: { userId: user.id, askerName: "Real Name", askerEmail: user.email, category: "General", title: "T", question: "Q" },
+      });
+      await prisma.contactInquiry.create({ data: { userId: user.id, name: "Real Name", email: user.email, phone: "9999999999", message: "Hi" } });
+
+      for (let i = 0; i < 5; i++) {
+        expect(await deleteOwnAccount(user.id, { password: `guess-${i}` })).toMatchObject({ ok: false, status: 403 });
+      }
+      // Even the right password waits once the guesses are used up.
+      expect(await deleteOwnAccount(user.id, { password })).toMatchObject({ ok: false, status: 429 });
+      await prisma.rateLimitBucket.deleteMany();
+
+      expect(await deleteOwnAccount(user.id, { password })).toEqual({ ok: true });
+      const fatwa = await prisma.fatwaQuestion.findFirstOrThrow({ where: { userId: user.id } });
+      expect(fatwa).toMatchObject({ askerName: "Anonymous", askerEmail: `deleted+${user.id}@invalid.local` });
+      const inquiry = await prisma.contactInquiry.findFirstOrThrow({ where: { userId: user.id } });
+      expect(inquiry).toMatchObject({ name: "Deleted user", email: `deleted+${user.id}@invalid.local`, phone: "" });
+    });
+
     it("verifying the address and a mobile Google take-over move the version", async () => {
       await register(apiRequest("/api/v1/auth/register", { method: "POST", json: { name: "Squatter", email: "verify.web@example.test", password: "long-enough-1", acceptPolicies: true } }));
       const { token } = await generateVerificationToken("verify.web@example.test");

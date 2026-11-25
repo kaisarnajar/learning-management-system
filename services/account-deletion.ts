@@ -8,6 +8,7 @@ import { resolveUserRole } from "@/services/teacher-auth";
 
 import { enrollmentStatusData } from "@/services/status-compat";
 import { forgetRecentClaims } from "@/services/auth-jwt";
+import { RATE_LIMITS, RATE_LIMIT_MESSAGE, rateLimit } from "@/services/rate-limit";
 
 /**
  * A student deleting their own account (required by Google Play for apps that
@@ -18,14 +19,16 @@ import { forgetRecentClaims } from "@/services/auth-jwt";
  * Everything that identifies or reaches the person is removed: name, e-mail
  * (replaced so the address can register again), password, photo, father's
  * name, date of birth, address, WhatsApp, sign-in links, sessions, API tokens,
- * devices and the cart. Requests still waiting for the academy are withdrawn.
+ * devices and the cart, and the name and contact details on their fatwa
+ * questions and contact inquiries. Requests still waiting for the academy
+ * are withdrawn.
  */
 
 export const ACCOUNT_DELETION_CONFIRMATION = "DELETE";
 
 export type AccountDeletionResult =
   | { ok: true }
-  | { ok: false; error: string; status: 400 | 403 | 404 | 409 };
+  | { ok: false; error: string; status: 400 | 403 | 404 | 409 | 429 };
 
 export async function deleteOwnAccount(
   userId: string,
@@ -44,6 +47,11 @@ export async function deleteOwnAccount(
 
   // Password accounts confirm with the password; Google-only accounts type DELETE.
   if (user.password) {
+    // A stolen access token must not become an unlimited password oracle.
+    // Same bucket as change-password: both check the current password.
+    if (!(await rateLimit(RATE_LIMITS.CHANGE_PASSWORD, user.id)).ok) {
+      return { ok: false, error: RATE_LIMIT_MESSAGE, status: 429 };
+    }
     const valid = typeof confirmation.password === "string" && (await compare(confirmation.password, user.password));
     if (!valid) return { ok: false, error: "The password is not correct.", status: 403 };
   } else if (confirmation.confirm !== ACCOUNT_DELETION_CONFIRMATION) {
@@ -86,6 +94,10 @@ export async function deleteOwnAccount(
       data: { ...enrollmentStatusData("REJECTED"), rejectedAt: now },
     });
     await tx.couponRequest.updateMany({ where: { userId, status: "PENDING" }, data: { status: "REJECTED" } });
+
+    // A published answer keeps its question, but no longer says who asked.
+    await tx.fatwaQuestion.updateMany({ where: { userId }, data: { askerName: "Anonymous", askerEmail: anonymisedEmail } });
+    await tx.contactInquiry.updateMany({ where: { userId }, data: { name: "Deleted user", email: anonymisedEmail, phone: "" } });
 
     await tx.user.update({
       where: { id: userId },

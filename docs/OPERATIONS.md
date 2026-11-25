@@ -47,8 +47,10 @@ deploy:
    `prisma migrate dev`, `npm run db:seed:demo`, any script without a prior
    dry run.
 8. **Connection settings live on the URL.** `DATABASE_URL` is the Neon pooler
-   URL with `connection_limit=1&pool_timeout=10` (one connection per function
-   instance); `DIRECT_URL` is the direct URL used only by `prisma migrate`
+   URL with `connection_limit=5&pool_timeout=10` (a small pool per function
+   instance: Fluid compute sends concurrent requests to one instance, and with a
+   single connection they all queue behind any open transaction; the pooler
+   makes a few connections per instance cheap); `DIRECT_URL` is the direct URL used only by `prisma migrate`
    (`prisma.config.ts`: `DIRECT_URL`, else `DATABASE_URL`). The app connects
    through the `pg` driver adapter; `utils/prisma-client.ts` turns
    `connection_limit`, `pool_timeout`, `connect_timeout` and `schema` into pg
@@ -191,3 +193,37 @@ private bucket and is checked and moved when the form is submitted.
   submitted stay under `staging/`. In the Cloudflare dashboard, add an object
   lifecycle rule on the private bucket that deletes the `staging/` prefix
   after 1 day.
+
+## 7. Production checks (review of 2026-11-25)
+
+These need the production environment and were not changed from the repository
+(`docs/CODE_REVIEW_2026-11-25.md`, O-1 to O-4).
+
+1. **Connection pool (O-1).** If the Vercel `DATABASE_URL` still carries
+   `connection_limit=1`, change it to `connection_limit=5` (see §1.8) and redeploy.
+2. **E-mail outbox cadence (O-2).** `vercel.json` drains the outbox once a day
+   (`0 3 * * *`); a large announcement's mails that did not fit in the 20 s
+   `after()` drain wait for it. On a plan with sub-daily crons, schedule
+   `/api/cron/email-outbox` every 10-15 minutes (`*/15 * * * *`).
+3. **Unique indexes that may be missing (O-3).** Three migrations create partial
+   unique indexes inside a block that turns a duplicate-row failure into a
+   warning, so `migrate deploy` succeeds without the index. Run once against
+   production (read-only) and expect five rows:
+
+   ```sql
+   SELECT indexname FROM pg_indexes WHERE indexname IN (
+     'CoursePaymentSubmission_upiTransactionId_partial_key',
+     'CoursePaymentSubmission_userId_courseId_label_partial_key',
+     'CoursePaymentSubmission_userId_courseId_periodKey_partial_key',
+     'BookOrder_upiTransactionId_partial_key');
+   ```
+
+   Four names are listed because one index is created by two migrations. If any is
+   missing, find the duplicates with the matching `GROUP BY ... HAVING count(*) > 1`
+   query from that migration, resolve them with a dry-run data script (§4), and
+   re-run the index statement on a Neon branch first.
+4. **Student list pagination (O-4).** Payment history, enrolments, attendance and
+   grades in `/api/v1` return a student's whole list. Adding `page`/`pageSize`
+   changes the response for installed apps, so it waits for a mobile release that
+   reads paginated responses.
+

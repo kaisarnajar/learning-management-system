@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { BRAND_CONFIG } from "@/config/brand";
 import { CURRENT_POLICIES_VERSION } from "@/config/constants/policies";
 import { MAX_ORDER_QTY } from "@/config/constants/business";
@@ -7,7 +7,7 @@ import { OCCUPATION_OPTIONS } from "@/services/occupations";
 import { DEFAULT_PROFILE_COUNTRY_CODE, PROFILE_COUNTRIES } from "@/services/countries";
 import { getPaymentSettings, isUpiConfiguredFromSettings } from "@/services/payment-settings";
 import { getSocialLinksSettings } from "@/services/social-links";
-import { apiServerError } from "@/utils/api-response";
+import { apiServerError, publicJson } from "@/utils/api-response";
 
 /**
  * Static configuration the app needs before (or without) signing in: the
@@ -15,12 +15,12 @@ import { apiServerError } from "@/utils/api-response";
  * lookups (countries, occupations, fatwa categories), feature switches and
  * limits. Safe to cache on the device for a day.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const [paymentSettings, social] = await Promise.all([getPaymentSettings(), getSocialLinksSettings()]);
     const site = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
 
-    return NextResponse.json({
+    return publicJson(request, {
       success: true,
       brand: {
         name: BRAND_CONFIG.name,

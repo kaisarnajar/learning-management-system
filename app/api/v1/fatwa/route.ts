@@ -4,7 +4,7 @@ import { authenticateApiRequest } from "@/services/api-auth";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { toPublicFatwaDto } from "@/services/api-dto";
-import { apiError, apiServerError, INVALID_JSON_MESSAGE, readJson } from "@/utils/api-response";
+import { apiError, apiServerError, INVALID_JSON_MESSAGE, publicJson, readJson } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
 
     const result = await getAnsweredFatwasPaginated(page, pageSize, category, search);
 
-    return NextResponse.json({
+    return publicJson(request, {
       success: true,
       data: result.items.map(toPublicFatwaDto),
       totalCount: result.totalCount,

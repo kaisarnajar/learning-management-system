@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import sharp from "sharp";
 import { auth } from "@/services/auth";
 import { prisma } from "@/utils/prisma";
 import { createCourseAnnouncement } from "@/services/course-announcement-actions";
@@ -21,7 +22,9 @@ const send = vi.fn(async (command: unknown) => {
   }
   if (command instanceof GetObjectCommand) {
     const object = staged.get(command.input.Key!)!;
-    return { Body: { transformToByteArray: async () => new Uint8Array(object.bytes.subarray(0, 32)) } };
+    // A ranged read (type sniffing) or the whole object (public images are re-encoded).
+    const bytes = command.input.Range ? object.bytes.subarray(0, 32) : object.bytes;
+    return { Body: { transformToByteArray: async () => new Uint8Array(bytes) } };
   }
   if (command instanceof DeleteObjectCommand) staged.delete(command.input.Key!);
   return {};
@@ -34,7 +37,7 @@ vi.mock("@/utils/s3", () => ({
 }));
 
 const PDF = Buffer.from("%PDF-1.7\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n");
-const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(24)]);
+const PNG = await sharp({ create: { width: 64, height: 32, channels: 3, background: "#123456" } }).png().toBuffer();
 let counter = 0;
 function stage(kind: string, ownerId: string, type: string, bytes: Buffer, size?: number) {
   counter += 1;
@@ -124,7 +127,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("direct uploads submitted as keys", () => {
 
     const images = await prisma.blogImage.findMany({ where: { blogPostId: post.id }, orderBy: { sortOrder: "asc" } });
     expect(images.map((image) => image.sortOrder)).toEqual([0, 1]);
-    for (const image of images) expect(image.imagePath).toMatch(new RegExp(`^https://cdn\\.example\\.test/uploads/blogs/${post.id}-[a-z0-9-]+\\.png$`));
+    for (const image of images) expect(image.imagePath).toMatch(new RegExp(`^https://cdn\\.example\\.test/uploads/blogs/${post.id}-[a-z0-9-]+\\.webp$`));
   });
 
   it("a book cover arrives as a key; a key for another kind is refused", async () => {
@@ -144,6 +147,6 @@ describe.skipIf(SKIP_WITHOUT_DB)("direct uploads submitted as keys", () => {
     const created = await runAction(() => createBook(form(stage("book-cover", admin.id, "image/png", PNG))));
     expect(created.redirectedTo).toBe("/admin/bookstore?created=1");
     const book = await prisma.book.findFirstOrThrow();
-    expect(book.imagePath).toMatch(/^https:\/\/cdn\.example\.test\/uploads\/books\/book-[a-z0-9-]+\.png$/);
+    expect(book.imagePath).toMatch(/^https:\/\/cdn\.example\.test\/uploads\/books\/book-[a-z0-9-]+\.webp$/);
   });
 });

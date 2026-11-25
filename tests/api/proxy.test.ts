@@ -76,3 +76,12 @@ describe("/api/v1 proxy (CORS and cross-site request guard)", () => {
     expect(other.status).toBe(403);
   });
 });
+
+describe("/api/v1 proxy and the edge cache", () => {
+  it("adds no Auth.js cookies, so public responses stay cacheable", async () => {
+    const response = await run(request("GET", {}, "/api/v1/courses?page=1"));
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("set-cookie")).toBeNull();
+  });
+});

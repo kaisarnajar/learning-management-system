@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import sharp from "sharp";
 import { storedObjectOf, UPLOAD_KIND_DEFINITIONS } from "@/services/upload-kinds";
 import { deleteUpload, saveUpload } from "@/services/uploads";
 import { privateKeyFromPath } from "@/services/storage";
@@ -16,7 +17,6 @@ vi.mock("@/utils/s3", () => ({
   R2_PUBLIC_URL: "https://cdn.example.test",
 }));
 
-const PNG = Buffer.concat([Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), Buffer.alloc(24)]);
 const OLD_SITE_IMAGE = "https://cdn.example.test/uploads/announcements/ann1-1732400000000-ab12cd.png";
 const NEW_SITE_IMAGE = "https://cdn.example.test/uploads/site-announcements/ann1-1764000000000-ef34gh.png";
 const ATTACHMENT = "/api/files/private/announcements/course-1732400000000-a8b7c.pdf";
@@ -26,6 +26,8 @@ const deleted = () =>
 
 beforeEach(() => {
   send.mockClear();
+  // Stored URLs are recognised by the environment's bases (config/storage-urls.ts).
+  vi.stubEnv("R2_PUBLIC_URL", "https://cdn.example.test");
 });
 
 describe("the upload kinds table", () => {
@@ -34,9 +36,10 @@ describe("the upload kinds table", () => {
   });
 
   it("stores new site-announcement images apart from course attachments", async () => {
-    const file = new File([PNG], "poster.png", { type: "image/png" });
+    const png = await sharp({ create: { width: 40, height: 20, channels: 3, background: "#000" } }).png().toBuffer();
+    const file = new File([new Uint8Array(png)], "poster.png", { type: "image/png" });
     const url = await saveUpload("site-announcement-image", "ann1", file);
-    expect(url).toMatch(/^https:\/\/cdn\.example\.test\/uploads\/site-announcements\/ann1-\d+-[a-z0-9]+\.png$/);
+    expect(url).toMatch(/^https:\/\/cdn\.example\.test\/uploads\/site-announcements\/ann1-\d+-[a-z0-9]+\.webp$/);
     const put = send.mock.calls.map(([command]) => command as unknown).find((c): c is PutObjectCommand => c instanceof PutObjectCommand)!;
     expect(put.input).toMatchObject({ Bucket: "public-bucket", Key: expect.stringMatching(/^uploads\/site-announcements\//) });
   });

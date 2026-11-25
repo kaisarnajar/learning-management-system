@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getPublicCoursesPaginated } from "@/services/courses";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { toPublicCourseDto } from "@/services/api-dto";
-import { apiServerError } from "@/utils/api-response";
+import { apiServerError, publicJson } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
 
     const result = await getPublicCoursesPaginated(page, pageSize, search, category);
 
-    return NextResponse.json({
+    return publicJson(request, {
       success: true,
       data: result.items.map(toPublicCourseDto),
       totalCount: result.totalCount,

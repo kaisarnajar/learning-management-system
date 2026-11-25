@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getPublishedBlogPostsPaginated } from "@/services/blogs";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { sanitizeRichText } from "@/services/rich-text";
-import { apiServerError } from "@/utils/api-response";
+import { apiServerError, publicJson } from "@/utils/api-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
 
     const result = await getPublishedBlogPostsPaginated(page, pageSize, search);
 
-    return NextResponse.json({
+    return publicJson(request, {
       success: true,
       data: result.items.map((post) => ({ ...post, body: sanitizeRichText(post.body) })),
       totalCount: result.totalCount,

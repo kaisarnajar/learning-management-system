@@ -89,10 +89,6 @@ const CSP_ENFORCE = process.env.CSP_ENFORCE === "true";
 function handleRequest(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/api/v1")) {
-    return handleApiV1(request);
-  }
-
   if (pathname.startsWith("/api/")) {
     return NextResponse.next();
   }
@@ -116,13 +112,22 @@ function denied(request: NextAuthRequest): NextResponse {
   return NextResponse.redirect(login);
 }
 
-// Next 16 calls this file Proxy (formerly middleware.ts). It runs on the
-// Node.js runtime by default; the Auth.js config it uses stays edge-safe.
-export default auth((request) => {
+const withAuth = auth((request) => {
   const allowed = authConfig.callbacks.authorized({ auth: request.auth, request });
   if (!allowed) return denied(request);
   return handleRequest(request);
 });
+
+// Next 16 calls this file Proxy (formerly middleware.ts). It runs on the
+// Node.js runtime by default; the Auth.js config it uses stays edge-safe.
+// /api/v1 authenticates with Bearer tokens in the route handlers and no
+// section the `authorized` callback guards lies under it, so it skips
+// Auth.js here: Auth.js would otherwise add its csrf-token and callback-url
+// cookies, and a response with Set-Cookie is never cached by the CDN.
+export default function proxy(request: NextRequest, event: Parameters<typeof withAuth>[1]) {
+  if (request.nextUrl.pathname.startsWith("/api/v1")) return handleApiV1(request);
+  return withAuth(request, event);
+}
 
 export const config = {
   matcher: [

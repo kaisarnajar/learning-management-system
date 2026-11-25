@@ -7,6 +7,7 @@ import {
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import sharp from "sharp";
 import { createUploadUrl, DIRECT_UPLOAD_URL_TTL_SECONDS, finalizeUpload, isStagedKeyFor } from "@/services/direct-upload";
 import { UploadError } from "@/services/storage";
 
@@ -92,20 +93,33 @@ describe("isStagedKeyFor", () => {
 });
 
 describe("finalizeUpload", () => {
-  it("copies a verified public image to its final key and removes the staged object", async () => {
-    stagedObject({ ContentLength: 2048, ContentType: "image/png" }, PNG);
+  it("resizes a verified public image to WebP at its final key and removes the staged object", async () => {
+    const png = await sharp({ create: { width: 2400, height: 1600, channels: 3, background: "#336699" } }).png().toBuffer();
+    stagedObject({ ContentLength: png.length, ContentType: "image/png" }, png);
 
     const result = await finalizeUpload("blog-image", stagedKey("blog-image"), OWNER, "post1");
 
-    expect(result.mime).toBe("image/png");
-    expect(result.size).toBe(2048);
-    expect(result.location).toMatch(/^https:\/\/cdn\.example\.test\/uploads\/blogs\/post1-[a-z0-9-]+\.png$/);
-    const [ranged] = sent(GetObjectCommand);
+    expect(result.mime).toBe("image/webp");
+    expect(result.location).toMatch(/^https:\/\/cdn\.example\.test\/uploads\/blogs\/post1-[a-z0-9-]+\.webp$/);
+    const [ranged, whole] = sent(GetObjectCommand);
     expect(ranged.input.Range).toBe("bytes=0-31");
-    const [copy] = sent(CopyObjectCommand);
-    expect(copy.input).toMatchObject({ Bucket: "public-bucket", CopySource: `private-bucket/${stagedKey("blog-image")}`, ContentType: "image/png" });
-    expect(`${"https://cdn.example.test"}/${copy.input.Key}`).toBe(result.location);
+    expect(whole.input.Range).toBeUndefined();
+    expect(sent(CopyObjectCommand)).toHaveLength(0);
+    const [put] = sent(PutObjectCommand);
+    expect(put.input).toMatchObject({ Bucket: "public-bucket", ContentType: "image/webp", CacheControl: "public, max-age=31536000, immutable" });
+    expect(`${"https://cdn.example.test"}/${put.input.Key}`).toBe(result.location);
+    const meta = await sharp(put.input.Body as Buffer).metadata();
+    expect([meta.format, meta.width, meta.height]).toEqual(["webp", 1200, 800]);
+    expect(result.size).toBe((put.input.Body as Buffer).length);
     expect(sent(DeleteObjectCommand).map((c) => c.input)).toEqual([{ Bucket: "private-bucket", Key: stagedKey("blog-image") }]);
+  });
+
+  it("refuses and deletes a public image whose bytes cannot be decoded", async () => {
+    stagedObject({ ContentLength: PNG.length, ContentType: "image/png" }, PNG);
+
+    await expect(finalizeUpload("blog-image", stagedKey("blog-image"), OWNER, "post1")).rejects.toThrow(/could not be read/);
+    expect(sent(PutObjectCommand)).toHaveLength(0);
+    expect(sent(DeleteObjectCommand)).toHaveLength(1);
   });
 
   it("stores private kinds in the private bucket and returns their /api/files path", async () => {

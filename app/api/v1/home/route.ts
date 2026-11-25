@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import {
   getCachedFeaturedHomepageBlogPosts,
   getCachedFeaturedHomepageBooks,
@@ -11,14 +11,14 @@ import {
 } from "@/services/home-content";
 import { toPublicBookDto, toPublicCourseDto, toPublicFatwaDto } from "@/services/api-dto";
 import { sanitizeRichText } from "@/services/rich-text";
-import { apiServerError } from "@/utils/api-response";
+import { apiServerError, publicJson } from "@/utils/api-response";
 
 /**
  * Everything the app's home screen shows, in one request: the same featured
  * sections as the website's homepage (cached for five minutes, refreshed
  * when an admin publishes or features content).
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const [courses, inspiration, announcements, blogPosts, libraryItems, books, fatwas, reviews] = await Promise.all([
       getCachedFeaturedHomepageCourses(),
@@ -31,7 +31,7 @@ export async function GET() {
       getCachedFeaturedHomepageReviews(),
     ]);
 
-    return NextResponse.json({
+    return publicJson(request, {
       success: true,
       dailyInspiration: inspiration,
       announcements,

@@ -11,6 +11,7 @@ import { EXPENSE_CATEGORIES, EXPENSE_CATEGORY_OTHER, EXPENSE_CATEGORY_TEACHER_SA
 import { isPaymentYearAllowed } from "@/utils/payment-years";
 import { businessDateFromToday, businessDayStart } from "@/services/business-time";
 import { OCCUPATION_VALUES } from "@/services/occupations";
+import { publicStorageHosts } from "@/config/storage-urls";
 
 export const levelEnum = z.enum(["Beginner", "Intermediate", "Advanced"]);
 
@@ -324,9 +325,7 @@ export function isAllowedProfileImageUrl(value: string): boolean {
     if (parsed.protocol !== "https:") return false;
     const host = parsed.hostname.toLowerCase();
     if (host.endsWith(".googleusercontent.com")) return true;
-    const r2 = process.env.R2_PUBLIC_URL;
-    if (!r2) return false;
-    return host === new URL(r2).hostname.toLowerCase();
+    return publicStorageHosts().includes(host);
   } catch {
     return false;
   }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { getPublicCourseById } from "@/services/courses";
 import { prisma } from "@/utils/prisma";
 import { authenticateApiRequest } from "@/services/api-auth";
@@ -6,7 +6,7 @@ import { toPublicCourseDto } from "@/services/api-dto";
 import { hasCourseContentAccess } from "@/services/enrollment-status";
 import { isCourseEnrollmentOpen } from "@/services/course-status";
 import { hasPendingEnrollmentFeeSubmission } from "@/services/monthly-payments";
-import { apiError, apiServerError } from "@/utils/api-response";
+import { apiError, apiServerError, publicJson } from "@/utils/api-response";
 
 /**
  * A public course. With a Bearer token the response also carries the
@@ -51,7 +51,7 @@ export async function GET(
       }
     }
 
-    return NextResponse.json({
+    return publicJson(request, {
       success: true,
       course: toPublicCourseDto(course),
       enrollmentOpen: isCourseEnrollmentOpen(course.status),

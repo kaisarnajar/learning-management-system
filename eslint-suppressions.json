@@ -99,11 +99,6 @@
       "count": 1
     }
   },
-  "app/fatwa/actions.ts": {
-    "no-restricted-imports": {
-      "count": 1
-    }
-  },
   "app/profile/cart/checkout/page.tsx": {
     "no-restricted-imports": {
       "count": 1

@@ -90,7 +90,7 @@ A profile must be complete before enrolling (`profileComplete`).
 | `GET /blog`, `GET /blog/{id}` | The detail has `likeCount`, `commentCount`, the first comments and, with a token, `likedByMe` |
 | `GET /blog/{id}/comments?skip=` | The next page of comments, newest first |
 | `GET /fatwa`, `GET /fatwa/{id}` | Answered and approved only; `?category` |
-| `POST /fatwa` | Ask a question: `{ title, question, category, askerName, askerEmail }` (rate-limited) |
+| `POST /fatwa` | Ask a question: `{ title, question, category, askerName, askerEmail, isAnonymous? }` (rate-limited). With a Bearer token the question is linked to the signed-in account and named by it unless `isAnonymous` is true |
 | `GET /library`, `GET /library/{id}` | `?topic` |
 | `GET /bookstore`, `GET /bookstore/{id}` | Published books |
 | `GET /announcements`, `GET /announcements/{id}` | Site announcements with images |

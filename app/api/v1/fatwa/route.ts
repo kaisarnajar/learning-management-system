@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAnsweredFatwasPaginated } from "@/services/fatwa";
-import { prisma } from "@/utils/prisma";
-import { fatwaQuestionSchema } from "@/utils/validations";
+import { createFatwaQuestion, getAnsweredFatwasPaginated } from "@/services/fatwa";
+import { authenticateApiRequest } from "@/services/api-auth";
 import { enforceRateLimit, getClientIp, RATE_LIMITS } from "@/services/rate-limit";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { toPublicFatwaDto } from "@/services/api-dto";
@@ -38,28 +37,25 @@ export async function POST(request: NextRequest) {
   try {
     const body = await readJson(request);
     if (!body) return apiError(INVALID_JSON_MESSAGE, 400);
-    const parsed = fatwaQuestionSchema.safeParse({
-      title: body?.title,
-      question: body?.question,
-      category: body?.category || "General",
-      askerName: body?.askerName,
-      askerEmail: body?.askerEmail,
-    });
-
-    if (!parsed.success) {
-      return apiError(parsed.error.issues[0]?.message ?? "Invalid fatwa question.", 400);
-    }
-
-    const newFatwa = await prisma.fatwaQuestion.create({
-      data: {
-        ...parsed.data,
-        approvalStatus: "PENDING",
+    // A signed-in student is linked to the question, as on the website; the
+    // route stays open to guests.
+    const { user } = request.headers.has("authorization") ? await authenticateApiRequest(request) : { user: null };
+    const created = await createFatwaQuestion(
+      {
+        title: body.title,
+        question: body.question,
+        category: body.category || "General",
+        askerName: body.askerName,
+        askerEmail: body.askerEmail,
       },
-    });
+      { asker: user ? { id: user.id, name: user.name ?? null, email: user.email } : null, isAnonymous: body.isAnonymous === true },
+    );
+    if (!created.ok) return apiError(created.error, 400);
+    const newFatwa = created.question;
 
     return NextResponse.json({
       success: true,
-      message: "Fatwa question submitted successfully and pending review.",
+      message: "Fatwa question submitted successfully. It will be published once a scholar answers it.",
       data: newFatwa,
     });
   } catch (error) {

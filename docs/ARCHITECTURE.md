@@ -28,7 +28,7 @@ config/ (brand, assets, constants)
   build; pure helpers that client components need live in `utils/` or `config/` and are re-exported by the service.
   Services that the staff API shares with the website return typed results (`{ ok: true, … } | { ok: false, error,
   status }`) and never redirect; the action or route maps the result to a redirect, flash or HTTP status.
-- **The Prisma baseline.** The 34 pages and server actions under `app/` that still import Prisma directly (8 of them
+- **The Prisma baseline.** The 33 pages and server actions under `app/` that still import Prisma directly (8 of them
   pages) are recorded in `eslint-suppressions.json` under `no-restricted-imports`, one entry per file. New imports
   fail lint. When a file's queries move into a service, run
   `npx eslint . --ignore-pattern ".claude/**" --prune-suppressions` to drop its entry; the list only shrinks.

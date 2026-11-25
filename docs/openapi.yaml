@@ -1568,7 +1568,8 @@ paths:
         "200": { description: Answered fatwas, content: { application/json: { schema: { allOf: [{ $ref: "#/components/schemas/Page" }, { properties: { data: { items: { $ref: "#/components/schemas/Fatwa" } } } }] } } } }
     post:
       tags: [Public]
-      security: []
+      security: [{}, { bearer: [] }]
+      description: Open to guests. With a Bearer token the question is linked to the signed-in account and named by it.
       requestBody:
         required: true
         content:
@@ -1582,6 +1583,7 @@ paths:
                 category: { type: string }
                 askerName: { type: string }
                 askerEmail: { type: string, format: email }
+                isAnonymous: { type: boolean, description: "Ask without a name; the question is not linked to the account" }
       responses:
         "200": { $ref: "#/components/responses/Ok" }
         "400": { $ref: "#/components/responses/BadRequest" }

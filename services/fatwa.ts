@@ -8,6 +8,8 @@ import { getAppBaseUrl } from "@/services/password-reset";
 import { cache } from "react";
 import { BASE_CATEGORIES, FATWA_CATEGORIES, FATWA_CATEGORY_OPTIONS, getFatwaCategoryOptions, isFatwaCategory, type FatwaCategory } from "@/config/fatwa-categories";
 import { HOMEPAGE_FEATURED_FATWA_MAX } from "@/config/constants/business";
+import { BRAND_CONFIG } from "@/config/brand";
+import { fatwaQuestionSchema } from "@/utils/validations";
 
 // Pure helpers, importable from client components: config/fatwa-categories.ts
 export { BASE_CATEGORIES, FATWA_CATEGORIES, FATWA_CATEGORY_OPTIONS, getFatwaCategoryOptions, isFatwaCategory };
@@ -228,4 +230,37 @@ export function excerpt(text: string, maxLength = 160): string {
   const trimmed = text.trim().replace(/\s+/g, " ");
   if (trimmed.length <= maxLength) return trimmed;
   return `${trimmed.slice(0, maxLength).trim()}…`;
+}
+
+const ANONYMOUS_ASKER_NAME = "Anonymous";
+
+function anonymousAskerEmail(): string {
+  return `anonymous@${new URL(BRAND_CONFIG.websiteUrl).hostname}`;
+}
+
+export type FatwaAsker = { id: string; name: string | null; email: string };
+
+/**
+ * Stores a question asked on the website or in the app. Both callers go
+ * through here so the two cannot drift apart: a question starts in the
+ * default (APPROVED, unanswered) state, which is the one teachers can answer;
+ * a signed-in asker is linked to their account and named by it, unless they
+ * ask anonymously.
+ */
+export async function createFatwaQuestion(
+  input: { category: unknown; title: unknown; question: unknown; askerName: unknown; askerEmail: unknown },
+  options: { asker: FatwaAsker | null; isAnonymous: boolean },
+): Promise<{ ok: true; question: FatwaQuestion } | { ok: false; error: string }> {
+  const { asker, isAnonymous } = options;
+  const parsed = fatwaQuestionSchema.safeParse({
+    ...input,
+    askerName: isAnonymous ? ANONYMOUS_ASKER_NAME : (asker?.name?.trim() || input.askerName),
+    askerEmail: isAnonymous ? anonymousAskerEmail() : (asker?.email.toLowerCase().trim() || input.askerEmail),
+  });
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid fatwa question." };
+
+  const question = await prisma.fatwaQuestion.create({
+    data: { ...parsed.data, userId: isAnonymous ? null : (asker?.id ?? null) },
+  });
+  return { ok: true, question };
 }

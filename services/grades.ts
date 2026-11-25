@@ -122,6 +122,9 @@ export async function getGradeRecordsForGradeIdFromDb(courseId: string, gradeId:
   }, "Failed to fetch grade records");
 }
 
+/** One upsert per student (marks differ per row); a large class needs more than the default 5 s. */
+const GRADE_SAVE_TIMEOUT_MS = 20_000;
+
 export async function saveCourseGradeToDb(
   gradeId: string | null,
   courseId: string,
@@ -185,7 +188,7 @@ export async function saveCourseGradeToDb(
       if ((highest._max.marksObtained ?? 0) > maxMarks) {
         throw new DbError("UNKNOWN", `A student already has ${highest._max.marksObtained} marks on this test; maximum marks cannot be lower than that.`);
       }
-    });
+    }, { timeout: GRADE_SAVE_TIMEOUT_MS });
   }, "Failed to save grades");
 }
 

@@ -113,23 +113,19 @@ export async function saveCourseAttendanceToDb(courseId: string, targetDate: Dat
         update: {}, // Just touch it
       });
 
-      // Upsert individual records
-      for (const record of records) {
-        await tx.courseAttendanceRecord.upsert({
-          where: {
-            attendanceId_enrollmentId: {
-              attendanceId: attendance.id,
-              enrollmentId: record.enrollmentId,
-            }
-          },
-          create: {
-            attendanceId: attendance.id,
-            enrollmentId: record.enrollmentId,
-            isPresent: record.isPresent,
-          },
-          update: {
-            isPresent: record.isPresent,
-          }
+      // Three statements whatever the class size (one upsert per student kept
+      // the transaction, and the connection, open for N round trips): create
+      // the missing rows, then set present and absent in one update each.
+      await tx.courseAttendanceRecord.createMany({
+        data: records.map((record) => ({ attendanceId: attendance.id, enrollmentId: record.enrollmentId, isPresent: record.isPresent })),
+        skipDuplicates: true,
+      });
+      for (const isPresent of [true, false]) {
+        const enrollmentIds = records.filter((record) => record.isPresent === isPresent).map((record) => record.enrollmentId);
+        if (enrollmentIds.length === 0) continue;
+        await tx.courseAttendanceRecord.updateMany({
+          where: { attendanceId: attendance.id, enrollmentId: { in: enrollmentIds } },
+          data: { isPresent },
         });
       }
     });

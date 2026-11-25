@@ -82,6 +82,15 @@ describe.skipIf(SKIP_WITHOUT_DB)("certificates: who can be certified", () => {
     },
   );
 
+  it("a deleted student's enrollment gets no certificate and uses up no number", async () => {
+    const student = await createUser({ deletedAt: new Date(), name: "Deleted user" });
+    const course = await createCourse();
+    const enrollment = await createEnrollment(student.id, course.id, { status: "completed", statusEnum: "COMPLETED" });
+
+    expect(await generateCertificate(enrollment.id, "COMPLETION", 8)).toEqual({ error: expect.stringContaining("deleted") });
+    expect(await prisma.enrollment.findUniqueOrThrow({ where: { id: enrollment.id } })).toMatchObject({ certificateNumber: null, certificateGeneratedAt: null });
+  });
+
   it("an active enrollment gets an appreciation certificate but not a completion one", async () => {
     const enrollment = await enrollmentIn("ACTIVE");
 

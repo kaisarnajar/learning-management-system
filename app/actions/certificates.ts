@@ -35,11 +35,16 @@ export async function generateCertificate(enrollmentId: string, certificateType:
 
   const enrollment = await prisma.enrollment.findUnique({
     where: { id: enrollmentId },
-    include: { user: { select: { id: true, name: true, email: true, address: true, whatsapp: true } } },
+    include: { user: { select: { id: true, name: true, email: true, address: true, whatsapp: true, deletedAt: true } } },
   });
 
   if (!enrollment) {
     return { error: "Enrollment not found." };
+  }
+
+  // A deleted account has no name to print and nobody to send it to.
+  if (enrollment.user.deletedAt) {
+    return { error: "This student has deleted their account." };
   }
 
   if (enrollment.certificateGeneratedAt) {

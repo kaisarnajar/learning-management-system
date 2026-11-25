@@ -187,17 +187,42 @@ export async function adminEnrollUser(
 
   const status = getRosterEnrollmentStatusForCourse(course.status);
 
-  const upserted = await withDbErrorHandling(() => prisma.enrollment.upsert({
-      where: {
-        userId_courseId: { userId: account.userId, courseId: course.id },
-      },
-      create: {
-        userId: account.userId,
-        courseId: course.id,
-        ...enrollmentStatusData(status),
-      },
-      update: { ...enrollmentStatusData(status), rejectedAt: null },
-    }), "Database operation failed");
+  // An existing request is moved onto the roster; an enrollment that is
+  // already on it (active or completed, perhaps certified) is left alone.
+  const outcome = await withDbErrorHandling(() => prisma.$transaction(async (tx) => {
+    const existing = await tx.enrollment.findUnique({
+      where: { userId_courseId: { userId: account.userId, courseId: course.id } },
+      select: { id: true, status: true, statusEnum: true },
+    });
+    if (!existing) {
+      const created = await tx.enrollment.create({
+        data: { userId: account.userId, courseId: course.id, ...enrollmentStatusData(status) },
+        select: { id: true },
+      });
+      return { id: created.id };
+    }
+    const current = enrollmentStatusOf(existing);
+    if (current === "ACTIVE" || current === "COMPLETED") {
+      return { alreadyEnrolled: current };
+    }
+    // Guarded on the status just read, so a concurrent approval is not overwritten.
+    const moved = await tx.enrollment.updateMany({
+      where: { id: existing.id, status: existing.status },
+      data: { ...enrollmentStatusData(status), rejectedAt: null },
+    });
+    if (moved.count === 0) return { changed: true as const };
+    return { id: existing.id };
+  }), "Database operation failed");
+
+  if ("alreadyEnrolled" in outcome) {
+    return {
+      error: `${account.name} is already ${outcome.alreadyEnrolled === "COMPLETED" ? "a completed student" : "enrolled"} in ${course.title}.`,
+    };
+  }
+  if ("changed" in outcome) {
+    return { error: "This enrollment was changed by someone else. Please refresh and try again." };
+  }
+  const upserted = outcome;
 
   if (status === "ACTIVE") {
     const { assignRollNumber } = await import("@/services/roll-numbers");

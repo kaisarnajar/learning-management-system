@@ -9,7 +9,7 @@ import {
   removeEnrollmentFromCourse,
 } from "@/app/admin/enrollments/actions";
 import { processEnrollmentPayment } from "@/services/payments";
-import { createCourse, createUser, resetDb, runAction, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB, startedEnrollment } from "../helpers/db";
+import { createCourse, createEnrollment, createUser, resetDb, runAction, sessionFor, setPaymentSettings, SKIP_WITHOUT_DB, startedEnrollment } from "../helpers/db";
 
 describe.skipIf(SKIP_WITHOUT_DB)("enrollment lifecycle", () => {
   beforeEach(async () => {
@@ -124,6 +124,33 @@ describe.skipIf(SKIP_WITHOUT_DB)("enrollment lifecycle", () => {
     expect(result.success).toContain("is now enrolled");
     const row = await prisma.enrollment.findFirstOrThrow({ where: { userId: student.id } });
     expect(row).toMatchObject({ statusEnum: "ACTIVE", rollNumber: 1 });
+  });
+
+  it("direct enrolment never moves an active or completed enrollment, and moves a pending request onto the roster", async () => {
+    const course = await createCourse();
+    const form = (email: string) => {
+      const f = new FormData();
+      f.set("email", email);
+      f.set("courseId", course.id);
+      return f;
+    };
+
+    const graduate = await createUser({ email: "graduate@example.test" });
+    const done = await createEnrollment(graduate.id, course.id, {
+      status: "completed",
+      statusEnum: "COMPLETED",
+      rollNumber: 7,
+      completedAt: new Date(),
+      certificateNumber: "CERT-1",
+      certificateGeneratedAt: new Date(),
+    });
+    expect((await adminEnrollUser({}, form("graduate@example.test"))).error).toContain("already a completed student");
+    expect(await prisma.enrollment.findUniqueOrThrow({ where: { id: done.id } })).toMatchObject({ statusEnum: "COMPLETED", certificateNumber: "CERT-1" });
+
+    const applicant = await createUser({ email: "applicant@example.test" });
+    await startEnrollment(applicant.id, course.id, "PENDING_APPROVAL");
+    expect((await adminEnrollUser({}, form("applicant@example.test"))).success).toContain("is now enrolled");
+    expect(await prisma.enrollment.findFirstOrThrow({ where: { userId: applicant.id } })).toMatchObject({ statusEnum: "ACTIVE", rollNumber: 8 });
   });
 
   it("removes an enrollment without touching the student account", async () => {

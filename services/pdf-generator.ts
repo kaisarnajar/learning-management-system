@@ -80,7 +80,10 @@ async function launchBrowserWithRetry(maxRetries = 4) {
  * Renders therefore queue for a slot: PDF_RENDER_CONCURRENCY (default 1) at
  * a time, waiting at most PDF_QUEUE_TIMEOUT_MS before giving up as busy.
  */
-const PDF_QUEUE_TIMEOUT_MS = 45_000;
+// The PDF routes run for at most 60 s (maxDuration); a cold start downloads and
+// unpacks Chromium before rendering, so a queued request keeps most of that
+// budget for its own render and is told "busy" (503) rather than timing out.
+const PDF_QUEUE_TIMEOUT_MS = 20_000;
 
 export class PdfBusyError extends SemaphoreTimeoutError {
   constructor() {

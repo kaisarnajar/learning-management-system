@@ -2,6 +2,7 @@
 
 import { SubmitButton } from "@/components/shared/SubmitButton";
 import { getPaymentYearOptions } from "@/utils/payment-years";
+import { businessCalendarParts } from "@/services/business-time";
 import { getFeeFrequencyOption, isOneTimeFee, getFeeFrequencyLabel } from "@/services/fee-frequency";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -52,9 +53,12 @@ export function MonthlyPaymentForm({
 }: MonthlyPaymentFormProps) {
   const router = useRouter();
   const now = new Date();
+  // The academy's calendar, not the server's (UTC) or the browser's, so the
+  // server render and the browser pick the same default month on the 1st.
+  const today = businessCalendarParts(now);
   const yearOptions = getPaymentYearOptions(now);
   const defaultYearValue =
-    defaultYear && yearOptions.includes(defaultYear) ? defaultYear : String(now.getFullYear());
+    defaultYear && yearOptions.includes(defaultYear) ? defaultYear : String(today.year);
 
   const freqOption = getFeeFrequencyOption(feeFrequency);
   const isOneTime = isOneTimeFee(feeFrequency);
@@ -63,7 +67,7 @@ export function MonthlyPaymentForm({
   const [selectedCouponId, setSelectedCouponId] = useState<string>(
     firstSelectable ? firstSelectable.id : ""
   );
-  const [paymentMonth, setPaymentMonth] = useState(defaultMonth ?? String(now.getMonth() + 1).padStart(2, "0"));
+  const [paymentMonth, setPaymentMonth] = useState(defaultMonth ?? String(today.month + 1).padStart(2, "0"));
   const [paymentYear, setPaymentYear] = useState(defaultYearValue);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("upi");
   const [transactionId, setTransactionId] = useState("");
@@ -93,7 +97,7 @@ export function MonthlyPaymentForm({
       const formData = new FormData();
       formData.append("courseId", courseId);
       formData.append("paymentMonth", isOneTime ? "01" : paymentMonth);
-      formData.append("paymentYear", isOneTime ? String(now.getFullYear()) : paymentYear);
+      formData.append("paymentYear", isOneTime ? String(today.year) : paymentYear);
       formData.append("paymentType", freqOption.paymentType);
       // Always send the choice explicitly ("none" = pay the full fee) and the
       // amount the student saw, so the server can refuse a mismatch.

@@ -1,5 +1,6 @@
 "use client";
 
+import { BUSINESS_TIMEZONE } from "@/config/constants/business";
 import Image from "next/image";
 import { formatPrice } from "@/utils/money";
 import { useState } from "react";
@@ -310,6 +311,7 @@ export function BaseOrderRow({
         <p className="mt-0.5 text-xs text-muted">{order.user.email}</p>
         <p className="mt-0.5 text-xs text-muted">
           {order.createdAt.toLocaleDateString("en-IN", {
+            timeZone: BUSINESS_TIMEZONE,
             day: "numeric",
             month: "short",
             year: "numeric",

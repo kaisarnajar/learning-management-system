@@ -1,6 +1,7 @@
 "use client";
 
-import { format } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
+import { BUSINESS_TIMEZONE } from "@/config/constants/business";
 import { deleteCoupon } from "@/app/admin/coupons/actions";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { EditCouponDialog, type EditableCoupon } from "@/components/admin/EditCouponDialog";
@@ -72,10 +73,10 @@ function CouponSectionTable({
                   </td>
                   <td className="px-4 py-3 font-medium text-foreground">{c.percentage}% OFF</td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">
-                    {c.createdAt ? format(new Date(c.createdAt), "dd MMM, yyyy") : "N/A"}
+                    {c.createdAt ? formatInTimeZone(new Date(c.createdAt), BUSINESS_TIMEZONE, "dd MMM, yyyy") : "N/A"}
                   </td>
                   <td className="px-4 py-3 text-muted whitespace-nowrap">
-                    {format(new Date(c.validUntil), "dd MMM, yyyy")}
+                    {formatInTimeZone(new Date(c.validUntil), BUSINESS_TIMEZONE, "dd MMM, yyyy")}
                   </td>
                   <td className="px-4 py-3">
                     <div className="font-medium text-foreground">

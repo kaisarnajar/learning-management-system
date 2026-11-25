@@ -48,6 +48,7 @@ work in a realistic flow; **Low** = edge case, cosmetic, maintainability.
 | M-9 | `app/admin/courses/actions.ts:181-225` | Deleting a course does not count `PaymentRecord`s; the FK is `SetNull`, so manual income records silently lose their course. | Block the delete while payment records reference the course. |
 | M-10 | `app/admin/teachers/actions.ts:128-145`, `app/admin/finance/actions.ts:31` | Deleting a teacher silently unlinks their salary expenses (`SetNull`); deleting an expense writes no audit row. | Block teacher delete while expenses reference them; audit the expense delete in a transaction. |
 | M-11 | `services/audit.ts:88-95` | `getAuditEntities` uses `distinct`, which Prisma 7 performs in memory: every audit-log page view reads the whole append-only table. | `groupBy({ by: ["entity"] })`. |
+| M-13 | `services/attendance.ts:117-134`, `services/grades.ts:164-180` | Attendance and grade saves run one upsert per student inside an interactive transaction with the default 5 s timeout; a large class can time out and save nothing. | Attendance in three set-based statements; a 20 s timeout for grade saves (marks differ per row). |
 | M-12 | `components/attendance/AttendanceForm.tsx:139`, `components/grades/GradeForm.tsx:167`, `AttendanceView.tsx`, `StudentAttendanceReport.tsx`, `StudentGradeReport.tsx`, `app/profile/courses/[courseId]/attendance/page.tsx` | Tables are wrapped in `overflow-hidden`; on a phone the status/marks column is cut off and unreachable. | `overflow-x-auto`. |
 
 ### Low
@@ -91,9 +92,41 @@ performance, UI, housekeeping.
 10. `fix(admin)`: course and teacher deletes keep financial links; audited expense delete (M-9, M-10).
 11. `fix(payments)`: refuse monthly payments for a zero monthly fee (L-5).
 12. `fix`: teacher course counts (L-2), registration year timezone (L-4).
-13. `perf(audit)`: entity list via `groupBy` (M-11); `perf(pdf)`: shorter queue timeout (L-8).
+13. `perf(audit)`: entity list via `groupBy` (M-11); `perf(pdf)`: shorter queue timeout (L-8); `perf(records)`: set-based attendance save (M-13).
 14. `fix(ui)`: scrollable tables (M-12); blog engagement state (L-6); business-timezone dates (L-7); lint warnings (L-10).
 15. `chore`: remove unused constants (L-9); operational notes (O-1 … O-4) in `docs/OPERATIONS.md`.
+
+## Implementation status
+
+All code findings are fixed on `dev`, one commit each (tests added where behaviour changed):
+
+| Finding | Commit |
+|---|---|
+| H-1 | `af1c0c31` fix(auth): verifying a password account requires its password |
+| M-1, M-2 | `f4794d74` fix(privacy): account deletion limits password guesses and anonymises fatwa and contact rows |
+| L-3 | `ccc3403e` fix(certificates): refuse to issue a certificate for a deleted account |
+| M-3 | `3fc8f87f` fix(fatwa): one question service for the website and the app |
+| M-4 | `c298a9a4` fix(courses): save a status change and its enrollment sync in one transaction |
+| M-5 | `ad570fb5` fix(enrollments): direct enrolment never moves an active or completed enrollment |
+| M-6, L-1 | `9fc6222c` fix(grades): keep maximum marks above stored marks; grade from the exact percentage |
+| M-7 | `21e95396` fix(bookstore): store the payment screenshot before creating the order |
+| M-8 | `adad8686` fix(roll-numbers): never issue a roll number twice |
+| M-9, M-10 | `64e94f12` fix(admin): course and teacher deletes keep financial links; audit expense deletes |
+| L-5 | `0e2e5464` fix(payments): refuse course-fee payments for a course without a course fee |
+| L-2 | `3d5670b7` fix(teacher): course list counts students, not applicants |
+| L-4 | `ff16f18b` fix(registration): number a student by the year in the academy's timezone |
+| M-11 | `dfaf2c5f` perf(audit): list audit-log entities with GROUP BY |
+| L-8 | `d5fb5f37` perf(pdf): give a queued render enough of the 60 s budget |
+| M-12 | `5ae9bd0f` fix(ui): let attendance and grade tables scroll on phones |
+| L-6, L-10 | `a0b47bb8` fix(blog): restore the right state when a like, comment or delete fails |
+| L-7 | `c50ec5e4` fix(ui): render dates in the academy's timezone to avoid hydration mismatches |
+| L-9 | `54e299b7` chore: remove unused upload constants that contradicted the real rules |
+| M-13 | `c8695499` perf(records): save a day's attendance in three statements; allow a large grade save time |
+| O-1 … O-4 | `d8462865` docs(ops): recommend a small connection pool; list the production checks (`docs/OPERATIONS.md` §7) |
+
+O-1 to O-4 need production access (Vercel environment, plan, production database) and remain for the maintainer.
+Behaviour change to note for H-1: the verification page now asks for the account password; an owner who did not set
+it resets the password, which also verifies the address.
 
 ## Checked and found sound
 

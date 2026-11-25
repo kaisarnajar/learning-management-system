@@ -288,6 +288,15 @@ describe.skipIf(SKIP_WITHOUT_DB)("fee payments: submit, approve, receipt", () =>
     expect(await prisma.coursePaymentSubmission.count({ where: { userId: second.id } })).toBe(0);
   });
 
+  it("refuses a course-fee payment for a course without a course fee", async () => {
+    const student = await createUser();
+    const course = await createCourse({ monthlyFeeInrPaise: 0 });
+    await createEnrollment(student.id, course.id);
+
+    expect(await processMonthlyPayment(student.id, course.id, "03", "2026", "upi", null, null)).toEqual({ status: 400, error: "This course has no course fee." });
+    expect(await prisma.coursePaymentSubmission.count()).toBe(0);
+  });
+
   it("a paid fee needs a UTR or a screenshot", async () => {
     const student = await createUser();
     const course = await createCourse();

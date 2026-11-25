@@ -164,6 +164,9 @@ export async function processMonthlyPayment(
   const derivedType = paymentTypeFromText(derivedPaymentType);
   const periodKey = derivedType ? buildPeriodKey(derivedType, Number.parseInt(paymentMonth, 10), Number.parseInt(paymentYear, 10)) : null;
   const baseAmountInrPaise = getMonthlyFeePaise(course);
+  // Without a fee there is nothing to pay; accepting it would record a 0-paise
+  // "waiver" for any month asked (the enrollment-fee path refuses the same).
+  if (baseAmountInrPaise <= 0) return { error: "This course has no course fee.", status: 400 };
 
   const coupon = await getSelectedCoupon(userId, courseId, "course", couponId);
   const amountInrPaise = coupon ? calculateDiscountedAmount(baseAmountInrPaise, coupon.percentage) : baseAmountInrPaise;

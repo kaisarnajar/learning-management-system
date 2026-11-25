@@ -9,7 +9,7 @@
  * browsers without the Reporting API, `report-to` (with the
  * Reporting-Endpoints response header) for those with it.
  */
-import { publicStorageHosts } from "@/config/storage-urls";
+import { publicStorageHosts } from "../config/storage-urls";
 
 /** Where browsers send CSP violation reports (app/api/csp-report/route.ts). */
 export const CSP_REPORT_PATH = "/api/csp-report";

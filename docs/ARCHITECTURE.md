@@ -74,7 +74,7 @@ templates; private files served through `/api/files` after an authorization chec
 Prisma schema in `prisma/schema.prisma`, migrations in `prisma/migrations`. Money is stored as integer paise.
 Payments are recorded as `PaymentRecord` rows; voiding sets `voidedAt` and writes an `AuditLog` entry rather than
 deleting. Sequences that must never repeat (roll numbers, registration numbers, receipt and invoice numbers) are
-allocated inside the transaction that stores them (`RegistrationSequence`, `DocumentSequence`).
+allocated inside the transaction that stores them (`RegistrationSequence`, `DocumentSequence`; roll numbers keep their per-course high-water mark there as kind `roll`).
 
 The production database is live, so migrations are additive and guarded, and nothing destructive runs from a build or
 a script without an explicit flag. The rules, the baseline and the rehearsal procedure are in `OPERATIONS.md`;

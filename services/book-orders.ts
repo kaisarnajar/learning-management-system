@@ -166,8 +166,13 @@ export async function quoteBookOrder(
 
 /**
  * Validates availability and stock, computes totals server-side from the
- * current prices, creates the order (and clears the cart) in one
- * transaction, then stores the payment screenshot against the order id.
+ * current prices, stores the payment screenshot, then creates the order (and
+ * clears the cart) in one transaction.
+ *
+ * The screenshot goes first, as for fee payments: object storage cannot take
+ * part in the transaction, and storing it afterwards meant a failed upload
+ * withdrew an order whose UTR then blocked the retry, with the cart gone.
+ * A failed transaction deletes the stored file again.
  */
 export async function createBookOrder(params: {
   userId: string;
@@ -186,6 +191,18 @@ export async function createBookOrder(params: {
   const { books: bookMap, shippingChargeInrPaise, totalAmountInrPaise } = quote;
 
   const upiTransactionId = normalizeUtr(input.upiTransactionId);
+
+  let paymentScreenshotPath: string | null = null;
+  if (screenshotFile && screenshotFile.size > 0) {
+    try {
+      paymentScreenshotPath = await saveUpload("payment-screenshot", `book-order-${userId}`, screenshotFile);
+    } catch (error) {
+      if (isUploadError(error)) return { ok: false, error: error.message, status: 400 };
+      console.error("[book-orders] Screenshot upload failed:", error);
+      return { ok: false, error: "Could not store the payment screenshot. Please try again.", status: 500 };
+    }
+  }
+
   let order: CreatedBookOrder;
   try {
     order = await prisma.$transaction(async (tx) => {
@@ -198,6 +215,7 @@ export async function createBookOrder(params: {
           shippingChargeInrPaise,
           paymentMethod: input.paymentMethod,
           upiTransactionId,
+          paymentScreenshotPath,
           deliveryAddress: input.deliveryAddress,
           deliveryPinCode: input.deliveryPinCode,
           deliveryPhoneNumber: input.deliveryPhoneNumber,
@@ -220,28 +238,12 @@ export async function createBookOrder(params: {
       return created;
     });
   } catch (error) {
+    await deleteUpload("payment-screenshot", paymentScreenshotPath);
     if (error instanceof UtrAlreadyUsed || isUniqueViolation(error)) {
       return { ok: false, error: "This transaction reference was already used for another payment. Contact support if this is a mistake.", status: 409 };
     }
     console.error("[book-orders] Failed to create order:", error);
     return { ok: false, error: "Could not submit the order. Please try again.", status: 500 };
-  }
-
-  if (screenshotFile && screenshotFile.size > 0) {
-    let paymentScreenshotPath: string | null = null;
-    try {
-      paymentScreenshotPath = await saveUpload("payment-screenshot", `book-order-${order.id}`, screenshotFile);
-      await prisma.bookOrder.update({ where: { id: order.id }, data: { paymentScreenshotPath } });
-      order = { ...order, paymentScreenshotPath };
-    } catch (error) {
-      // The order exists but the proof could not be stored: remove the order
-      // again (it is only pending, nothing financial yet) and report it.
-      console.error("[book-orders] Screenshot upload failed; withdrawing order", order.id, error);
-      await prisma.bookOrder.update({ where: { id: order.id }, data: { deletedAt: new Date() } }).catch(() => undefined);
-      await deleteUpload("payment-screenshot", paymentScreenshotPath);
-      if (isUploadError(error)) return { ok: false, error: error.message, status: 400 };
-      return { ok: false, error: "Could not store the payment screenshot. Please try again.", status: 500 };
-    }
   }
 
   return { ok: true, order };

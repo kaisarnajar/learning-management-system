@@ -14,6 +14,18 @@ import { getIncomeTotal } from "@/services/finance-income";
 import { parseFinanceFilters } from "@/services/finance-filters";
 import { createBook, createUser, resetDb, runAction, sessionFor, SKIP_WITHOUT_DB } from "../helpers/db";
 
+const uploads = vi.hoisted(() => ({ fail: false, deleted: [] as Array<string | null | undefined> }));
+vi.mock("@/services/uploads", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/services/uploads")>()),
+  saveUpload: vi.fn(async (_kind: string, prefix: string) => {
+    if (uploads.fail) throw new Error("storage unavailable");
+    return `private/payment-screenshots/${prefix}-shot.png`;
+  }),
+  deleteUpload: vi.fn(async (_kind: string, path: string | null | undefined) => {
+    uploads.deleted.push(path);
+  }),
+}));
+
 const input = (items: Array<{ bookId: string; quantity: number }>) => ({
   items,
   paymentMethod: "upi",
@@ -32,6 +44,8 @@ async function placeOrder(userId: string, items: Array<{ bookId: string; quantit
 describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
   beforeEach(async () => {
     await resetDb();
+    uploads.fail = false;
+    uploads.deleted = [];
     const admin = await createUser({ email: "admin@example.test", name: "Admin" });
     vi.mocked(auth).mockResolvedValue(sessionFor(admin, "ADMIN") as never);
   });
@@ -78,6 +92,37 @@ describe.skipIf(SKIP_WITHOUT_DB)("book order state machine", () => {
 
     await placeOrder(student.id, [{ bookId: book.id, quantity: 2 }]);
     expect(await prisma.userCartItem.count()).toBe(0);
+  });
+
+  it("a failed screenshot upload creates no order, keeps the cart and leaves the UTR free for the retry", async () => {
+    const student = await createUser();
+    const book = await createBook({ inventoryPurchased: 2 });
+    await prisma.userCartItem.create({ data: { userId: student.id, bookId: book.id, quantity: 1 } });
+    const order = { ...input([{ bookId: book.id, quantity: 1 }]), upiTransactionId: "UTR-RETRY-1" };
+    const screenshotFile = new File([new Uint8Array([1, 2, 3])], "proof.png", { type: "image/png" });
+
+    uploads.fail = true;
+    expect(await createBookOrder({ userId: student.id, input: order, screenshotFile })).toMatchObject({ ok: false, status: 500 });
+    expect(await prisma.bookOrder.count()).toBe(0);
+    expect(await prisma.userCartItem.count()).toBe(1);
+
+    uploads.fail = false;
+    const retried = await createBookOrder({ userId: student.id, input: order, screenshotFile });
+    expect(retried).toMatchObject({ ok: true });
+    expect(await prisma.bookOrder.findFirstOrThrow()).toMatchObject({ upiTransactionId: "UTR-RETRY-1", paymentScreenshotPath: expect.stringContaining("book-order-") });
+    expect(await prisma.userCartItem.count()).toBe(0);
+  });
+
+  it("a refused order deletes the screenshot it stored", async () => {
+    const student = await createUser();
+    const book = await createBook({ inventoryPurchased: 5 });
+    const screenshotFile = new File([new Uint8Array([1, 2, 3])], "proof.png", { type: "image/png" });
+    await placeOrder(student.id, [{ bookId: book.id, quantity: 1 }]);
+    const used = (await prisma.bookOrder.findFirstOrThrow()).upiTransactionId!;
+
+    const again = await createBookOrder({ userId: student.id, input: { ...input([{ bookId: book.id, quantity: 1 }]), upiTransactionId: used }, screenshotFile });
+    expect(again).toMatchObject({ ok: false, status: 409 });
+    expect(uploads.deleted).toEqual([expect.stringContaining("book-order-")]);
   });
 
   it("repeated lines for one book become one line and count against the per-book limit", async () => {

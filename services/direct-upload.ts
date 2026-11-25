@@ -14,6 +14,7 @@ import {
   contentMismatchMessage,
   declaredUploadError,
   newObjectTarget,
+  putPublicObject,
   sniffMime,
   UploadError,
   type StoredMime,
@@ -174,6 +175,13 @@ export async function finalizeUpload(kind: UploadKind, key: string, ownerId: str
     const sniffed = sniffMime(bytes);
     if (!sniffed || sniffed !== declared || !(rules.allowed as readonly string[]).includes(sniffed)) {
       throw new UploadError(contentMismatchMessage(rules));
+    }
+
+    if (visibility === "public") {
+      // Public files are images: read whole, resized and re-encoded, then stored.
+      const whole = await client.send(new GetObjectCommand({ Bucket: stagingBucket, Key: key }));
+      const buffer = whole.Body ? Buffer.from(await whole.Body.transformToByteArray()) : Buffer.alloc(0);
+      return await putPublicObject(prefix, idPrefix, buffer, sniffed);
     }
 
     const target = newObjectTarget(visibility, prefix, idPrefix, sniffed);

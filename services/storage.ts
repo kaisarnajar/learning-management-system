@@ -1,5 +1,7 @@
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { stripPublicStorageBase } from "@/config/storage-urls";
+import { optimizeImage, PUBLIC_OBJECT_CACHE_CONTROL } from "@/services/image-optimize";
 import { getPrivateBucketName, getR2Client, R2_BUCKET_NAME, R2_PUBLIC_URL } from "@/utils/s3";
 
 /**
@@ -153,17 +155,33 @@ export function newObjectTarget(
 }
 
 /**
+ * Stores the bytes of a verified public file (images resized and re-encoded
+ * first, services/image-optimize.ts) at a fresh key with a long cache
+ * lifetime. Returns the public URL.
+ */
+export async function putPublicObject(prefix: StoragePrefix, idPrefix: string, buffer: Buffer, mime: StoredMime): Promise<{ location: string; mime: StoredMime; size: number }> {
+  const optimized = await optimizeImage(buffer, mime);
+  const target = newObjectTarget("public", prefix, idPrefix, optimized.mime);
+  await getR2Client().send(
+    new PutObjectCommand({
+      Bucket: target.bucket,
+      Key: target.key,
+      Body: optimized.buffer,
+      ContentType: optimized.mime,
+      CacheControl: PUBLIC_OBJECT_CACHE_CONTROL,
+    }),
+  );
+  return { location: target.location, mime: optimized.mime, size: optimized.buffer.length };
+}
+
+/**
  * Validates (declared and sniffed) and stores a public file under
  * uploads/<prefix>/<idPrefix>-<unique>.<ext>. Returns the public URL.
  * Throws UploadError with a user-safe message when the file is refused.
  */
 export async function uploadToR2(prefix: StoragePrefix, idPrefix: string, file: File, rules: UploadRules): Promise<string> {
   const { buffer, mime } = await readVerified(file, rules);
-  const target = newObjectTarget("public", prefix, idPrefix, mime);
-  await getR2Client().send(
-    new PutObjectCommand({ Bucket: target.bucket, Key: target.key, Body: buffer, ContentType: mime }),
-  );
-  return target.location;
+  return (await putPublicObject(prefix, idPrefix, buffer, mime)).location;
 }
 
 // ---------------------------------------------------------------------------
@@ -254,9 +272,7 @@ export function r2KeyFromUrl(
     return privateKey.startsWith(`private/${prefix}/`) ? { bucket: getPrivateBucketName(), key: privateKey } : null;
   }
   if (visibility === "private") return null;
-  let key = urlOrPath;
-  if (R2_PUBLIC_URL && key.startsWith(R2_PUBLIC_URL)) key = key.slice(R2_PUBLIC_URL.length);
-  key = key.replace(/^\/+/, "");
+  const key = stripPublicStorageBase(urlOrPath);
   return key.startsWith(`uploads/${prefix}/`) ? { bucket: R2_BUCKET_NAME, key } : null;
 }
 
@@ -269,9 +285,7 @@ export function r2KeyFromUrl(
 export function ownedProfileImageKey(userId: string, urlOrPath: string | null | undefined): string | null {
   if (!userId || !urlOrPath) return null;
   if (urlOrPath.includes("..") || urlOrPath.includes("%")) return null;
-  let key = urlOrPath;
-  if (R2_PUBLIC_URL && key.startsWith(`${R2_PUBLIC_URL}/`)) key = key.slice(R2_PUBLIC_URL.length);
-  key = key.replace(/^\//, "");
+  const key = stripPublicStorageBase(urlOrPath);
   const escapedId = userId.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`^uploads/profiles/${escapedId}-[A-Za-z0-9-]+\\.(jpg|png|webp|gif)$`).test(key) ? key : null;
 }

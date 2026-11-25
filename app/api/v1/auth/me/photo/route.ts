@@ -28,7 +28,7 @@ function isUploaded(image: string | null | undefined): image is string {
 
 /**
  * Uploads a profile photo: multipart/form-data with an `image` file (JPEG,
- * PNG or WebP, checked by content). As on the website, female profiles use
+ * PNG, WebP or GIF, checked by content). As on the website, female profiles use
  * the default avatar and cannot upload a photo. The previous upload is
  * removed only after the profile points at the new one. A request whose
  * Content-Length is over MAX_PHOTO_REQUEST_BYTES gets 413 before its body is read.

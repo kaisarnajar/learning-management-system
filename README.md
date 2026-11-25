@@ -39,7 +39,7 @@ Replace the standard asset URLs in this file to match your academy's files:
 ### 3. Business Rules (`config/constants/`)
 Configure the core operational logic of the platform by editing the files in this directory:
 - `payments.ts`: Payment types, statuses and methods (amounts are stored as integer paise).
-- `file.ts`: Update max upload sizes and supported PDF/Image extensions.
+- `file.ts`: Update max upload sizes (the accepted file types per upload are in `services/upload-kinds.ts`).
 - `business.ts`: Set rules like minimum grade requirements, grace periods, or attendance policies.
 
 ### 4. UI Design System (`app/globals.css` & `services/pdf-generator.ts`)

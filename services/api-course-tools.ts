@@ -451,7 +451,7 @@ export function getStudentGrades(request: NextRequest, portal: CoursePortal, cou
         rollNumberLabel: formatRollNumber(report.enrollment.rollNumber),
       },
       courseTitle: report.course.title,
-      summary: { exams: report.records.length, obtained, max, percentage: max === 0 ? 0 : Math.round((obtained / max) * 100) },
+      summary: { exams: report.records.length, obtained: Math.round(obtained * 100) / 100, max, percentage: max === 0 ? 0 : Math.round((obtained / max) * 100) },
       records: report.records.map((r) => ({
         id: r.id,
         title: r.grade.title,

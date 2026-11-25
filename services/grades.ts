@@ -1,6 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/utils/prisma";
-import { withDbErrorHandling } from "@/utils/db-error";
+import { DbError, withDbErrorHandling } from "@/utils/db-error";
 
 /**
  * marksObtained is migrating from Float to DECIMAL(6,2) (expand step:
@@ -177,6 +177,13 @@ export async function saveCourseGradeToDb(
           },
           update: marksData(record.marksObtained),
         });
+      }
+
+      // Lowering maxMarks must not leave a stored mark above it; students
+      // not in this save (e.g. completed ones) still have their marks.
+      const highest = await tx.courseGradeRecord.aggregate({ where: { gradeId: grade.id }, _max: { marksObtained: true } });
+      if ((highest._max.marksObtained ?? 0) > maxMarks) {
+        throw new DbError("UNKNOWN", `A student already has ${highest._max.marksObtained} marks on this test; maximum marks cannot be lower than that.`);
       }
     });
   }, "Failed to save grades");

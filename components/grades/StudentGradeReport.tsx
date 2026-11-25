@@ -46,7 +46,8 @@ export function StudentGradeReport({
     totalMaxMarks += record.grade.maxMarks;
   }
 
-  const percentage = totalMaxMarks === 0 ? 0 : Math.round((totalMarksObtained / totalMaxMarks) * 100);
+  const exactPercentage = totalMaxMarks === 0 ? 0 : (totalMarksObtained / totalMaxMarks) * 100;
+  const percentage = Math.round(exactPercentage);
 
   return (
     <div className="space-y-6">
@@ -94,7 +95,7 @@ export function StudentGradeReport({
             <div className="text-xs text-muted uppercase tracking-wide">Max</div>
           </div>
           <div className="pl-6 border-l border-border">
-            <div className={`text-2xl font-bold ${percentage >= 40 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
+            <div className={`text-2xl font-bold ${exactPercentage >= 40 ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
               {percentage}%
             </div>
             <div className="text-xs text-muted uppercase tracking-wide">Percentage</div>

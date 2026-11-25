@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getHomepageDailyInspiration } from "@/services/daily-inspiration";
 import { apiServerError } from "@/utils/api-response";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const inspiration = await getHomepageDailyInspiration();
     return NextResponse.json({

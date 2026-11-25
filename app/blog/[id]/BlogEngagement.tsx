@@ -1,8 +1,10 @@
 "use client";
 
+import { BUSINESS_TIMEZONE } from "@/config/constants/business";
 import { useState, useTransition } from "react";
 import { Heart, MessageCircle, Share2, MoreVertical, Edit2, Trash2, User as UserIcon } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { toggleLike, addComment, deleteComment, editComment, loadMoreComments } from "./actions";
 import { ConfirmationModal } from "@/components/shared/ConfirmationModal";
 import { useToast } from "@/components/shared/ToastProvider";
@@ -74,22 +76,31 @@ export function BlogEngagement({
   const [editContent, setEditContent] = useState("");
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const router = useRouter();
+  const loginPath = `/login?callbackUrl=${encodeURIComponent(`/blog/${blogPostId}`)}`;
 
   const handleLike = () => {
     if (!currentUserId) {
-      window.location.href = `/login?callbackUrl=/blog/${blogPostId}`;
+      router.push(loginPath);
       return;
     }
 
+    // Optimistic; a failure restores exactly what was shown before the click.
+    const previous = { hasLiked, likeCount };
     setHasLiked(!hasLiked);
     setLikeCount(hasLiked ? likeCount - 1 : likeCount + 1);
 
     startTransitionLike(async () => {
-      const res = await toggleLike(blogPostId);
-      if (res?.error) {
-        setHasLiked(hasLiked);
-        setLikeCount(hasLiked ? likeCount : likeCount - 1);
-        addToast(res.error, "error");
+      let error: string | undefined;
+      try {
+        error = (await toggleLike(blogPostId))?.error;
+      } catch {
+        error = "Could not update your like. Please try again.";
+      }
+      if (error) {
+        setHasLiked(previous.hasLiked);
+        setLikeCount(previous.likeCount);
+        addToast(error, "error");
       }
     });
   };
@@ -118,7 +129,7 @@ export function BlogEngagement({
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUserId) {
-      window.location.href = `/login?callbackUrl=/blog/${blogPostId}`;
+      router.push(loginPath);
       return;
     }
 
@@ -127,8 +138,16 @@ export function BlogEngagement({
     setIsSubmittingComment(true);
     setCommentError("");
 
-    const res = await addComment(blogPostId, newComment);
-    setIsSubmittingComment(false);
+    let res: Awaited<ReturnType<typeof addComment>> | undefined;
+    try {
+      res = await addComment(blogPostId, newComment);
+    } catch {
+      setCommentError("Could not post your comment. Please try again.");
+      return;
+    } finally {
+      // A rejected request (network drop, new deployment) must not leave the button disabled.
+      setIsSubmittingComment(false);
+    }
 
     if (res?.error) {
       setCommentError(res.error);
@@ -142,13 +161,20 @@ export function BlogEngagement({
   const handleDeleteComment = async (commentId: string) => {
     setOpenMenuId(null);
     const originalComments = [...comments];
+    const originalTotal = commentTotal;
     setComments(comments.filter((c) => c.id !== commentId));
     setCommentTotal((total) => Math.max(0, total - 1));
 
-    const res = await deleteComment(commentId);
-    if (res?.error) {
+    let error: string | undefined;
+    try {
+      error = (await deleteComment(commentId))?.error;
+    } catch {
+      error = "Could not delete the comment. Please try again.";
+    }
+    if (error) {
       setComments(originalComments);
-      addToast(res.error, "error");
+      setCommentTotal(originalTotal);
+      addToast(error, "error");
     }
   };
 
@@ -272,6 +298,7 @@ export function BlogEngagement({
                     </span>
                     <span className="text-xs text-muted">
                       {new Date(comment.createdAt).toLocaleDateString("en-US", {
+                        timeZone: BUSINESS_TIMEZONE,
                         month: "short",
                         day: "numeric",
                         year: "numeric",

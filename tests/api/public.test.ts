@@ -187,18 +187,18 @@ describe.skipIf(SKIP_WITHOUT_DB)("public /api/v1 routes", () => {
     });
 
     it("returns the daily inspiration (or none)", async () => {
-      const empty = await jsonOf(await dailyInspiration(apiRequest("/api/v1/daily-inspiration")));
+      const empty = await jsonOf(await dailyInspiration());
       expect(empty).toMatchObject({ success: true });
 
       await prisma.dailyInspiration.create({ data: { kind: "QURAN", arabicText: "نص", englishTranslation: "Text", published: true } });
-      const data = await jsonOf(await dailyInspiration(apiRequest("/api/v1/daily-inspiration")));
+      const data = await jsonOf(await dailyInspiration());
       expect(data.inspiration).toMatchObject({ englishTranslation: "Text" });
     });
 
     it("exposes payment details for paying but not internal switches", async () => {
       await setPaymentSettings({ upiId: "academy@bank", bankName: "Bank", includeGstByDefault: true, autoApproveFullWaivers: true, feeWaiverEnabled: true });
 
-      const data = await jsonOf(await paymentSettings(apiRequest("/api/v1/payment-settings")));
+      const data = await jsonOf(await paymentSettings());
 
       expect(data.settings).toMatchObject({ upiId: "academy@bank", bankName: "Bank", feeWaiverEnabled: true });
       expect(data.settings).not.toHaveProperty("includeGstByDefault");

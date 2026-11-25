@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { getPaymentSettings } from "@/services/payment-settings";
 import { apiServerError } from "@/utils/api-response";
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const settings = await getPaymentSettings();
     return NextResponse.json({

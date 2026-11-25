@@ -38,6 +38,8 @@ export const RATE_LIMITS = {
   // Every sign-in attempt from one network: caps a burst before failures land.
   LOGIN_IP: { name: "auth:login:ip", limit: 30, windowSeconds: 15 * 60 },
   CHANGE_PASSWORD: { name: "auth:change-password", limit: 5, windowSeconds: 15 * 60 },
+  // Password confirmations when verifying an address, per account.
+  VERIFY_EMAIL: { name: "auth:verify-email", limit: 5, windowSeconds: 15 * 60 },
   REGISTER_IP: { name: "auth:register:ip", limit: 5, windowSeconds: 60 * 60 },
   FORGOT_PASSWORD_EMAIL: { name: "auth:forgot:email", limit: 3, windowSeconds: 15 * 60 },
   FORGOT_PASSWORD_IP: { name: "auth:forgot:ip", limit: 10, windowSeconds: 60 * 60 },

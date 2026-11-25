@@ -15,13 +15,14 @@ export async function signIn(page: Page, email: string, password: string = FIXTU
  * The verification link is e-mailed and only its hash is stored, so the test
  * replaces the stored token with one it knows and opens that link.
  */
-export async function verifyEmailThroughLink(page: Page, email: string): Promise<void> {
+export async function verifyEmailThroughLink(page: Page, email: string, password: string = FIXTURES.password): Promise<void> {
   const token = `e2e-${createHash("sha256").update(email).digest("hex")}`;
   await db().verificationToken.deleteMany({ where: { identifier: email } });
   await db().verificationToken.create({
     data: { identifier: email, token: createHash("sha256").update(token).digest("hex"), expires: new Date(Date.now() + 3_600_000) },
   });
   await page.goto(`/verify-email?token=${encodeURIComponent(token)}`);
+  await page.getByLabel("Your account password").fill(password);
   await page.getByRole("button", { name: /confirm email/i }).click();
   await expect(page.getByRole("heading", { name: "Email Verified" })).toBeVisible();
 }

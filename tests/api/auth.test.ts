@@ -240,9 +240,35 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       const { token } = await generateVerificationToken("verify.me@example.test");
       const form = new FormData();
       form.set("token", token);
+      form.set("password", "long-enough-1");
 
       expect((await runAction(() => confirmEmailVerification(form))).redirectedTo).toBe("/verify-email?verified=1");
       expect((await refreshWith(refreshToken)).status).toBe(401);
+    });
+
+    it("a password account is verified only with its password, so a squatter's password never gets a verified address", async () => {
+      await registerSquatter("squatted@example.test");
+      const { token } = await generateVerificationToken("squatted@example.test");
+      const verifiedAt = async () => (await prisma.user.findUniqueOrThrow({ where: { email: "squatted@example.test" } })).emailVerified;
+
+      // The mailbox owner clicks "Confirm" without knowing the squatter's password.
+      const blank = new FormData();
+      blank.set("token", token);
+      expect((await runAction(() => confirmEmailVerification(blank))).redirectedTo).toBe(
+        `/verify-email?token=${encodeURIComponent(token)}&error=password`,
+      );
+      const wrong = new FormData();
+      wrong.set("token", token);
+      wrong.set("password", "owner-guess-1");
+      expect((await runAction(() => confirmEmailVerification(wrong))).redirectedTo).toContain("error=password");
+      expect(await verifiedAt()).toBeNull();
+
+      // The link still works for the person who did set the password.
+      const right = new FormData();
+      right.set("token", token);
+      right.set("password", "long-enough-1");
+      expect((await runAction(() => confirmEmailVerification(right))).redirectedTo).toBe("/verify-email?verified=1");
+      expect(await verifiedAt()).not.toBeNull();
     });
 
     it("a verification link matches by hash only: the stored value is not itself a token", async () => {
@@ -329,6 +355,7 @@ describe.skipIf(SKIP_WITHOUT_DB)("/api/v1/auth", () => {
       const { token } = await generateVerificationToken("verify.web@example.test");
       const form = new FormData();
       form.set("token", token);
+      form.set("password", "long-enough-1");
       await runAction(() => confirmEmailVerification(form));
       expect(await sessionVersionOf("verify.web@example.test")).toBe(1);
 

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireAdmin } from "@/services/auth-actions";
 import { deleteUpload } from "@/services/uploads";
-import { syncEnrollmentsWithCourseStatus } from "@/services/completion";
+import { syncEnrollmentsWithCourseStatusIn } from "@/services/completion-sync";
 import { resolveCourseFeaturedUpdate } from "@/services/courses";
 import { prisma } from "@/utils/prisma";
 import { getDefaultFeesForLevel } from "@/services/course-pricing";
@@ -140,16 +140,19 @@ export async function updateCourse(id: string, formData: FormData) {
       }
     }
 
-    await prisma.course.update({
-      where: { id },
-      data: { title, ...courseData, ...featured },
-    });
-
     // Only a status change moves enrollments between active and completed;
-    // editing a title or fee must not touch them.
-    if (statusChanged) {
-      await syncEnrollmentsWithCourseStatus(id, courseData.status);
-    }
+    // editing a title or fee must not touch them. Both writes commit together:
+    // a course saved as completed with its students still active would not
+    // be repaired by saving again, since the status would no longer change.
+    await prisma.$transaction(async (tx) => {
+      await tx.course.update({
+        where: { id },
+        data: { title, ...courseData, ...featured },
+      });
+      if (statusChanged) {
+        await syncEnrollmentsWithCourseStatusIn(tx, id, courseData.status);
+      }
+    });
 
     revalidatePath("/");
 

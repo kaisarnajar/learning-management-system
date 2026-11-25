@@ -227,3 +227,104 @@ These need the production environment and were not changed from the repository
    changes the response for installed apps, so it waits for a mobile release that
    reads paginated responses.
 
+
+## 8. Response times from India (2026-11-25)
+
+Measured from India, every `/api/v1` call took 400–800 ms warm (1.5–5 s cold),
+and the images on the Home screen totalled 13.4 MB. The repository side is in
+place: `/api/v1` no longer gets Auth.js cookies, public GETs are cacheable at
+the edge, and public images are resized on upload. The steps below need the
+Vercel, Neon and Cloudflare dashboards. Do them in this order.
+
+### 8.1 Region: functions next to the database, both near the users
+
+Responses carry `X-Vercel-Id: bom1::iad1::…`: the request enters Vercel in
+Mumbai, but the function runs in Washington DC (no `regions` in
+`vercel.json`). `GET /api/v1/home` (eight queries) is barely slower than
+`/api/v1/occupations` (no queries), so the database is next to the function,
+in US East. Each request makes several queries, so **moving only the functions
+to `bom1` would make every request slower**. Move the database first.
+
+1. **Confirm the Neon region** of production and of staging/preview: the
+   Neon console (Project settings → Region), or the host in `DATABASE_URL`
+   (`ep-….<region>.aws.neon.tech`, e.g. `us-east-1` or `ap-south-1`).
+2. **If it is `ap-south-1` (Mumbai) already:** add `"regions": ["bom1"]` to
+   `vercel.json`, deploy, done. (`ap-southeast-1` Singapore: use `sin1`.)
+3. **If it is in the US:** a Neon project cannot change region; create a new
+   one in **AWS ap-south-1** and move the data in a short maintenance window:
+   1. Create the project (same Postgres major version). Note its pooler and
+      direct URLs.
+   2. Rehearse: `pg_dump --format=custom --no-owner --no-acl "$OLD_DIRECT_URL" > prod.dump`,
+      then `pg_restore --no-owner --no-acl -d "$NEW_DIRECT_URL" prod.dump`, then
+      `npm run db:drift` and `prisma migrate status` against the new
+      `DIRECT_URL`: no pending migrations, no drift. Spot-check a few row counts.
+   3. Window: put the site in maintenance (or accept a few minutes of failed
+      writes), dump and restore again, set `DATABASE_URL` (pooler, with
+      `connection_limit=5&pool_timeout=10`) and `DIRECT_URL` (direct) for
+      **Production** in Vercel, add `"regions": ["bom1"]` to `vercel.json`,
+      and deploy `master`.
+   4. Keep the old project for a week (read-only) in case you need to roll back.
+4. **Staging and preview:** same region (a separate Neon project or branch in
+   `ap-south-1`, never production's, see §1). `regions` in `vercel.json` applies
+   to every environment, so staging must move before or with production.
+5. **Crons** (`/api/cron/*`) run in the function region and are unaffected;
+   after the change, check the next day's run in Vercel → Cron Jobs.
+6. **Check:** `curl -sI https://darsequranacademy.com/api/v1/occupations` shows
+   `X-Vercel-Id: bom1::bom1::…`.
+
+### 8.2 Cold starts
+
+1. **Fluid compute** on (Vercel → Project → Settings → Functions). It reuses
+   warm instances for concurrent requests.
+2. **Pool size** (§1 rule 8, §7 item 1): `connection_limit=5&pool_timeout=10` on
+   the pooler `DATABASE_URL` of **every** environment, then redeploy.
+3. **Neon scale-to-zero:** on staging, either turn off auto-suspend or accept
+   that the first request after 5 minutes idle takes a few seconds. On
+   production, keep the compute always on (its minimum size costs little).
+4. **Check:** after 10+ minutes idle, the first `GET /api/v1/home` takes under ~1 s.
+
+### 8.3 Images: a custom domain, then the existing files
+
+New public images (blog, announcement, book and library covers, profile
+photos) are stored as WebP, at most 1200 px on the long side, without
+metadata, with `Cache-Control: public, max-age=31536000, immutable`
+(`services/image-optimize.ts`). Older uploads are still full-size originals
+on the `r2.dev` address, which Cloudflare rate-limits and does not cache.
+
+1. **Custom domain:** Cloudflare → R2 → the public bucket → Settings → Custom
+   Domains → add `media.darsequranacademy.com` (staging: its own bucket, or a
+   domain like `media-staging.…`). The `r2.dev` URL keeps working alongside.
+2. **Switch new uploads** (Vercel, per environment):
+   `R2_PUBLIC_URL=https://media.darsequranacademy.com` and
+   `R2_LEGACY_PUBLIC_URLS=https://pub-….r2.dev` (the old value). Redeploy:
+   stored URLs on either address are then recognised (CSP, next/image,
+   deleting, profile photos).
+3. **Existing files:** with the same R2 settings and the production
+   `DATABASE_URL` in your shell:
+   `npx tsx scripts/optimize-public-images.ts` (dry run: sizes before and
+   after, rows that would change), then `--apply`. It writes new `.webp`
+   objects next to the originals, rewrites every stored URL to
+   `R2_PUBLIC_URL`, and saves the old → new mapping in `scripts/out/`.
+   The originals stay, so URLs an installed app still has keep working.
+   Run it on staging first.
+4. After a few days, once nothing loads from `r2.dev`, remove
+   `R2_LEGACY_PUBLIC_URLS` and, if you like, disable the bucket's `r2.dev`
+   access. Delete originals only from the snapshot list.
+5. **Check:** the images in `GET /api/v1/home` total under ~2 MB, and
+   `curl -sI` on one of them shows the long `Cache-Control` from the new domain.
+
+### 8.4 Edge caching of public content
+
+Public GETs (`home`, `app-config`, `courses`, `teachers`, `blog`, `fatwa`,
+`library`, `bookstore`, `announcements`, their `/{id}` routes, `occupations`,
+`daily-inspiration`) answer an anonymous request (no `Authorization` header)
+with `Cache-Control: public, s-maxage=60, stale-while-revalidate=300`
+(`publicJson` in `utils/api-response.ts`). Requests with a Bearer token get
+`private, no-store`, because `courses/{id}` and `blog/{id}` add the caller's own
+data. All responses carry `Vary: Authorization`. Everything else (auth,
+payments, enrollments, carts, orders, notifications, admin, teacher, every
+write) is untouched. Admin changes reach the apps within about a minute.
+
+**Check:** a second anonymous `curl -sI 'https://darsequranacademy.com/api/v1/courses?page=1'`
+shows `X-Vercel-Cache: HIT` and no `Set-Cookie`. The same request with
+`-H 'Authorization: Bearer …'` shows `MISS` and `private, no-store`.

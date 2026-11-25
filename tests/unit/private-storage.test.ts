@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { ConfigError, getPrivateBucketName } from "@/utils/s3";
+import { getPrivateBucketName } from "@/utils/s3";
 import { certificatePdfKey, deleteStoredCertificatePdf, receiptPdfKey, storeCertificatePdf } from "@/services/documents";
 import { deletePrivateObject, putPrivateObject } from "@/services/storage";
 import { prisma } from "@/utils/prisma";
@@ -34,22 +34,16 @@ describe("the private bucket", () => {
   it.each([
     ["NODE_ENV", "production"],
     ["VERCEL_ENV", "production"],
-  ])("throws in production (%s=%s) when it is missing", (name, value) => {
+    ["NODE_ENV", "development"],
+  ])("is the main bucket (%s=%s) when it is missing", (name, value) => {
     vi.stubEnv(name, value);
     vi.stubEnv("R2_PRIVATE_BUCKET_NAME", "");
-    expect(() => getPrivateBucketName()).toThrow(ConfigError);
-    expect(() => getPrivateBucketName()).toThrow(/R2_PRIVATE_BUCKET_NAME is not set/);
+    expect(getPrivateBucketName()).toBe("public-bucket");
   });
 
-  it("throws in production when it is the public bucket", () => {
+  it("is the main bucket when it names the public bucket", () => {
     vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("R2_PRIVATE_BUCKET_NAME", "public-bucket");
-    expect(() => getPrivateBucketName()).toThrow(/must differ from R2_BUCKET_NAME/);
-  });
-
-  it("falls back to the main bucket outside production", () => {
-    vi.stubEnv("NODE_ENV", "development");
-    vi.stubEnv("R2_PRIVATE_BUCKET_NAME", "");
     expect(getPrivateBucketName()).toBe("public-bucket");
   });
 });

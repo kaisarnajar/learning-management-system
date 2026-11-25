@@ -57,23 +57,22 @@ let warnedPrivateFallback = false;
 
 /**
  * The bucket for objects served only through /api/files: payment screenshots,
- * course attachments, receipts and certificates. It must have no public
- * access, so in production a missing R2_PRIVATE_BUCKET_NAME, or one equal to
- * R2_BUCKET_NAME, throws at first use instead of quietly putting private files
- * in the public bucket. Outside production it falls back to the main bucket
- * (with a warning) so development and tests run without a second bucket.
+ * course attachments, receipts and certificates. R2_PRIVATE_BUCKET_NAME names
+ * a separate bucket without public access; when it is unset (or equal to
+ * R2_BUCKET_NAME) the main bucket's private/ prefix is used, in production
+ * too. /api/files still checks ownership either way, but objects in the main
+ * bucket are also reachable through its public URL by anyone who has the key,
+ * so a warning is logged once.
  */
 export function getPrivateBucketName(): string {
   const privateBucket = process.env.R2_PRIVATE_BUCKET_NAME?.trim() ?? "";
   const publicBucket = process.env.R2_BUCKET_NAME?.trim() ?? "";
   if (privateBucket && privateBucket !== publicBucket) return privateBucket;
-  const message = privateBucket
-    ? "R2_PRIVATE_BUCKET_NAME must differ from R2_BUCKET_NAME: private files would be publicly readable (see .env.example)."
-    : "R2_PRIVATE_BUCKET_NAME is not set: private files would go to the public bucket (see .env.example).";
-  if (isProductionRuntime()) throw new ConfigError(message);
   if (!warnedPrivateFallback) {
     warnedPrivateFallback = true;
-    console.warn(`[storage] ${message} Using R2_BUCKET_NAME outside production.`);
+    console.warn(
+      "[storage] No separate R2_PRIVATE_BUCKET_NAME: private files use the private/ prefix of R2_BUCKET_NAME (see .env.example).",
+    );
   }
-  return privateBucket || publicBucket;
+  return publicBucket;
 }

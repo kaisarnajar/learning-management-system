@@ -1,8 +1,8 @@
 /**
  * Prints, or applies, the R2 CORS rule that lets the website PUT direct
  * uploads (services/direct-upload.ts) to the bucket holding staging/ objects:
- * R2_PRIVATE_BUCKET_NAME (outside production it may fall back to
- * R2_BUCKET_NAME, as the app does). Until the rule exists, browsers cannot
+ * R2_PRIVATE_BUCKET_NAME, or R2_BUCKET_NAME when no separate bucket is set,
+ * as the app does. Until the rule exists, browsers cannot
  * upload directly and files up to 4 MB fall back to the form upload.
  *
  * Usage:
@@ -32,7 +32,7 @@ async function main() {
   const bucketArg = process.argv.find((arg) => arg.startsWith("--bucket="));
   const bucket = bucketArg ? bucketArg.slice("--bucket=".length) : getPrivateBucketName();
   if (!bucket) {
-    console.error("No bucket: set R2_PRIVATE_BUCKET_NAME, or pass --bucket=name.");
+    console.error("No bucket: set R2_BUCKET_NAME (or R2_PRIVATE_BUCKET_NAME), or pass --bucket=name.");
     process.exitCode = 1;
     return;
   }

@@ -169,9 +169,8 @@ export async function uploadToR2(prefix: StoragePrefix, idPrefix: string, file: 
 // ---------------------------------------------------------------------------
 // Private objects: served through /api/files/<key>, which checks ownership
 // and redirects to a short-lived presigned URL. They live in
-// R2_PRIVATE_BUCKET_NAME, a bucket without public access, which production
-// requires (getPrivateBucketName). Outside production they fall back to the
-// private/ prefix of the main bucket.
+// R2_PRIVATE_BUCKET_NAME when it names a separate bucket, otherwise in the
+// private/ prefix of the main bucket (getPrivateBucketName).
 // ---------------------------------------------------------------------------
 
 export const PRIVATE_FILE_ROUTE = "/api/files/";

@@ -44,7 +44,8 @@ export async function getCoursesForTeacherPaginated(
 
   const counts = await withDbErrorHandling(() => prisma.enrollment.groupBy({
       by: ["courseId"],
-      where: { courseId: { in: courses.map((c) => c.id) } },
+      // Students only: pending and rejected applicants are not counted, as in getCoursesForTeacher.
+      where: { courseId: { in: courses.map((c) => c.id) }, statusEnum: { in: [...APPROVED_ENROLLMENT_STATUSES] } },
       _count: { _all: true },
     }), "Database operation failed");
   const countByCourse = new Map(counts.map((row) => [row.courseId, row._count._all]));

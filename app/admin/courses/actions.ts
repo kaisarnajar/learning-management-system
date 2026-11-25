@@ -181,7 +181,7 @@ export async function deleteCourse(id: string) {
       throw new ActionError("Course not found.");
     }
 
-    const [activeStudentCount, submissionCount, attendanceCount, gradeCount, couponCount, waiverRequestCount] =
+    const [activeStudentCount, submissionCount, paymentRecordCount, attendanceCount, gradeCount, couponCount, waiverRequestCount] =
       await withDbErrorHandling(
         () =>
           Promise.all([
@@ -191,6 +191,9 @@ export async function deleteCourse(id: string) {
             // Any submission (pending, decided or voided) is payment history and
             // the foreign key restricts the delete, so all of them block it.
             prisma.coursePaymentSubmission.count({ where: { courseId: id } }),
+            // Income records only detach (SetNull) when the course goes, so a
+            // manual payment would silently lose its course in finance reports.
+            prisma.paymentRecord.count({ where: { courseId: id } }),
             prisma.courseAttendance.count({ where: { courseId: id } }),
             prisma.courseGrade.count({ where: { courseId: id } }),
             prisma.coupon.count({ where: { courseId: id } }),
@@ -205,6 +208,9 @@ export async function deleteCourse(id: string) {
     }
     if (submissionCount > 0) {
       throw new ActionError(`This course can't be deleted because it has ${submissionCount} fee payment submission${submissionCount === 1 ? "" : "s"} on record. Set it to Completed or On Hold instead.`);
+    }
+    if (paymentRecordCount > 0) {
+      throw new ActionError(`This course can't be deleted because ${paymentRecordCount} payment record${paymentRecordCount === 1 ? " refers" : "s refer"} to it. Set it to Completed or On Hold instead.`);
     }
     if (attendanceCount > 0 || gradeCount > 0 || couponCount > 0 || waiverRequestCount > 0) {
       throw new ActionError("This course can't be deleted because it still has attendance, grade, coupon or fee-waiver records. Set it to Completed or On Hold instead.");

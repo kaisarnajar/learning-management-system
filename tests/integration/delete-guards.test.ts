@@ -8,6 +8,7 @@ import { issueApiSession, rotateApiSession } from "@/services/api-auth";
 import { generateVerificationToken } from "@/services/tokens";
 import { deleteBook } from "@/app/admin/bookstore/actions";
 import { removeEnrollmentFromCourse } from "@/app/admin/enrollments/actions";
+import { deleteExpenseById } from "@/app/admin/finance/actions";
 import {
   createBook,
   createCourse,
@@ -108,6 +109,39 @@ describe.skipIf(SKIP_WITHOUT_DB)("delete guards", () => {
 
       expect(flashOf(result.redirectedTo)).toContain("1 fee payment submission on record");
       expect(await prisma.course.count()).toBe(1);
+    });
+  });
+
+  describe("financial links", () => {
+    it("keeps a course that a manual payment record refers to", async () => {
+      const course = await createCourse();
+      const student = await createUser();
+      await prisma.paymentRecord.create({ data: { userId: student.id, courseId: course.id, amountInrPaise: 100, paidAt: new Date() } });
+
+      const result = await runAction(() => deleteCourse(course.id));
+
+      expect(decodeURIComponent(new URL(result.redirectedTo ?? "/", "http://x").searchParams.get("msg") ?? "")).toContain("1 payment record refers to it");
+      expect(await prisma.course.count()).toBe(1);
+      expect((await prisma.paymentRecord.findFirstOrThrow()).courseId).toBe(course.id);
+    });
+
+    it("keeps a teacher whose salary expenses are on record", async () => {
+      const teacher = await createTeacher({ name: "Ustadh Umar" });
+      await prisma.expense.create({ data: { category: "teacher_salary", amountInrPaise: 500000, paidAt: new Date(), teacherId: teacher.id } });
+
+      expect((await deleteTeacherById(teacher.id)).error).toContain("1 salary expense on record");
+      expect(await prisma.teacher.count()).toBe(1);
+    });
+
+    it("audits an expense delete with the removed row", async () => {
+      const expense = await prisma.expense.create({ data: { category: "rent", amountInrPaise: 120000, paidAt: new Date() } });
+
+      expect((await deleteExpenseById(expense.id)).redirectTo).toContain("deleted=1");
+
+      expect(await prisma.expense.count()).toBe(0);
+      const audit = await prisma.auditLog.findFirstOrThrow({ where: { entity: "Expense", entityId: expense.id } });
+      expect(audit).toMatchObject({ action: "delete", actorEmail: "admin@example.test" });
+      expect(audit.before).toMatchObject({ amountInrPaise: 120000, category: "rent" });
     });
   });
 

@@ -208,7 +208,7 @@ These need the production environment and were not changed from the repository
 3. **Unique indexes that may be missing (O-3).** Three migrations create partial
    unique indexes inside a block that turns a duplicate-row failure into a
    warning, so `migrate deploy` succeeds without the index. Run once against
-   production (read-only) and expect five rows:
+   production (read-only) and expect four rows:
 
    ```sql
    SELECT indexname FROM pg_indexes WHERE indexname IN (
@@ -218,7 +218,7 @@ These need the production environment and were not changed from the repository
      'BookOrder_upiTransactionId_partial_key');
    ```
 
-   Four names are listed because one index is created by two migrations. If any is
+   (The label index is created by two of the migrations, hence four names.) If any is
    missing, find the duplicates with the matching `GROUP BY ... HAVING count(*) > 1`
    query from that migration, resolve them with a dry-run data script (§4), and
    re-run the index statement on a Neon branch first.

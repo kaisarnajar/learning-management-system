@@ -108,7 +108,7 @@ export function StudentGradeReport({
           <p className="text-muted">No grade records found for this student yet.</p>
         </div>
       ) : (
-        <div className="bg-surface border border-border rounded-lg overflow-hidden shadow-sm">
+        <div className="bg-surface border border-border rounded-lg overflow-x-auto shadow-sm">
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-surface-muted">
               <tr>

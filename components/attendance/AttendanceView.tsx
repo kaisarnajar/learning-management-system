@@ -42,7 +42,7 @@ export function AttendanceView({ courseId, baseUrl, date, records }: AttendanceV
         </div>
       </div>
 
-      <div className="bg-surface border border-border rounded-lg overflow-hidden shadow-sm">
+      <div className="bg-surface border border-border rounded-lg overflow-x-auto shadow-sm">
         <table className="min-w-full divide-y divide-border">
           <thead className="bg-surface-muted">
             <tr>

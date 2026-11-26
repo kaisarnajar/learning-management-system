@@ -11,7 +11,8 @@ import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
 import { CourseThumbnail } from "@/components/courses/CourseThumbnail";
 import { CourseShareButton } from "@/components/courses/CourseShareButton";
 import { getCourseLevelClass } from "@/services/course-display";
-import { getPublicCourseById } from "@/services/courses";
+import { getCourseForViewer } from "@/services/courses";
+import { isCoursePubliclyVisible } from "@/services/course-status";
 import { getUserCourseEnrollmentMap } from "@/services/enrollments";
 import { isApprovedEnrollment } from "@/services/status-compat";
 import { hasPendingEnrollmentFeeSubmission } from "@/services/monthly-payments";
@@ -27,8 +28,10 @@ type CoursePageProps = {
 
 export async function generateMetadata({ params }: CoursePageProps): Promise<Metadata> {
   const { id } = await params;
-  const course = await getPublicCourseById(id);
+  const session = await auth();
+  const course = await getCourseForViewer(id, session?.user?.id);
   if (!course) return { title: "Course not found" };
+  const hidden = !isCoursePubliclyVisible(course.status);
 
   const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
   const courseUrl = `${baseUrl}/courses/${course.id}`;
@@ -40,6 +43,7 @@ export async function generateMetadata({ params }: CoursePageProps): Promise<Met
     alternates: {
       canonical: courseUrl,
     },
+    ...(hidden ? { robots: { index: false, follow: false } } : {}),
     openGraph: {
       title: `${course.title} | ${BRAND_CONFIG.name}`,
       description: description,
@@ -64,10 +68,10 @@ export async function generateMetadata({ params }: CoursePageProps): Promise<Met
 
 export default async function CourseDetailPage({ params }: CoursePageProps) {
   const { id } = await params;
-  const course = await getPublicCourseById(id);
+  const session = await auth();
+  const course = await getCourseForViewer(id, session?.user?.id);
   if (!course) notFound();
 
-  const session = await auth();
   const enrollmentMap = session?.user?.id
     ? await getUserCourseEnrollmentMap(session.user.id)
     : new Map();

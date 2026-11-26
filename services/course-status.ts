@@ -8,8 +8,8 @@ export const COURSE_STATUS_OPTIONS: {
   { value: "DRAFT", label: "Draft", description: "Hidden from the public site" },
   { value: "PUBLISHED", label: "Published", description: "Listed and open for enrollment" },
   { value: "ONGOING", label: "Ongoing", description: "Course in progress; enrollment open" },
-  { value: "ON_HOLD", label: "On hold", description: "Listed; new enrollments paused" },
-  { value: "COMPLETED", label: "Completed", description: "Course finished; no new enrollments" },
+  { value: "ON_HOLD", label: "On hold", description: "Hidden from the public site; enrollments paused" },
+  { value: "COMPLETED", label: "Completed", description: "Hidden from the public site; course finished" },
   { value: "COMING_SOON", label: "Coming soon", description: "Listed; enrollments not started yet" },
 ];
 
@@ -36,8 +36,15 @@ export function courseStatusBadgeClass(status: CourseStatus): string {
   }
 }
 
+/**
+ * Statuses listed on the public site (course list, homepage, teacher pages,
+ * sitemap, public API). DRAFT, ON_HOLD and COMPLETED courses are hidden;
+ * students already enrolled in one can still open its page.
+ */
+export const PUBLIC_COURSE_STATUSES = ["PUBLISHED", "ONGOING", "COMING_SOON"] as const satisfies readonly CourseStatus[];
+
 export function isCoursePubliclyVisible(status: CourseStatus): boolean {
-  return status !== "DRAFT";
+  return (PUBLIC_COURSE_STATUSES as readonly CourseStatus[]).includes(status);
 }
 
 export function isCourseEnrollmentOpen(status: CourseStatus): boolean {

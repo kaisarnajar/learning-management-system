@@ -1,6 +1,6 @@
 import { cache } from "react";
 import type { Course as PrismaCourse, CourseStatus, Teacher } from "@prisma/client";
-import { isCoursePubliclyVisible } from "@/services/course-status";
+import { isCoursePubliclyVisible, PUBLIC_COURSE_STATUSES } from "@/services/course-status";
 import { clampPage, paginationArgs, type PaginatedResult } from "@/utils/pagination";
 import { prisma } from "@/utils/prisma";
 import { andWhere, buildSearchOr } from "@/utils/text-search";
@@ -35,7 +35,7 @@ export async function getPublicCoursesPaginated(
   searchQuery?: string,
   category?: string,
 ): Promise<PaginatedResult<CourseWithTeacher>> {
-  const baseWhere: any = { status: { not: "DRAFT" as const } };
+  const baseWhere: any = { status: { in: [...PUBLIC_COURSE_STATUSES] } };
   if (category && category !== "All") {
     baseWhere.category = { equals: category, mode: "insensitive" };
   }
@@ -54,12 +54,12 @@ export async function getPublicCoursesPaginated(
 
 export const getFeaturedHomepageCourses = cache(async (): Promise<CourseWithTeacher[]> => {
   const courses = await withDbErrorHandling(() => prisma.course.findMany({
-      where: { featuredOnHomepage: true },
+      where: { featuredOnHomepage: true, status: { in: [...PUBLIC_COURSE_STATUSES] } },
       include: courseWithTeacherInclude,
       orderBy: [{ featuredAt: "desc" }, { updatedAt: "desc" }],
       take: HOMEPAGE_FEATURED_COURSES_MAX,
     }), "Database operation failed");
-  return courses.filter((c) => isCoursePubliclyVisible(c.status));
+  return courses;
 });
 
 export async function getFeaturedHomepageCourseCount(): Promise<number> {
@@ -79,7 +79,7 @@ export async function resolveCourseFeaturedUpdate(options: {
   | { featuredOnHomepage: boolean; featuredAt: Date | null }
   | { error: string }
 > {
-  if (options.status === "DRAFT" || !options.requestFeatured) {
+  if (!isCoursePubliclyVisible(options.status) || !options.requestFeatured) {
     return { featuredOnHomepage: false, featuredAt: null };
   }
 
@@ -145,7 +145,7 @@ export async function getPublicCoursesByTeacherIdPaginated(
   page: number,
   pageSize: number,
 ): Promise<PaginatedResult<CourseWithTeacher>> {
-  const where = { teacherId, status: { not: "DRAFT" as const } };
+  const where = { teacherId, status: { in: [...PUBLIC_COURSE_STATUSES] } };
   const totalCount = await withDbErrorHandling(() => prisma.course.count({ where }), "Database operation failed");
   const safePage = clampPage(page, totalCount, pageSize);
   const items = await withDbErrorHandling(() => prisma.course.findMany({
@@ -161,6 +161,22 @@ export const getPublicCourseById = cache(async (id: string): Promise<CourseWithT
   const course = await getCourseById(id);
   if (!course || !isCoursePubliclyVisible(course.status)) return null;
   return course;
+});
+
+/**
+ * The course page for one viewer: a public course, or an ON_HOLD / COMPLETED
+ * course the viewer is enrolled in (linked from "My courses"). Drafts stay hidden.
+ */
+export const getCourseForViewer = cache(async (id: string, userId?: string): Promise<CourseWithTeacher | null> => {
+  const course = await getCourseById(id);
+  if (!course || course.status === "DRAFT") return null;
+  if (isCoursePubliclyVisible(course.status)) return course;
+  if (!userId) return null;
+  const enrollment = await withDbErrorHandling(
+    () => prisma.enrollment.findFirst({ where: { userId, courseId: id }, select: { id: true } }),
+    "Database operation failed",
+  );
+  return enrollment ? course : null;
 });
 
 

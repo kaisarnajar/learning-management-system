@@ -35,8 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   try {
-    // Every course with a public page: all statuses except DRAFT (ongoing,
-    // completed, on-hold and coming-soon courses are listed on the site too).
+    // Every course listed on the public site (published, ongoing, coming soon).
     const courses = (
       await prisma.course.findMany({
         select: { id: true, status: true, updatedAt: true },

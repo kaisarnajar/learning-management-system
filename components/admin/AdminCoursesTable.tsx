@@ -2,6 +2,7 @@ import Link from "next/link";
 import { DeleteActionButton } from "@/components/shared/DeleteActionButton";
 import { deleteCourse } from "@/app/admin/courses/actions";
 import { CourseStatusBadge } from "@/components/courses/CourseStatusBadge";
+import { isCoursePubliclyVisible } from "@/services/course-status";
 import { getCoursePricingFromCourse } from "@/services/course-pricing";
 import { getFeeFrequencyLabel } from "@/services/fee-frequency";
 import type { CourseWithTeacher } from "@/services/courses";
@@ -60,7 +61,7 @@ export function AdminCoursesTable({
                 <CourseStatusBadge status={course.status} />
               </td>
               <td className="px-4 py-3 text-muted">
-                {course.featuredOnHomepage && course.status !== "DRAFT" ? "Featured" : "Not featured"}
+                {course.featuredOnHomepage && isCoursePubliclyVisible(course.status) ? "Featured" : "Not featured"}
               </td>
               <td className="whitespace-nowrap px-4 py-3">
                 <div className="flex items-center justify-end gap-3">

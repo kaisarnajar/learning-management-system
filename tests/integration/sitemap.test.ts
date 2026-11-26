@@ -8,7 +8,7 @@ import { createCourse, resetDb, SKIP_WITHOUT_DB } from "../helpers/db";
 describe.skipIf(SKIP_WITHOUT_DB)("sitemap", () => {
   beforeEach(resetDb);
 
-  it("lists every course except drafts", async () => {
+  it("lists only public courses (not draft, on hold or completed)", async () => {
     const statuses: CourseStatus[] = ["PUBLISHED", "ONGOING", "COMPLETED", "COMING_SOON", "ON_HOLD", "DRAFT"];
     const courses = Object.fromEntries(
       await Promise.all(statuses.map(async (status) => [status, (await createCourse({ status })).id] as const)),
@@ -17,8 +17,8 @@ describe.skipIf(SKIP_WITHOUT_DB)("sitemap", () => {
     const urls = (await sitemap()).map((entry) => entry.url);
     const listed = (id: string) => urls.some((url) => url.endsWith(`/courses/${id}`));
 
-    for (const status of ["PUBLISHED", "ONGOING", "COMPLETED", "COMING_SOON", "ON_HOLD"]) expect(listed(courses[status])).toBe(true);
-    expect(listed(courses.DRAFT)).toBe(false);
+    for (const status of ["PUBLISHED", "ONGOING", "COMING_SOON"]) expect(listed(courses[status])).toBe(true);
+    for (const status of ["COMPLETED", "ON_HOLD", "DRAFT"]) expect(listed(courses[status])).toBe(false);
   });
 
   it("fails on a database error instead of returning only the static pages", async () => {

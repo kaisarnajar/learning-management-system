@@ -2,7 +2,7 @@ import type { Course } from "@prisma/client";
 import { COURSE_CATEGORIES } from "@/services/course-categories";
 import { getCoursePricingFromCourse, getDefaultFeesForLevel } from "@/services/course-pricing";
 import { getCourseStartDateInputValue } from "@/services/course-start-date";
-import { COURSE_STATUS_OPTIONS, courseStatusLabel } from "@/services/course-status";
+import { COURSE_STATUS_OPTIONS, courseStatusLabel, isCoursePubliclyVisible } from "@/services/course-status";
 import { getFeaturedHomepageCourseCount, HOMEPAGE_FEATURED_COURSES_MAX, type CourseWithTeacher } from "@/services/courses";
 import { FEE_FREQUENCY_OPTIONS, getFeeFrequencyLabel } from "@/services/fee-frequency";
 import { getAllTeachers } from "@/services/teachers";
@@ -28,7 +28,7 @@ export function adminCourseRow(course: CourseWithTeacher, studentCount: number) 
     studentCount,
     status: course.status,
     statusLabel: courseStatusLabel(course.status),
-    featured: course.featuredOnHomepage && course.status !== "DRAFT",
+    featured: course.featuredOnHomepage && isCoursePubliclyVisible(course.status),
     /** Why the website's delete button warns (the delete is refused while students are enrolled). */
     deleteWarning:
       studentCount > 0

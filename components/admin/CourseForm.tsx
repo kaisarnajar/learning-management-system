@@ -406,7 +406,7 @@ export function CourseForm({ course, teachers, featuredCount, action, submitLabe
               <span className="mt-0.5 block text-muted">
                 Featured in the Featured Courses section when not in draft (up to{" "}
                 {HOMEPAGE_FEATURED_COURSES_MAX}; {displayedFeaturedCount}/{HOMEPAGE_FEATURED_COURSES_MAX}{" "}
-                slots used). All public courses still appear on the Courses page.
+                slots used). Published, ongoing and coming-soon courses still appear on the Courses page.
               </span>
             ) : (
               <span className="mt-0.5 block text-muted">

@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { slugifyTitle } from "../utils/slug";
 import { getDemoAdminEmails } from './seed-demo-data';
 import {
   demoAdminUserId,
@@ -155,6 +156,7 @@ export async function seedDemoContent(prisma: PrismaClient) {
       create: {
         id: item.id,
         title: item.title,
+        slug: slugifyTitle(item.title) || item.id,
         excerpt: item.excerpt ?? null,
         body: item.body,
         published: item.published,

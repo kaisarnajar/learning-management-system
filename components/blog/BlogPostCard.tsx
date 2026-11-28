@@ -3,6 +3,7 @@ import { formatBlogAuthorName, formatBlogDate } from "@/services/blogs";
 import { getBlogExcerpt } from "@/utils/html";
 import Image from "next/image";
 import Link from "next/link";
+import { getBlogPostPath } from "@/utils/blog-path";
 
 type BlogPostCardProps = {
   post: BlogPostWithImages;
@@ -17,7 +18,7 @@ export function BlogPostCard({ post }: BlogPostCardProps) {
     <article className="card-elevated flex h-full flex-col overflow-hidden transition-transform hover:-translate-y-0.5">
       {cover && (
         <Link
-          href={`/blog/${post.id}`}
+          href={getBlogPostPath(post)}
           aria-label={post.title}
           className="relative block aspect-[16/10] bg-background"
         >
@@ -33,14 +34,14 @@ export function BlogPostCard({ post }: BlogPostCardProps) {
       <div className="flex flex-1 flex-col p-5">
         <p className="text-xs text-muted">{formatBlogDate(post.createdAt)}</p>
         <h2 className="mt-2 font-serif text-lg font-semibold text-foreground" dir="auto">
-          <Link href={`/blog/${post.id}`} className="line-clamp-2 block hover:text-gold">
+          <Link href={getBlogPostPath(post)} className="line-clamp-2 block hover:text-gold">
             {post.title}
           </Link>
         </h2>
         <p className="mt-1 text-xs text-muted">By {authorName}</p>
         <p className="mt-2 text-sm leading-relaxed text-muted" dir="auto">{summary}</p>
         <Link
-          href={`/blog/${post.id}`}
+          href={getBlogPostPath(post)}
           className="mt-auto pt-4 text-sm font-semibold text-primary hover:underline"
         >
           Read more →

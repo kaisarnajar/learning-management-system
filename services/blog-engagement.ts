@@ -3,6 +3,7 @@ import { rateLimit, RATE_LIMIT_MESSAGE, RATE_LIMITS } from "@/services/rate-limi
 import { BLOG_PUBLIC_WHERE } from "@/services/blog-approval";
 import { createStudentNotification } from "@/services/notifications";
 import { blogCommentSchema } from "@/utils/validations";
+import { getBlogPostPath } from "@/utils/blog-path";
 
 /**
  * Likes and comments on public blog posts, shared by the website's server
@@ -22,7 +23,7 @@ const commentInclude = { user: { select: { id: true, name: true, image: true } }
 async function findPublicPost(blogPostId: string) {
   return prisma.blogPost.findFirst({
     where: { id: blogPostId, ...BLOG_PUBLIC_WHERE },
-    select: { id: true, createdById: true, title: true },
+    select: { id: true, slug: true, createdById: true, title: true },
   });
 }
 
@@ -87,7 +88,7 @@ export async function addBlogComment(user: EngagementUser, blogPostId: string, r
       type: "BLOG_COMMENT_ADDED",
       title: `New comment on your blog "${blogPost.title}"`,
       body: `${commenterName} commented: "${preview}"`,
-      href: `/blog/${blogPostId}#comment-${comment.id}`,
+      href: `${getBlogPostPath(blogPost)}#comment-${comment.id}`,
     });
   }
 

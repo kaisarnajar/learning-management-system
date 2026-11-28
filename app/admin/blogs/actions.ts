@@ -6,6 +6,7 @@ import { deleteUpload } from "@/services/uploads";
 import {
   addImagesToPost,
   getRemoveImageIds,
+  insertBlogPostWithSlug,
   parseBlogForm,
   removeBlogImages,
   revalidateBlogPaths,
@@ -22,7 +23,6 @@ const crud = createAdminCrudActions({
       where: { id },
       include: { images: true, createdBy: { select: { email: true } } },
     }),
-    create: (data) => prisma.blogPost.create({ data: data as Prisma.BlogPostUncheckedCreateInput }),
     update: (id, data) => prisma.blogPost.update({ where: { id }, data: data as Prisma.BlogPostUncheckedUpdateInput }),
     remove: (id) => prisma.blogPost.delete({ where: { id } }),
   },
@@ -51,6 +51,8 @@ const crud = createAdminCrudActions({
         columns: { published: data.published, approvalStatus, ...featured, createdById: session.user.id },
       };
     },
+
+    writeCreate: (_ctx, columns) => insertBlogPostWithSlug(columns as Prisma.BlogPostUncheckedCreateInput),
 
     afterCreate: async ({ formData }, post) => {
       const imageResult = await addImagesToPost(post.id, formData, 0);

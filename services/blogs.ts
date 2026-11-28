@@ -1,4 +1,4 @@
-import type { BlogImage, BlogPost } from "@prisma/client";
+import type { BlogImage, BlogPost, Prisma } from "@prisma/client";
 import { BRAND_CONFIG } from "@/config/brand";
 import { BLOG_PUBLIC_WHERE } from "@/services/blog-approval";
 import { resolveHomepageFeaturedUpdate } from "@/services/homepage-featured";
@@ -107,15 +107,9 @@ const blogCommentInclude = {
   user: { select: { id: true, name: true, image: true } },
 } as const;
 
-/**
- * A published post for the public detail page: like/comment counts via
- * _count, only the viewer's own like row (to know whether they liked it)
- * and the first page of comments. Memoised per request so generateMetadata
- * and the page share one query.
- */
-export const getPublishedBlogPostById = cache(async (id: string, viewerUserId?: string) => {
+function findPublishedBlogPost(where: Prisma.BlogPostWhereInput, viewerUserId?: string) {
   return withDbErrorHandling(() => prisma.blogPost.findFirst({
-      where: { id, ...BLOG_PUBLIC_WHERE },
+      where: { ...where, ...BLOG_PUBLIC_WHERE },
       include: {
         images: { orderBy: { sortOrder: "asc" } },
         // Never select e-mail addresses here: this payload is rendered on a
@@ -130,6 +124,26 @@ export const getPublishedBlogPostById = cache(async (id: string, viewerUserId?: 
         },
       },
     }), "Database operation failed");
+}
+
+/**
+ * A published post by id (the mobile API): like/comment counts via _count,
+ * only the viewer's own like row (to know whether they liked it) and the
+ * first page of comments.
+ */
+export const getPublishedBlogPostById = cache(async (id: string, viewerUserId?: string) => {
+  return findPublishedBlogPost({ id }, viewerUserId);
+});
+
+/**
+ * The same post for the public detail page, looked up by the /blog/<segment>
+ * URL: its slug, or its id for links made before posts had slugs (the page
+ * then redirects to the slug URL). Memoised per request so generateMetadata
+ * and the page share one query.
+ */
+export const getPublishedBlogPostBySlugOrId = cache(async (segment: string, viewerUserId?: string) => {
+  const bySlug = await findPublishedBlogPost({ slug: segment }, viewerUserId);
+  return bySlug ?? findPublishedBlogPost({ id: segment }, viewerUserId);
 });
 
 /** The next page of comments for a public post (newest first), offset by `skip`. */

@@ -9,6 +9,7 @@ import { blogApprovalStatusLabel } from "@/services/blog-approval";
 import { isBlogPubliclyVisible } from "@/services/blogs";
 import { fatwaStatusLabel } from "@/services/fatwa";
 import { apiError } from "@/utils/api-response";
+import { getBlogPostPath } from "@/utils/blog-path";
 
 /**
  * Some content actions report a failure by redirecting with a short code
@@ -62,7 +63,8 @@ export function blogRow(post: BlogForApp) {
     authorEmail: post.createdBy?.email ?? null,
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
-    publicPath: visible ? `/blog/${post.id}` : null,
+    slug: post.slug,
+    publicPath: visible ? getBlogPostPath(post) : null,
   };
 }
 

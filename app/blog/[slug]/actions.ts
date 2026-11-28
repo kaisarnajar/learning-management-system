@@ -6,6 +6,11 @@ import { isAdminSession } from "@/services/admin";
 import { getBlogCommentsPage } from "@/services/blogs";
 import { addBlogComment, deleteBlogComment, editBlogComment, toggleBlogLike } from "@/services/blog-engagement";
 
+/** Every post page: the actions only know a post's id, and its page lives at /blog/<slug>. */
+function revalidateBlogPostPages() {
+  revalidatePath("/blog/[slug]", "page");
+}
+
 /** Next page of comments for the "Load more" button; no sign-in needed. */
 export async function loadMoreComments(blogPostId: string, skip: number) {
   try {
@@ -24,7 +29,7 @@ export async function toggleLike(blogPostId: string) {
   try {
     const result = await toggleBlogLike(session.user.id, blogPostId);
     if (!result.ok) return { error: result.error };
-    revalidatePath(`/blog/${blogPostId}`);
+    revalidateBlogPostPages();
     revalidatePath(`/blog`);
     return { success: true };
   } catch (err: unknown) {
@@ -40,7 +45,7 @@ export async function addComment(blogPostId: string, content: string) {
   try {
     const result = await addBlogComment(session.user, blogPostId, content);
     if (!result.ok) return { error: result.error };
-    revalidatePath(`/blog/${blogPostId}`);
+    revalidateBlogPostPages();
     return { success: true, comment: result.comment };
   } catch (err: unknown) {
     console.error("Failed to add comment:", err);
@@ -55,7 +60,7 @@ export async function deleteComment(commentId: string) {
   try {
     const result = await deleteBlogComment({ id: session.user.id, isAdmin: isAdminSession(session) }, commentId);
     if (!result.ok) return { error: result.error };
-    revalidatePath(`/blog/${result.blogPostId}`);
+    revalidateBlogPostPages();
     return { success: true };
   } catch (err: unknown) {
     console.error("Failed to delete comment:", err);
@@ -70,7 +75,7 @@ export async function editComment(commentId: string, content: string) {
   try {
     const result = await editBlogComment(session.user.id, commentId, content);
     if (!result.ok) return { error: result.error };
-    revalidatePath(`/blog/${result.comment.blogPostId}`);
+    revalidateBlogPostPages();
     return { success: true };
   } catch (err: unknown) {
     console.error("Failed to edit comment:", err);

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { Section } from "@/components/site/Section";
-import { formatBlogDate, getPublishedBlogPostById } from "@/services/blogs";
+import { formatBlogDate, getPublishedBlogPostBySlugOrId } from "@/services/blogs";
+import { getBlogPostPath } from "@/utils/blog-path";
 import { auth } from "@/services/auth";
 import { isAdminSession } from "@/services/admin";
 import { BlogEngagement } from "./BlogEngagement";
@@ -15,16 +16,36 @@ import { JsonLd } from "@/components/site/JsonLd";
 import { getBlogPostingSchema, getBreadcrumbSchema } from "@/services/seo-schema";
 
 type PageProps = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 };
 
+/** The URL segment as text; a segment that is still percent-encoded is decoded. */
+function segmentOf(raw: string): string {
+  try {
+    return decodeURIComponent(raw).normalize("NFC");
+  } catch {
+    return raw;
+  }
+}
+
+/**
+ * The post for /blog/<segment>. An old /blog/<id> link, or any other URL that
+ * is not the post's own, gets a 308 to /blog/<slug> so shared links keep
+ * working and search engines move to the new URL.
+ */
+async function loadPost(params: PageProps["params"], viewerUserId?: string) {
+  const segment = segmentOf((await params).slug);
+  const post = await getPublishedBlogPostBySlugOrId(segment, viewerUserId);
+  if (!post) notFound();
+  if (post.slug && post.slug !== segment) permanentRedirect(getBlogPostPath(post));
+  return post;
+}
+
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { id } = await params;
-  const post = await getPublishedBlogPostById(id);
-  if (!post) return { title: "Post not found" };
+  const post = await loadPost(params);
 
   const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
-  const postUrl = `${baseUrl}/blog/${post.id}`;
+  const postUrl = `${baseUrl}${getBlogPostPath(post)}`;
   const description = getBlogExcerpt(post, 160);
   const imageUrl = post.images && post.images.length > 0 ? post.images[0].imagePath : BRAND_CONFIG.seo.openGraphImage;
 
@@ -59,19 +80,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function BlogDetailPage({ params }: PageProps) {
-  const { id } = await params;
   const session = await auth();
   const currentUserId = session?.user?.id;
-  const post = await getPublishedBlogPostById(id, currentUserId);
-
-  if (!post) notFound();
+  const post = await loadPost(params, currentUserId);
 
   const isAdmin = isAdminSession(session);
   const initialHasLiked = Boolean(currentUserId) && post.likes.length > 0;
 
 
   const blogPostingSchema = getBlogPostingSchema({
-    id: post.id,
+    path: getBlogPostPath(post),
     title: post.title,
     excerpt: post.excerpt ?? undefined,
     body: post.body,
@@ -84,7 +102,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
   const breadcrumbSchema = getBreadcrumbSchema([
     { name: "Home", url: "/" },
     { name: "Blog", url: "/blog" },
-    { name: post.title, url: `/blog/${post.id}` },
+    { name: post.title, url: getBlogPostPath(post) },
   ]);
 
   return (
@@ -140,6 +158,7 @@ export default async function BlogDetailPage({ params }: PageProps) {
 
         <BlogEngagement
           blogPostId={post.id}
+          blogPostPath={getBlogPostPath(post)}
           initialLikeCount={post._count.likes}
           initialHasLiked={initialHasLiked}
           initialComments={post.comments}

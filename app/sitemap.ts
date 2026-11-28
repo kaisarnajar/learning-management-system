@@ -3,6 +3,7 @@ import { PHASE_PRODUCTION_BUILD } from "next/constants";
 import { prisma } from "@/utils/prisma";
 import { BRAND_CONFIG } from "@/config/brand";
 import { isCoursePubliclyVisible } from "@/services/course-status";
+import { getBlogPostPath } from "@/utils/blog-path";
 
 // Regenerated at most once an hour; content actions do not need to invalidate it.
 // A database error fails the regeneration (Next keeps serving the previous
@@ -52,11 +53,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Dynamic published blog posts
     const blogPosts = await prisma.blogPost.findMany({
       where: { published: true, approvalStatus: "APPROVED" },
-      select: { id: true, updatedAt: true },
+      select: { id: true, slug: true, updatedAt: true },
     });
 
     const blogRoutes: MetadataRoute.Sitemap = blogPosts.map((post) => ({
-      url: `${baseUrl}/blog/${post.id}`,
+      url: `${baseUrl}${getBlogPostPath(post)}`,
       lastModified: post.updatedAt || new Date(),
       changeFrequency: "weekly",
       priority: 0.7,

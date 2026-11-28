@@ -6,6 +6,7 @@ import { requireTeacher } from "@/services/auth-actions";
 import { canTeacherDeleteBlogPost, canTeacherEditBlogPost } from "@/services/blog-approval";
 import {
   addImagesToPost,
+  insertBlogPostWithSlug,
   getRemoveImageIds,
   parseTeacherBlogForm,
   removeBlogImages,
@@ -37,15 +38,13 @@ export async function createTeacherBlogPost(formData: FormData) {
     );
   }
 
-  const post = await prisma.blogPost.create({
-    data: {
-      title: parsed.data.title,
-      excerpt: parsed.data.excerpt || null,
-      body: parsed.data.body,
-      published: false,
-      approvalStatus: "PENDING",
-      createdById: session.user.id,
-    },
+  const post = await insertBlogPostWithSlug({
+    title: parsed.data.title,
+    excerpt: parsed.data.excerpt || null,
+    body: parsed.data.body,
+    published: false,
+    approvalStatus: "PENDING",
+    createdById: session.user.id,
   });
 
   const imageResult = await addImagesToPost(post.id, formData, 0);

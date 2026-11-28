@@ -45,7 +45,7 @@ export const metadata: Metadata = {
       { url: "/favicon.ico", sizes: "any" },
       { url: "/icon.png", type: "image/png", sizes: "32x32" },
     ],
-    apple: isStaging ? "/icon-512-staging.png" : "/icon-512.png",
+    apple: { url: isStaging ? "/icons/app/apple-touch-icon-staging.png" : "/icons/app/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
   }
 };
 

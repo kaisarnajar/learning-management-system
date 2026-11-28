@@ -4,7 +4,8 @@ import { escapeHtml, escapeHtmlMultiline } from "@/utils/html-escape";
 import { sanitizeRichText, isAllowedLinkUrl } from "@/services/rich-text";
 import { serializeJsonLd } from "@/components/site/JsonLd";
 import { flashQuery, isFlashCode, readFlash, withFlash, FLASH_MESSAGES } from "@/utils/flash";
-import { createWithUniqueSlug, slugify, uniqueSlug } from "@/utils/slug";
+import { createWithUniqueSlug, slugify, slugifyTitle, uniqueSlug } from "@/utils/slug";
+import { blogSlugFromTitle, getBlogPostPath } from "@/utils/blog-path";
 import { DbError } from "@/utils/db-error";
 import { parseApiPagination } from "@/utils/api-pagination";
 import { PAGINATION } from "@/config/constants/business";
@@ -181,6 +182,45 @@ describe("flash messages", () => {
     expect(withFlash("/admin/books?page=2", { code: "invalid" })).toBe("/admin/books?page=2&err=invalid");
     expect(withFlash("/x", { message: "a b&c" })).toBe("/x?msg=a%20b%26c");
     expect(flashQuery({ code: "linked" })).toBe("err=linked");
+  });
+});
+
+describe("blog title slugs", () => {
+  it("turns an English title into a readable slug", () => {
+    expect(slugifyTitle("Become a Voice AI Engineer")).toBe("become-a-voice-ai-engineer");
+    expect(slugifyTitle("  Tajweed: Rules & Practice (Part 2)!  ")).toBe("tajweed-rules-practice-part-2");
+  });
+
+  it("drops apostrophes and Latin accents", () => {
+    expect(slugifyTitle("Qur'ān Basics")).toBe("quran-basics");
+    expect(slugifyTitle("Qurʼān’s Message")).toBe("qurans-message");
+  });
+
+  it("keeps letters of other scripts, with their marks", () => {
+    expect(slugifyTitle("رمضان کی فضیلت ۔ حصہ اول")).toBe("رمضان-کی-فضیلت-حصہ-اول");
+    expect(slugifyTitle("नमाज़ का तरीका")).toBe("नमाज़-का-तरीका");
+  });
+
+  it("caps the length without leaving a trailing dash", () => {
+    const slug = slugifyTitle(`${"word ".repeat(30)}end`);
+    expect(Array.from(slug).length).toBeLessThanOrEqual(80);
+    expect(slug.endsWith("-")).toBe(false);
+  });
+
+  it("falls back to 'post' for a title with no letters or digits", () => {
+    expect(slugifyTitle("???")).toBe("");
+    expect(blogSlugFromTitle("???")).toBe("post");
+  });
+
+  it("builds the public path from the slug, or the id without one", () => {
+    expect(getBlogPostPath({ id: "cmw1", slug: "become-a-voice-ai-engineer" })).toBe("/blog/become-a-voice-ai-engineer");
+    expect(getBlogPostPath({ id: "cmw1", slug: null })).toBe("/blog/cmw1");
+    expect(getBlogPostPath({ id: "cmw1", slug: "رمضان" })).toBe(`/blog/${encodeURIComponent("رمضان")}`);
+  });
+
+  it("numbers a taken blog slug like other slugs", async () => {
+    const taken = new Set(["ramadan"]);
+    await expect(uniqueSlug("Ramadan", async (s) => taken.has(s), blogSlugFromTitle)).resolves.toBe("ramadan-1");
   });
 });
 

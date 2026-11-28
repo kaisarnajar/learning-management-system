@@ -7,6 +7,8 @@ import { sanitizeRichText } from "@/services/rich-text";
 import { withDbErrorHandling } from "@/utils/db-error";
 import { isUploadError } from "@/services/storage";
 import { revalidatePublicContent } from "@/services/public-cache";
+import { createBlogPostWithSlug } from "@/utils/blog-path";
+import type { Prisma } from "@prisma/client";
 
 /** Cache invalidation after an admin changes a blog post: lists, the public blog and (when known) the post's pages. */
 export function revalidateBlogPaths(postId?: string) {
@@ -18,10 +20,27 @@ export function revalidateBlogPaths(postId?: string) {
   revalidatePath("/admin/blogs");
   revalidatePath("/admin/blog-approvals");
   if (postId) {
-    revalidatePath(`/blog/${postId}`);
+    // The post's page is /blog/<slug>; the id alone does not name it.
+    revalidatePath("/blog/[slug]", "page");
     revalidatePath(`/admin/blog-approvals/${postId}`);
   }
   revalidatePath("/teacher/blogs");
+}
+
+/**
+ * Creates a blog post with a slug made from its title (/blog/<slug>). The
+ * slug is set once here and never follows later title edits, so a link that
+ * has been shared keeps working.
+ */
+export function insertBlogPostWithSlug(data: Omit<Prisma.BlogPostUncheckedCreateInput, "slug">) {
+  return createBlogPostWithSlug(
+    data.title,
+    async (slug) => Boolean(await withDbErrorHandling(
+      () => prisma.blogPost.findUnique({ where: { slug }, select: { id: true } }),
+      "Database operation failed",
+    )),
+    (slug) => withDbErrorHandling(() => prisma.blogPost.create({ data: { ...data, slug } }), "Database operation failed"),
+  );
 }
 
 /** Rich-text bodies arrive as raw editor HTML; sanitise before validation and storage. */

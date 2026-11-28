@@ -24,6 +24,8 @@ type Comment = {
 
 type BlogEngagementProps = {
   blogPostId: string;
+  /** The post's public path, for the sign-in return link. */
+  blogPostPath: string;
   initialLikeCount: number;
   initialHasLiked: boolean;
   initialComments: Comment[];
@@ -35,6 +37,7 @@ type BlogEngagementProps = {
 
 export function BlogEngagement({
   blogPostId,
+  blogPostPath,
   initialLikeCount,
   initialHasLiked,
   initialComments,
@@ -77,7 +80,7 @@ export function BlogEngagement({
 
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const router = useRouter();
-  const loginPath = `/login?callbackUrl=${encodeURIComponent(`/blog/${blogPostId}`)}`;
+  const loginPath = `/login?callbackUrl=${encodeURIComponent(blogPostPath)}`;
 
   const handleLike = () => {
     if (!currentUserId) {

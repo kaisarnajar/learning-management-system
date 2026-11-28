@@ -369,6 +369,11 @@ model SiteAnnouncementImage {
 model BlogPost {
   id                 String             @id @default(cuid())
   title              String
+  /// URL segment built from the title when the post is created (/blog/<slug>).
+  /// Stays fixed when the title is edited, so links already shared keep working.
+  /// Optional only so posts written by older code still save; such a post is
+  /// served at /blog/<id> until it gets one.
+  slug               String?            @unique
   excerpt            String?
   body               String
   published          Boolean            @default(false)

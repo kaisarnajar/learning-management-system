@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { slugifyTitle } from "../utils/slug";
 import { courses } from "../content/courses";
 import { demoBlogPosts, demoBooks } from "../content/demo-content";
 import { teachers } from "../content/teachers";
@@ -639,6 +640,7 @@ export async function seedDemoBulkBlogPosts(prisma: PrismaClient) {
       create: {
         id,
         title: `Bulk Blog Article ${index} on Islamic Sciences`,
+        slug: slugifyTitle(`Bulk Blog Article ${index} on Islamic Sciences`),
         excerpt: `A short excerpt for bulk blog post ${index}.`,
         body: `This is the auto-generated body for blog post ${index}. It contains multiple paragraphs discussing various aspects of Islamic sciences, targeted to help students understand the depth of the subject matter.`,
         published,

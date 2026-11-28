@@ -30,6 +30,7 @@ function statusBadge(post: Pick<BlogPost, "approvalStatus" | "published">) {
 
 import { adminActionButtonClassName } from "@/utils/form";
 import { requireAdmin } from "@/services/auth-actions";
+import { getBlogPostPath } from "@/utils/blog-path";
 
 export default async function AdminBlogsPage({
   searchParams,
@@ -116,7 +117,7 @@ export default async function AdminBlogsPage({
                       <div className="flex items-center justify-end gap-3">
                         {post.published && post.approvalStatus === "APPROVED" && (
                           <Link
-                            href={`/blog/${post.id}`}
+                            href={getBlogPostPath(post)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={adminActionButtonClassName}

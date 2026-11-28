@@ -14,6 +14,7 @@ import { getTeacherBlogPostsPaginated } from "@/services/blogs";
 import { clampPage, parsePaginationParams } from "@/utils/pagination";
 import { ActionToast } from "@/components/shared/ToastProvider";
 import { readFlash, type FlashParams } from "@/utils/flash";
+import { getBlogPostPath } from "@/utils/blog-path";
 
 
 export default async function TeacherBlogsPage({
@@ -107,7 +108,7 @@ export default async function TeacherBlogsPage({
                       <div className="flex flex-wrap items-center justify-end gap-3">
                         {post.published && post.approvalStatus === "APPROVED" && (
                           <Link
-                            href={`/blog/${post.id}`}
+                            href={getBlogPostPath(post)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className={adminActionButtonClassName}

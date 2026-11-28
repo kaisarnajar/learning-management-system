@@ -900,7 +900,8 @@ components:
         authorEmail: { type: [string, "null"] }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
-        publicPath: { type: [string, "null"], description: Set while the post is public }
+        slug: { type: [string, "null"], description: "URL segment made from the title; the website page is /blog/{slug}. Null only for a post saved before slugs existed" }
+        publicPath: { type: [string, "null"], description: "Set while the post is public: /blog/{slug}, or /blog/{id} for a post without a slug" }
     BlogDetail:
       allOf:
         - $ref: "#/components/schemas/BlogRow"
@@ -1548,6 +1549,7 @@ paths:
                     type: object
                     properties:
                       id: { type: string }
+                      slug: { type: [string, "null"], description: "URL segment of the website page, /blog/{slug}" }
                       title: { type: string }
                       excerpt: { type: [string, "null"] }
                       body: { type: string, description: Sanitised HTML }

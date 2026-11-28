@@ -59,7 +59,8 @@ export function getCourseSchema(course: CourseSchemaParams) {
  * Blog Posting / Article Schema generator
  */
 export interface BlogPostingSchemaParams {
-  id: string;
+  /** The post's public path, from getBlogPostPath(). */
+  path: string;
   title: string;
   excerpt?: string | null;
   body: string;
@@ -71,7 +72,7 @@ export interface BlogPostingSchemaParams {
 
 export function getBlogPostingSchema(post: BlogPostingSchemaParams) {
   const baseUrl = BRAND_CONFIG.websiteUrl.replace(/\/$/, "");
-  const postUrl = `${baseUrl}/blog/${post.id}`;
+  const postUrl = `${baseUrl}${post.path}`;
   const publishDate = new Date(post.createdAt).toISOString();
   const modifiedDate = post.updatedAt ? new Date(post.updatedAt).toISOString() : publishDate;
   const description = getBlogExcerpt(post, 160);
